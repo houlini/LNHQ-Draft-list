@@ -298,6 +298,9 @@ const CONFIG = {
 
   // Titre affiché en haut du widget.
   TITLE: 'LNHQ',
+
+  // Colonnes à ne jamais afficher (0 = colonne A, 1 = colonne B, 2 = colonne C, etc.)
+  HIDDEN_COLUMNS: [0],
 };
 /* ========================================================================= */
 
@@ -409,18 +412,21 @@ async function loadData(){
 }
 
 function parseTable(table){
-  state.columns = table.cols.map((c, i) => ({
-    label: c.label || c.id || ('Colonne ' + (i + 1)),
-    isNumeric: c.type === 'number',
-  }));
+  const hidden = new Set(CONFIG.HIDDEN_COLUMNS || []);
+
+  state.columns = table.cols
+    .map((c, i) => ({
+      label: c.label || c.id || ('Colonne ' + (i + 1)),
+      isNumeric: c.type === 'number',
+    }))
+    .filter((_, i) => !hidden.has(i));
 
   state.rows = table.rows.map(r => {
     const display = [];
-    const numeric = [];
     (r.c || []).forEach((cell, i) => {
-      if(!cell){ display.push(''); numeric.push(false); return; }
+      if(hidden.has(i)) return;
+      if(!cell){ display.push(''); return; }
       display.push(cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : ''));
-      numeric.push(state.columns[i] ? state.columns[i].isNumeric : false);
     });
     return { display };
   });
