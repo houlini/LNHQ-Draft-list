@@ -78,7 +78,7 @@
     display:flex; align-items:center; justify-content:space-between; gap:16px;
   }
   .brand{ display:flex; align-items:center; gap:10px; min-width:0; text-decoration:none; }
-  .brand-logo{ width:30px; height:34px; flex-shrink:0; }
+  .brand-logo{ width:32px; height:32px; flex-shrink:0; object-fit:contain; }
   .app-title{
     color:var(--nav-ink);
     text-transform:uppercase;
@@ -301,11 +301,7 @@
   <header class="app-header">
     <div class="header-row">
       <a class="brand" href="https://sites.google.com/view/lnhq/accueil">
-        <svg class="brand-logo" viewBox="0 0 40 46" aria-hidden="true">
-          <path d="M20 2 L36 8 V22 C36 33 29 40 20 44 C11 40 4 33 4 22 V8 Z" fill="var(--accent)" stroke="var(--nav-ink)" stroke-width="2"/>
-          <path d="M12 30 L20 15 L23 20 L16 32 Z" fill="var(--nav-ink)"/>
-          <circle cx="26" cy="16" r="3" fill="var(--nav-ink)"/>
-        </svg>
+        <img class="brand-logo" src="logo-lnhq.png" alt="LNHQ">
         <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
       </a>
       <nav class="site-nav" id="siteNav">
