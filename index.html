@@ -311,7 +311,11 @@ const CONFIG = {
   // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
   // un texte = nom exact de l'en-tête (insensible à la casse).
   // Ici : A, C, F, J, L, M, O, Q, R, S, T, U, V, X
-  HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 11, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23],
+  HIDDEN_COLUMNS: [0, 2, 5, 9, 11, 12, 14, 16, 17, 18, 19, 20, 21, 23],
+
+  // Colonnes à afficher comme un petit drapeau plutôt que du texte.
+  // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
+  FLAG_COLUMNS: ['NAT'],
 };
 /* ========================================================================= */
 
@@ -400,8 +404,23 @@ function buildUrl(){
   return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.GID}&t=${Date.now()}`;
 }
 
-async function loadData(){
-  toggle({ loading:true });
+/* ---------- Cache local : affichage instantané au chargement suivant ---------- */
+const CACHE_KEY = 'sheetCache_' + CONFIG.SHEET_ID + '_' + CONFIG.GID;
+
+function loadFromCache(){
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveToCache(table){
+  try{
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ table, ts: Date.now() }));
+  }catch(e){ /* stockage indisponible ou plein : on ignore silencieusement */ }
+}
+
+async function loadData({ background=false } = {}){
+  if(!background) toggle({ loading:true });
   try{
     const res = await fetch(buildUrl());
     if(!res.ok) throw new Error('http_' + res.status);
@@ -413,12 +432,15 @@ async function loadData(){
       throw new Error(json.errors && json.errors[0] && json.errors[0].reason || 'erreur_gviz');
     }
     parseTable(json.table);
-    render();
+    saveToCache(json.table);
     toggle({ loading:false });
     els.lastUpdated.textContent = 'Mis à jour à ' + new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' }).format(new Date());
   }catch(err){
     console.error(err);
-    toggle({ loading:false, error:true });
+    if(!background){
+      toggle({ loading:false, error:true });
+    }
+    // En arrière-plan : on garde les données déjà affichées (issues du cache) et on retentera au prochain chargement.
   }
 }
 
@@ -578,12 +600,20 @@ els.search.addEventListener('input', e => {
 
 function refresh(){
   els.refresh.classList.add('is-loading');
-  loadData().finally(() => els.refresh.classList.remove('is-loading'));
+  loadData({ background:true }).finally(() => els.refresh.classList.remove('is-loading'));
 }
 els.refresh.addEventListener('click', refresh);
-els.retryBtn.addEventListener('click', refresh);
+els.retryBtn.addEventListener('click', () => loadData());
 
-loadData();
+const cached = loadFromCache();
+if(cached && cached.table){
+  parseTable(cached.table);
+  toggle({ loading:false });
+  els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
+  loadData({ background:true });
+}else{
+  loadData();
+}
 </script>
 </body>
 </html>
