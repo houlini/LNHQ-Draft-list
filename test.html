@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Visionneuse de feuille</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@400;500&family=Roboto:wght@500;700&display=swap');
 
   :root{
     --bg:#FAFAF7;
@@ -82,7 +82,8 @@
   .app-title{
     color:var(--nav-ink);
     text-transform:uppercase;
-    font-size:clamp(19px, 2vw + 12px, 26px); font-weight:700; letter-spacing:0.01em;
+    font-family:'Oswald', 'IBM Plex Sans', sans-serif;
+    font-size:clamp(26px, 3.2vw + 12px, 40px); font-weight:400; letter-spacing:0;
     margin:0; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
@@ -102,6 +103,9 @@
   .nav-btn .nav-caret, .nav-btn .nav-icon{ width:13px; height:13px; flex-shrink:0; }
   .nav-btn.is-loading .nav-icon{ animation:spin 0.8s linear infinite; }
   @keyframes spin{ to { transform:rotate(360deg); } }
+
+  .site-nav .nav-btn{ font-family:'Roboto', 'IBM Plex Sans', sans-serif; font-weight:700; letter-spacing:0.02em; }
+  .nav-dropdown{ font-family:'Roboto', 'IBM Plex Sans', sans-serif; }
 
   .nav-dropdown{
     position:absolute; top:100%; right:0; margin-top:6px;
