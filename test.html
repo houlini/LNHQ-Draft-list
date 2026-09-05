@@ -8,15 +8,16 @@
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
   :root{
-    --bg:#FAFAF7;
+    --bg:#F7F9FB;
     --surface:#FFFFFF;
-    --ink:#181B20;
-    --ink-muted:#6B7178;
+    --ink:#12181F;
+    --ink-muted:#5B6572;
     --accent:#E8590C;
     --accent-soft:#FBEADC;
     --accent-ink:#FFFFFF;
-    --stripe:#F1EEE7;
-    --line:#E5E2D9;
+    --pos-defense:#2C4A63;
+    --stripe:#EEF2F5;
+    --line:#DDE3E8;
     --danger:#A3402F;
     --danger-soft:#F6E9E6;
     --radius:10px;
@@ -27,15 +28,16 @@
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#15181B;
-      --surface:#1D2125;
-      --ink:#EDEBE4;
-      --ink-muted:#9AA0A6;
+      --bg:#0F1418;
+      --surface:#1A2026;
+      --ink:#EDEFF2;
+      --ink-muted:#8D97A1;
       --accent:#FF7A33;
       --accent-soft:#3A2416;
-      --accent-ink:#181B20;
-      --stripe:#1A1D20;
-      --line:#2C3033;
+      --accent-ink:#12181F;
+      --pos-defense:#5C87A8;
+      --stripe:#161C21;
+      --line:#262E35;
       --danger:#E08B78;
       --danger-soft:#2E211E;
     }
@@ -82,7 +84,7 @@
   .app-title{
     grid-area:title;
     color:var(--accent-ink);
-    font-size:clamp(19px, 2vw + 12px, 26px); font-weight:600; letter-spacing:-0.01em;
+    font-size:clamp(19px, 2vw + 12px, 26px); font-weight:700; letter-spacing:-0.02em;
     margin:0; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
@@ -197,17 +199,19 @@
     font-family:'IBM Plex Mono', monospace; text-align:right; font-variant-numeric:tabular-nums;
   }
 
-  /* Colonnes mises en évidence (ex: D, Y) */
-  td.col-highlight{
-    background:var(--accent) !important; color:var(--accent-ink) !important;
-    font-weight:600;
+  /* Colonnes mises en évidence (ex: D, Y) : badge arrondi dans la cellule */
+  .cell-badge{
+    display:inline-block;
+    background:var(--accent); color:var(--accent-ink);
+    padding:2px 10px; border-radius:999px; font-weight:600;
+    font-size:0.92em;
   }
   th.col-highlight{ background:var(--accent) !important; color:var(--accent-ink) !important; }
   th.col-highlight .sort-mark{ color:var(--accent-ink); }
   th.col-highlight:hover{ color:var(--accent-ink); }
   .row-field .value.is-highlight{
     background:var(--accent); color:var(--accent-ink);
-    padding:2px 8px; border-radius:6px; font-weight:600;
+    padding:2px 10px; border-radius:999px; font-weight:600;
   }
   .flag-icon{ border-radius:2px; vertical-align:middle; display:inline-block; }
 
@@ -215,10 +219,17 @@
   thead th:first-child, tbody td:first-child{
     position:sticky; left:0; z-index:2;
     background:var(--surface);
+    border-left:4px solid transparent;
     box-shadow:2px 0 4px -2px rgba(0,0,0,0.18);
   }
   thead th:first-child{ z-index:3; }
   tbody tr:hover td:first-child{ background:var(--accent-soft); }
+
+  /* Code couleur par position (colonne PO) : bande sur la colonne gelée et la fiche mobile */
+  td.pos-goalie{ border-left-color:var(--accent); }
+  td.pos-defense{ border-left-color:var(--pos-defense); }
+  .row-card.pos-goalie{ border-left-color:var(--accent); }
+  .row-card.pos-defense{ border-left-color:var(--pos-defense); }
 
   .row-in{ animation:rowIn 0.35s ease both; }
   @keyframes rowIn{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
@@ -230,7 +241,8 @@
   /* ---------- Liste (mobile) ---------- */
   .list-wrap{ display:block; }
   .row-card{
-    padding:16px 4px; border-bottom:1px solid var(--line);
+    padding:16px 4px 16px 12px; border-bottom:1px solid var(--line);
+    border-left:4px solid transparent;
   }
   .row-card:last-child{ border-bottom:none; }
   .row-title{ font-weight:600; font-size:18px; line-height:1.4; margin-bottom:9px; }
@@ -361,8 +373,22 @@ const CONFIG = {
   // Colonnes pour lesquelles afficher un menu déroulant de filtre (nom exact de l'en-tête).
   // Les valeurs proposées sont détectées automatiquement dans les données.
   FILTER_COLUMNS: ['PO'],
+
+  // Colonne utilisée pour le code couleur par position (bande de couleur à gauche de chaque ligne).
+  // Codes reconnus : gardien = G/GK/POR/GOAL, défenseur = D/DEF, attaquant = C/LW/RW/F/W/ATT.
+  // Les attaquants n'ont pas de couleur (position la plus fréquente, non marquée).
+  POSITION_COLUMN: 'PO',
 };
 /* ========================================================================= */
+
+// Regroupe un code de position en 'goalie' / 'defense' / 'forward' / null (inconnu)
+function getPositionCategory(raw){
+  const v = (raw || '').trim().toUpperCase();
+  if(['G', 'GK', 'POR', 'GOAL'].includes(v)) return 'goalie';
+  if(['D', 'DEF'].includes(v)) return 'defense';
+  if(['C', 'LW', 'RW', 'F', 'W', 'ATT'].includes(v)) return 'forward';
+  return null;
+}
 
 const els = {
   app: document.querySelector('.app'),
@@ -403,7 +429,7 @@ function loadViewMode(){
     const saved = localStorage.getItem('sheetViewMode');
     if(VIEW_MODES.includes(saved)) return saved;
   }catch(e){}
-  return 'auto';
+  return 'table'; // vue tableau par défaut pour tout le monde, peu importe la largeur d'écran
 }
 function saveViewMode(mode){
   try{ localStorage.setItem('sheetViewMode', mode); }catch(e){}
@@ -520,6 +546,13 @@ function parseTable(table){
       display.push(cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : ''));
     });
     return { display };
+  });
+
+  const posColIndex = state.columns.findIndex(
+    c => c.label.trim().toLowerCase() === String(CONFIG.POSITION_COLUMN || '').trim().toLowerCase()
+  );
+  state.rows.forEach(r => {
+    r.posCategory = posColIndex >= 0 ? getPositionCategory(r.display[posColIndex]) : null;
   });
 
   renderFilterBar();
@@ -696,11 +729,17 @@ function renderTableBody(){
       const col = state.columns[i];
       if(col && col.isFlag){
         appendFlag(td, val);
+      }else if(col && col.isHighlight){
+        const badge = document.createElement('span');
+        badge.className = 'cell-badge';
+        badge.textContent = val;
+        td.appendChild(badge);
+        if(col.isNumeric) td.classList.add('is-numeric');
       }else{
         td.textContent = val;
         if(col && col.isNumeric) td.classList.add('is-numeric');
       }
-      if(col && col.isHighlight) td.classList.add('col-highlight');
+      if(i === 0 && row.posCategory) td.classList.add('pos-' + row.posCategory);
       tr.appendChild(td);
     });
     els.tableBody.appendChild(tr);
@@ -712,6 +751,7 @@ function renderList(){
   state.filtered.forEach((row, idx) => {
     const card = document.createElement('div');
     card.className = 'row-card';
+    if(row.posCategory) card.classList.add('pos-' + row.posCategory);
     if(idx < 20) card.classList.add('row-in');
     if(idx < 20) card.style.animationDelay = (idx * 25) + 'ms';
 
