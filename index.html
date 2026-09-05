@@ -18,10 +18,10 @@
     --danger:#A3402F;
     --danger-soft:#F6E9E6;
     --radius:10px;
-    --row-py:7px; --row-px:14px; --row-font:13px;
+    --row-py:6px; --row-px:10px; --row-font:12.5px;
   }
   .app.is-comfortable{
-    --row-py:14px; --row-px:18px; --row-font:15.5px;
+    --row-py:13px; --row-px:16px; --row-font:15px;
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -38,6 +38,7 @@
   }
 
   *{box-sizing:border-box;}
+  [hidden]{ display:none !important; }
   html,body{margin:0;padding:0; height:100%;}
   html{ font-size:16px; }
   body{
@@ -154,7 +155,7 @@
 
   /* ---------- Tableau (large écran) ---------- */
   .table-wrap{ display:none; overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); }
-  table{ width:100%; border-collapse:collapse; font-size:var(--row-font); }
+  table{ width:auto; border-collapse:collapse; font-size:var(--row-font); }
   thead th{
     position:sticky; top:0;
     background:var(--surface); text-align:left; font-weight:600;
@@ -166,7 +167,7 @@
   thead th .sort-mark{ margin-left:4px; color:var(--accent); }
   tbody td{
     padding:var(--row-py) var(--row-px); border-bottom:1px solid var(--line);
-    vertical-align:top;
+    vertical-align:top; white-space:nowrap;
   }
   tbody tr:last-child td{ border-bottom:none; }
   tbody tr:hover{ background:var(--accent-soft); }
@@ -432,4 +433,84 @@ function renderTableHead(){
     if(col.isNumeric) th.classList.add('is-numeric');
     if(state.sortCol === i){
       const mark = document.createElement('span');
-      mark.className 
+      mark.className = 'sort-mark';
+      mark.textContent = state.sortDir === 1 ? '↑' : '↓';
+      th.appendChild(mark);
+    }
+    th.addEventListener('click', () => {
+      state.sortDir = (state.sortCol === i) ? -state.sortDir : 1;
+      state.sortCol = i;
+      render();
+    });
+    els.tableHeadRow.appendChild(th);
+  });
+}
+
+function renderTableBody(){
+  els.tableBody.innerHTML = '';
+  state.filtered.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    if(idx < 20) tr.classList.add('row-in');
+    if(idx < 20) tr.style.animationDelay = (idx * 25) + 'ms';
+    row.display.forEach((val, i) => {
+      const td = document.createElement('td');
+      td.textContent = val;
+      if(state.columns[i] && state.columns[i].isNumeric) td.classList.add('is-numeric');
+      tr.appendChild(td);
+    });
+    els.tableBody.appendChild(tr);
+  });
+}
+
+function renderList(){
+  els.listWrap.innerHTML = '';
+  state.filtered.forEach((row, idx) => {
+    const card = document.createElement('div');
+    card.className = 'row-card';
+    if(idx < 20) card.classList.add('row-in');
+    if(idx < 20) card.style.animationDelay = (idx * 25) + 'ms';
+
+    const title = document.createElement('div');
+    title.className = 'row-title';
+    title.textContent = row.display[0] || '—';
+    card.appendChild(title);
+
+    row.display.slice(1).forEach((val, i) => {
+      if(val === '') return;
+      const col = state.columns[i + 1];
+      const field = document.createElement('div');
+      field.className = 'row-field';
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = col ? col.label : '';
+      const value = document.createElement('span');
+      value.className = 'value' + (col && col.isNumeric ? ' is-numeric' : '');
+      value.textContent = val;
+      field.appendChild(label);
+      field.appendChild(value);
+      card.appendChild(field);
+    });
+    els.listWrap.appendChild(card);
+  });
+}
+
+let searchTimer;
+els.search.addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    state.query = e.target.value;
+    render();
+  }, 200);
+});
+
+function refresh(){
+  els.refresh.classList.add('is-loading');
+  loadData().finally(() => els.refresh.classList.remove('is-loading'));
+}
+els.refresh.addEventListener('click', refresh);
+els.retryBtn.addEventListener('click', refresh);
+
+loadData();
+</script>
+</body>
+</html>
