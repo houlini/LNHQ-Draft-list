@@ -1,126 +1,453 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { margin: 0; padding: 12px; background: #ffffff; }
-    
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
-      background: #ffffff;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visionneuse de feuille</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg:#FAFAF7;
+    --surface:#FFFFFF;
+    --ink:#181B20;
+    --ink-muted:#6B7178;
+    --accent:#1F6E5C;
+    --accent-soft:#E7F1EE;
+    --line:#E5E2D9;
+    --danger:#A3402F;
+    --danger-soft:#F6E9E6;
+    --radius:10px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#15181B;
+      --surface:#1D2125;
+      --ink:#EDEBE4;
+      --ink-muted:#9AA0A6;
+      --accent:#57B79E;
+      --accent-soft:#1E2C29;
+      --line:#2C3033;
+      --danger:#E08B78;
+      --danger-soft:#2E211E;
     }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 14px;
-    }
-    
-    th {
-      background-color: #f8f9fa;
-      color: #1a73e8;
-      font-weight: 600;
-      padding: 12px 16px;
-      border-bottom: 2px solid #dadce0;
-      white-space: nowrap;
-    }
-    
-    td {
-      padding: 12px 16px;
-      border-bottom: 1px solid #e8eaed;
-      color: #3c4043;
-    }
-    
-    tr:nth-child(even) { background-color: #f9f9f9; }
-    tr:hover { background-color: #f1f3f4; }
-    
-    #loading {
-      text-align: center;
-      padding: 30px;
-      color: #5f6368;
-      font-size: 15px;
-    }
-    
-    #error-msg {
-      color: #d93025;
-      display: none;
-      padding: 20px;
-      text-align: center;
-    }
-  </style>
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  button, input{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .app{max-width:920px; margin:0 auto;}
+
+  /* ---------- En-tête ---------- */
+  .app-header{
+    position:sticky; top:0; z-index:10;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    padding:14px 16px 12px;
+  }
+  .header-row{
+    display:flex; align-items:center; gap:10px;
+  }
+  .app-title{
+    font-size:17px; font-weight:600; letter-spacing:-0.01em;
+    margin:0; flex:1; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .search-field{
+    position:relative; flex:1; max-width:260px;
+  }
+  .search-field svg{
+    position:absolute; left:9px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; stroke:var(--ink-muted); pointer-events:none;
+  }
+  .search-field input{
+    width:100%; padding:7px 10px 7px 30px;
+    border:1px solid var(--line); border-radius:8px;
+    background:var(--surface); color:var(--ink); font-size:13.5px;
+  }
+  .icon-btn{
+    display:flex; align-items:center; justify-content:center;
+    width:32px; height:32px; border-radius:8px;
+    border:1px solid var(--line); background:var(--surface);
+    color:var(--ink-muted); cursor:pointer; flex-shrink:0;
+  }
+  .icon-btn:hover{color:var(--ink); border-color:var(--ink-muted);}
+  .icon-btn svg{width:16px; height:16px;}
+  .icon-btn.is-loading svg{animation:spin 0.8s linear infinite;}
+  @keyframes spin{ to { transform:rotate(360deg); } }
+
+  .meta-row{
+    margin:8px 2px 0; font-size:12px; color:var(--ink-muted);
+    display:flex; justify-content:space-between; gap:8px;
+  }
+
+  /* ---------- Contenu ---------- */
+  main{padding:14px 16px 60px;}
+
+  .status-box{
+    display:flex; gap:10px; align-items:flex-start;
+    padding:14px; border-radius:var(--radius); font-size:13.5px; line-height:1.5;
+  }
+  .status-box.error{ background:var(--danger-soft); color:var(--danger); }
+  .status-box svg{width:18px; height:18px; flex-shrink:0; margin-top:1px;}
+  .status-box .retry{
+    margin-top:8px; display:inline-block; font-weight:600; cursor:pointer;
+    text-decoration:underline; color:inherit; background:none; border:none; font-size:13.5px; padding:0;
+  }
+
+  .empty-state{ text-align:center; padding:40px 16px; color:var(--ink-muted); font-size:13.5px; }
+
+  /* ---------- Squelette de chargement ---------- */
+  .skeleton-row{
+    height:38px; border-radius:6px; margin-bottom:8px;
+    background:linear-gradient(90deg, var(--surface) 25%, var(--accent-soft) 37%, var(--surface) 63%);
+    background-size:400% 100%;
+    animation:shimmer 1.3s ease infinite;
+  }
+  @keyframes shimmer{ 0%{background-position:100% 50%;} 100%{background-position:0 50%;} }
+
+  /* ---------- Tableau (large écran) ---------- */
+  .table-wrap{ display:none; overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  thead th{
+    position:sticky; top:0;
+    background:var(--surface); text-align:left; font-weight:600;
+    padding:10px 12px; border-bottom:1px solid var(--line);
+    cursor:pointer; user-select:none; white-space:nowrap;
+    color:var(--ink-muted);
+  }
+  thead th:hover{ color:var(--ink); }
+  thead th .sort-mark{ margin-left:4px; color:var(--accent); }
+  tbody td{
+    padding:9px 12px; border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:var(--accent-soft); }
+  td.is-numeric, th.is-numeric{
+    font-family:'IBM Plex Mono', monospace; text-align:right; font-variant-numeric:tabular-nums;
+  }
+
+  .row-in{ animation:rowIn 0.35s ease both; }
+  @keyframes rowIn{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
+  @media (prefers-reduced-motion: reduce){
+    .row-in{ animation:none; }
+    .skeleton-row{ animation:none; }
+  }
+
+  /* ---------- Liste (mobile) ---------- */
+  .list-wrap{ display:block; }
+  .row-card{
+    padding:12px 2px; border-bottom:1px solid var(--line);
+  }
+  .row-card:last-child{ border-bottom:none; }
+  .row-title{ font-weight:600; font-size:14.5px; margin-bottom:6px; }
+  .row-field{
+    display:flex; justify-content:space-between; gap:14px;
+    padding:3px 0; font-size:13px;
+  }
+  .row-field .label{ color:var(--ink-muted); flex-shrink:0; }
+  .row-field .value{ text-align:right; }
+  .row-field .value.is-numeric{
+    font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums;
+  }
+
+  /* Bascule table / liste selon la largeur d'écran */
+  @media (min-width:700px){
+    .table-wrap{ display:block; }
+    .list-wrap{ display:none; }
+  }
+</style>
 </head>
 <body>
 
-  <div class="table-container">
-    <div id="loading">Chargement des données...</div>
-    <div id="error-msg">
-      Impossible de charger les données.<br>
-      S'assurer que le fichier est partagé en accès <strong>"Tous les utilisateurs disposant du lien : Lecteur"</strong>.
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
+      <div class="search-field">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" id="searchInput" placeholder="Rechercher…" aria-label="Rechercher dans les données">
+      </div>
+      <button class="icon-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+        </svg>
+      </button>
     </div>
-    <table id="sheet-table" style="display:none;">
-      <thead id="table-head"></thead>
-      <tbody id="table-body"></tbody>
-    </table>
-  </div>
+    <div class="meta-row">
+      <span id="rowCount" aria-live="polite"></span>
+      <span id="lastUpdated"></span>
+    </div>
+  </header>
 
-  <script>
-    const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
-    const GID = '1424606319';
-    const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
+  <main id="content">
+    <div id="loader">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+    </div>
 
-    fetch(URL)
-      .then(res => {
-        if (!res.ok) throw new Error('Network error');
-        return res.text();
-      })
-      .then(data => {
-        // Nettoyage de la réponse de l'API Google Visualization
-        const json = JSON.parse(data.substring(47, data.length - 2));
-        
-        const cols = json.table.cols;
-        const rows = json.table.rows;
+    <div id="errorBox" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <div id="errorText">Impossible de charger les données.</div>
+        <button class="retry" id="retryBtn">Réessayer</button>
+      </div>
+    </div>
 
-        if (!rows || rows.length === 0) {
-          document.getElementById('loading').innerText = 'Aucune donnée trouvée dans cet onglet.';
-          return;
-        }
+    <div class="table-wrap" id="tableWrap" hidden>
+      <table>
+        <thead><tr id="tableHeadRow"></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
 
-        // Génération des entêtes
-        let headHTML = '<tr>';
-        cols.forEach(col => {
-          headHTML += `<th>${col.label || ''}</th>`;
-        });
-        headHTML += '</tr>';
-        document.getElementById('table-head').innerHTML = headHTML;
+    <div class="list-wrap" id="listWrap" hidden></div>
 
-        // Génération des lignes de données
-        let bodyHTML = '';
-        rows.forEach(row => {
-          bodyHTML += '<tr>';
-          row.c.forEach(cell => {
-            const value = cell ? (cell.f || cell.v || '') : '';
-            bodyHTML += `<td>${value}</td>`;
-          });
-          bodyHTML += '</tr>';
-        });
-        document.getElementById('table-body').innerHTML = bodyHTML;
+    <p class="empty-state" id="emptyState" hidden></p>
+  </main>
+</div>
 
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('sheet-table').style.display = 'table';
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error-msg').style.display = 'block';
-      });
-  </script>
+<script>
+/* =========================================================================
+   CONFIGURATION — à adapter à votre Google Sheet
+   ========================================================================= */
+const CONFIG = {
+  // L'ID se trouve dans l'URL de votre feuille :
+  // https://docs.google.com/spreadsheets/d/CET_ID_ICI/edit#gid=0
+  SHEET_ID: '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A',
 
+  // Le gid correspond à l'onglet (visible après "#gid=" dans l'URL). 0 = premier onglet.
+  GID: '1424606319',
+
+  // Titre affiché en haut du widget.
+  TITLE: 'LNHQ',
+};
+/* ========================================================================= */
+
+const els = {
+  title: document.getElementById('sheetTitle'),
+  search: document.getElementById('searchInput'),
+  refresh: document.getElementById('refreshBtn'),
+  rowCount: document.getElementById('rowCount'),
+  lastUpdated: document.getElementById('lastUpdated'),
+  loader: document.getElementById('loader'),
+  errorBox: document.getElementById('errorBox'),
+  errorText: document.getElementById('errorText'),
+  retryBtn: document.getElementById('retryBtn'),
+  tableWrap: document.getElementById('tableWrap'),
+  tableHeadRow: document.getElementById('tableHeadRow'),
+  tableBody: document.getElementById('tableBody'),
+  listWrap: document.getElementById('listWrap'),
+  emptyState: document.getElementById('emptyState'),
+};
+
+els.title.textContent = CONFIG.TITLE;
+
+const state = {
+  columns: [],   // [{ label, isNumeric }]
+  rows: [],      // [{ display: [...], numeric: [...] }]
+  filtered: [],
+  sortCol: -1,
+  sortDir: 1,
+  query: '',
+};
+
+function buildUrl(){
+  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.GID}&t=${Date.now()}`;
+}
+
+async function loadData(){
+  toggle({ loading:true });
+  try{
+    const res = await fetch(buildUrl());
+    if(!res.ok) throw new Error('http_' + res.status);
+    const text = await res.text();
+    const match = text.match(/setResponse\(([\s\S]*)\);\s*$/);
+    if(!match) throw new Error('format_inattendu');
+    const json = JSON.parse(match[1]);
+    if(json.status === 'error'){
+      throw new Error(json.errors && json.errors[0] && json.errors[0].reason || 'erreur_gviz');
+    }
+    parseTable(json.table);
+    render();
+    toggle({ loading:false });
+    els.lastUpdated.textContent = 'Mis à jour à ' + new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' }).format(new Date());
+  }catch(err){
+    console.error(err);
+    toggle({ loading:false, error:true });
+  }
+}
+
+function parseTable(table){
+  state.columns = table.cols.map((c, i) => ({
+    label: c.label || c.id || ('Colonne ' + (i + 1)),
+    isNumeric: c.type === 'number',
+  }));
+
+  state.rows = table.rows.map(r => {
+    const display = [];
+    const numeric = [];
+    (r.c || []).forEach((cell, i) => {
+      if(!cell){ display.push(''); numeric.push(false); return; }
+      display.push(cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : ''));
+      numeric.push(state.columns[i] ? state.columns[i].isNumeric : false);
+    });
+    return { display };
+  });
+
+  applyFilterAndSort();
+}
+
+function applyFilterAndSort(){
+  const q = state.query.trim().toLocaleLowerCase('fr-FR');
+  let rows = !q ? state.rows.slice() : state.rows.filter(r =>
+    r.display.some(v => v.toLocaleLowerCase('fr-FR').includes(q))
+  );
+
+  if(state.sortCol >= 0){
+    const col = state.sortCol;
+    const numeric = state.columns[col] && state.columns[col].isNumeric;
+    rows.sort((a, b) => {
+      const av = a.display[col] || '';
+      const bv = b.display[col] || '';
+      if(numeric){
+        return (parseFloat(av.replace(/[^\d.-]/g,'')) - parseFloat(bv.replace(/[^\d.-]/g,''))) * state.sortDir;
+      }
+      return av.localeCompare(bv, 'fr-FR') * state.sortDir;
+    });
+  }
+  state.filtered = rows;
+}
+
+function toggle({ loading=false, error=false } = {}){
+  els.loader.hidden = !loading;
+  els.errorBox.hidden = !error;
+  const showData = !loading && !error;
+  els.tableWrap.hidden = !showData;
+  els.listWrap.hidden = !showData;
+  if(showData) render();
+}
+
+function render(){
+  applyFilterAndSort();
+  renderTableHead();
+  renderTableBody();
+  renderList();
+
+  const total = state.rows.length;
+  const shown = state.filtered.length;
+  els.rowCount.textContent = state.query
+    ? `${shown} résultat${shown > 1 ? 's' : ''} sur ${total}`
+    : `${total} ligne${total > 1 ? 's' : ''}`;
+
+  els.emptyState.hidden = shown !== 0;
+  if(shown === 0){
+    els.emptyState.textContent = state.query
+      ? `Aucun résultat pour « ${state.query} ».`
+      : 'Aucune donnée à afficher.';
+  }
+}
+
+function renderTableHead(){
+  els.tableHeadRow.innerHTML = '';
+  state.columns.forEach((col, i) => {
+    const th = document.createElement('th');
+    th.textContent = col.label;
+    if(col.isNumeric) th.classList.add('is-numeric');
+    if(state.sortCol === i){
+      const mark = document.createElement('span');
+      mark.className = 'sort-mark';
+      mark.textContent = state.sortDir === 1 ? '↑' : '↓';
+      th.appendChild(mark);
+    }
+    th.addEventListener('click', () => {
+      state.sortDir = (state.sortCol === i) ? -state.sortDir : 1;
+      state.sortCol = i;
+      render();
+    });
+    els.tableHeadRow.appendChild(th);
+  });
+}
+
+function renderTableBody(){
+  els.tableBody.innerHTML = '';
+  state.filtered.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    if(idx < 20) tr.classList.add('row-in');
+    if(idx < 20) tr.style.animationDelay = (idx * 25) + 'ms';
+    row.display.forEach((val, i) => {
+      const td = document.createElement('td');
+      td.textContent = val;
+      if(state.columns[i] && state.columns[i].isNumeric) td.classList.add('is-numeric');
+      tr.appendChild(td);
+    });
+    els.tableBody.appendChild(tr);
+  });
+}
+
+function renderList(){
+  els.listWrap.innerHTML = '';
+  state.filtered.forEach((row, idx) => {
+    const card = document.createElement('div');
+    card.className = 'row-card';
+    if(idx < 20) card.classList.add('row-in');
+    if(idx < 20) card.style.animationDelay = (idx * 25) + 'ms';
+
+    const title = document.createElement('div');
+    title.className = 'row-title';
+    title.textContent = row.display[0] || '—';
+    card.appendChild(title);
+
+    row.display.slice(1).forEach((val, i) => {
+      if(val === '') return;
+      const col = state.columns[i + 1];
+      const field = document.createElement('div');
+      field.className = 'row-field';
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = col ? col.label : '';
+      const value = document.createElement('span');
+      value.className = 'value' + (col && col.isNumeric ? ' is-numeric' : '');
+      value.textContent = val;
+      field.appendChild(label);
+      field.appendChild(value);
+      card.appendChild(field);
+    });
+    els.listWrap.appendChild(card);
+  });
+}
+
+let searchTimer;
+els.search.addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    state.query = e.target.value;
+    render();
+  }, 200);
+});
+
+function refresh(){
+  els.refresh.classList.add('is-loading');
+  loadData().finally(() => els.refresh.classList.remove('is-loading'));
+}
+els.refresh.addEventListener('click', refresh);
+els.retryBtn.addEventListener('click', refresh);
+
+loadData();
+</script>
 </body>
 </html>
