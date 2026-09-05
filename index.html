@@ -129,6 +129,21 @@
     display:flex; justify-content:space-between; gap:8px;
   }
 
+  .filter-bar{
+    display:flex; flex-wrap:wrap; gap:8px;
+    margin-top:12px;
+  }
+  .filter-control{ display:flex; align-items:center; gap:6px; }
+  .filter-control label{
+    font-size:12.5px; color:var(--accent-ink); opacity:0.85; white-space:nowrap;
+  }
+  .filter-control select{
+    height:36px; padding:0 28px 0 10px;
+    border:1px solid rgba(255,255,255,0.5); border-radius:8px;
+    background:var(--surface); color:var(--ink); font-size:13.5px;
+    cursor:pointer;
+  }
+
   /* ---------- Contenu ---------- */
   main{
     padding:10px clamp(16px,3vw,40px) 20px;
@@ -277,6 +292,7 @@
         </button>
       </div>
     </div>
+    <div class="filter-bar" id="filterBar" hidden></div>
     <div class="meta-row">
       <span id="rowCount" aria-live="polite"></span>
       <span id="lastUpdated"></span>
@@ -332,7 +348,7 @@ const CONFIG = {
   // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
   // un texte = nom exact de l'en-tête (insensible à la casse).
   // Ici : A, C, F, G, J, L, M, O, Q, R, S, T, U, V, W, X
-  HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23],
+  HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 11, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23],
 
   // Colonnes à afficher comme un petit drapeau plutôt que du texte.
   // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
@@ -341,6 +357,10 @@ const CONFIG = {
   // Colonnes à mettre en évidence (fond orange, texte blanc). Même syntaxe que HIDDEN_COLUMNS.
   // Ici : D, Y
   HIGHLIGHT_COLUMNS: [3, 24],
+
+  // Colonnes pour lesquelles afficher un menu déroulant de filtre (nom exact de l'en-tête).
+  // Les valeurs proposées sont détectées automatiquement dans les données.
+  FILTER_COLUMNS: ['PO'],
 };
 /* ========================================================================= */
 
@@ -348,6 +368,7 @@ const els = {
   app: document.querySelector('.app'),
   title: document.getElementById('sheetTitle'),
   search: document.getElementById('searchInput'),
+  filterBar: document.getElementById('filterBar'),
   viewBtn: document.getElementById('viewBtn'),
   densityBtn: document.getElementById('densityBtn'),
   refresh: document.getElementById('refreshBtn'),
@@ -382,7 +403,7 @@ function loadViewMode(){
     const saved = localStorage.getItem('sheetViewMode');
     if(VIEW_MODES.includes(saved)) return saved;
   }catch(e){}
-  return 'auto';
+  return 'table'; // vue tableau par défaut pour tout le monde, peu importe la largeur d'écran
 }
 function saveViewMode(mode){
   try{ localStorage.setItem('sheetViewMode', mode); }catch(e){}
@@ -423,6 +444,7 @@ const state = {
   sortCol: -1,
   sortDir: 1,
   query: '',
+  activeFilters: new Map(), // colIndex -> valeur sélectionnée
 };
 
 function buildUrl(){
@@ -500,7 +522,61 @@ function parseTable(table){
     return { display };
   });
 
+  renderFilterBar();
   applyFilterAndSort();
+}
+
+function renderFilterBar(){
+  const wanted = CONFIG.FILTER_COLUMNS || [];
+  els.filterBar.innerHTML = '';
+  let any = false;
+
+  wanted.forEach(name => {
+    const colIndex = state.columns.findIndex(
+      c => c.label.trim().toLowerCase() === String(name).trim().toLowerCase()
+    );
+    if(colIndex === -1) return;
+    any = true;
+
+    const values = Array.from(
+      new Set(state.rows.map(r => r.display[colIndex]).filter(v => v !== ''))
+    ).sort((a, b) => a.localeCompare(b, 'fr-FR'));
+
+    const wrap = document.createElement('div');
+    wrap.className = 'filter-control';
+
+    const label = document.createElement('label');
+    label.textContent = state.columns[colIndex].label;
+    label.htmlFor = 'filter-col-' + colIndex;
+
+    const select = document.createElement('select');
+    select.id = 'filter-col-' + colIndex;
+
+    const optAll = document.createElement('option');
+    optAll.value = '';
+    optAll.textContent = 'Tous';
+    select.appendChild(optAll);
+
+    values.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      if(state.activeFilters.get(colIndex) === v) opt.selected = true;
+      select.appendChild(opt);
+    });
+
+    select.addEventListener('change', () => {
+      if(select.value === '') state.activeFilters.delete(colIndex);
+      else state.activeFilters.set(colIndex, select.value);
+      render();
+    });
+
+    wrap.appendChild(label);
+    wrap.appendChild(select);
+    els.filterBar.appendChild(wrap);
+  });
+
+  els.filterBar.hidden = !any;
 }
 
 // Codes pays à 3 lettres (norme CIO/IIHF, utilisée dans le hockey) → code ISO à 2 lettres
@@ -536,9 +612,13 @@ function appendFlag(container, raw){
 
 function applyFilterAndSort(){
   const q = state.query.trim().toLocaleLowerCase('fr-FR');
-  let rows = !q ? state.rows.slice() : state.rows.filter(r =>
-    r.display.some(v => v.toLocaleLowerCase('fr-FR').includes(q))
-  );
+  let rows = state.rows.filter(r => {
+    for(const [colIndex, val] of state.activeFilters){
+      if((r.display[colIndex] || '') !== val) return false;
+    }
+    if(q && !r.display.some(v => v.toLocaleLowerCase('fr-FR').includes(q))) return false;
+    return true;
+  });
 
   if(state.sortCol >= 0){
     const col = state.sortCol;
