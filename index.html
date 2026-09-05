@@ -299,8 +299,14 @@ const CONFIG = {
   // Titre affiché en haut du widget.
   TITLE: 'LNHQ',
 
-  // Colonnes à ne jamais afficher (0 = colonne A, 1 = colonne B, 2 = colonne C, etc.)
-  HIDDEN_COLUMNS: [0],
+  // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
+  // un texte = nom exact de l'en-tête (insensible à la casse).
+  // Ici : A, C, F, J, L, M, O, Q, R, S, T, U, V, X
+  HIDDEN_COLUMNS: [0, 2, 5, 9, 11, 12, 14, 16, 17, 18, 19, 20, 21, 23],
+
+  // Colonnes à afficher comme un petit drapeau plutôt que du texte.
+  // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
+  FLAG_COLUMNS: ['NAT'],
 };
 /* ========================================================================= */
 
@@ -412,19 +418,22 @@ async function loadData(){
 }
 
 function parseTable(table){
-  const hidden = new Set(CONFIG.HIDDEN_COLUMNS || []);
+  const hiddenList = CONFIG.HIDDEN_COLUMNS || [];
+  const hiddenIndices = new Set(hiddenList.filter(v => typeof v === 'number'));
+  const hiddenLabels = new Set(
+    hiddenList.filter(v => typeof v === 'string').map(v => v.trim().toLowerCase())
+  );
+  const rawLabels = table.cols.map((c, i) => c.label || c.id || ('Colonne ' + (i + 1)));
+  const isHidden = i => hiddenIndices.has(i) || hiddenLabels.has(rawLabels[i].trim().toLowerCase());
 
-  state.columns = table.cols
-    .map((c, i) => ({
-      label: c.label || c.id || ('Colonne ' + (i + 1)),
-      isNumeric: c.type === 'number',
-    }))
-    .filter((_, i) => !hidden.has(i));
+  state.columns = rawLabels
+    .map((label, i) => ({ label, isNumeric: table.cols[i].type === 'number' }))
+    .filter((_, i) => !isHidden(i));
 
   state.rows = table.rows.map(r => {
     const display = [];
     (r.c || []).forEach((cell, i) => {
-      if(hidden.has(i)) return;
+      if(isHidden(i)) return;
       if(!cell){ display.push(''); return; }
       display.push(cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : ''));
     });
