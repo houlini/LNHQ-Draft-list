@@ -72,61 +72,34 @@
   .app-header{
     flex-shrink:0;
     background:var(--nav-dark);
-    border-bottom:4px solid var(--accent);
-    box-shadow:0 2px 8px rgba(0,0,0,0.25);
     padding:clamp(10px,2vw,16px) clamp(16px,3vw,40px) 10px;
   }
   .header-row{
-    display:grid;
-    grid-template-columns:1fr auto;
-    grid-template-areas:"title title" "search refresh";
-    row-gap:12px; column-gap:10px;
-    align-items:center;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
   }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand-logo{ width:30px; height:34px; flex-shrink:0; }
   .app-title{
-    grid-area:title;
     color:var(--nav-ink);
     text-transform:uppercase;
     font-size:clamp(19px, 2vw + 12px, 26px); font-weight:700; letter-spacing:0.01em;
     margin:0; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
-  .search-field{
-    grid-area:search;
-    position:relative; min-width:0;
-  }
-  .search-field svg{
-    position:absolute; left:12px; top:50%; transform:translateY(-50%);
-    width:17px; height:17px; stroke:var(--ink-muted); pointer-events:none;
-  }
-  .search-field input{
-    width:100%; height:44px; padding:0 14px 0 38px;
-    border:1px solid var(--line); border-radius:9px;
-    background:var(--surface); color:var(--ink); font-size:16px;
-  }
-  .header-actions{
-    grid-area:refresh;
-    display:flex; gap:8px;
-  }
-  .icon-btn{
-    display:flex; align-items:center; justify-content:center;
-    width:44px; height:44px; border-radius:9px;
-    border:1px solid var(--line); background:var(--surface);
-    color:var(--ink-muted); cursor:pointer; flex-shrink:0;
-  }
-  .icon-btn[aria-pressed="true"]{ color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
-  .icon-btn:hover{color:var(--ink); border-color:var(--ink-muted);}
-  .icon-btn svg{width:18px; height:18px;}
-  .icon-btn.is-loading svg{animation:spin 0.8s linear infinite;}
-  @keyframes spin{ to { transform:rotate(360deg); } }
+  .header-actions{ display:flex; gap:4px; flex-shrink:0; }
 
-  @media (min-width:560px){
-    .header-row{
-      grid-template-columns:auto 1fr auto;
-      grid-template-areas:"title search refresh";
-    }
-    .search-field{ max-width:300px; justify-self:end; }
+  .nav-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background:transparent; border:none; cursor:pointer;
+    color:var(--nav-ink); font-weight:700; text-transform:uppercase;
+    font-size:12.5px; letter-spacing:0.03em;
+    padding:8px 6px; border-radius:6px;
+    white-space:nowrap;
   }
+  .nav-btn:hover{ background:rgba(255,255,255,0.1); }
+  .nav-btn .nav-caret, .nav-btn .nav-icon{ width:13px; height:13px; flex-shrink:0; }
+  .nav-btn.is-loading .nav-icon{ animation:spin 0.8s linear infinite; }
+  @keyframes spin{ to { transform:rotate(360deg); } }
 
   .meta-row{
     margin:10px 2px 0; font-size:clamp(12px, 0.3vw + 12px, 13.5px); color:var(--nav-ink);
@@ -134,9 +107,28 @@
     display:flex; justify-content:space-between; gap:8px;
   }
 
+  /* ---------- Bannière orange : recherche, affichage, filtres ---------- */
+  .filter-band{
+    flex-shrink:0;
+    background:var(--accent);
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
+    padding:12px clamp(16px,3vw,40px);
+  }
+  .search-field{ position:relative; min-width:0; flex:1 1 200px; max-width:280px; }
+  .search-field svg{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    width:17px; height:17px; stroke:var(--ink-muted); pointer-events:none;
+  }
+  .search-field input{
+    width:100%; height:40px; padding:0 14px 0 38px;
+    border:1px solid transparent; border-radius:9px;
+    background:var(--surface); color:var(--ink); font-size:16px;
+  }
+  .filter-band .nav-btn{ border:1px solid rgba(255,255,255,0.4); }
+  .filter-band .nav-btn:hover{ background:rgba(255,255,255,0.15); }
+
   .filter-bar{
-    display:flex; flex-wrap:wrap; gap:8px;
-    margin-top:12px;
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
   }
   .filter-control{ display:flex; align-items:center; gap:6px; }
   .filter-control label{
@@ -149,7 +141,7 @@
     cursor:pointer;
   }
   .filter-control.filter-range input[type="range"]{
-    width:140px; accent-color:var(--accent);
+    width:140px; accent-color:var(--nav-dark);
   }
   .filter-control.filter-range .filter-range-value{
     font-family:'IBM Plex Mono', monospace; font-size:13px;
@@ -269,7 +261,7 @@
   .app.view-list .list-wrap{ display:block !important; }
 
   @media (max-width:380px){
-    .icon-btn{ width:40px; height:40px; }
+    .nav-btn .nav-btn-label{ font-size:11.5px; }
   }
 
   /* Confort accru pour grand écran : uniquement la vue liste mobile,
@@ -284,32 +276,44 @@
 <div class="app">
   <header class="app-header">
     <div class="header-row">
-      <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
-      <div class="search-field">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="search" id="searchInput" placeholder="Rechercher…" aria-label="Rechercher dans les données">
+      <div class="brand">
+        <svg class="brand-logo" viewBox="0 0 40 46" aria-hidden="true">
+          <path d="M20 2 L36 8 V22 C36 33 29 40 20 44 C11 40 4 33 4 22 V8 Z" fill="var(--accent)" stroke="var(--nav-ink)" stroke-width="2"/>
+          <path d="M12 30 L20 15 L23 20 L16 32 Z" fill="var(--nav-ink)"/>
+          <circle cx="26" cy="16" r="3" fill="var(--nav-ink)"/>
+        </svg>
+        <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" id="viewBtn" aria-label="Changer le mode d'affichage" title="Affichage automatique">
+        <button class="nav-btn" id="densityBtn" aria-pressed="false" aria-label="Basculer entre vue compacte et confortable" title="Vue compacte / confortable">
+          <span class="nav-btn-label">Compact</span>
+          <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-        <button class="icon-btn" id="densityBtn" aria-pressed="false" aria-label="Basculer entre vue compacte et confortable" title="Vue compacte / confortable">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
-          </svg>
-        </button>
-        <button class="icon-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="nav-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
+          <span class="nav-btn-label">Actualiser</span>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
           </svg>
         </button>
       </div>
     </div>
-    <div class="filter-bar" id="filterBar" hidden></div>
     <div class="meta-row">
       <span id="rowCount" aria-live="polite"></span>
       <span id="lastUpdated"></span>
     </div>
   </header>
+
+  <div class="filter-band">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="searchInput" placeholder="Rechercher…" aria-label="Rechercher dans les données">
+    </div>
+    <button class="nav-btn" id="viewBtn" aria-label="Changer le mode d'affichage" title="Affichage automatique">
+      <span class="nav-btn-label">Auto</span>
+      <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="filter-bar" id="filterBar" hidden></div>
+  </div>
 
   <main id="content">
     <div id="loader">
@@ -421,11 +425,7 @@ const VIEW_LABELS = {
   table: 'Vue tableau forcée',
   list: 'Vue liste forcée',
 };
-const VIEW_ICONS = {
-  auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>',
-  table: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/><line x1="15" y1="10" x2="15" y2="20"/></svg>',
-  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="16" width="16" height="4" rx="1"/></svg>',
-};
+const VIEW_LABELS_SHORT = { auto: 'Auto', table: 'Tableau', list: 'Fiche' };
 
 function loadViewMode(){
   try{
@@ -443,7 +443,7 @@ function applyViewMode(){
   els.app.classList.remove('view-table', 'view-list');
   if(viewMode === 'table') els.app.classList.add('view-table');
   else if(viewMode === 'list') els.app.classList.add('view-list');
-  els.viewBtn.innerHTML = VIEW_ICONS[viewMode];
+  els.viewBtn.querySelector('.nav-btn-label').textContent = VIEW_LABELS_SHORT[viewMode];
   els.viewBtn.title = VIEW_LABELS[viewMode];
   els.viewBtn.setAttribute('aria-label', VIEW_LABELS[viewMode] + ', cliquer pour changer');
 }
@@ -457,6 +457,7 @@ applyViewMode();
 function setDensity(comfortable){
   els.app.classList.toggle('is-comfortable', comfortable);
   els.densityBtn.setAttribute('aria-pressed', String(comfortable));
+  els.densityBtn.querySelector('.nav-btn-label').textContent = comfortable ? 'Confort' : 'Compact';
   els.densityBtn.title = comfortable ? 'Passer en vue compacte' : 'Passer en vue confortable';
 }
 els.densityBtn.addEventListener('click', () => {
