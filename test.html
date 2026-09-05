@@ -8,16 +8,15 @@
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
   :root{
-    --bg:#F7F9FB;
+    --bg:#FAFAF7;
     --surface:#FFFFFF;
-    --ink:#12181F;
-    --ink-muted:#5B6572;
+    --ink:#181B20;
+    --ink-muted:#6B7178;
     --accent:#E8590C;
     --accent-soft:#FBEADC;
     --accent-ink:#FFFFFF;
-    --pos-defense:#2C4A63;
-    --stripe:#EEF2F5;
-    --line:#DDE3E8;
+    --stripe:#F1EEE7;
+    --line:#E5E2D9;
     --danger:#A3402F;
     --danger-soft:#F6E9E6;
     --radius:10px;
@@ -28,16 +27,15 @@
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#0F1418;
-      --surface:#1A2026;
-      --ink:#EDEFF2;
-      --ink-muted:#8D97A1;
+      --bg:#15181B;
+      --surface:#1D2125;
+      --ink:#EDEBE4;
+      --ink-muted:#9AA0A6;
       --accent:#FF7A33;
       --accent-soft:#3A2416;
-      --accent-ink:#12181F;
-      --pos-defense:#5C87A8;
-      --stripe:#161C21;
-      --line:#262E35;
+      --accent-ink:#181B20;
+      --stripe:#1A1D20;
+      --line:#2C3033;
       --danger:#E08B78;
       --danger-soft:#2E211E;
     }
@@ -84,7 +82,7 @@
   .app-title{
     grid-area:title;
     color:var(--accent-ink);
-    font-size:clamp(19px, 2vw + 12px, 26px); font-weight:700; letter-spacing:-0.02em;
+    font-size:clamp(19px, 2vw + 12px, 26px); font-weight:600; letter-spacing:-0.01em;
     margin:0; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
@@ -145,6 +143,13 @@
     background:var(--surface); color:var(--ink); font-size:13.5px;
     cursor:pointer;
   }
+  .filter-control.filter-range input[type="range"]{
+    width:140px; accent-color:var(--accent);
+  }
+  .filter-control.filter-range .filter-range-value{
+    font-family:'IBM Plex Mono', monospace; font-size:13px;
+    color:var(--accent-ink); min-width:80px;
+  }
 
   /* ---------- Contenu ---------- */
   main{
@@ -199,19 +204,17 @@
     font-family:'IBM Plex Mono', monospace; text-align:right; font-variant-numeric:tabular-nums;
   }
 
-  /* Colonnes mises en évidence (ex: D, Y) : badge arrondi dans la cellule */
-  .cell-badge{
-    display:inline-block;
-    background:var(--accent); color:var(--accent-ink);
-    padding:2px 10px; border-radius:999px; font-weight:600;
-    font-size:0.92em;
+  /* Colonnes mises en évidence (ex: D, Y) */
+  td.col-highlight{
+    background:var(--accent) !important; color:var(--accent-ink) !important;
+    font-weight:600;
   }
   th.col-highlight{ background:var(--accent) !important; color:var(--accent-ink) !important; }
   th.col-highlight .sort-mark{ color:var(--accent-ink); }
   th.col-highlight:hover{ color:var(--accent-ink); }
   .row-field .value.is-highlight{
     background:var(--accent); color:var(--accent-ink);
-    padding:2px 10px; border-radius:999px; font-weight:600;
+    padding:2px 8px; border-radius:6px; font-weight:600;
   }
   .flag-icon{ border-radius:2px; vertical-align:middle; display:inline-block; }
 
@@ -219,17 +222,10 @@
   thead th:first-child, tbody td:first-child{
     position:sticky; left:0; z-index:2;
     background:var(--surface);
-    border-left:4px solid transparent;
     box-shadow:2px 0 4px -2px rgba(0,0,0,0.18);
   }
   thead th:first-child{ z-index:3; }
   tbody tr:hover td:first-child{ background:var(--accent-soft); }
-
-  /* Code couleur par position (colonne PO) : bande sur la colonne gelée et la fiche mobile */
-  td.pos-goalie{ border-left-color:var(--accent); }
-  td.pos-defense{ border-left-color:var(--pos-defense); }
-  .row-card.pos-goalie{ border-left-color:var(--accent); }
-  .row-card.pos-defense{ border-left-color:var(--pos-defense); }
 
   .row-in{ animation:rowIn 0.35s ease both; }
   @keyframes rowIn{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
@@ -241,8 +237,7 @@
   /* ---------- Liste (mobile) ---------- */
   .list-wrap{ display:block; }
   .row-card{
-    padding:16px 4px 16px 12px; border-bottom:1px solid var(--line);
-    border-left:4px solid transparent;
+    padding:16px 4px; border-bottom:1px solid var(--line);
   }
   .row-card:last-child{ border-bottom:none; }
   .row-title{ font-weight:600; font-size:18px; line-height:1.4; margin-bottom:9px; }
@@ -372,23 +367,25 @@ const CONFIG = {
 
   // Colonnes pour lesquelles afficher un menu déroulant de filtre (nom exact de l'en-tête).
   // Les valeurs proposées sont détectées automatiquement dans les données.
-  FILTER_COLUMNS: ['PO'],
+  FILTER_COLUMNS: ['PO', 'Shoot'],
 
-  // Colonne utilisée pour le code couleur par position (bande de couleur à gauche de chaque ligne).
-  // Codes reconnus : gardien = G/GK/POR/GOAL, défenseur = D/DEF, attaquant = C/LW/RW/F/W/ATT.
-  // Les attaquants n'ont pas de couleur (position la plus fréquente, non marquée).
-  POSITION_COLUMN: 'PO',
+  // Ordre personnalisé des valeurs dans le menu déroulant d'une colonne filtrable
+  // (clé = nom exact de l'en-tête ; valeurs non listées passent après, triées alphabétiquement).
+  FILTER_VALUE_ORDER: {
+    PO: ['C', 'R', 'L', 'D', 'G'],
+  },
+
+  // Renommage du LIBELLÉ AFFICHÉ DANS LE FILTRE seulement (la colonne du tableau garde son vrai nom).
+  FILTER_LABELS: {
+    PO: 'Position',
+  },
+
+  // Colonnes filtrées par curseur "maximum" plutôt que par liste de valeurs (ex: un plafond salarial).
+  MAX_FILTER_COLUMNS: [
+    { column: '2026-27', label: 'Salaire maximum' },
+  ],
 };
 /* ========================================================================= */
-
-// Regroupe un code de position en 'goalie' / 'defense' / 'forward' / null (inconnu)
-function getPositionCategory(raw){
-  const v = (raw || '').trim().toUpperCase();
-  if(['G', 'GK', 'POR', 'GOAL'].includes(v)) return 'goalie';
-  if(['D', 'DEF'].includes(v)) return 'defense';
-  if(['C', 'LW', 'RW', 'F', 'W', 'ATT'].includes(v)) return 'forward';
-  return null;
-}
 
 const els = {
   app: document.querySelector('.app'),
@@ -470,7 +467,8 @@ const state = {
   sortCol: -1,
   sortDir: 1,
   query: '',
-  activeFilters: new Map(), // colIndex -> valeur sélectionnée
+  activeFilters: new Map(), // colIndex (brut) -> valeur sélectionnée
+  activeMaxFilters: new Map(), // colIndex (brut) -> valeur maximum
 };
 
 function buildUrl(){
@@ -525,12 +523,14 @@ function makeColumnMatcher(list, rawLabels){
 
 function parseTable(table){
   const rawLabels = table.cols.map((c, i) => c.label || c.id || ('Colonne ' + (i + 1)));
+  state.rawLabels = rawLabels;
   const isHidden = makeColumnMatcher(CONFIG.HIDDEN_COLUMNS, rawLabels);
   const isFlag = makeColumnMatcher(CONFIG.FLAG_COLUMNS, rawLabels);
   const isHighlight = makeColumnMatcher(CONFIG.HIGHLIGHT_COLUMNS, rawLabels);
 
   state.columns = rawLabels
     .map((label, i) => ({
+      rawLabel: label,
       label,
       isNumeric: table.cols[i].type === 'number',
       isFlag: isFlag(i),
@@ -539,47 +539,59 @@ function parseTable(table){
     .filter((_, i) => !isHidden(i));
 
   state.rows = table.rows.map(r => {
-    const display = [];
-    (r.c || []).forEach((cell, i) => {
-      if(isHidden(i)) return;
-      if(!cell){ display.push(''); return; }
-      display.push(cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : ''));
-    });
-    return { display };
-  });
-
-  const posColIndex = state.columns.findIndex(
-    c => c.label.trim().toLowerCase() === String(CONFIG.POSITION_COLUMN || '').trim().toLowerCase()
-  );
-  state.rows.forEach(r => {
-    r.posCategory = posColIndex >= 0 ? getPositionCategory(r.display[posColIndex]) : null;
+    const raw = (r.c || []).map(cell =>
+      cell ? (cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : '')) : ''
+    );
+    const display = raw.filter((_, i) => !isHidden(i));
+    return { display, raw };
   });
 
   renderFilterBar();
   applyFilterAndSort();
 }
 
+function parseNumericCell(raw){
+  if(raw === '' || raw == null) return null;
+  const n = parseFloat(String(raw).replace(/[^\d.-]/g, ''));
+  return Number.isNaN(n) ? null : n;
+}
+
+function formatMoney(n){
+  return new Intl.NumberFormat('fr-CA').format(Math.round(n)) + ' $';
+}
+
 function renderFilterBar(){
-  const wanted = CONFIG.FILTER_COLUMNS || [];
   els.filterBar.innerHTML = '';
   let any = false;
 
-  wanted.forEach(name => {
-    const colIndex = state.columns.findIndex(
-      c => c.label.trim().toLowerCase() === String(name).trim().toLowerCase()
+  (CONFIG.FILTER_COLUMNS || []).forEach(name => {
+    const colIndex = state.rawLabels.findIndex(
+      l => l.trim().toLowerCase() === String(name).trim().toLowerCase()
     );
     if(colIndex === -1) return;
     any = true;
 
+    const order = (CONFIG.FILTER_VALUE_ORDER || {})[name];
     const values = Array.from(
-      new Set(state.rows.map(r => r.display[colIndex]).filter(v => v !== ''))
-    ).sort((a, b) => a.localeCompare(b, 'fr-FR'));
+      new Set(state.rows.map(r => r.raw[colIndex]).filter(v => v !== ''))
+    ).sort((a, b) => {
+      if(order){
+        const ia = order.findIndex(o => o.toLowerCase() === a.trim().toLowerCase());
+        const ib = order.findIndex(o => o.toLowerCase() === b.trim().toLowerCase());
+        if(ia !== -1 || ib !== -1){
+          if(ia === -1) return 1;
+          if(ib === -1) return -1;
+          return ia - ib;
+        }
+      }
+      return a.localeCompare(b, 'fr-FR');
+    });
 
     const wrap = document.createElement('div');
     wrap.className = 'filter-control';
 
     const label = document.createElement('label');
-    label.textContent = state.columns[colIndex].label;
+    label.textContent = (CONFIG.FILTER_LABELS || {})[name] || state.rawLabels[colIndex];
     label.htmlFor = 'filter-col-' + colIndex;
 
     const select = document.createElement('select');
@@ -606,6 +618,59 @@ function renderFilterBar(){
 
     wrap.appendChild(label);
     wrap.appendChild(select);
+    els.filterBar.appendChild(wrap);
+  });
+
+  (CONFIG.MAX_FILTER_COLUMNS || []).forEach(entry => {
+    const colIndex = state.rawLabels.findIndex(
+      l => l.trim().toLowerCase() === String(entry.column).trim().toLowerCase()
+    );
+    if(colIndex === -1) return;
+
+    const numbers = state.rows
+      .map(r => parseNumericCell(r.raw[colIndex]))
+      .filter(n => n !== null);
+    if(!numbers.length) return;
+    const dataMin = Math.min(...numbers);
+    const dataMax = Math.max(...numbers);
+    if(dataMin === dataMax) return;
+    any = true;
+
+    const step = Math.max(1, Math.round((dataMax - dataMin) / 100));
+    const current = state.activeMaxFilters.has(colIndex) ? state.activeMaxFilters.get(colIndex) : dataMax;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'filter-control filter-range';
+
+    const label = document.createElement('label');
+    label.textContent = entry.label;
+    label.htmlFor = 'filter-max-' + colIndex;
+
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.id = 'filter-max-' + colIndex;
+    input.min = dataMin;
+    input.max = dataMax;
+    input.step = step;
+    input.value = current;
+
+    const valueSpan = document.createElement('span');
+    valueSpan.className = 'filter-range-value';
+    valueSpan.textContent = formatMoney(current);
+
+    input.addEventListener('input', () => {
+      valueSpan.textContent = formatMoney(Number(input.value));
+    });
+    input.addEventListener('change', () => {
+      const v = Number(input.value);
+      if(v >= dataMax) state.activeMaxFilters.delete(colIndex);
+      else state.activeMaxFilters.set(colIndex, v);
+      render();
+    });
+
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    wrap.appendChild(valueSpan);
     els.filterBar.appendChild(wrap);
   });
 
@@ -647,7 +712,11 @@ function applyFilterAndSort(){
   const q = state.query.trim().toLocaleLowerCase('fr-FR');
   let rows = state.rows.filter(r => {
     for(const [colIndex, val] of state.activeFilters){
-      if((r.display[colIndex] || '') !== val) return false;
+      if((r.raw[colIndex] || '') !== val) return false;
+    }
+    for(const [colIndex, maxVal] of state.activeMaxFilters){
+      const v = parseNumericCell(r.raw[colIndex]);
+      if(v !== null && v > maxVal) return false;
     }
     if(q && !r.display.some(v => v.toLocaleLowerCase('fr-FR').includes(q))) return false;
     return true;
@@ -729,17 +798,11 @@ function renderTableBody(){
       const col = state.columns[i];
       if(col && col.isFlag){
         appendFlag(td, val);
-      }else if(col && col.isHighlight){
-        const badge = document.createElement('span');
-        badge.className = 'cell-badge';
-        badge.textContent = val;
-        td.appendChild(badge);
-        if(col.isNumeric) td.classList.add('is-numeric');
       }else{
         td.textContent = val;
         if(col && col.isNumeric) td.classList.add('is-numeric');
       }
-      if(i === 0 && row.posCategory) td.classList.add('pos-' + row.posCategory);
+      if(col && col.isHighlight) td.classList.add('col-highlight');
       tr.appendChild(td);
     });
     els.tableBody.appendChild(tr);
@@ -751,7 +814,6 @@ function renderList(){
   state.filtered.forEach((row, idx) => {
     const card = document.createElement('div');
     card.className = 'row-card';
-    if(row.posCategory) card.classList.add('pos-' + row.posCategory);
     if(idx < 20) card.classList.add('row-in');
     if(idx < 20) card.style.animationDelay = (idx * 25) + 'ms';
 
