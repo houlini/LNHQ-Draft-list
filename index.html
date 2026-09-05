@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Visionneuse de feuille</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
   :root{
     --bg:#FAFAF7;
     --surface:#FFFFFF;
     --ink:#181B20;
     --ink-muted:#6B7178;
-    --accent:#1F6E5C;
-    --accent-soft:#E7F1EE;
+    --accent:#E8590C;
+    --accent-soft:#FBEADC;
+    --accent-ink:#FFFFFF;
+    --stripe:#F1EEE7;
     --line:#E5E2D9;
     --danger:#A3402F;
     --danger-soft:#F6E9E6;
@@ -29,8 +31,10 @@
       --surface:#1D2125;
       --ink:#EDEBE4;
       --ink-muted:#9AA0A6;
-      --accent:#57B79E;
-      --accent-soft:#1E2C29;
+      --accent:#FF7A33;
+      --accent-soft:#3A2416;
+      --accent-ink:#181B20;
+      --stripe:#1A1D20;
       --line:#2C3033;
       --danger:#E08B78;
       --danger-soft:#2E211E;
@@ -64,8 +68,8 @@
   /* ---------- En-tête ---------- */
   .app-header{
     flex-shrink:0;
-    background:var(--bg);
-    border-bottom:1px solid var(--line);
+    background:var(--accent);
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);
     padding:clamp(10px,2vw,16px) clamp(16px,3vw,40px) 10px;
   }
   .header-row{
@@ -77,6 +81,7 @@
   }
   .app-title{
     grid-area:title;
+    color:var(--accent-ink);
     font-size:clamp(19px, 2vw + 12px, 26px); font-weight:600; letter-spacing:-0.01em;
     margin:0; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -119,7 +124,8 @@
   }
 
   .meta-row{
-    margin:10px 2px 0; font-size:clamp(12px, 0.3vw + 12px, 13.5px); color:var(--ink-muted);
+    margin:10px 2px 0; font-size:clamp(12px, 0.3vw + 12px, 13.5px); color:var(--accent-ink);
+    opacity:0.82;
     display:flex; justify-content:space-between; gap:8px;
   }
 
@@ -170,10 +176,25 @@
     vertical-align:top; white-space:nowrap;
   }
   tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:nth-child(even){ background:var(--stripe); }
   tbody tr:hover{ background:var(--accent-soft); }
   td.is-numeric, th.is-numeric{
     font-family:'IBM Plex Mono', monospace; text-align:right; font-variant-numeric:tabular-nums;
   }
+
+  /* Colonnes mises en évidence (ex: D, Y) */
+  td.col-highlight{
+    background:var(--accent) !important; color:var(--accent-ink) !important;
+    font-weight:600;
+  }
+  th.col-highlight{ background:var(--accent) !important; color:var(--accent-ink) !important; }
+  th.col-highlight .sort-mark{ color:var(--accent-ink); }
+  th.col-highlight:hover{ color:var(--accent-ink); }
+  .row-field .value.is-highlight{
+    background:var(--accent); color:var(--accent-ink);
+    padding:2px 8px; border-radius:6px; font-weight:600;
+  }
+  .flag-icon{ border-radius:2px; vertical-align:middle; display:inline-block; }
 
   /* Première colonne gelée : reste visible pendant le défilement horizontal (utile sur mobile) */
   thead th:first-child, tbody td:first-child{
@@ -310,9 +331,16 @@ const CONFIG = {
 
   // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
   // un texte = nom exact de l'en-tête (insensible à la casse).
-  // Ici : A, C, F, J, L, M, O, Q, R, S, T, U, V, X
+  // Ici : A, C, F, G, J, L, M, O, Q, R, S, T, U, V, W, X
   HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 11, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23],
 
+  // Colonnes à afficher comme un petit drapeau plutôt que du texte.
+  // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
+  FLAG_COLUMNS: ['NAT'],
+
+  // Colonnes à mettre en évidence (fond orange, texte blanc). Même syntaxe que HIDDEN_COLUMNS.
+  // Ici : D, Y
+  HIGHLIGHT_COLUMNS: [3, 24],
 };
 /* ========================================================================= */
 
@@ -441,17 +469,25 @@ async function loadData({ background=false } = {}){
   }
 }
 
+function makeColumnMatcher(list, rawLabels){
+  const indices = new Set((list || []).filter(v => typeof v === 'number'));
+  const labels = new Set((list || []).filter(v => typeof v === 'string').map(v => v.trim().toLowerCase()));
+  return i => indices.has(i) || labels.has(rawLabels[i].trim().toLowerCase());
+}
+
 function parseTable(table){
-  const hiddenList = CONFIG.HIDDEN_COLUMNS || [];
-  const hiddenIndices = new Set(hiddenList.filter(v => typeof v === 'number'));
-  const hiddenLabels = new Set(
-    hiddenList.filter(v => typeof v === 'string').map(v => v.trim().toLowerCase())
-  );
   const rawLabels = table.cols.map((c, i) => c.label || c.id || ('Colonne ' + (i + 1)));
-  const isHidden = i => hiddenIndices.has(i) || hiddenLabels.has(rawLabels[i].trim().toLowerCase());
+  const isHidden = makeColumnMatcher(CONFIG.HIDDEN_COLUMNS, rawLabels);
+  const isFlag = makeColumnMatcher(CONFIG.FLAG_COLUMNS, rawLabels);
+  const isHighlight = makeColumnMatcher(CONFIG.HIGHLIGHT_COLUMNS, rawLabels);
 
   state.columns = rawLabels
-    .map((label, i) => ({ label, isNumeric: table.cols[i].type === 'number' }))
+    .map((label, i) => ({
+      label,
+      isNumeric: table.cols[i].type === 'number',
+      isFlag: isFlag(i),
+      isHighlight: isHighlight(i),
+    }))
     .filter((_, i) => !isHidden(i));
 
   state.rows = table.rows.map(r => {
@@ -465,6 +501,37 @@ function parseTable(table){
   });
 
   applyFilterAndSort();
+}
+
+// Codes pays à 3 lettres (norme CIO/IIHF, utilisée dans le hockey) → code ISO à 2 lettres
+const NAT_TO_ISO2 = {
+  can:'ca', usa:'us', swe:'se', fin:'fi', rus:'ru', cze:'cz', svk:'sk', ger:'de', sui:'ch',
+  fra:'fr', den:'dk', nor:'no', lat:'lv', blr:'by', kaz:'kz', aut:'at', ita:'it', svn:'si',
+  hun:'hu', pol:'pl', jpn:'jp', kor:'kr', chn:'cn', gbr:'gb', ned:'nl', ukr:'ua', est:'ee',
+  ltu:'lt', rou:'ro', cro:'hr', srb:'rs', bul:'bg', esp:'es', aus:'au', nzl:'nz', rsa:'za',
+  mex:'mx', bra:'br', arg:'ar', chi:'cl', isl:'is', irl:'ie', bel:'be', por:'pt', gre:'gr',
+  tur:'tr', isr:'il', ind:'in', tha:'th', hkg:'hk', tpe:'tw', sgp:'sg', mas:'my', phi:'ph',
+  ina:'id', mgl:'mn', geo:'ge', arm:'am', aze:'az', uzb:'uz', kgz:'kg', tkm:'tm', tjk:'tj',
+  mda:'md', lux:'lu', mlt:'mt', cyp:'cy', and:'ad', mon:'mc', lie:'li', smr:'sm', bih:'ba',
+  mkd:'mk', mne:'me', alb:'al',
+};
+
+function appendFlag(container, raw){
+  const code = (raw || '').trim().toLowerCase();
+  const iso2 = code.length === 2 ? code : NAT_TO_ISO2[code];
+  if(iso2 && /^[a-z]{2}$/.test(iso2)){
+    const img = document.createElement('img');
+    img.src = `https://flagcdn.com/24x18/${iso2}.png`;
+    img.alt = raw.toUpperCase();
+    img.title = raw.toUpperCase();
+    img.width = 24; img.height = 18;
+    img.loading = 'lazy';
+    img.className = 'flag-icon';
+    img.onerror = () => { container.textContent = raw; };
+    container.appendChild(img);
+  }else{
+    container.textContent = raw;
+  }
 }
 
 function applyFilterAndSort(){
@@ -522,7 +589,7 @@ function renderTableHead(){
   state.columns.forEach((col, i) => {
     const th = document.createElement('th');
     th.textContent = col.label;
-    if(col.isNumeric) th.classList.add('is-numeric');
+    if(col.isHighlight) th.classList.add('col-highlight');
     if(state.sortCol === i){
       const mark = document.createElement('span');
       mark.className = 'sort-mark';
@@ -546,8 +613,14 @@ function renderTableBody(){
     if(idx < 20) tr.style.animationDelay = (idx * 25) + 'ms';
     row.display.forEach((val, i) => {
       const td = document.createElement('td');
-      td.textContent = val;
-      if(state.columns[i] && state.columns[i].isNumeric) td.classList.add('is-numeric');
+      const col = state.columns[i];
+      if(col && col.isFlag){
+        appendFlag(td, val);
+      }else{
+        td.textContent = val;
+        if(col && col.isNumeric) td.classList.add('is-numeric');
+      }
+      if(col && col.isHighlight) td.classList.add('col-highlight');
       tr.appendChild(td);
     });
     els.tableBody.appendChild(tr);
@@ -576,8 +649,14 @@ function renderList(){
       label.className = 'label';
       label.textContent = col ? col.label : '';
       const value = document.createElement('span');
-      value.className = 'value' + (col && col.isNumeric ? ' is-numeric' : '');
-      value.textContent = val;
+      value.className = 'value'
+        + (col && col.isNumeric ? ' is-numeric' : '')
+        + (col && col.isHighlight ? ' is-highlight' : '');
+      if(col && col.isFlag){
+        appendFlag(value, val);
+      }else{
+        value.textContent = val;
+      }
       field.appendChild(label);
       field.appendChild(value);
       card.appendChild(field);
