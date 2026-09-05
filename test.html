@@ -300,12 +300,12 @@
 <div class="app">
   <header class="app-header">
     <div class="header-row">
-      <a class="brand" href="https://sites.google.com/view/lnhq/accueil">
+      <a class="brand" href="https://sites.google.com/view/lnhq">
         <img class="brand-logo" src="logo-lnhq.png" alt="LNHQ">
         <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
       </a>
       <nav class="site-nav" id="siteNav">
-        <a class="nav-btn" href="https://sites.google.com/view/lnhq/accueil">Accueil</a>
+        <a class="nav-btn" href="https://sites.google.com/view/lnhq">Accueil</a>
 
         <div class="nav-item">
           <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
@@ -315,7 +315,7 @@
           <div class="nav-dropdown" hidden>
             <a href="https://sites.google.com/view/lnhq/ligue/calendrier">Calendrier</a>
             <a href="https://sites.google.com/view/lnhq/ligue/dgs">DGs</a>
-            <a href="https://sites.google.com/view/lnhq/ligue/reglements">Règlements</a>
+            <a href="https://sites.google.com/view/lnhq/ligue/règlements">Règlements</a>
           </div>
         </div>
 
@@ -344,7 +344,7 @@
             <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="nav-dropdown" hidden>
-            <a href="https://sites.google.com/view/lnhq/nouvelles/2026-2027">2026-2027</a>
+            <a href="https://sites.google.com/view/lnhq/nouvelles/2026-27">2026-27</a>
           </div>
         </div>
       </nav>
@@ -531,9 +531,9 @@ setDensity(false); // compact par défaut : affiche le plus de lignes possible
 els.title.textContent = CONFIG.TITLE;
 
 /* ---------- Navigation du site : menus déroulants et liste des équipes ----------
-   ATTENTION : les liens ci-dessous (Ligue, Repêchage > Ordre, Nouvelles, et les 32
-   équipes) sont construits à partir du même modèle d'URL que celui fourni pour
-   Anaheim — ce sont donc des suppositions à vérifier / corriger au besoin. */
+   ATTENTION : seuls les liens des 32 équipes ci-dessous sont encore des suppositions
+   (construites sur le modèle d'Anaheim) — tous les autres liens (Accueil, Ligue,
+   Repêchage > Ordre, Nouvelles) sont confirmés. */
 const TEAM_BASE_URL = 'https://sites.google.com/view/lnhq/équipes/';
 const TEAMS = [
   ['Anaheim', 'anaheim'], ['Boston', 'boston'], ['Buffalo', 'buffalo'],
