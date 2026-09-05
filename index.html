@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; padding: 12px; background: #ffffff; }
+    
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+    
+    th {
+      background-color: #f8f9fa;
+      color: #1a73e8;
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 2px solid #dadce0;
+      white-space: nowrap;
+    }
+    
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e8eaed;
+      color: #3c4043;
+    }
+    
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #f1f3f4; }
+    
+    #loading {
+      text-align: center;
+      padding: 30px;
+      color: #5f6368;
+      font-size: 15px;
+    }
+    
+    #error-msg {
+      color: #d93025;
+      display: none;
+      padding: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="table-container">
+    <div id="loading">Chargement des données...</div>
+    <div id="error-msg">
+      Impossible de charger les données.<br>
+      S'assurer que le fichier est partagé en accès <strong>"Tous les utilisateurs disposant du lien : Lecteur"</strong>.
+    </div>
+    <table id="sheet-table" style="display:none;">
+      <thead id="table-head"></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
+    const GID = '1424606319';
+    const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
+
+    fetch(URL)
+      .then(res => {
+        if (!res.ok) throw new Error('Network error');
+        return res.text();
+      })
+      .then(data => {
+        // Nettoyage de la réponse de l'API Google Visualization
+        const json = JSON.parse(data.substring(47, data.length - 2));
+        
+        const cols = json.table.cols;
+        const rows = json.table.rows;
+
+        if (!rows || rows.length === 0) {
+          document.getElementById('loading').innerText = 'Aucune donnée trouvée dans cet onglet.';
+          return;
+        }
+
+        // Génération des entêtes
+        let headHTML = '<tr>';
+        cols.forEach(col => {
+          headHTML += `<th>${col.label || ''}</th>`;
+        });
+        headHTML += '</tr>';
+        document.getElementById('table-head').innerHTML = headHTML;
+
+        // Génération des lignes de données
+        let bodyHTML = '';
+        rows.forEach(row => {
+          bodyHTML += '<tr>';
+          row.c.forEach(cell => {
+            const value = cell ? (cell.f || cell.v || '') : '';
+            bodyHTML += `<td>${value}</td>`;
+          });
+          bodyHTML += '</tr>';
+        });
+        document.getElementById('table-body').innerHTML = bodyHTML;
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('sheet-table').style.display = 'table';
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error-msg').style.display = 'block';
+      });
+  </script>
+
+</body>
+</html>
