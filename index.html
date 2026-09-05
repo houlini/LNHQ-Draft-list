@@ -18,6 +18,10 @@
     --danger:#A3402F;
     --danger-soft:#F6E9E6;
     --radius:10px;
+    --row-py:7px; --row-px:14px; --row-font:13px;
+  }
+  .app.is-comfortable{
+    --row-py:14px; --row-px:18px; --row-font:15.5px;
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -61,7 +65,7 @@
     flex-shrink:0;
     background:var(--bg);
     border-bottom:1px solid var(--line);
-    padding:clamp(12px,2.5vw,20px) clamp(16px,3vw,40px) 14px;
+    padding:clamp(10px,2vw,16px) clamp(16px,3vw,40px) 10px;
   }
   .header-row{
     display:grid;
@@ -89,13 +93,17 @@
     border:1px solid var(--line); border-radius:9px;
     background:var(--surface); color:var(--ink); font-size:16px;
   }
-  .icon-btn{
+  .header-actions{
     grid-area:refresh;
+    display:flex; gap:8px;
+  }
+  .icon-btn{
     display:flex; align-items:center; justify-content:center;
     width:44px; height:44px; border-radius:9px;
     border:1px solid var(--line); background:var(--surface);
     color:var(--ink-muted); cursor:pointer; flex-shrink:0;
   }
+  .icon-btn[aria-pressed="true"]{ color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
   .icon-btn:hover{color:var(--ink); border-color:var(--ink-muted);}
   .icon-btn svg{width:18px; height:18px;}
   .icon-btn.is-loading svg{animation:spin 0.8s linear infinite;}
@@ -116,7 +124,7 @@
 
   /* ---------- Contenu ---------- */
   main{
-    padding:16px clamp(16px,3vw,40px) 32px;
+    padding:10px clamp(16px,3vw,40px) 20px;
     flex:1; min-height:0;
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
@@ -146,18 +154,18 @@
 
   /* ---------- Tableau (large écran) ---------- */
   .table-wrap{ display:none; overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); }
-  table{ width:100%; border-collapse:collapse; font-size:clamp(14px, 0.4vw + 13px, 16px); }
+  table{ width:100%; border-collapse:collapse; font-size:var(--row-font); }
   thead th{
     position:sticky; top:0;
     background:var(--surface); text-align:left; font-weight:600;
-    padding:14px 16px; border-bottom:1px solid var(--line);
+    padding:calc(var(--row-py) + 2px) var(--row-px); border-bottom:1px solid var(--line);
     cursor:pointer; user-select:none; white-space:nowrap;
     color:var(--ink-muted);
   }
   thead th:hover{ color:var(--ink); }
   thead th .sort-mark{ margin-left:4px; color:var(--accent); }
   tbody td{
-    padding:13px 16px; border-bottom:1px solid var(--line);
+    padding:var(--row-py) var(--row-px); border-bottom:1px solid var(--line);
     vertical-align:top;
   }
   tbody tr:last-child td{ border-bottom:none; }
@@ -196,10 +204,9 @@
     .list-wrap{ display:none; }
   }
 
-  /* Confort accru pour grand écran (1080p et plus) */
+  /* Confort accru pour grand écran : uniquement la vue liste mobile,
+     le tableau desktop reste piloté par le bouton de densité */
   @media (min-width:1200px){
-    thead th{ padding:16px 20px; }
-    tbody td{ padding:15px 20px; }
     .row-title{ font-size:19px; }
   }
 </style>
@@ -214,11 +221,18 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="search" id="searchInput" placeholder="Rechercher…" aria-label="Rechercher dans les données">
       </div>
-      <button class="icon-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
-        </svg>
-      </button>
+      <div class="header-actions">
+        <button class="icon-btn" id="densityBtn" aria-pressed="false" aria-label="Basculer entre vue compacte et confortable" title="Vue compacte / confortable">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="meta-row">
       <span id="rowCount" aria-live="polite"></span>
@@ -275,8 +289,10 @@ const CONFIG = {
 /* ========================================================================= */
 
 const els = {
+  app: document.querySelector('.app'),
   title: document.getElementById('sheetTitle'),
   search: document.getElementById('searchInput'),
+  densityBtn: document.getElementById('densityBtn'),
   refresh: document.getElementById('refreshBtn'),
   rowCount: document.getElementById('rowCount'),
   lastUpdated: document.getElementById('lastUpdated'),
@@ -290,6 +306,16 @@ const els = {
   listWrap: document.getElementById('listWrap'),
   emptyState: document.getElementById('emptyState'),
 };
+
+function setDensity(comfortable){
+  els.app.classList.toggle('is-comfortable', comfortable);
+  els.densityBtn.setAttribute('aria-pressed', String(comfortable));
+  els.densityBtn.title = comfortable ? 'Passer en vue compacte' : 'Passer en vue confortable';
+}
+els.densityBtn.addEventListener('click', () => {
+  setDensity(els.densityBtn.getAttribute('aria-pressed') !== 'true');
+});
+setDensity(false); // compact par défaut : affiche le plus de lignes possible
 
 els.title.textContent = CONFIG.TITLE;
 
@@ -406,84 +432,4 @@ function renderTableHead(){
     if(col.isNumeric) th.classList.add('is-numeric');
     if(state.sortCol === i){
       const mark = document.createElement('span');
-      mark.className = 'sort-mark';
-      mark.textContent = state.sortDir === 1 ? '↑' : '↓';
-      th.appendChild(mark);
-    }
-    th.addEventListener('click', () => {
-      state.sortDir = (state.sortCol === i) ? -state.sortDir : 1;
-      state.sortCol = i;
-      render();
-    });
-    els.tableHeadRow.appendChild(th);
-  });
-}
-
-function renderTableBody(){
-  els.tableBody.innerHTML = '';
-  state.filtered.forEach((row, idx) => {
-    const tr = document.createElement('tr');
-    if(idx < 20) tr.classList.add('row-in');
-    if(idx < 20) tr.style.animationDelay = (idx * 25) + 'ms';
-    row.display.forEach((val, i) => {
-      const td = document.createElement('td');
-      td.textContent = val;
-      if(state.columns[i] && state.columns[i].isNumeric) td.classList.add('is-numeric');
-      tr.appendChild(td);
-    });
-    els.tableBody.appendChild(tr);
-  });
-}
-
-function renderList(){
-  els.listWrap.innerHTML = '';
-  state.filtered.forEach((row, idx) => {
-    const card = document.createElement('div');
-    card.className = 'row-card';
-    if(idx < 20) card.classList.add('row-in');
-    if(idx < 20) card.style.animationDelay = (idx * 25) + 'ms';
-
-    const title = document.createElement('div');
-    title.className = 'row-title';
-    title.textContent = row.display[0] || '—';
-    card.appendChild(title);
-
-    row.display.slice(1).forEach((val, i) => {
-      if(val === '') return;
-      const col = state.columns[i + 1];
-      const field = document.createElement('div');
-      field.className = 'row-field';
-      const label = document.createElement('span');
-      label.className = 'label';
-      label.textContent = col ? col.label : '';
-      const value = document.createElement('span');
-      value.className = 'value' + (col && col.isNumeric ? ' is-numeric' : '');
-      value.textContent = val;
-      field.appendChild(label);
-      field.appendChild(value);
-      card.appendChild(field);
-    });
-    els.listWrap.appendChild(card);
-  });
-}
-
-let searchTimer;
-els.search.addEventListener('input', e => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    state.query = e.target.value;
-    render();
-  }, 200);
-});
-
-function refresh(){
-  els.refresh.classList.add('is-loading');
-  loadData().finally(() => els.refresh.classList.remove('is-loading'));
-}
-els.refresh.addEventListener('click', refresh);
-els.retryBtn.addEventListener('click', refresh);
-
-loadData();
-</script>
-</body>
-</html>
+      mark.className 
