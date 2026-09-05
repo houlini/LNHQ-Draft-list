@@ -199,10 +199,20 @@
     font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums;
   }
 
-  /* Bascule table / liste selon la largeur d'écran */
+  /* Bascule table / liste selon la largeur d'écran (mode "auto") */
   @media (min-width:700px){
     .table-wrap{ display:block; }
     .list-wrap{ display:none; }
+  }
+
+  /* Modes forcés par le bouton de vue : gagnent sur la largeur d'écran, quel que soit l'appareil */
+  .app.view-table .table-wrap{ display:block !important; }
+  .app.view-table .list-wrap{ display:none !important; }
+  .app.view-list .table-wrap{ display:none !important; }
+  .app.view-list .list-wrap{ display:block !important; }
+
+  @media (max-width:380px){
+    .icon-btn{ width:40px; height:40px; }
   }
 
   /* Confort accru pour grand écran : uniquement la vue liste mobile,
@@ -223,6 +233,8 @@
         <input type="search" id="searchInput" placeholder="Rechercher…" aria-label="Rechercher dans les données">
       </div>
       <div class="header-actions">
+        <button class="icon-btn" id="viewBtn" aria-label="Changer le mode d'affichage" title="Affichage automatique">
+        </button>
         <button class="icon-btn" id="densityBtn" aria-pressed="false" aria-label="Basculer entre vue compacte et confortable" title="Vue compacte / confortable">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
@@ -293,6 +305,7 @@ const els = {
   app: document.querySelector('.app'),
   title: document.getElementById('sheetTitle'),
   search: document.getElementById('searchInput'),
+  viewBtn: document.getElementById('viewBtn'),
   densityBtn: document.getElementById('densityBtn'),
   refresh: document.getElementById('refreshBtn'),
   rowCount: document.getElementById('rowCount'),
@@ -307,6 +320,46 @@ const els = {
   listWrap: document.getElementById('listWrap'),
   emptyState: document.getElementById('emptyState'),
 };
+
+/* ---------- Mode d'affichage : auto (selon la largeur) / tableau forcé / liste forcée ---------- */
+const VIEW_MODES = ['auto', 'table', 'list'];
+const VIEW_LABELS = {
+  auto: 'Affichage automatique (selon la largeur d\u2019écran)',
+  table: 'Vue tableau forcée',
+  list: 'Vue liste forcée',
+};
+const VIEW_ICONS = {
+  auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>',
+  table: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/><line x1="15" y1="10" x2="15" y2="20"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="16" width="16" height="4" rx="1"/></svg>',
+};
+
+function loadViewMode(){
+  try{
+    const saved = localStorage.getItem('sheetViewMode');
+    if(VIEW_MODES.includes(saved)) return saved;
+  }catch(e){}
+  return 'auto';
+}
+function saveViewMode(mode){
+  try{ localStorage.setItem('sheetViewMode', mode); }catch(e){}
+}
+
+let viewMode = loadViewMode();
+function applyViewMode(){
+  els.app.classList.remove('view-table', 'view-list');
+  if(viewMode === 'table') els.app.classList.add('view-table');
+  else if(viewMode === 'list') els.app.classList.add('view-list');
+  els.viewBtn.innerHTML = VIEW_ICONS[viewMode];
+  els.viewBtn.title = VIEW_LABELS[viewMode];
+  els.viewBtn.setAttribute('aria-label', VIEW_LABELS[viewMode] + ', cliquer pour changer');
+}
+els.viewBtn.addEventListener('click', () => {
+  viewMode = VIEW_MODES[(VIEW_MODES.indexOf(viewMode) + 1) % VIEW_MODES.length];
+  applyViewMode();
+  saveViewMode(viewMode);
+});
+applyViewMode();
 
 function setDensity(comfortable){
   els.app.classList.toggle('is-comfortable', comfortable);
