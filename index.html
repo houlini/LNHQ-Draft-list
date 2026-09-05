@@ -164,12 +164,12 @@
   table{ width:auto; border-collapse:collapse; font-size:var(--row-font); }
   thead th{
     position:sticky; top:0;
-    background:var(--surface); text-align:left; font-weight:600;
-    padding:calc(var(--row-py) + 2px) var(--row-px); border-bottom:1px solid var(--line);
+    background:var(--stripe); text-align:left; font-weight:700;
+    padding:calc(var(--row-py) + 2px) var(--row-px); border-bottom:2px solid var(--accent);
     cursor:pointer; user-select:none; white-space:nowrap;
-    color:var(--ink-muted);
+    color:var(--ink);
   }
-  thead th:hover{ color:var(--ink); }
+  thead th:hover{ color:var(--accent); }
   thead th .sort-mark{ margin-left:4px; color:var(--accent); }
   tbody td{
     padding:var(--row-py) var(--row-px); border-bottom:1px solid var(--line);
