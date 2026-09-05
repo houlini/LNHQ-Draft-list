@@ -77,7 +77,7 @@
   .header-row{
     display:flex; align-items:center; justify-content:space-between; gap:16px;
   }
-  .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; text-decoration:none; }
   .brand-logo{ width:30px; height:34px; flex-shrink:0; }
   .app-title{
     color:var(--nav-ink);
@@ -86,7 +86,9 @@
     margin:0; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
-  .header-actions{ display:flex; gap:4px; flex-shrink:0; }
+
+  .site-nav{ display:flex; align-items:center; gap:2px; flex-shrink:0; flex-wrap:wrap; }
+  .nav-item{ position:relative; }
 
   .nav-btn{
     display:inline-flex; align-items:center; gap:6px;
@@ -94,12 +96,33 @@
     color:var(--nav-ink); font-weight:700; text-transform:uppercase;
     font-size:12.5px; letter-spacing:0.03em;
     padding:8px 6px; border-radius:6px;
-    white-space:nowrap;
+    white-space:nowrap; text-decoration:none;
   }
   .nav-btn:hover{ background:rgba(255,255,255,0.1); }
   .nav-btn .nav-caret, .nav-btn .nav-icon{ width:13px; height:13px; flex-shrink:0; }
   .nav-btn.is-loading .nav-icon{ animation:spin 0.8s linear infinite; }
   @keyframes spin{ to { transform:rotate(360deg); } }
+
+  .nav-dropdown{
+    position:absolute; top:100%; right:0; margin-top:6px;
+    background:var(--nav-dark); border:1px solid rgba(255,255,255,0.15);
+    border-radius:8px; box-shadow:0 10px 28px rgba(0,0,0,0.35);
+    padding:6px; min-width:170px; z-index:50;
+    display:flex; flex-direction:column; gap:1px;
+  }
+  .nav-dropdown a, .nav-dropdown .nav-dropdown-current{
+    display:block; padding:9px 12px; border-radius:6px;
+    color:var(--nav-ink); text-decoration:none; font-size:13.5px; font-weight:500;
+    text-transform:none; letter-spacing:normal; white-space:nowrap;
+  }
+  .nav-dropdown a:hover{ background:rgba(255,255,255,0.12); }
+  .nav-dropdown .nav-dropdown-current{
+    background:rgba(255,255,255,0.08); font-weight:700; color:var(--accent); cursor:default;
+  }
+  .nav-dropdown.teams-grid{
+    display:grid; grid-template-columns:repeat(2, minmax(120px,1fr));
+    min-width:280px; max-height:70vh; overflow-y:auto;
+  }
 
   .meta-row{
     margin:10px 2px 0; font-size:clamp(12px, 0.3vw + 12px, 13.5px); color:var(--nav-ink);
@@ -107,7 +130,7 @@
     display:flex; justify-content:space-between; gap:8px;
   }
 
-  /* ---------- Bannière orange : recherche, affichage, filtres ---------- */
+  /* ---------- Bannière orange : recherche, affichage, densité, filtres ---------- */
   .filter-band{
     flex-shrink:0;
     background:var(--accent);
@@ -126,6 +149,7 @@
   }
   .filter-band .nav-btn{ border:1px solid rgba(255,255,255,0.4); }
   .filter-band .nav-btn:hover{ background:rgba(255,255,255,0.15); }
+  .filter-band .nav-btn[aria-pressed="true"]{ background:rgba(255,255,255,0.25); }
 
   .filter-bar{
     display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
@@ -276,26 +300,58 @@
 <div class="app">
   <header class="app-header">
     <div class="header-row">
-      <div class="brand">
+      <a class="brand" href="https://sites.google.com/view/lnhq/accueil">
         <svg class="brand-logo" viewBox="0 0 40 46" aria-hidden="true">
           <path d="M20 2 L36 8 V22 C36 33 29 40 20 44 C11 40 4 33 4 22 V8 Z" fill="var(--accent)" stroke="var(--nav-ink)" stroke-width="2"/>
           <path d="M12 30 L20 15 L23 20 L16 32 Z" fill="var(--nav-ink)"/>
           <circle cx="26" cy="16" r="3" fill="var(--nav-ink)"/>
         </svg>
         <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
-      </div>
-      <div class="header-actions">
-        <button class="nav-btn" id="densityBtn" aria-pressed="false" aria-label="Basculer entre vue compacte et confortable" title="Vue compacte / confortable">
-          <span class="nav-btn-label">Compact</span>
-          <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <button class="nav-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
-          <span class="nav-btn-label">Actualiser</span>
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
-          </svg>
-        </button>
-      </div>
+      </a>
+      <nav class="site-nav" id="siteNav">
+        <a class="nav-btn" href="https://sites.google.com/view/lnhq/accueil">Accueil</a>
+
+        <div class="nav-item">
+          <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
+            <span>Ligue</span>
+            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="nav-dropdown" hidden>
+            <a href="https://sites.google.com/view/lnhq/ligue/calendrier">Calendrier</a>
+            <a href="https://sites.google.com/view/lnhq/ligue/dgs">DGs</a>
+            <a href="https://sites.google.com/view/lnhq/ligue/reglements">Règlements</a>
+          </div>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
+            <span>Repêchage</span>
+            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="nav-dropdown" hidden>
+            <span class="nav-dropdown-current" aria-current="page">Joueurs</span>
+            <a href="https://sites.google.com/view/lnhq/repêchage/ordre">Ordre</a>
+          </div>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
+            <span>Équipes</span>
+            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="nav-dropdown teams-grid" id="teamsDropdown" hidden></div>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
+            <span>Nouvelles</span>
+            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="nav-dropdown" hidden>
+            <a href="https://sites.google.com/view/lnhq/nouvelles/2026-2027">2026-2027</a>
+          </div>
+        </div>
+      </nav>
     </div>
     <div class="meta-row">
       <span id="rowCount" aria-live="polite"></span>
@@ -312,6 +368,16 @@
       <span class="nav-btn-label">Auto</span>
       <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
+    <button class="nav-btn" id="densityBtn" aria-pressed="false" aria-label="Basculer entre vue compacte et confortable" title="Vue compacte / confortable">
+      <span class="nav-btn-label">Compact</span>
+      <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <button class="nav-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
+      <span class="nav-btn-label">Actualiser</span>
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+      </svg>
+    </button>
     <div class="filter-bar" id="filterBar" hidden></div>
   </div>
 
@@ -322,6 +388,7 @@
       <div class="skeleton-row"></div>
       <div class="skeleton-row"></div>
     </div>
+
 
     <div id="errorBox" class="status-box error" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -364,7 +431,7 @@ const CONFIG = {
   // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
   // un texte = nom exact de l'en-tête (insensible à la casse).
   // Ici : A, C, F, G, J, L, M, O, Q, R, S, T, U, V, W, X
-  HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 11, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23],
+  HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23],
 
   // Colonnes à afficher comme un petit drapeau plutôt que du texte.
   // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
@@ -466,6 +533,55 @@ els.densityBtn.addEventListener('click', () => {
 setDensity(false); // compact par défaut : affiche le plus de lignes possible
 
 els.title.textContent = CONFIG.TITLE;
+
+/* ---------- Navigation du site : menus déroulants et liste des équipes ----------
+   ATTENTION : les liens ci-dessous (Ligue, Repêchage > Ordre, Nouvelles, et les 32
+   équipes) sont construits à partir du même modèle d'URL que celui fourni pour
+   Anaheim — ce sont donc des suppositions à vérifier / corriger au besoin. */
+const TEAM_BASE_URL = 'https://sites.google.com/view/lnhq/équipes/';
+const TEAMS = [
+  ['Anaheim', 'anaheim'], ['Boston', 'boston'], ['Buffalo', 'buffalo'],
+  ['Calgary', 'calgary'], ['Caroline', 'carolina'], ['Chicago', 'chicago'],
+  ['Colorado', 'colorado'], ['Columbus', 'columbus'], ['Dallas', 'dallas'],
+  ['Detroit', 'detroit'], ['Edmonton', 'edmonton'], ['Floride', 'florida'],
+  ['Los Angeles', 'los-angeles'], ['Minnesota', 'minnesota'], ['Montréal', 'montreal'],
+  ['Nashville', 'nashville'], ['New Jersey', 'new-jersey'], ['NY Islanders', 'ny-islanders'],
+  ['NY Rangers', 'ny-rangers'], ['Ottawa', 'ottawa'], ['Philadelphie', 'philadelphia'],
+  ['Pittsburgh', 'pittsburgh'], ['San Jose', 'san-jose'], ['Seattle', 'seattle'],
+  ['St. Louis', 'st-louis'], ['Tampa Bay', 'tampa-bay'], ['Toronto', 'toronto'],
+  ['Utah', 'utah'], ['Vancouver', 'vancouver'], ['Vegas', 'vegas'],
+  ['Washington', 'washington'], ['Winnipeg', 'winnipeg'],
+];
+
+const teamsDropdown = document.getElementById('teamsDropdown');
+TEAMS.forEach(([name, slug]) => {
+  const a = document.createElement('a');
+  a.href = TEAM_BASE_URL + slug;
+  a.textContent = name;
+  teamsDropdown.appendChild(a);
+});
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  const btn = item.querySelector(':scope > .nav-btn');
+  const menu = item.querySelector(':scope > .nav-dropdown');
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const willOpen = menu.hidden;
+    document.querySelectorAll('.nav-dropdown').forEach(m => { m.hidden = true; });
+    document.querySelectorAll('.nav-item > .nav-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    if(willOpen){ menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
+  });
+});
+document.addEventListener('click', () => {
+  document.querySelectorAll('.nav-dropdown').forEach(m => { m.hidden = true; });
+  document.querySelectorAll('.nav-item > .nav-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    document.querySelectorAll('.nav-dropdown').forEach(m => { m.hidden = true; });
+    document.querySelectorAll('.nav-item > .nav-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  }
+});
 
 const state = {
   columns: [],   // [{ label, isNumeric }]
