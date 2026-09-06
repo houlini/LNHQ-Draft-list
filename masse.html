@@ -19,6 +19,8 @@
     --line:#E5E2D9;
     --danger:#A3402F;
     --danger-soft:#F6E9E6;
+    --positive:#1E8E3E;
+    --negative:#C5221F;
     --radius:10px;
     --row-py:6px; --row-px:10px; --row-font:12.5px;
     --nav-dark:#2D333B;
@@ -38,6 +40,8 @@
       --line:#2C3033;
       --danger:#E08B78;
       --danger-soft:#2E211E;
+      --positive:#5BB97C;
+      --negative:#F28B82;
     }
   }
 
@@ -239,6 +243,8 @@
     padding:2px 8px; border-radius:6px; font-weight:600;
   }
   .flag-icon{ border-radius:2px; vertical-align:middle; display:inline-block; }
+  .td-positive, .row-field .value.is-positive{ color:var(--positive); font-weight:600; }
+  .td-negative, .row-field .value.is-negative{ color:var(--negative); font-weight:600; }
 
   /* Première colonne gelée : reste visible pendant le défilement horizontal (utile sur mobile) */
   thead th:first-child, tbody td:first-child{
@@ -425,15 +431,23 @@ const CONFIG = {
 
   // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
   // un texte = nom exact de l'en-tête (insensible à la casse).
-  // Ici : colonne D "LG" (toujours vide) + colonnes Q à AH (18 colonnes vides jusqu'au bout de la feuille).
-  HIDDEN_COLUMNS: [3, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
+  // Ici : Nom, TM, colonne D "LG" (toujours vide) + colonnes Q à AH (18 colonnes vides jusqu'au bout de la feuille).
+  HIDDEN_COLUMNS: [1, 2, 3, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
 
   // Colonnes à afficher comme un petit drapeau plutôt que du texte.
   // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
   FLAG_COLUMNS: [],
 
   // Colonnes à mettre en évidence (fond orange, texte blanc). Même syntaxe que HIDDEN_COLUMNS.
-  HIGHLIGHT_COLUMNS: [],
+  // Ici : MASSE
+  HIGHLIGHT_COLUMNS: [9],
+
+  // Colonnes dont le TEXTE (pas le fond) est coloré, comme dans la feuille Google Sheets.
+  // 'positive' = vert, 'negative' = rouge. Clé = nom exact de l'en-tête.
+  COLUMN_TEXT_COLOR: {
+    'PLAFOND': 'positive',
+    'PLANCHER': 'negative',
+  },
 
   // Colonnes pour lesquelles afficher un menu déroulant de filtre (nom exact de l'en-tête).
   // Les valeurs proposées sont détectées automatiquement dans les données.
@@ -647,6 +661,12 @@ function parseTable(table){
   const isFlag = makeColumnMatcher(CONFIG.FLAG_COLUMNS, rawLabels);
   const isHighlight = makeColumnMatcher(CONFIG.HIGHLIGHT_COLUMNS, rawLabels);
 
+  const textColorByIndex = {};
+  Object.entries(CONFIG.COLUMN_TEXT_COLOR || {}).forEach(([name, kind]) => {
+    const idx = rawLabels.findIndex(l => l.trim().toLowerCase() === name.trim().toLowerCase());
+    if(idx !== -1) textColorByIndex[idx] = kind;
+  });
+
   state.columns = rawLabels
     .map((label, i) => ({
       rawLabel: label,
@@ -654,6 +674,7 @@ function parseTable(table){
       isNumeric: table.cols[i].type === 'number',
       isFlag: isFlag(i),
       isHighlight: isHighlight(i),
+      textColor: textColorByIndex[i] || null,
     }))
     .filter((_, i) => !isHidden(i));
 
@@ -929,6 +950,7 @@ function renderTableBody(){
         if(col && col.isNumeric) td.classList.add('is-numeric');
       }
       if(col && col.isHighlight) td.classList.add('col-highlight');
+      if(col && col.textColor) td.classList.add('td-' + col.textColor);
       tr.appendChild(td);
     });
     els.tableBody.appendChild(tr);
@@ -968,7 +990,8 @@ function renderList(){
       const value = document.createElement('span');
       value.className = 'value'
         + (col && col.isNumeric ? ' is-numeric' : '')
-        + (col && col.isHighlight ? ' is-highlight' : '');
+        + (col && col.isHighlight ? ' is-highlight' : '')
+        + (col && col.textColor ? ' is-' + col.textColor : '');
       if(col && col.isFlag){
         appendFlag(value, val);
       }else{
