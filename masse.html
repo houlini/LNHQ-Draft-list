@@ -25,9 +25,6 @@
     --nav-ink:#FFFFFF;
     --nav-ink-muted:rgba(255,255,255,0.72);
   }
-  .app.is-comfortable{
-    --row-py:13px; --row-px:16px; --row-font:15px;
-  }
   @media (prefers-color-scheme: dark){
     :root{
       --bg:#15181B;
@@ -266,6 +263,8 @@
   }
   .row-card:last-child{ border-bottom:none; }
   .row-title{ font-weight:600; font-size:18px; line-height:1.4; margin-bottom:9px; }
+  .team-link{ color:inherit; text-decoration:none; }
+  .team-link:hover{ text-decoration:underline; color:var(--accent); }
   .row-field{
     display:flex; justify-content:space-between; gap:16px;
     padding:5px 0; font-size:15px;
@@ -368,10 +367,6 @@
       <span class="nav-btn-label">Auto</span>
       <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
-    <button class="nav-btn" id="densityBtn" aria-pressed="false" aria-label="Basculer entre vue compacte et confortable" title="Vue compacte / confortable">
-      <span class="nav-btn-label">Compact</span>
-      <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
     <button class="nav-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
       <span class="nav-btn-label">Actualiser</span>
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -464,7 +459,6 @@ const els = {
   search: document.getElementById('searchInput'),
   filterBar: document.getElementById('filterBar'),
   viewBtn: document.getElementById('viewBtn'),
-  densityBtn: document.getElementById('densityBtn'),
   refresh: document.getElementById('refreshBtn'),
   rowCount: document.getElementById('rowCount'),
   lastUpdated: document.getElementById('lastUpdated'),
@@ -515,17 +509,6 @@ els.viewBtn.addEventListener('click', () => {
 });
 applyViewMode();
 
-function setDensity(comfortable){
-  els.app.classList.toggle('is-comfortable', comfortable);
-  els.densityBtn.setAttribute('aria-pressed', String(comfortable));
-  els.densityBtn.querySelector('.nav-btn-label').textContent = comfortable ? 'Confort' : 'Compact';
-  els.densityBtn.title = comfortable ? 'Passer en vue compacte' : 'Passer en vue confortable';
-}
-els.densityBtn.addEventListener('click', () => {
-  setDensity(els.densityBtn.getAttribute('aria-pressed') !== 'true');
-});
-setDensity(false); // compact par défaut : affiche le plus de lignes possible
-
 els.title.textContent = CONFIG.TITLE;
 
 /* ---------- Navigation du site : menus déroulants et liste des équipes ----------
@@ -554,6 +537,25 @@ TEAMS.forEach(([name, slug]) => {
   a.textContent = name;
   teamsDropdown.appendChild(a);
 });
+
+// Correspondance ville (colonne "Nom" de cette feuille, en anglais) → slug de la page équipe.
+// Utilise les mêmes slugs que le menu Équipes ci-dessus (déjà confirmés fonctionnels).
+const TEAM_SLUG_BY_CITY = {
+  'anaheim':'anaheim', 'boston':'boston', 'buffalo':'buffalo', 'calgary':'calgary',
+  'carolina':'carolina', 'chicago':'chicago', 'colorado':'colorado', 'columbus':'columbus',
+  'dallas':'dallas', 'detroit':'detroit', 'edmonton':'edmonton', 'florida':'florida',
+  'los angeles':'los-angeles', 'minnesota':'minnesota', 'montréal':'montreal', 'montreal':'montreal',
+  'nashville':'nashville', 'new jersey':'new-jersey', 'ny islanders':'ny-islanders',
+  'ny rangers':'ny-rangers', 'ottawa':'ottawa', 'philadelphia':'philadelphia',
+  'pittsburgh':'pittsburgh', 'san jose':'san-jose', 'seattle':'seattle', 'st. louis':'st-louis',
+  'tampa bay':'tampa-bay', 'toronto':'toronto', 'utah':'utah', 'vancouver':'vancouver',
+  'vegas':'vegas', 'washington':'washington', 'winnipeg':'winnipeg',
+};
+function teamLinkFor(row){
+  const city = (row.raw[1] || '').trim().toLowerCase();
+  const slug = TEAM_SLUG_BY_CITY[city];
+  return slug ? TEAM_BASE_URL + slug : null;
+}
 
 document.querySelectorAll('.nav-item').forEach(item => {
   const btn = item.querySelector(':scope > .nav-btn');
@@ -913,7 +915,14 @@ function renderTableBody(){
     row.display.forEach((val, i) => {
       const td = document.createElement('td');
       const col = state.columns[i];
-      if(col && col.isFlag){
+      const link = i === 0 ? teamLinkFor(row) : null;
+      if(link){
+        const a = document.createElement('a');
+        a.href = link;
+        a.textContent = val;
+        a.className = 'team-link';
+        td.appendChild(a);
+      }else if(col && col.isFlag){
         appendFlag(td, val);
       }else{
         td.textContent = val;
@@ -936,7 +945,16 @@ function renderList(){
 
     const title = document.createElement('div');
     title.className = 'row-title';
-    title.textContent = row.display[0] || '—';
+    const titleLink = teamLinkFor(row);
+    if(titleLink){
+      const a = document.createElement('a');
+      a.href = titleLink;
+      a.textContent = row.display[0] || '—';
+      a.className = 'team-link';
+      title.appendChild(a);
+    }else{
+      title.textContent = row.display[0] || '—';
+    }
     card.appendChild(title);
 
     row.display.slice(1).forEach((val, i) => {
@@ -992,4 +1010,3 @@ if(cached && cached.table){
 </script>
 </body>
 </html>
-
