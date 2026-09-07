@@ -567,7 +567,7 @@ const TEAM_GIDS = {
   'philadelphia': { name: 'Philadelphia Flyers', gid: '805190508', code: 'PHI' },
   'pittsburgh': { name: 'Pittsburgh Penguins', gid: '954059850', code: 'PIT' },
   'washington': { name: 'Washington Capitals', gid: '1616951952', code: 'WSH' },
-  'utah': { name: 'Utah Mammoth', gid: '1828953075', code: 'UTA' },
+  'utah': { name: 'Utah Hockey Club', gid: '1828953075', code: 'UTA' },
   'chicago': { name: 'Chicago Blackhawks', gid: '218518637', code: 'CHI' },
   'colorado': { name: 'Colorado Avalanche', gid: '183375770', code: 'COL' },
   'dallas': { name: 'Dallas Stars', gid: '1464526439', code: 'DAL' },
@@ -588,6 +588,69 @@ const TEAM_GIDS = {
 const urlParams = new URLSearchParams(location.search);
 const requestedTeam = (urlParams.get('team') || '').trim().toLowerCase();
 const currentTeam = TEAM_GIDS[requestedTeam] || null;
+
+// Couleurs approximatives par équipe (primaire = accent, dark = bandeau du haut).
+// Teintes de bonne foi tirées des identités visuelles connues des équipes — ajuste les
+// codes hexadécimaux ci-dessous si tu veux une correspondance plus précise.
+const TEAM_COLORS = {
+  anaheim: { primary:'#F47A38', dark:'#0D0D0D' },
+  boston: { primary:'#FFB81C', dark:'#000000' },
+  buffalo: { primary:'#FCB514', dark:'#002654' },
+  calgary: { primary:'#C8102E', dark:'#4B0009' },
+  carolina: { primary:'#CC0000', dark:'#000000' },
+  chicago: { primary:'#CF0A2C', dark:'#000000' },
+  colorado: { primary:'#6F263D', dark:'#041E42' },
+  columbus: { primary:'#CE1126', dark:'#002654' },
+  dallas: { primary:'#006847', dark:'#111111' },
+  detroit: { primary:'#CE1126', dark:'#000000' },
+  edmonton: { primary:'#FF4C00', dark:'#041E42' },
+  florida: { primary:'#C8102E', dark:'#041E42' },
+  'los-angeles': { primary:'#8C9396', dark:'#000000' },
+  minnesota: { primary:'#A6192E', dark:'#154734' },
+  montreal: { primary:'#AF1E2D', dark:'#192168' },
+  nashville: { primary:'#FFB81C', dark:'#041E42' },
+  'new-jersey': { primary:'#CE1126', dark:'#000000' },
+  'ny-islanders': { primary:'#F47D30', dark:'#00539B' },
+  'ny-rangers': { primary:'#CE1126', dark:'#001E60' },
+  ottawa: { primary:'#C52032', dark:'#000000' },
+  philadelphia: { primary:'#F74902', dark:'#000000' },
+  pittsburgh: { primary:'#FCB514', dark:'#000000' },
+  'san-jose': { primary:'#006D75', dark:'#000000' },
+  seattle: { primary:'#99D9D9', dark:'#001628' },
+  'st-louis': { primary:'#FCB514', dark:'#002F87' },
+  'tampa-bay': { primary:'#0057B8', dark:'#000000' },
+  toronto: { primary:'#003E7E', dark:'#000000' },
+  utah: { primary:'#69B3E7', dark:'#000000' },
+  vancouver: { primary:'#00843D', dark:'#041C2C' },
+  vegas: { primary:'#B4975A', dark:'#101820' },
+  washington: { primary:'#C8102E', dark:'#041E42' },
+  winnipeg: { primary:'#004C97', dark:'#041E42' },
+};
+
+function idealTextColor(hex){
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? '#12181F' : '#FFFFFF';
+}
+function lightenHex(hex, amt){
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+  const mix = ch => Math.round(ch + (255 - ch) * amt).toString(16).padStart(2, '0');
+  return '#' + mix(r) + mix(g) + mix(b);
+}
+
+if(currentTeam){
+  const colors = TEAM_COLORS[requestedTeam];
+  if(colors){
+    const root = document.documentElement.style;
+    root.setProperty('--accent', colors.primary);
+    root.setProperty('--accent-ink', idealTextColor(colors.primary));
+    root.setProperty('--accent-soft', lightenHex(colors.primary, 0.85));
+    root.setProperty('--nav-dark', colors.dark);
+    root.setProperty('--nav-ink', idealTextColor(colors.dark));
+  }
+}
 
 /* ========================================================================= */
 
