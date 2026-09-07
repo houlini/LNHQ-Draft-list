@@ -317,8 +317,13 @@
   .stat-card .stat-value{ font-family:'IBM Plex Mono', monospace; font-size:16px; font-weight:700; margin-top:2px; }
   .stat-card.is-money .stat-value{ color:var(--accent); }
 
-  /* ---------- Sections par position (Attaquants / Défenseurs / Gardiens / Espoirs) ---------- */
-  .section-block{ padding:14px clamp(16px,3vw,40px) 0; }
+  /* ---------- Rondes de repêchage, en grille (2 côte à côte si l'écran le permet) ---------- */
+  #roundsWrap{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(440px, 1fr));
+    gap:20px; align-items:start;
+    padding:0 clamp(16px,3vw,40px) 30px;
+  }
+  .section-block{ padding:0; }
   .section-title{
     display:flex; align-items:baseline; gap:8px;
     background:var(--accent); color:var(--accent-ink);
@@ -327,14 +332,14 @@
   }
   .section-title .section-count{ font-weight:500; opacity:0.85; text-transform:none; letter-spacing:0; font-size:12.5px; }
   .section-block .table-wrap{ border-radius:0 0 var(--radius) var(--radius); border-top:none; margin:0; }
-  /* Largeurs de colonnes fixes et identiques sur les 4 tables (Attaquants/Défenseurs/
-     Gardiens/Espoirs), pour que les colonnes de saison s'alignent d'une table à l'autre
-     au lieu que chacune ajuste ses colonnes selon son propre contenu. */
-  .section-block table{ table-layout:fixed; }
+  /* Largeurs de colonnes adaptées aux 5 colonnes réelles (#, Équipe, Joueur, Pos, OVR) —
+     Joueur prend l'espace restant. */
+  .section-block table{ table-layout:fixed; width:100%; }
   .section-block th, .section-block td{ overflow:hidden; text-overflow:ellipsis; }
-  .section-block th:nth-child(1), .section-block td:nth-child(1){ width:170px; }
-  .section-block th:nth-child(n+2):nth-child(-n+9), .section-block td:nth-child(n+2):nth-child(-n+9){ width:56px; }
-  .section-block th:nth-child(n+10), .section-block td:nth-child(n+10){ width:92px; }
+  .section-block th:nth-child(1), .section-block td:nth-child(1){ width:44px; }
+  .section-block th:nth-child(2), .section-block td:nth-child(2){ width:84px; }
+  .section-block th:nth-child(4), .section-block td:nth-child(4){ width:52px; }
+  .section-block th:nth-child(5), .section-block td:nth-child(5){ width:52px; }
   .section-block .list-wrap{
     border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius); padding:0 4px;
   }
@@ -412,10 +417,9 @@
 
   /* ---------- Couleurs des statistiques résumé ---------- */
   .stat-card.is-positive .stat-value{ color:var(--positive); }
-  .stat-card.is-negative .stat-value{ color:var(--negative); }  /* ---------- Ordre de repêchage ---------- */
-  .draft-summary{
-    padding:14px clamp(16px,3vw,40px) 4px; color:var(--ink-muted); font-size:14px;
-  }
+  .stat-card.is-negative .stat-value{ color:var(--negative); }
+
+  /* ---------- Ordre de repêchage ---------- */
   .pick-num{
     display:inline-block; min-width:28px; text-align:center;
     font-family:'IBM Plex Mono', monospace; font-weight:700; color:var(--ink-muted);
@@ -523,7 +527,6 @@
     </div>
 
     <div id="dataWrap" hidden>
-      <p class="draft-summary" id="draftSummary"></p>
       <div id="roundsWrap"></div>
     </div>
 
@@ -554,7 +557,6 @@ const els = {
   errorText: document.getElementById('errorText'),
   retryBtn: document.getElementById('retryBtn'),
   dataWrap: document.getElementById('dataWrap'),
-  draftSummary: document.getElementById('draftSummary'),
   roundsWrap: document.getElementById('roundsWrap'),
   emptyState: document.getElementById('emptyState'),
 };
@@ -860,10 +862,9 @@ function render(){
     els.roundsWrap.appendChild(block);
   });
 
-  els.draftSummary.textContent = `${state.totalPicks} sélection${state.totalPicks > 1 ? 's' : ''} effectuée${state.totalPicks > 1 ? 's' : ''} jusqu'à maintenant`;
   els.rowCount.textContent = q
     ? `${shown} résultat${shown > 1 ? 's' : ''}`
-    : `${state.totalPicks} sélections`;
+    : `${state.totalPicks} sélection${state.totalPicks > 1 ? 's' : ''} effectuée${state.totalPicks > 1 ? 's' : ''} jusqu'à maintenant`;
 
   const nothing = shown === 0 && !!q;
   els.emptyState.hidden = !nothing;
