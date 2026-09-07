@@ -964,14 +964,32 @@ function inchesToHeight(inches){
 // on les calcule ici plutôt que de laisser ces colonnes vides sur la ligne TOTAL.
 function applySectionAverages(section){
   if(!section.totalRow || !section.players.length) return;
+  const ovrs = section.players.map(p => parseFloat(p[2])).filter(n => !Number.isNaN(n));
   const ages = section.players.map(p => parseFloat(p[3])).filter(n => !Number.isNaN(n));
   const heights = section.players.map(p => heightToInches(p[7])).filter(n => n != null);
   const weights = section.players.map(p => parseFloat(p[8])).filter(n => !Number.isNaN(n));
   const years = section.players.map(p => parseFloat(p[9])).filter(n => !Number.isNaN(n));
+  if(ovrs.length) section.totalRow[2] = average(ovrs).toFixed(1);
   if(ages.length) section.totalRow[3] = average(ages).toFixed(2);
   if(heights.length) section.totalRow[7] = inchesToHeight(average(heights));
   if(weights.length) section.totalRow[8] = Math.round(average(weights)).toString();
   if(years.length) section.totalRow[9] = average(years).toFixed(1);
+}
+
+// Moyenne d'équipe (Att.+Déf.+Gard., espoirs exclus, même portée qu'Âge moyen) pour une
+// colonne brute donnée. isHeight convertit d'abord le format "5'10"" en pouces.
+function computeTeamAverage(sections, rawCol, isHeight){
+  const vals = [];
+  sections.filter(s => s.name !== 'ESPOIRS').forEach(s => s.players.forEach(p => {
+    if(isHeight){
+      const inches = heightToInches(p[rawCol]);
+      if(inches != null) vals.push(inches);
+    }else{
+      const n = parseFloat(p[rawCol]);
+      if(!Number.isNaN(n)) vals.push(n);
+    }
+  }));
+  return average(vals);
 }
 
 function applyData(rows){
@@ -986,6 +1004,16 @@ function applyData(rows){
   state.summary.def = counts.def;
   state.summary.gar = counts.gar;
   state.summary.esp = counts.esp;
+
+  const avgOvr = computeTeamAverage(parsed.sections, 2);
+  state.summary.moyOvr = avgOvr != null ? avgOvr.toFixed(1) : '';
+  const avgWeight = computeTeamAverage(parsed.sections, 8);
+  state.summary.moyPoids = avgWeight != null ? Math.round(avgWeight).toString() : '';
+  const avgHeightInches = computeTeamAverage(parsed.sections, 7, true);
+  state.summary.moyGrandeur = avgHeightInches != null ? inchesToHeight(avgHeightInches) : '';
+  const avgYears = computeTeamAverage(parsed.sections, 9);
+  state.summary.moyContrat = avgYears != null ? avgYears.toFixed(1) : '';
+
   state.sections.forEach(applySectionAverages);
 }
 
@@ -1045,12 +1073,16 @@ function renderSummary(){
   const stats = [
     { label: 'Masse salariale', value: formatMoney(s.masse), cls: 'is-money is-positive' },
     { label: 'Espace', value: formatMoney(s.espace), cls: 'is-money is-negative' },
+    { label: 'Total', value: s.tot },
     { label: 'Att.', value: s.att },
     { label: 'Déf.', value: s.def },
     { label: 'Gard.', value: s.gar },
     { label: 'Esp.', value: s.esp },
     { label: 'Âge moyen', value: s.moyAge },
-    { label: 'Total', value: s.tot },
+    { label: 'OVR moyen', value: s.moyOvr },
+    { label: 'Poids moyen', value: s.moyPoids },
+    { label: 'Grandeur moyenne', value: s.moyGrandeur },
+    { label: 'Contrat moyen', value: s.moyContrat },
   ];
   els.summaryStats.innerHTML = '';
   stats.forEach(st => {
