@@ -327,6 +327,14 @@
   }
   .section-title .section-count{ font-weight:500; opacity:0.85; text-transform:none; letter-spacing:0; font-size:12.5px; }
   .section-block .table-wrap{ border-radius:0 0 var(--radius) var(--radius); border-top:none; margin:0; }
+  /* Largeurs de colonnes fixes et identiques sur les 4 tables (Attaquants/Défenseurs/
+     Gardiens/Espoirs), pour que les colonnes de saison s'alignent d'une table à l'autre
+     au lieu que chacune ajuste ses colonnes selon son propre contenu. */
+  .section-block table{ table-layout:fixed; }
+  .section-block th, .section-block td{ overflow:hidden; text-overflow:ellipsis; }
+  .section-block th:nth-child(1), .section-block td:nth-child(1){ width:170px; }
+  .section-block th:nth-child(n+2):nth-child(-n+9), .section-block td:nth-child(n+2):nth-child(-n+9){ width:56px; }
+  .section-block th:nth-child(n+10), .section-block td:nth-child(n+10){ width:92px; }
   .section-block .list-wrap{
     border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius); padding:0 4px;
   }
@@ -856,12 +864,27 @@ function computeAvgAge(sections){
   return (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(2);
 }
 
+function computeCounts(sections){
+  const byName = name => (sections.find(s => s.name === name) || { players: [] }).players.length;
+  const att = byName('ATTAQUANTS');
+  const def = byName('DÉFENSEURS');
+  const gar = byName('GARDIENS');
+  const esp = byName('ESPOIRS');
+  return { att, def, gar, esp, tot: att + def + gar };
+}
+
 function applyData(rows){
   const parsed = parseSheet(rows);
   state.summary = parsed.summary;
   state.sections = parsed.sections;
   state.picks = parsed.picks;
   state.summary.moyAge = computeAvgAge(parsed.sections);
+  const counts = computeCounts(parsed.sections);
+  state.summary.tot = counts.tot;
+  state.summary.att = counts.att;
+  state.summary.def = counts.def;
+  state.summary.gar = counts.gar;
+  state.summary.esp = counts.esp;
 }
 
 async function loadData({ background=false } = {}){
