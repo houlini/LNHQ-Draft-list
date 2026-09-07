@@ -331,7 +331,7 @@
           </button>
           <div class="nav-dropdown" hidden>
             <span class="nav-dropdown-current" aria-current="page">Joueurs</span>
-            <a href="https://sites.google.com/view/lnhq/repêchage/ordre">Ordre</a>
+            <a href="ordre.html">Ordre</a>
           </div>
         </div>
 
@@ -826,7 +826,15 @@ const EA_PLAYERS = {
 };
 
 function eaLinkFor(row){
-  const key = (row.raw[0] || '').trim().toLowerCase();
+  // Colonne B ("JOUEUR"), au format "Nom, Prénom" — on la convertit en "Prénom Nom"
+  // pour chercher dans la base EA_PLAYERS (colonne A n'est plus utilisée, désormais vide).
+  const raw = (row.raw[1] || '').trim();
+  if(!raw) return null;
+  const parts = raw.split(',');
+  const key = (parts.length >= 2
+    ? (parts[1].trim() + ' ' + parts[0].trim())
+    : raw
+  ).toLowerCase();
   const value = EA_PLAYERS[key];
   return value ? 'https://www.ea.com/games/nhl/ratings/player-ratings/' + value : null;
 }
