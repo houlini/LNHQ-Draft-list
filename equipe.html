@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Repêchage</title>
+<title>Équipe</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@400;500&family=Roboto:wght@500;700&display=swap');
@@ -20,6 +20,8 @@
     --line:#E5E2D9;
     --danger:#A3402F;
     --danger-soft:#F6E9E6;
+    --positive:#1E8E3E;
+    --negative:#C5221F;
     --radius:10px;
     --row-py:6px; --row-px:10px; --row-font:12.5px;
     --nav-dark:#2D333B;
@@ -39,6 +41,8 @@
       --line:#2C3033;
       --danger:#E08B78;
       --danger-soft:#2E211E;
+      --positive:#5BB97C;
+      --negative:#F28B82;
     }
   }
 
@@ -240,6 +244,8 @@
     padding:2px 8px; border-radius:6px; font-weight:600;
   }
   .flag-icon{ border-radius:2px; vertical-align:middle; display:inline-block; }
+  .td-positive, .row-field .value.is-positive{ color:var(--positive); font-weight:600; }
+  .td-negative, .row-field .value.is-negative{ color:var(--negative); font-weight:600; }
 
   /* Première colonne gelée : reste visible pendant le défilement horizontal (utile sur mobile) */
   thead th:first-child, tbody td:first-child{
@@ -320,7 +326,7 @@
             <a href="https://sites.google.com/view/lnhq/ligue/calendrier">Calendrier</a>
             <a href="https://sites.google.com/view/lnhq/ligue/dgs">DGs</a>
             <a href="https://sites.google.com/view/lnhq/ligue/règlements">Règlements</a>
-            <a href="https://houlini.github.io/LNHQ-Draft-list/masse.html">Masse salariale</a>
+            <span class="nav-dropdown-current" aria-current="page">Masse salariale</span>
           </div>
         </div>
 
@@ -330,7 +336,7 @@
             <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="nav-dropdown" hidden>
-            <span class="nav-dropdown-current" aria-current="page">Joueurs</span>
+            <a href="https://houlini.github.io/LNHQ-Draft-list/">Joueurs</a>
             <a href="https://sites.google.com/view/lnhq/repêchage/ordre">Ordre</a>
           </div>
         </div>
@@ -414,50 +420,69 @@
 /* =========================================================================
    CONFIGURATION — à adapter à votre Google Sheet
    ========================================================================= */
+
+// Correspondance équipe (slug utilisé dans l'URL ?team=...) → gid de son onglet.
+// Même slugs que le menu Équipes de la navigation (déjà confirmés fonctionnels).
+const TEAM_GIDS = {
+  'montreal': { name: 'Montréal Canadiens', gid: '1659712154' },
+  'toronto': { name: 'Toronto Maple Leafs', gid: '1170343586' },
+  'ottawa': { name: 'Ottawa Senators', gid: '1278633271' },
+  'boston': { name: 'Boston Bruins', gid: '1044373152' },
+  'buffalo': { name: 'Buffalo Sabres', gid: '807424961' },
+  'detroit': { name: 'Detroit Red Wings', gid: '2108797472' },
+  'florida': { name: 'Florida Panthers', gid: '2131146317' },
+  'tampa-bay': { name: 'Tampa Bay Lightning', gid: '1612306797' },
+  'carolina': { name: 'Carolina Hurricanes', gid: '1919598722' },
+  'columbus': { name: 'Columbus Blue Jackets', gid: '1874895112' },
+  'new-jersey': { name: 'New Jersey Devils', gid: '1923421187' },
+  'ny-islanders': { name: 'New York Islanders', gid: '597333970' },
+  'ny-rangers': { name: 'New York Rangers', gid: '978631121' },
+  'philadelphia': { name: 'Philadelphia Flyers', gid: '805190508' },
+  'pittsburgh': { name: 'Pittsburgh Penguins', gid: '954059850' },
+  'washington': { name: 'Washington Capitals', gid: '1616951952' },
+  'utah': { name: 'Utah Hockey Club', gid: '1828953075' },
+  'chicago': { name: 'Chicago Blackhawks', gid: '218518637' },
+  'colorado': { name: 'Colorado Avalanche', gid: '183375770' },
+  'dallas': { name: 'Dallas Stars', gid: '1464526439' },
+  'minnesota': { name: 'Minnesota Wild', gid: '1161473907' },
+  'nashville': { name: 'Nashville Predators', gid: '1918447380' },
+  'st-louis': { name: 'St. Louis Blues', gid: '849304283' },
+  'winnipeg': { name: 'Winnipeg Jets', gid: '79614139' },
+  'anaheim': { name: 'Anaheim Ducks', gid: '219196397' },
+  'calgary': { name: 'Calgary Flames', gid: '840133937' },
+  'edmonton': { name: 'Edmonton Oilers', gid: '2014767334' },
+  'los-angeles': { name: 'Los Angeles Kings', gid: '1516021951' },
+  'san-jose': { name: 'San Jose Sharks', gid: '1186100424' },
+  'seattle': { name: 'Seattle Kraken', gid: '868766828' },
+  'vancouver': { name: 'Vancouver Canucks', gid: '1843924531' },
+  'vegas': { name: 'Vegas Golden Knights', gid: '721738512' },
+};
+
+const urlParams = new URLSearchParams(location.search);
+const requestedTeam = (urlParams.get('team') || '').trim().toLowerCase();
+const currentTeam = TEAM_GIDS[requestedTeam] || null;
+
 const CONFIG = {
-  // L'ID se trouve dans l'URL de votre feuille :
-  // https://docs.google.com/spreadsheets/d/CET_ID_ICI/edit#gid=0
   SHEET_ID: '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A',
 
-  // Le gid correspond à l'onglet (visible après "#gid=" dans l'URL). 0 = premier onglet.
-  GID: '1424606319',
+  // Choisi automatiquement selon ?team=... dans l'URL (voir TEAM_GIDS ci-dessus).
+  GID: currentTeam ? currentTeam.gid : '',
 
   // Titre affiché en haut du widget.
   TITLE: 'LNHQ',
 
-  // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
-  // un texte = nom exact de l'en-tête (insensible à la casse).
-  // Ici : A, C, F, G, J, L, M, O, Q, R, S, T, U, V, W, X
-  HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23],
-
-  // Colonnes à afficher comme un petit drapeau plutôt que du texte.
-  // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
-  FLAG_COLUMNS: ['NAT'],
-
-  // Colonnes à mettre en évidence (fond orange, texte blanc). Même syntaxe que HIDDEN_COLUMNS.
-  // Ici : D, Y
-  HIGHLIGHT_COLUMNS: [3, 24],
-
-  // Colonnes pour lesquelles afficher un menu déroulant de filtre (nom exact de l'en-tête).
-  // Les valeurs proposées sont détectées automatiquement dans les données.
-  FILTER_COLUMNS: ['PO', 'SH'],
-
-  // Ordre personnalisé des valeurs dans le menu déroulant d'une colonne filtrable
-  // (clé = nom exact de l'en-tête ; valeurs non listées passent après, triées alphabétiquement).
-  FILTER_VALUE_ORDER: {
-    PO: ['C', 'R', 'L', 'D', 'G'],
-  },
-
-  // Renommage du LIBELLÉ AFFICHÉ DANS LE FILTRE seulement (la colonne du tableau garde son vrai nom).
-  FILTER_LABELS: {
-    PO: 'Position',
-    SH: 'Shoot',
-  },
-
-  // Colonnes filtrées par curseur "maximum" plutôt que par liste de valeurs (ex: un plafond salarial).
-  MAX_FILTER_COLUMNS: [
-    { column: '2026-27', label: 'Salaire maximum' },
-  ],
+  // Layout pas encore finalisé sur ces onglets équipe : aucune colonne cachée/mise en
+  // évidence/filtrée pour l'instant. Une fois le layout stabilisé, ajoute ici les mêmes
+  // réglages que sur les autres pages (HIDDEN_COLUMNS, HIGHLIGHT_COLUMNS, etc.) — ça
+  // s'appliquera d'un coup aux 32 équipes puisqu'elles partagent cette seule page.
+  HIDDEN_COLUMNS: [],
+  FLAG_COLUMNS: [],
+  HIGHLIGHT_COLUMNS: [],
+  COLUMN_TEXT_COLOR: {},
+  FILTER_COLUMNS: [],
+  FILTER_VALUE_ORDER: {},
+  FILTER_LABELS: {},
+  MAX_FILTER_COLUMNS: [],
 };
 /* ========================================================================= */
 
@@ -517,325 +542,13 @@ els.viewBtn.addEventListener('click', () => {
 });
 applyViewMode();
 
-els.title.textContent = CONFIG.TITLE;
-
-/* ---------- Liens vers les fiches de joueurs EA SPORTS NHL 27 (300 joueurs les mieux notés) ----------
-   Base construite à partir d'ea.com/games/nhl/ratings. Les joueurs absents de ce top 300
-   n'auront simplement pas de lien (repli silencieux vers du texte normal). */
-const EA_PLAYERS = {
-  "connor mcdavid": "connor-mc-david/9857",
-  "nathan mackinnon": "nathan-mac-kinnon/9179",
-  "nikita kucherov": "nikita-kucherov/10071",
-  "leon draisaitl": "leon-draisaitl/9753",
-  "cale makar": "cale-makar/20185",
-  "zach werenski": "zach-werenski/14360",
-  "david pastrnak": "david-pastrnak/11798",
-  "sidney crosby": "sidney-crosby/1082",
-  "quinn hughes": "quinn-hughes/17563",
-  "macklin celebrini": "macklin-celebrini/27101",
-  "aleksander barkov": "aleksander-barkov/9459",
-  "mikko rantanen": "mikko-rantanen/10341",
-  "kirill kaprizov": "kirill-kaprizov/22144",
-  "jack eichel": "jack-eichel/12816",
-  "andrei vasilevskiy": "andrei-vasilevskiy/12348",
-  "jack hughes": "jack-hughes/19747",
-  "rasmus dahlin": "rasmus-dahlin/14982",
-  "mitch marner": "mitch-marner/10848",
-  "nick suzuki": "nick-suzuki/13144",
-  "miro heiskanen": "miro-heiskanen/14164",
-  "william nylander": "william-nylander/10681",
-  "ilya sorokin": "ilya-sorokin/22148",
-  "mark scheifele": "mark-scheifele/7708",
-  "jason robertson": "jason-robertson/13077",
-  "auston matthews": "auston-matthews/12820",
-  "connor hellebuyck": "connor-hellebuyck/12346",
-  "kyle connor": "kyle-connor/14367",
-  "martin necas": "martin-necas/14286",
-  "evan bouchard": "evan-bouchard/13100",
-  "sebastian aho": "sebastian-aho/11712",
-  "tim stützle": "tim-stutzle/20377",
-  "sam reinhart": "sam-reinhart/8849",
-  "igor shesterkin": "igor-shesterkin/21312",
-  "matthew boldy": "matthew-boldy/20190",
-  "matthew schaefer": "matthew-schaefer/26374",
-  "clayton keller": "clayton-keller/15488",
-  "jaccob slavin": "jaccob-slavin/12846",
-  "roman josi": "roman-josi/5737",
-  "victor hedman": "victor-hedman/2553",
-  "artemi panarin": "artemi-panarin/12825",
-  "matthew tkachuk": "matthew-tkachuk/13093",
-  "cole caufield": "cole-caufield/20192",
-  "connor bedard": "connor-bedard/22338",
-  "wyatt johnston": "wyatt-johnston/20529",
-  "brandon hagel": "brandon-hagel/12977",
-  "josh morrissey": "josh-morrissey/8894",
-  "logan thompson": "logan-thompson/12241",
-  "lane hutson": "lane-hutson/25539",
-  "jake guentzel": "jake-guentzel/14871",
-  "mark stone": "mark-stone/5053",
-  "jeremy swayman": "jeremy-swayman/22470",
-  "adam fox": "adam-fox/20406",
-  "charlie mcavoy": "charlie-mc-avoy/15521",
-  "lucas raymond": "lucas-raymond/19563",
-  "jesper bratt": "jesper-bratt/15554",
-  "tage thompson": "tage-thompson/15463",
-  "seth jarvis": "seth-jarvis/17428",
-  "moritz seider": "moritz-seider/18322",
-  "jake sanderson": "jake-sanderson/24153",
-  "filip forsberg": "filip-forsberg/10350",
-  "adrian kempe": "adrian-kempe/10679",
-  "dylan larkin": "dylan-larkin/12826",
-  "jakob chychrun": "jakob-chychrun/11874",
-  "noah dobson": "noah-dobson/14375",
-  "alex debrincat": "alex-de-brincat/11899",
-  "brady tkachuk": "brady-tkachuk/19262",
-  "nikolaj ehlers": "nikolaj-ehlers/10276",
-  "kirill marchenko": "kirill-marchenko/25389",
-  "dylan guenther": "dylan-guenther/19102",
-  "brad marchand": "brad-marchand/5309",
-  "alex ovechkin": "alex-ovechkin/1083",
-  "nick schmaltz": "nick-schmaltz/14359",
-  "evgeni malkin": "evgeni-malkin/1325",
-  "nico hischier": "nico-hischier/13433",
-  "brayden point": "brayden-point/9737",
-  "brock faber": "brock-faber/24143",
-  "gustav forsling": "gustav-forsling/11697",
-  "robert thomas": "robert-thomas/13095",
-  "logan cooley": "logan-cooley/24156",
-  "leo carlsson": "leo-carlsson/23453",
-  "shea theodore": "shea-theodore/8927",
-  "ivan demidov": "ivan-demidov/29123",
-  "thomas harley": "thomas-harley/16922",
-  "mikhail sergachev": "mikhail-sergachev/13187",
-  "bo horvat": "bo-horvat/9038",
-  "mathew barzal": "mathew-barzal/10753",
-  "andrei svechnikov": "andrei-svechnikov/16837",
-  "matthew knies": "matthew-knies/24159",
-  "tom wilson": "tom-wilson/7823",
-  "travis sanheim": "travis-sanheim/10790",
-  "vincent trocheck": "vincent-trocheck/6638",
-  "jake oettinger": "jake-oettinger/20106",
-  "jackson lacombe": "jackson-la-combe/26002",
-  "noah hanifin": "noah-hanifin/12824",
-  "k'andre miller": "k-andre-miller/22146",
-  "john tavares": "john-tavares/5904",
-  "michael matheson": "michael-matheson/13600",
-  "erik karlsson": "erik-karlsson/89",
-  "alex tuch": "alex-tuch/14828",
-  "travis konecny": "travis-konecny/10861",
-  "ryan pulock": "ryan-pulock/7520",
-  "dylan strome": "dylan-strome/10845",
-  "jesper wallstedt": "jesper-wallstedt/21899",
-  "gabe vilardi": "gabe-vilardi/13182",
-  "cutter gauthier": "cutter-gauthier/25537",
-  "scott wedgewood": "scott-wedgewood/6625",
-  "kevin fiala": "kevin-fiala/11622",
-  "roope hintz": "roope-hintz/11235",
-  "devon toews": "devon-toews/14818",
-  "troy terry": "troy-terry/17682",
-  "rasmus andersson": "rasmus-andersson/11805",
-  "lukas dostal": "lukas-dostal/16526",
-  "dustin wolf": "dustin-wolf/17010",
-  "joel eriksson ek": "joel-eriksson-ek/12705",
-  "drake batherson": "drake-batherson/14393",
-  "juraj slafkovsky": "juraj-slafkovsky/22759",
-  "morgan geekie": "morgan-geekie/13020",
-  "will smith": "will-smith/27111",
-  "darren raddysh": "darren-raddysh/10880",
-  "brett pesce": "brett-pesce/12515",
-  "mika zibanejad": "mika-zibanejad/8488",
-  "brandt clarke": "brandt-clarke/20415",
-  "bowen byram": "bowen-byram/15032",
-  "spencer knight": "spencer-knight/20194",
-  "pavel dorofeyev": "pavel-dorofeyev/19637",
-  "thomas chabot": "thomas-chabot/11003",
-  "filip hronek": "filip-hronek/13361",
-  "adam pelech": "adam-pelech/7731",
-  "trevor zegras": "trevor-zegras/20188",
-  "esa lindell": "esa-lindell/10399",
-  "john carlson": "john-carlson/995",
-  "shayne gostisbehere": "shayne-gostisbehere/11785",
-  "zach hyman": "zach-hyman/12873",
-  "mikael granlund": "mikael-granlund/4543",
-  "matt duchene": "matt-duchene/371",
-  "ryan o'reilly": "ryan-o-reilly/376",
-  "adam fantilli": "adam-fantilli/25493",
-  "sam bennett": "sam-bennett/9870",
-  "matvei michkov": "matvei-michkov/24114",
-  "mackenzie weegar": "mac-kenzie-weegar/10046",
-  "elias pettersson": "elias-pettersson/15686",
-  "luke hughes": "luke-hughes/24147",
-  "beckett sennecke": "beckett-sennecke/24604",
-  "jordan kyrou": "jordan-kyrou/12030",
-  "vince dunn": "vince-dunn/10891",
-  "juuse saros": "juuse-saros/10408",
-  "j.t. miller": "j-t-miller/9084",
-  "brandon bussi": "brandon-bussi/25246",
-  "jakub dobeš": "jakub-dobes/27080",
-  "william eklund": "william-eklund/21611",
-  "dylan cozens": "dylan-cozens/15161",
-  "jj peterka": "jj-peterka/20400",
-  "jackson blake": "jackson-blake/25536",
-  "ivan barbashev": "ivan-barbashev/10049",
-  "seth jones": "seth-jones/9746",
-  "josh doan": "josh-doan/25996",
-  "aliaksei protas": "aliaksei-protas/19176",
-  "filip gustavsson": "filip-gustavsson/13527",
-  "mackenzie blackwood": "mackenzie-blackwood/10915",
-  "owen power": "owen-power/24166",
-  "brandon montour": "brandon-montour/13341",
-  "matty beniers": "matty-beniers/24154",
-  "jet greaves": "jet-greaves/17043",
-  "rickard rakell": "rickard-rakell/7822",
-  "pierre-luc dubois": "pierre-luc-dubois/11914",
-  "anton lundell": "anton-lundell/18384",
-  "colton parayko": "colton-parayko/12831",
-  "jared mccann": "jared-mc-cann/9952",
-  "vladislav gavrikov": "vladislav-gavrikov/21055",
-  "aaron ekblad": "aaron-ekblad/8976",
-  "brady skjei": "brady-skjei/12849",
-  "bryan rust": "bryan-rust/12354",
-  "nazem kadri": "nazem-kadri/6444",
-  "simon edvinsson": "simon-edvinsson/22080",
-  "ryan nugent-hopkins": "ryan-nugent-hopkins/6083",
-  "damon severson": "damon-severson/7569",
-  "dougie hamilton": "dougie-hamilton/6505",
-  "mattias ekholm": "mattias-ekholm/7373",
-  "jonas brodin": "jonas-brodin/7376",
-  "justin faulk": "justin-faulk/8739",
-  "martin fehervary": "martin-fehervary/13698",
-  "jake mccabe": "jake-mc-cabe/11566",
-  "mattias samuelsson": "mattias-samuelsson/17565",
-  "jonas siegenthaler": "jonas-siegenthaler/11604",
-  "josh manson": "josh-manson/11786",
-  "dylan demelo": "dylan-de-melo/6473",
-  "patrick kane": "patrick-kane/2086",
-  "steven stamkos": "steven-stamkos/4430",
-  "oliver ekman-larsson": "oliver-ekman-larsson/7503",
-  "mats zuccarello": "mats-zuccarello/5196",
-  "anthony cirelli": "anthony-cirelli/11875",
-  "brock nelson": "brock-nelson/10155",
-  "carter verhaeghe": "carter-verhaeghe/9056",
-  "quinton byfield": "quinton-byfield/18553",
-  "timo meier": "timo-meier/11145",
-  "dylan holloway": "dylan-holloway/24708",
-  "jimmy snuggerud": "jimmy-snuggerud/25538",
-  "logan stankoven": "logan-stankoven/19603",
-  "linus ullmark": "linus-ullmark/10312",
-  "tomas hertl": "tomas-hertl/9509",
-  "morgan rielly": "morgan-rielly/7598",
-  "brock boeser": "brock-boeser/15487",
-  "jake walman": "jake-walman/15511",
-  "karel vejmelka": "karel-vejmelka/11467",
-  "darnell nurse": "darnell-nurse/9103",
-  "matt coronato": "matt-coronato/24157",
-  "pavel zacha": "pavel-zacha/11415",
-  "owen tippett": "owen-tippett/13106",
-  "frank nazar": "frank-nazar/27108",
-  "rasmus sandin": "rasmus-sandin/16469",
-  "joel hofer": "joel-hofer/17028",
-  "morgan frost": "morgan-frost/13165",
-  "alexis lafrenière": "alexis-lafreniere/16793",
-  "mason mctavish": "mason-mc-tavish/20500",
-  "marco rossi": "marco-rossi/18524",
-  "simon nemec": "simon-nemec/24127",
-  "ryan mcleod": "ryan-mc-leod/13104",
-  "luke evangelista": "luke-evangelista/18487",
-  "dan vladar": "dan-vladar/14842",
-  "jacob middleton": "jacob-middleton/9910",
-  "philip broberg": "philip-broberg/19271",
-  "denton mateychuk": "denton-mateychuk/22324",
-  "alexander nikishin": "alexander-nikishin/29400",
-  "niko mikkola": "niko-mikkola/13370",
-  "sam malinski": "sam-malinski/27019",
-  "mason marchment": "mason-marchment/12067",
-  "alexander wennberg": "alexander-wennberg/10467",
-  "marcus pettersson": "marcus-pettersson/11701",
-  "brandon carlo": "brandon-carlo/10653",
-  "john marino": "john-marino/21062",
-  "anthony mantha": "anthony-mantha/9239",
-  "adam larsson": "adam-larsson/599",
-  "ivan provorov": "ivan-provorov/12155",
-  "sergei bobrovsky": "sergei-bobrovsky/7507",
-  "john gibson": "john-gibson/8700",
-  "nicolas hague": "nicolas-hague/13111",
-  "nikita zadorov": "nikita-zadorov/9879",
-  "jamie oleksiak": "jamie-oleksiak/8489",
-  "mason lohrei": "mason-lohrei/27014",
-  "samuel girard": "samuel-girard/11955",
-  "hampus lindholm": "hampus-lindholm/9616",
-  "brayden mcnabb": "brayden-mc-nabb/5879",
-  "j.j. moser": "j-j-moser/17532",
-  "shane pinto": "shane-pinto/22487",
-  "brenden dillon": "brenden-dillon/6172",
-  "mikey anderson": "mikey-anderson/20404",
-  "erik cernak": "erik-cernak/13645",
-  "gabriel landeskog": "gabriel-landeskog/6422",
-  "jacob trouba": "jacob-trouba/10525",
-  "artem zub": "artem-zub/22160",
-  "taylor hall": "taylor-hall/6721",
-  "kaiden guhle": "kaiden-guhle/17353",
-  "dmitry orlov": "dmitry-orlov/9271",
-  "johnathan kovacevic": "johnathan-kovacevic/21076",
-  "charlie coyle": "charlie-coyle/9417",
-  "christopher tanev": "christopher-tanev/8478",
-  "jordan eberle": "jordan-eberle/6107",
-  "connor murphy": "connor-murphy/9098",
-  "drew doughty": "drew-doughty/4452",
-  "blake coleman": "blake-coleman/12839",
-  "kris letang": "kris-letang/1298",
-  "claude giroux": "claude-giroux/5296",
-  "brent burns": "brent-burns/133",
-  "jordan staal": "jordan-staal/1297",
-  "jacob markstrom": "jacob-markstrom/5183",
-  "valeri nichushkin": "valeri-nichushkin/10526",
-  "artturi lehkonen": "artturi-lehkonen/9454",
-  "tyler toffoli": "tyler-toffoli/6538",
-  "thatcher demko": "thatcher-demko/14870",
-  "conor garland": "conor-garland/11176",
-  "pavel buchnevich": "pavel-buchnevich/14362",
-  "josh norris": "josh-norris/21283",
-  "elias lindholm": "elias-lindholm/10309",
-  "darcy kuemper": "darcy-kuemper/6106",
-  "brayden schenn": "brayden-schenn/4966",
-  "william karlsson": "william-karlsson/9603",
-  "dylan samberg": "dylan-samberg/22273",
-  "alex vlasic": "alex-vlasic/20195",
-  "yaroslav askarov": "yaroslav-askarov/24100",
-  "zach benson": "zach-benson/22361",
-  "jack quinn": "jack-quinn/16943",
-  "porter martone": "porter-martone/24609",
-  "radko gudas": "radko-gudas/5920",
-  "matt roy": "matt-roy/15503",
-  "cam york": "cam-york/20193",
-  "alex laferriere": "alex-laferriere/26980",
-  "olen zellweger": "olen-zellweger/19118",
-  "sean walker": "sean-walker/17126",
-  "jake debrusk": "jake-de-brusk/10735",
-  "dmitri voronkov": "dmitri-voronkov/21935",
-  "chandler stephenson": "chandler-stephenson/7636",
-  "tyler bertuzzi": "tyler-bertuzzi/9007",
-  "sean durzi": "sean-durzi/13145",
-  "connor mcmichael": "connor-mc-michael/16893",
-  "benjamin kindel": "benjamin-kindel/26628",
-  "neal pionk": "neal-pionk/15536",
-  "noah cates": "noah-cates/24450",
-  "mikael backlund": "mikael-backlund/5387",
-  "eetu luostarinen": "eetu-luostarinen/15150",
-  "sean couturier": "sean-couturier/6840",
-};
-
-function eaLinkFor(row){
-  const key = (row.raw[0] || '').trim().toLowerCase();
-  const value = EA_PLAYERS[key];
-  return value ? 'https://www.ea.com/games/nhl/ratings/player-ratings/' + value : null;
-}
+els.title.textContent = 'LNHQ';
+document.title = currentTeam ? currentTeam.name : 'Équipe';
 
 /* ---------- Navigation du site : menus déroulants et liste des équipes ----------
    ATTENTION : seuls les liens des 32 équipes ci-dessous sont encore des suppositions
    (construites sur le modèle d'Anaheim) — tous les autres liens (Accueil, Ligue,
    Repêchage > Ordre, Nouvelles) sont confirmés. */
-const TEAM_BASE_URL = 'equipe.html?team=';
 const TEAMS = [
   ['Anaheim', 'anaheim'], ['Boston', 'boston'], ['Buffalo', 'buffalo'],
   ['Calgary', 'calgary'], ['Caroline', 'carolina'], ['Chicago', 'chicago'],
@@ -852,10 +565,18 @@ const TEAMS = [
 
 const teamsDropdown = document.getElementById('teamsDropdown');
 TEAMS.forEach(([name, slug]) => {
-  const a = document.createElement('a');
-  a.href = TEAM_BASE_URL + slug;
-  a.textContent = name;
-  teamsDropdown.appendChild(a);
+  if(slug === requestedTeam){
+    const span = document.createElement('span');
+    span.className = 'nav-dropdown-current';
+    span.setAttribute('aria-current', 'page');
+    span.textContent = name;
+    teamsDropdown.appendChild(span);
+  }else{
+    const a = document.createElement('a');
+    a.href = 'equipe.html?team=' + slug;
+    a.textContent = name;
+    teamsDropdown.appendChild(a);
+  }
 });
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -948,6 +669,12 @@ function parseTable(table){
   const isFlag = makeColumnMatcher(CONFIG.FLAG_COLUMNS, rawLabels);
   const isHighlight = makeColumnMatcher(CONFIG.HIGHLIGHT_COLUMNS, rawLabels);
 
+  const textColorByIndex = {};
+  Object.entries(CONFIG.COLUMN_TEXT_COLOR || {}).forEach(([name, kind]) => {
+    const idx = rawLabels.findIndex(l => l.trim().toLowerCase() === name.trim().toLowerCase());
+    if(idx !== -1) textColorByIndex[idx] = kind;
+  });
+
   state.columns = rawLabels
     .map((label, i) => ({
       rawLabel: label,
@@ -955,6 +682,7 @@ function parseTable(table){
       isNumeric: table.cols[i].type === 'number',
       isFlag: isFlag(i),
       isHighlight: isHighlight(i),
+      textColor: textColorByIndex[i] || null,
     }))
     .filter((_, i) => !isHidden(i));
 
@@ -1174,9 +902,10 @@ function render(){
 
   const total = state.rows.length;
   const shown = state.filtered.length;
-  els.rowCount.textContent = state.query
+  const teamPrefix = currentTeam ? currentTeam.name + ' — ' : '';
+  els.rowCount.textContent = teamPrefix + (state.query
     ? `${shown} résultat${shown > 1 ? 's' : ''} sur ${total}`
-    : `${total} ligne${total > 1 ? 's' : ''}`;
+    : `${total} ligne${total > 1 ? 's' : ''}`);
 
   els.emptyState.hidden = shown !== 0;
   if(shown === 0){
@@ -1216,22 +945,14 @@ function renderTableBody(){
     row.display.forEach((val, i) => {
       const td = document.createElement('td');
       const col = state.columns[i];
-      const link = i === 0 ? eaLinkFor(row) : null;
-      if(link){
-        const a = document.createElement('a');
-        a.href = link;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.textContent = val;
-        a.className = 'team-link';
-        td.appendChild(a);
-      }else if(col && col.isFlag){
+      if(col && col.isFlag){
         appendFlag(td, val);
       }else{
         td.textContent = val;
         if(col && col.isNumeric) td.classList.add('is-numeric');
       }
       if(col && col.isHighlight) td.classList.add('col-highlight');
+      if(col && col.textColor) td.classList.add('td-' + col.textColor);
       tr.appendChild(td);
     });
     els.tableBody.appendChild(tr);
@@ -1248,18 +969,7 @@ function renderList(){
 
     const title = document.createElement('div');
     title.className = 'row-title';
-    const titleLink = eaLinkFor(row);
-    if(titleLink){
-      const a = document.createElement('a');
-      a.href = titleLink;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.textContent = row.display[0] || '—';
-      a.className = 'team-link';
-      title.appendChild(a);
-    }else{
-      title.textContent = row.display[0] || '—';
-    }
+    title.textContent = row.display[0] || '—';
     card.appendChild(title);
 
     row.display.slice(1).forEach((val, i) => {
@@ -1273,7 +983,8 @@ function renderList(){
       const value = document.createElement('span');
       value.className = 'value'
         + (col && col.isNumeric ? ' is-numeric' : '')
-        + (col && col.isHighlight ? ' is-highlight' : '');
+        + (col && col.isHighlight ? ' is-highlight' : '')
+        + (col && col.textColor ? ' is-' + col.textColor : '');
       if(col && col.isFlag){
         appendFlag(value, val);
       }else{
@@ -1303,14 +1014,21 @@ function refresh(){
 els.refresh.addEventListener('click', refresh);
 els.retryBtn.addEventListener('click', () => loadData());
 
-const cached = loadFromCache();
-if(cached && cached.table){
-  parseTable(cached.table);
-  toggle({ loading:false });
-  els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
-  loadData({ background:true });
+if(!currentTeam){
+  els.loader.hidden = true;
+  els.errorBox.hidden = false;
+  els.errorText.textContent = 'Choisis une équipe dans le menu « Équipes » ci-dessus pour afficher sa liste de joueurs.';
+  els.retryBtn.hidden = true;
 }else{
-  loadData();
+  const cached = loadFromCache();
+  if(cached && cached.table){
+    parseTable(cached.table);
+    toggle({ loading:false });
+    els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
+    loadData({ background:true });
+  }else{
+    loadData();
+  }
 }
 </script>
 </body>
