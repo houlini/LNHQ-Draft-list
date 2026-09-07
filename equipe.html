@@ -945,6 +945,35 @@ function computeCounts(sections){
   return { att, def, gar, esp, tot: att + def + gar };
 }
 
+function average(nums){
+  if(!nums.length) return null;
+  return nums.reduce((a, b) => a + b, 0) / nums.length;
+}
+function heightToInches(str){
+  const m = String(str || '').match(/(\d+)'\s*(\d+)/);
+  return m ? parseInt(m[1], 10) * 12 + parseInt(m[2], 10) : null;
+}
+function inchesToHeight(inches){
+  const feet = Math.floor(inches / 12);
+  const rem = Math.round(inches - feet * 12);
+  return `${feet}'${rem}"`;
+}
+
+// Calcule les moyennes (âge, grandeur, poids, années de contrat restant) d'une section et
+// les écrit directement dans sa ligne TOTAL — ces moyennes n'existent pas dans la feuille,
+// on les calcule ici plutôt que de laisser ces colonnes vides sur la ligne TOTAL.
+function applySectionAverages(section){
+  if(!section.totalRow || !section.players.length) return;
+  const ages = section.players.map(p => parseFloat(p[3])).filter(n => !Number.isNaN(n));
+  const heights = section.players.map(p => heightToInches(p[7])).filter(n => n != null);
+  const weights = section.players.map(p => parseFloat(p[8])).filter(n => !Number.isNaN(n));
+  const years = section.players.map(p => parseFloat(p[9])).filter(n => !Number.isNaN(n));
+  if(ages.length) section.totalRow[3] = average(ages).toFixed(2);
+  if(heights.length) section.totalRow[7] = inchesToHeight(average(heights));
+  if(weights.length) section.totalRow[8] = Math.round(average(weights)).toString();
+  if(years.length) section.totalRow[9] = average(years).toFixed(1);
+}
+
 function applyData(rows){
   const parsed = parseSheet(rows);
   state.summary = parsed.summary;
@@ -957,6 +986,7 @@ function applyData(rows){
   state.summary.def = counts.def;
   state.summary.gar = counts.gar;
   state.summary.esp = counts.esp;
+  state.sections.forEach(applySectionAverages);
 }
 
 async function loadData({ background=false } = {}){
@@ -1015,12 +1045,12 @@ function renderSummary(){
   const stats = [
     { label: 'Masse salariale', value: formatMoney(s.masse), cls: 'is-money is-positive' },
     { label: 'Espace', value: formatMoney(s.espace), cls: 'is-money is-negative' },
-    { label: 'Total', value: s.tot },
     { label: 'Att.', value: s.att },
     { label: 'Déf.', value: s.def },
     { label: 'Gard.', value: s.gar },
     { label: 'Esp.', value: s.esp },
     { label: 'Âge moyen', value: s.moyAge },
+    { label: 'Total', value: s.tot },
   ];
   els.summaryStats.innerHTML = '';
   stats.forEach(st => {
