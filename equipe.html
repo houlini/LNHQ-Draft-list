@@ -639,14 +639,23 @@ function lightenHex(hex, amt){
   const mix = ch => Math.round(ch + (255 - ch) * amt).toString(16).padStart(2, '0');
   return '#' + mix(r) + mix(g) + mix(b);
 }
+function darkenHex(hex, amt){
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+  const mix = ch => Math.round(ch * (1 - amt)).toString(16).padStart(2, '0');
+  return '#' + mix(r) + mix(g) + mix(b);
+}
 
 if(currentTeam){
   const colors = TEAM_COLORS[requestedTeam];
   if(colors){
+    // En mode sombre, le texte reste clair : la teinte de survol doit s'assombrir
+    // (pas s'éclaircir vers le blanc) pour rester lisible.
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     const root = document.documentElement.style;
     root.setProperty('--accent', colors.primary);
     root.setProperty('--accent-ink', idealTextColor(colors.primary));
-    root.setProperty('--accent-soft', lightenHex(colors.primary, 0.85));
+    root.setProperty('--accent-soft', prefersDark ? darkenHex(colors.primary, 0.75) : lightenHex(colors.primary, 0.85));
     root.setProperty('--nav-dark', colors.dark);
     root.setProperty('--nav-ink', idealTextColor(colors.dark));
   }
