@@ -346,6 +346,30 @@
   }
   .picks-list li{ padding:10px 16px; border-bottom:1px solid var(--line); font-size:14.5px; }
   .picks-list li:last-child{ border-bottom:none; }
+
+  /* ---------- Sélecteur d'équipe (bannière orange) ---------- */
+  .team-switch-btn{
+    background:var(--surface); color:var(--ink);
+    font-size:14.5px; padding:8px 14px; border-radius:9px; gap:10px;
+    text-transform:none; letter-spacing:0; font-weight:600;
+  }
+  .team-switch-btn:hover{ background:var(--surface); opacity:0.9; }
+  .team-switch-logo{ width:24px; height:24px; object-fit:contain; }
+  .team-switch-menu a, .team-switch-menu span.nav-dropdown-current{
+    display:flex !important; align-items:center; gap:10px;
+  }
+  .team-option-logo{ width:22px; height:22px; object-fit:contain; flex-shrink:0; }
+
+  /* ---------- Grand logo d'équipe ---------- */
+  .team-hero{
+    display:flex; align-items:center; gap:14px;
+    padding:16px clamp(16px,3vw,40px) 0;
+  }
+  .team-hero-logo{ width:56px; height:56px; object-fit:contain; }
+  .team-hero-name{
+    font-family:'Oswald', 'IBM Plex Sans', sans-serif; text-transform:uppercase;
+    font-size:26px; font-weight:500; margin:0; color:var(--ink);
+  }
 </style>
 </head>
 <body>
@@ -410,6 +434,14 @@
   </header>
 
   <div class="filter-band">
+    <div class="nav-item team-switch">
+      <button class="nav-btn team-switch-btn" aria-haspopup="true" aria-expanded="false">
+        <img class="team-switch-logo" id="teamSwitchLogo" alt="" hidden>
+        <span id="teamSwitchLabel">Choisir une équipe</span>
+        <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="nav-dropdown teams-grid team-switch-menu" id="teamSwitchMenu" hidden></div>
+    </div>
     <div class="search-field">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="search" id="searchInput" placeholder="Rechercher un joueur…" aria-label="Rechercher un joueur">
@@ -442,6 +474,11 @@
         <div id="errorText">Impossible de charger les données.</div>
         <button class="retry" id="retryBtn">Réessayer</button>
       </div>
+    </div>
+
+    <div class="team-hero" id="teamHero" hidden>
+      <img class="team-hero-logo" id="teamHeroLogo" alt="">
+      <h2 class="team-hero-name" id="teamHeroName"></h2>
     </div>
 
     <div id="dataWrap" hidden>
@@ -531,6 +568,11 @@ const els = {
 els.title.textContent = 'LNHQ';
 document.title = currentTeam ? currentTeam.name : 'Équipe';
 
+// Chemin des logos : dépose un fichier par équipe dans un dossier "logos/" à la racine du
+// repo, nommé exactement comme le slug (ex: logos/boston.png). Rien ne casse si absent —
+// le logo se cache simplement (onerror) tant que le fichier n'est pas encore ajouté.
+function teamLogoPath(slug){ return 'logos/' + slug + '.png'; }
+
 /* ---------- Menu Équipes : marque l'équipe active, pointe vers equipe.html ---------- */
 const TEAMS = [
   ['Anaheim', 'anaheim'], ['Boston', 'boston'], ['Buffalo', 'buffalo'],
@@ -545,21 +587,53 @@ const TEAMS = [
   ['Utah', 'utah'], ['Vancouver', 'vancouver'], ['Vegas', 'vegas'],
   ['Washington', 'washington'], ['Winnipeg', 'winnipeg'],
 ];
-const teamsDropdown = document.getElementById('teamsDropdown');
-TEAMS.forEach(([name, slug]) => {
-  if(slug === requestedTeam){
-    const span = document.createElement('span');
-    span.className = 'nav-dropdown-current';
-    span.setAttribute('aria-current', 'page');
-    span.textContent = name;
-    teamsDropdown.appendChild(span);
+
+function buildTeamOption(name, slug, withLogo){
+  const isCurrent = slug === requestedTeam;
+  const el = document.createElement(isCurrent ? 'span' : 'a');
+  if(isCurrent){
+    el.className = 'nav-dropdown-current';
+    el.setAttribute('aria-current', 'page');
   }else{
-    const a = document.createElement('a');
-    a.href = 'equipe.html?team=' + slug;
-    a.textContent = name;
-    teamsDropdown.appendChild(a);
+    el.href = 'equipe.html?team=' + slug;
   }
-});
+  if(withLogo){
+    const img = document.createElement('img');
+    img.className = 'team-option-logo';
+    img.src = teamLogoPath(slug);
+    img.alt = '';
+    img.loading = 'lazy';
+    img.onerror = () => { img.style.display = 'none'; };
+    el.appendChild(img);
+  }
+  const label = document.createElement('span');
+  label.textContent = name;
+  el.appendChild(label);
+  return el;
+}
+
+const teamsDropdown = document.getElementById('teamsDropdown');
+TEAMS.forEach(([name, slug]) => teamsDropdown.appendChild(buildTeamOption(name, slug, false)));
+
+// Sélecteur agrandi (bannière orange), avec logo par équipe
+const teamSwitchMenu = document.getElementById('teamSwitchMenu');
+TEAMS.forEach(([name, slug]) => teamSwitchMenu.appendChild(buildTeamOption(name, slug, true)));
+
+const switchLogo = document.getElementById('teamSwitchLogo');
+const switchLabel = document.getElementById('teamSwitchLabel');
+const heroLogo = document.getElementById('teamHeroLogo');
+const heroName = document.getElementById('teamHeroName');
+if(currentTeam){
+  switchLogo.src = teamLogoPath(requestedTeam);
+  switchLogo.hidden = false;
+  switchLogo.onerror = () => { switchLogo.hidden = true; };
+  switchLabel.textContent = currentTeam.name;
+
+  heroLogo.src = teamLogoPath(requestedTeam);
+  heroLogo.onerror = () => { heroLogo.hidden = true; };
+  heroName.textContent = currentTeam.name;
+  document.getElementById('teamHero').hidden = false;
+}
 
 document.querySelectorAll('.nav-item').forEach(item => {
   const btn = item.querySelector(':scope > .nav-btn');
@@ -655,7 +729,7 @@ function flagSpan(raw){
    ========================================================================= */
 const SEASON_LABELS = ['2026-27','2027-28','2028-29','2029-30','2030-31','2031-32','2032-33','2033-34','2034-35','2035-36'];
 const SECTION_NAMES = ['ATTAQUANTS', 'DÉFENSEURS', 'GARDIENS', 'ESPOIRS'];
-const PLAYER_HEADERS = ['Joueur', 'OVR', 'Âge', 'CNT', 'PO', 'SH', 'HT', 'Poids', 'Ans', ...SEASON_LABELS];
+const PLAYER_HEADERS = ['Joueur', 'OVR', 'Âge', 'NAT', 'PO', 'TIR', 'GR', 'Poids', 'Ans', ...SEASON_LABELS];
 // Index, dans une ligne brute de la feuille, de chaque colonne ci-dessus.
 const PLAYER_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
@@ -723,11 +797,24 @@ function saveToCache(rows){
   try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ rows, ts: Date.now() })); }catch(e){}
 }
 
+function computeAvgAge(sections){
+  const ages = [];
+  sections
+    .filter(s => s.name !== 'ESPOIRS') // âge moyen du groupe NHL (comme TOT/ATT/DEF/GAR)
+    .forEach(s => s.players.forEach(p => {
+      const n = parseFloat(p[3]);
+      if(!Number.isNaN(n)) ages.push(n);
+    }));
+  if(!ages.length) return '';
+  return (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(2);
+}
+
 function applyData(rows){
   const parsed = parseSheet(rows);
   state.summary = parsed.summary;
   state.sections = parsed.sections;
   state.picks = parsed.picks;
+  state.summary.moyAge = computeAvgAge(parsed.sections);
 }
 
 async function loadData({ background=false } = {}){
@@ -765,6 +852,19 @@ function toggle({ loading=false, error=false } = {}){
 function formatMoney(v){
   const n = parseFloat(String(v).replace(/[^\d.-]/g, ''));
   if(Number.isNaN(n) || v === '') return v || '';
+  return new Intl.NumberFormat('fr-CA').format(Math.round(n)) + ' $';
+}
+
+// Pour les colonnes de salaire par saison : ignore le format (parfois incohérent) de la
+// feuille et reformate nous-mêmes si la valeur est un nombre ; laisse tel quel si c'est du
+// texte (UFA, RFA...) ; masque complètement un montant de 0$ pour un affichage plus propre.
+function formatSeasonValue(raw){
+  const val = (raw || '').trim();
+  if(val === '') return '';
+  const isNumeric = /^-?[\d\s,.$]+$/.test(val);
+  if(!isNumeric) return val; // UFA, RFA, etc. — texte tel quel
+  const n = parseFloat(val.replace(/[^\d.-]/g, ''));
+  if(Number.isNaN(n) || n === 0) return '';
   return new Intl.NumberFormat('fr-CA').format(Math.round(n)) + ' $';
 }
 
@@ -806,12 +906,14 @@ function matchesQuery(playerRow, query){
 function buildPlayerCells(container, playerRow, tag){
   PLAYER_COLS.forEach((ci, idx) => {
     const cell = document.createElement(tag);
-    const val = playerRow[ci] || '';
+    const raw = playerRow[ci] || '';
     const isMoney = idx >= 9; // colonnes de saison
-    if(idx === 3){ // CNT → drapeau
-      cell.appendChild(flagSpan(val));
+    if(idx === 3){ // NAT → drapeau
+      cell.appendChild(flagSpan(raw));
+    }else if(isMoney){
+      cell.textContent = formatSeasonValue(raw);
     }else{
-      cell.textContent = val;
+      cell.textContent = raw;
     }
     if(isMoney || idx === 1 || idx === 2) cell.classList.add('is-numeric');
     container.appendChild(cell);
@@ -913,7 +1015,9 @@ function buildPlayerCard(playerRow, idx, isTotal){
   PLAYER_HEADERS.forEach((h, i) => {
     if(i === 0) return;
     const ci = PLAYER_COLS[i];
-    const val = playerRow[ci] || '';
+    const raw = playerRow[ci] || '';
+    const isMoney = i >= 9;
+    const val = isMoney ? formatSeasonValue(raw) : raw;
     if(val === '') return;
     const field = document.createElement('div');
     field.className = 'row-field';
@@ -921,7 +1025,7 @@ function buildPlayerCard(playerRow, idx, isTotal){
     label.className = 'label';
     label.textContent = h;
     const value = document.createElement('span');
-    value.className = 'value' + (i >= 9 ? ' is-numeric' : '');
+    value.className = 'value' + (isMoney ? ' is-numeric' : '');
     if(i === 3) value.appendChild(flagSpan(val));
     else value.textContent = val;
     field.appendChild(label);
