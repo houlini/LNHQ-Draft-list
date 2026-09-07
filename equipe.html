@@ -436,7 +436,7 @@
             <a href="https://sites.google.com/view/lnhq/ligue/calendrier">Calendrier</a>
             <a href="https://sites.google.com/view/lnhq/ligue/dgs">DGs</a>
             <a href="https://sites.google.com/view/lnhq/ligue/règlements">Règlements</a>
-            <span class="nav-dropdown-current" aria-current="page">Masse salariale</span>
+            <a href="masse.html">Masse salariale</a>
           </div>
         </div>
 
@@ -447,7 +447,7 @@
           </button>
           <div class="nav-dropdown" hidden>
             <a href="https://houlini.github.io/LNHQ-Draft-list/">Joueurs</a>
-            <a href="https://sites.google.com/view/lnhq/repêchage/ordre">Ordre</a>
+            <a href="ordre.html">Ordre</a>
           </div>
         </div>
 
@@ -551,38 +551,38 @@ const CONFIG = {
 // Correspondance équipe (slug utilisé dans l'URL ?team=...) → gid de son onglet.
 // Même slugs que le menu Équipes de la navigation (déjà confirmés fonctionnels).
 const TEAM_GIDS = {
-  'montreal': { name: 'Montréal Canadiens', gid: '1659712154' },
-  'toronto': { name: 'Toronto Maple Leafs', gid: '1170343586' },
-  'ottawa': { name: 'Ottawa Senators', gid: '1278633271' },
-  'boston': { name: 'Boston Bruins', gid: '1044373152' },
-  'buffalo': { name: 'Buffalo Sabres', gid: '807424961' },
-  'detroit': { name: 'Detroit Red Wings', gid: '2108797472' },
-  'florida': { name: 'Florida Panthers', gid: '2131146317' },
-  'tampa-bay': { name: 'Tampa Bay Lightning', gid: '1612306797' },
-  'carolina': { name: 'Carolina Hurricanes', gid: '1919598722' },
-  'columbus': { name: 'Columbus Blue Jackets', gid: '1874895112' },
-  'new-jersey': { name: 'New Jersey Devils', gid: '1923421187' },
-  'ny-islanders': { name: 'New York Islanders', gid: '597333970' },
-  'ny-rangers': { name: 'New York Rangers', gid: '978631121' },
-  'philadelphia': { name: 'Philadelphia Flyers', gid: '805190508' },
-  'pittsburgh': { name: 'Pittsburgh Penguins', gid: '954059850' },
-  'washington': { name: 'Washington Capitals', gid: '1616951952' },
-  'utah': { name: 'Utah Hockey Club', gid: '1828953075' },
-  'chicago': { name: 'Chicago Blackhawks', gid: '218518637' },
-  'colorado': { name: 'Colorado Avalanche', gid: '183375770' },
-  'dallas': { name: 'Dallas Stars', gid: '1464526439' },
-  'minnesota': { name: 'Minnesota Wild', gid: '1161473907' },
-  'nashville': { name: 'Nashville Predators', gid: '1918447380' },
-  'st-louis': { name: 'St. Louis Blues', gid: '849304283' },
-  'winnipeg': { name: 'Winnipeg Jets', gid: '79614139' },
-  'anaheim': { name: 'Anaheim Ducks', gid: '219196397' },
-  'calgary': { name: 'Calgary Flames', gid: '840133937' },
-  'edmonton': { name: 'Edmonton Oilers', gid: '2014767334' },
-  'los-angeles': { name: 'Los Angeles Kings', gid: '1516021951' },
-  'san-jose': { name: 'San Jose Sharks', gid: '1186100424' },
-  'seattle': { name: 'Seattle Kraken', gid: '868766828' },
-  'vancouver': { name: 'Vancouver Canucks', gid: '1843924531' },
-  'vegas': { name: 'Vegas Golden Knights', gid: '721738512' },
+  'montreal': { name: 'Montréal Canadiens', gid: '1659712154', code: 'MTL' },
+  'toronto': { name: 'Toronto Maple Leafs', gid: '1170343586', code: 'TOR' },
+  'ottawa': { name: 'Ottawa Senators', gid: '1278633271', code: 'OTT' },
+  'boston': { name: 'Boston Bruins', gid: '1044373152', code: 'BOS' },
+  'buffalo': { name: 'Buffalo Sabres', gid: '807424961', code: 'BUF' },
+  'detroit': { name: 'Detroit Red Wings', gid: '2108797472', code: 'DET' },
+  'florida': { name: 'Florida Panthers', gid: '2131146317', code: 'FLA' },
+  'tampa-bay': { name: 'Tampa Bay Lightning', gid: '1612306797', code: 'TBL' },
+  'carolina': { name: 'Carolina Hurricanes', gid: '1919598722', code: 'CAR' },
+  'columbus': { name: 'Columbus Blue Jackets', gid: '1874895112', code: 'CBJ' },
+  'new-jersey': { name: 'New Jersey Devils', gid: '1923421187', code: 'NJD' },
+  'ny-islanders': { name: 'New York Islanders', gid: '597333970', code: 'NYI' },
+  'ny-rangers': { name: 'New York Rangers', gid: '978631121', code: 'NYR' },
+  'philadelphia': { name: 'Philadelphia Flyers', gid: '805190508', code: 'PHI' },
+  'pittsburgh': { name: 'Pittsburgh Penguins', gid: '954059850', code: 'PIT' },
+  'washington': { name: 'Washington Capitals', gid: '1616951952', code: 'WSH' },
+  'utah': { name: 'Utah Hockey Club', gid: '1828953075', code: 'UTA' },
+  'chicago': { name: 'Chicago Blackhawks', gid: '218518637', code: 'CHI' },
+  'colorado': { name: 'Colorado Avalanche', gid: '183375770', code: 'COL' },
+  'dallas': { name: 'Dallas Stars', gid: '1464526439', code: 'DAL' },
+  'minnesota': { name: 'Minnesota Wild', gid: '1161473907', code: 'MIN' },
+  'nashville': { name: 'Nashville Predators', gid: '1918447380', code: 'NSH' },
+  'st-louis': { name: 'St. Louis Blues', gid: '849304283', code: 'STL' },
+  'winnipeg': { name: 'Winnipeg Jets', gid: '79614139', code: 'WPG' },
+  'anaheim': { name: 'Anaheim Ducks', gid: '219196397', code: 'ANA' },
+  'calgary': { name: 'Calgary Flames', gid: '840133937', code: 'CGY' },
+  'edmonton': { name: 'Edmonton Oilers', gid: '2014767334', code: 'EDM' },
+  'los-angeles': { name: 'Los Angeles Kings', gid: '1516021951', code: 'LAK' },
+  'san-jose': { name: 'San Jose Sharks', gid: '1186100424', code: 'SJS' },
+  'seattle': { name: 'Seattle Kraken', gid: '868766828', code: 'SEA' },
+  'vancouver': { name: 'Vancouver Canucks', gid: '1843924531', code: 'VAN' },
+  'vegas': { name: 'Vegas Golden Knights', gid: '721738512', code: 'VGK' },
 };
 
 const urlParams = new URLSearchParams(location.search);
@@ -614,9 +614,9 @@ els.title.textContent = 'LNHQ';
 document.title = currentTeam ? currentTeam.name : 'Équipe';
 
 // Chemin des logos : dépose un fichier par équipe dans un dossier "logos/" à la racine du
-// repo, nommé exactement comme le slug (ex: logos/boston.png). Rien ne casse si absent —
-// le logo se cache simplement (onerror) tant que le fichier n'est pas encore ajouté.
-function teamLogoPath(slug){ return 'logos/' + slug + '.png'; }
+// repo, nommé exactement comme le code à 3 lettres de l'équipe (ex: logos/BOS.png). Rien
+// ne casse si absent — le logo se cache simplement (onerror) tant qu'il n'est pas ajouté.
+function teamLogoPath(code){ return 'logos/' + code + '.png'; }
 
 /* ---------- Menu Équipes : marque l'équipe active, pointe vers equipe.html ---------- */
 const TEAMS = [
@@ -645,7 +645,7 @@ function buildTeamOption(name, slug, withLogo){
   if(withLogo){
     const img = document.createElement('img');
     img.className = 'team-option-logo';
-    img.src = teamLogoPath(slug);
+    img.src = teamLogoPath(TEAM_GIDS[slug].code);
     img.alt = '';
     img.loading = 'lazy';
     img.onerror = () => { img.style.display = 'none'; };
@@ -679,12 +679,12 @@ const switchLabel = document.getElementById('teamSwitchLabel');
 const heroLogo = document.getElementById('teamHeroLogo');
 const heroName = document.getElementById('teamHeroName');
 if(currentTeam){
-  switchLogo.src = teamLogoPath(requestedTeam);
+  switchLogo.src = teamLogoPath(currentTeam.code);
   switchLogo.hidden = false;
   switchLogo.onerror = () => { switchLogo.hidden = true; };
   switchLabel.textContent = currentTeam.name;
 
-  heroLogo.src = teamLogoPath(requestedTeam);
+  heroLogo.src = teamLogoPath(currentTeam.code);
   heroLogo.onerror = () => { heroLogo.hidden = true; };
   heroName.textContent = currentTeam.name;
   document.getElementById('teamHero').hidden = false;
