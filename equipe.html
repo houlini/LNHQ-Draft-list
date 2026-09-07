@@ -350,15 +350,46 @@
   /* ---------- Sélecteur d'équipe (bannière orange) ---------- */
   .team-switch-btn{
     background:var(--surface); color:var(--ink);
-    font-size:14.5px; padding:8px 14px; border-radius:9px; gap:10px;
-    text-transform:none; letter-spacing:0; font-weight:600;
+    font-size:16px; padding:10px 18px; border-radius:9px; gap:12px;
+    text-transform:none; letter-spacing:0; font-weight:700;
   }
   .team-switch-btn:hover{ background:var(--surface); opacity:0.9; }
-  .team-switch-logo{ width:24px; height:24px; object-fit:contain; }
-  .team-switch-menu a, .team-switch-menu span.nav-dropdown-current{
-    display:flex !important; align-items:center; gap:10px;
+  .team-switch-logo{ width:28px; height:28px; object-fit:contain; }
+
+  .team-modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.55);
+    display:flex; align-items:center; justify-content:center;
+    z-index:200; padding:20px;
   }
-  .team-option-logo{ width:22px; height:22px; object-fit:contain; flex-shrink:0; }
+  .team-modal{
+    background:var(--surface); border-radius:14px; width:100%; max-width:680px;
+    max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.45);
+  }
+  .team-modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    font-weight:700; font-size:17px; position:sticky; top:0; background:var(--surface);
+    color:var(--ink);
+  }
+  .team-modal-close{
+    background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-muted);
+    line-height:1; padding:4px;
+  }
+  .team-modal-close:hover{ color:var(--ink); }
+  .team-modal-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+    gap:10px; padding:18px 20px;
+  }
+  .team-modal-grid a, .team-modal-grid span{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:16px 10px; border-radius:10px; border:1px solid var(--line);
+    text-decoration:none; color:var(--ink); font-size:13px; font-weight:600; text-align:center;
+  }
+  .team-modal-grid a:hover{ border-color:var(--accent); background:var(--accent-soft); }
+  .team-modal-grid span.nav-dropdown-current{
+    background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:700;
+  }
+  .team-modal-grid .team-option-logo{ width:40px; height:40px; object-fit:contain; }
 
   /* ---------- Grand logo d'équipe ---------- */
   .team-hero{
@@ -370,6 +401,10 @@
     font-family:'Oswald', 'IBM Plex Sans', sans-serif; text-transform:uppercase;
     font-size:26px; font-weight:500; margin:0; color:var(--ink);
   }
+
+  /* ---------- Couleurs des statistiques résumé ---------- */
+  .stat-card.is-positive .stat-value{ color:var(--positive); }
+  .stat-card.is-negative .stat-value{ color:var(--negative); }
 </style>
 </head>
 <body>
@@ -434,18 +469,11 @@
   </header>
 
   <div class="filter-band">
-    <div class="nav-item team-switch">
-      <button class="nav-btn team-switch-btn" aria-haspopup="true" aria-expanded="false">
-        <img class="team-switch-logo" id="teamSwitchLogo" alt="" hidden>
-        <span id="teamSwitchLabel">Choisir une équipe</span>
-        <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="nav-dropdown teams-grid team-switch-menu" id="teamSwitchMenu" hidden></div>
-    </div>
-    <div class="search-field">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="searchInput" placeholder="Rechercher un joueur…" aria-label="Rechercher un joueur">
-    </div>
+    <button class="nav-btn team-switch-btn" id="teamSwitchBtn" aria-haspopup="dialog">
+      <img class="team-switch-logo" id="teamSwitchLogo" alt="" hidden>
+      <span id="teamSwitchLabel">Choisir une équipe</span>
+      <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
     <button class="nav-btn" id="viewBtn" aria-label="Changer le mode d'affichage" title="Affichage automatique">
       <span class="nav-btn-label">Auto</span>
       <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -456,6 +484,16 @@
         <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
       </svg>
     </button>
+  </div>
+
+  <div class="team-modal-backdrop" id="teamModalBackdrop" hidden>
+    <div class="team-modal" role="dialog" aria-modal="true" aria-label="Choisir une équipe">
+      <div class="team-modal-header">
+        <span>Choisir une équipe</span>
+        <button class="team-modal-close" id="teamModalClose" aria-label="Fermer">✕</button>
+      </div>
+      <div class="team-modal-grid" id="teamModalGrid"></div>
+    </div>
   </div>
 
   <main id="content">
@@ -548,7 +586,6 @@ const currentTeam = TEAM_GIDS[requestedTeam] || null;
 const els = {
   app: document.querySelector('.app'),
   title: document.getElementById('sheetTitle'),
-  search: document.getElementById('searchInput'),
   viewBtn: document.getElementById('viewBtn'),
   refresh: document.getElementById('refreshBtn'),
   rowCount: document.getElementById('rowCount'),
@@ -615,9 +652,19 @@ function buildTeamOption(name, slug, withLogo){
 const teamsDropdown = document.getElementById('teamsDropdown');
 TEAMS.forEach(([name, slug]) => teamsDropdown.appendChild(buildTeamOption(name, slug, false)));
 
-// Sélecteur agrandi (bannière orange), avec logo par équipe
-const teamSwitchMenu = document.getElementById('teamSwitchMenu');
-TEAMS.forEach(([name, slug]) => teamSwitchMenu.appendChild(buildTeamOption(name, slug, true)));
+// Sélecteur agrandi (bannière orange) : fenêtre centrée avec logo par équipe
+const teamModalGrid = document.getElementById('teamModalGrid');
+const teamModalBackdrop = document.getElementById('teamModalBackdrop');
+const teamModalClose = document.getElementById('teamModalClose');
+const teamSwitchBtn = document.getElementById('teamSwitchBtn');
+TEAMS.forEach(([name, slug]) => teamModalGrid.appendChild(buildTeamOption(name, slug, true)));
+
+function openTeamModal(){ teamModalBackdrop.hidden = false; }
+function closeTeamModal(){ teamModalBackdrop.hidden = true; }
+teamSwitchBtn.addEventListener('click', e => { e.stopPropagation(); openTeamModal(); });
+teamModalClose.addEventListener('click', closeTeamModal);
+teamModalBackdrop.addEventListener('click', e => { if(e.target === teamModalBackdrop) closeTeamModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeTeamModal(); });
 
 const switchLogo = document.getElementById('teamSwitchLogo');
 const switchLabel = document.getElementById('teamSwitchLabel');
@@ -784,7 +831,7 @@ function parseSheet(rows){
 }
 
 /* ---------- État + chargement ---------- */
-const state = { summary: {}, sections: [], picks: [], query: '' };
+const state = { summary: {}, sections: [], picks: [] };
 
 function buildUrl(){
   return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${currentTeam.gid}&headers=0&t=${Date.now()}`;
@@ -871,8 +918,8 @@ function formatSeasonValue(raw){
 function renderSummary(){
   const s = state.summary;
   const stats = [
-    { label: 'Masse salariale', value: formatMoney(s.masse), money: true },
-    { label: 'Espace', value: formatMoney(s.espace), money: true },
+    { label: 'Masse salariale', value: formatMoney(s.masse), cls: 'is-money is-positive' },
+    { label: 'Espace', value: formatMoney(s.espace), cls: 'is-money is-negative' },
     { label: 'Total', value: s.tot },
     { label: 'Att.', value: s.att },
     { label: 'Déf.', value: s.def },
@@ -884,7 +931,7 @@ function renderSummary(){
   stats.forEach(st => {
     if(st.value === '' || st.value == null) return;
     const card = document.createElement('div');
-    card.className = 'stat-card' + (st.money ? ' is-money' : '');
+    card.className = 'stat-card' + (st.cls ? ' ' + st.cls : '');
     const label = document.createElement('div');
     label.className = 'stat-label';
     label.textContent = st.label;
@@ -895,12 +942,6 @@ function renderSummary(){
     card.appendChild(value);
     els.summaryStats.appendChild(card);
   });
-}
-
-function matchesQuery(playerRow, query){
-  if(!query) return true;
-  const q = query.toLocaleLowerCase('fr-FR');
-  return PLAYER_COLS.some(ci => (playerRow[ci] || '').toLocaleLowerCase('fr-FR').includes(q));
 }
 
 function buildPlayerCells(container, playerRow, tag){
@@ -922,12 +963,10 @@ function buildPlayerCells(container, playerRow, tag){
 
 function renderSections(){
   els.sectionsWrap.innerHTML = '';
-  const q = state.query;
   let totalShown = 0;
 
   state.sections.forEach(section => {
-    const players = section.players.filter(p => matchesQuery(p, q));
-    if(q && players.length === 0) return; // rien à montrer pour cette section pendant une recherche
+    const players = section.players;
     totalShown += players.length;
 
     const block = document.createElement('div');
@@ -1018,7 +1057,7 @@ function buildPlayerCard(playerRow, idx, isTotal){
     const raw = playerRow[ci] || '';
     const isMoney = i >= 9;
     const val = isMoney ? formatSeasonValue(raw) : raw;
-    if(val === '') return;
+    if(!isMoney && val === '') return; // champs bio : on saute s'ils sont vides
     const field = document.createElement('div');
     field.className = 'row-field';
     const label = document.createElement('span');
@@ -1027,7 +1066,7 @@ function buildPlayerCard(playerRow, idx, isTotal){
     const value = document.createElement('span');
     value.className = 'value' + (isMoney ? ' is-numeric' : '');
     if(i === 3) value.appendChild(flagSpan(val));
-    else value.textContent = val;
+    else value.textContent = val === '' ? '—' : val; // saisons : toujours affichées, tiret si vide
     field.appendChild(label);
     field.appendChild(value);
     card.appendChild(field);
@@ -1036,8 +1075,7 @@ function buildPlayerCard(playerRow, idx, isTotal){
 }
 
 function renderPicks(){
-  const q = state.query.trim().toLocaleLowerCase('fr-FR');
-  const picks = state.picks.filter(p => !q || p.toLocaleLowerCase('fr-FR').includes(q));
+  const picks = state.picks;
   els.picksList.innerHTML = '';
   picks.forEach(p => {
     const li = document.createElement('li');
@@ -1049,27 +1087,13 @@ function renderPicks(){
 
 function render(){
   renderSummary();
-  const totalShown = renderSections();
+  renderSections();
   renderPicks();
 
   const teamName = currentTeam ? currentTeam.name + ' — ' : '';
-  els.rowCount.textContent = state.query
-    ? teamName + `${totalShown} résultat${totalShown > 1 ? 's' : ''}`
-    : teamName + `${state.sections.reduce((n, s) => n + s.players.length, 0)} joueurs`;
-
-  const nothing = totalShown === 0 && state.picks.length === 0 && !!state.query;
-  els.emptyState.hidden = !nothing;
-  if(nothing) els.emptyState.textContent = `Aucun résultat pour « ${state.query} ».`;
+  els.rowCount.textContent = teamName + `${state.sections.reduce((n, s) => n + s.players.length, 0)} joueurs`;
+  els.emptyState.hidden = true;
 }
-
-let searchTimer;
-els.search.addEventListener('input', e => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    state.query = e.target.value;
-    render();
-  }, 200);
-});
 
 function refresh(){
   els.refresh.classList.add('is-loading');
