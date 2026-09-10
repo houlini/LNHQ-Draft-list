@@ -314,10 +314,9 @@
   .stat-card .stat-value{ font-family:'IBM Plex Mono', monospace; font-size:16px; font-weight:700; margin-top:2px; }
   .stat-card.is-money .stat-value{ color:var(--accent); }
 
-  /* ---------- Rondes de repêchage, en grille (2 côte à côte si l'écran le permet) ---------- */
-  #roundsWrap{
-    display:grid; grid-template-columns:repeat(auto-fit, minmax(440px, 1fr));
-    gap:20px; align-items:start;
+  /* ---------- Groupes de matchs, en grille (plusieurs côte à côte si l'écran le permet) ---------- */
+  #groupsWrap{
+    display:grid; gap:20px; align-items:start;
     padding:0 clamp(16px,3vw,40px) 30px;
   }
   .section-block{ padding:0; }
@@ -419,18 +418,20 @@
   .team-cell a{ color:inherit; text-decoration:none; font-weight:600; }
   .team-cell a:hover{ text-decoration:underline; color:var(--accent); }
   /* ---------- Calendrier ---------- */
-  /* Colonnes dimensionnées à leur contenu : en pourcentage, les colonnes d'équipe
-     s'étiraient sur grand écran et laissaient de grands vides entre les noms. */
-  .cal-block table{ table-layout:auto; width:auto; max-width:100%; }
+  /* 4 colonnes : Visiteur | but | Domicile | but. Le tableau remplit son bloc, et les
+     blocs sont limités en largeur puis centrés pour que la bande de titre ne soit plus
+     démesurée par rapport au contenu sur grand écran. */
+  #groupsWrap{ grid-template-columns:repeat(auto-fit, minmax(340px, 460px)); justify-content:center; }
+  .cal-block table{ table-layout:auto; width:100%; }
   .cal-block th, .cal-block td{ white-space:nowrap; vertical-align:middle; line-height:1.3; }
-  .cal-block th:nth-child(4), .cal-block td:nth-child(4),
-  .cal-block th:nth-child(6), .cal-block td:nth-child(6){ text-align:center; }
+  .cal-block th:nth-child(2), .cal-block td:nth-child(2),
+  .cal-block th:nth-child(4), .cal-block td:nth-child(4){ text-align:center; width:34px; }
   .cal-block .team-cell img{ width:18px; height:18px; }
   .cal-score{ font-family:'IBM Plex Mono', monospace; font-weight:700; }
   .cal-final{ color:var(--ink-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.03em; }
   .date-row td{
     background:var(--stripe) !important; font-weight:700; text-transform:uppercase;
-    font-size:11.5px; letter-spacing:0.03em; color:var(--ink-muted);
+    font-size:11.5px; letter-spacing:0.03em; color:var(--ink-muted); text-align:left !important;
   }
   .cal-note{ color:var(--ink-muted); font-size:11.5px; font-style:italic; white-space:normal; }
 </style>
@@ -896,7 +897,7 @@ function render(){
     const table = document.createElement('table');
     const thead = document.createElement('thead');
     const headRow = document.createElement('tr');
-    ['Date', 'Heure', 'Visiteur', '', 'Domicile', ''].forEach(h => {
+    ['Visiteur', '', 'Domicile', ''].forEach(h => {
       const th = document.createElement('th');
       th.textContent = h;
       headRow.appendChild(th);
@@ -913,7 +914,7 @@ function render(){
         const dateTr = document.createElement('tr');
         dateTr.className = 'date-row';
         const td = document.createElement('td');
-        td.colSpan = 6;
+        td.colSpan = 4;
         td.textContent = formatLongDate(g.date);
         dateTr.appendChild(td);
         tbody.appendChild(dateTr);
@@ -921,10 +922,6 @@ function render(){
       const tr = document.createElement('tr');
       if(idx < 20) tr.classList.add('row-in');
 
-      const tdDate = document.createElement('td');
-      tdDate.textContent = formatShortDate(g.date);
-      const tdTime = document.createElement('td');
-      tdTime.textContent = g.time;
       const tdAway = document.createElement('td');
       tdAway.appendChild(teamCell(g.away));
       const tdAwayScore = document.createElement('td');
@@ -942,7 +939,7 @@ function render(){
       tdHomeScore.className = 'cal-score';
       tdHomeScore.textContent = g.homeScore;
 
-      tr.append(tdDate, tdTime, tdAway, tdAwayScore, tdHome, tdHomeScore);
+      tr.append(tdAway, tdAwayScore, tdHome, tdHomeScore);
       tbody.appendChild(tr);
     });
 
