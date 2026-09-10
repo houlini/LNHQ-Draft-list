@@ -332,14 +332,7 @@
   }
   .section-title .section-count{ font-weight:500; opacity:0.85; text-transform:none; letter-spacing:0; font-size:12.5px; }
   .section-block .table-wrap{ border-radius:0 0 var(--radius) var(--radius); border-top:none; margin:0; }
-  /* Largeurs de colonnes adaptées aux 5 colonnes réelles (#, Équipe, Joueur, Pos, OVR) —
-     Joueur prend l'espace restant. */
-  .section-block table{ table-layout:fixed; width:100%; }
-  .section-block th, .section-block td{ overflow:hidden; text-overflow:ellipsis; }
-  .section-block th:nth-child(1), .section-block td:nth-child(1){ width:44px; }
-  .section-block th:nth-child(2), .section-block td:nth-child(2){ width:84px; }
-  .section-block th:nth-child(4), .section-block td:nth-child(4){ width:52px; }
-  .section-block th:nth-child(5), .section-block td:nth-child(5){ width:52px; }
+  .section-block table{ width:100%; }
   .section-block .list-wrap{
     border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius); padding:0 4px;
   }
@@ -429,17 +422,23 @@
   .team-cell a{ color:inherit; text-decoration:none; font-weight:600; }
   .team-cell a:hover{ text-decoration:underline; color:var(--accent); }
   /* ---------- Calendrier ---------- */
-  .cal-block th:nth-child(1), .cal-block td:nth-child(1){ width:86px; }
-  .cal-block th:nth-child(2), .cal-block td:nth-child(2){ width:74px; }
-  .cal-block th:nth-child(4), .cal-block td:nth-child(4){ width:46px; text-align:center; }
-  .cal-block th:nth-child(6), .cal-block td:nth-child(6){ width:46px; text-align:center; }
+  /* Colonnes juste assez larges pour leur contenu (pas de troncature d'heure), les deux
+     colonnes d'équipe se partagent le reste à parts égales. */
+  .cal-block table{ table-layout:auto; }
+  .cal-block th, .cal-block td{ white-space:nowrap; }
+  .cal-block th:nth-child(1), .cal-block td:nth-child(1),
+  .cal-block th:nth-child(2), .cal-block td:nth-child(2){ width:1%; }
+  .cal-block th:nth-child(3), .cal-block td:nth-child(3),
+  .cal-block th:nth-child(5), .cal-block td:nth-child(5){ width:50%; }
+  .cal-block th:nth-child(4), .cal-block td:nth-child(4),
+  .cal-block th:nth-child(6), .cal-block td:nth-child(6){ width:1%; text-align:center; }
   .cal-score{ font-family:'IBM Plex Mono', monospace; font-weight:700; }
   .cal-final{ color:var(--ink-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.03em; }
   .date-row td{
     background:var(--stripe) !important; font-weight:700; text-transform:uppercase;
     font-size:11.5px; letter-spacing:0.03em; color:var(--ink-muted);
   }
-  .cal-note{ color:var(--ink-muted); font-size:11.5px; font-style:italic; }
+  .cal-note{ color:var(--ink-muted); font-size:11.5px; font-style:italic; white-space:normal; }
 </style>
 </head>
 <body>
@@ -452,7 +451,7 @@
         <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
       </a>
       <nav class="site-nav" id="siteNav">
-        <a class="nav-btn" href="https://sites.lnhq.ca">Accueil</a>
+        <a class="nav-btn" href="https://sites.lnhq.ca"><span>Accueil</span></a>
 
         <div class="nav-item">
           <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
@@ -504,24 +503,26 @@
   </header>
 
   <div class="filter-band">
+    <button class="nav-btn team-switch-btn" id="teamSwitchBtn" aria-haspopup="dialog">
+      <img class="team-switch-logo" id="teamSwitchLogo" alt="" hidden>
+      <span id="teamSwitchLabel">Toutes les équipes</span>
+      <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
     <div class="filter-bar" id="filterBar">
-      <div class="filter-control">
-        <label for="filterTeam">Équipe</label>
-        <select id="filterTeam"><option value="">Toutes</option></select>
-      </div>
-      <div class="filter-control">
-        <label for="filterView">Grouper par</label>
-        <select id="filterView">
-          <option value="period">Période</option>
-          <option value="month">Mois</option>
-          <option value="week">Semaine</option>
-          <option value="day">Jour</option>
-        </select>
-      </div>
       <div class="filter-control">
         <label for="filterPeriod">Période</label>
         <select id="filterPeriod"><option value="">Toutes</option></select>
       </div>
+    </div>
+  </div>
+
+  <div class="team-modal-backdrop" id="teamModalBackdrop" hidden>
+    <div class="team-modal" role="dialog" aria-modal="true" aria-label="Choisir une équipe">
+      <div class="team-modal-header">
+        <span>Choisir une équipe</span>
+        <button class="team-modal-close" id="teamModalClose" aria-label="Fermer">✕</button>
+      </div>
+      <div class="team-modal-grid" id="teamModalGrid"></div>
     </div>
   </div>
 
@@ -563,8 +564,12 @@ const CONFIG = {
 const els = {
   app: document.querySelector('.app'),
   title: document.getElementById('sheetTitle'),
-  filterTeam: document.getElementById('filterTeam'),
-  filterView: document.getElementById('filterView'),
+  teamSwitchBtn: document.getElementById('teamSwitchBtn'),
+  teamSwitchLogo: document.getElementById('teamSwitchLogo'),
+  teamSwitchLabel: document.getElementById('teamSwitchLabel'),
+  teamModalBackdrop: document.getElementById('teamModalBackdrop'),
+  teamModalClose: document.getElementById('teamModalClose'),
+  teamModalGrid: document.getElementById('teamModalGrid'),
   filterPeriod: document.getElementById('filterPeriod'),
   rowCount: document.getElementById('rowCount'),
   lastUpdated: document.getElementById('lastUpdated'),
@@ -707,7 +712,7 @@ function parseSchedule(rows){
   return games;
 }
 
-const state = { games: [], team: '', view: 'period', period: '' };
+const state = { games: [], team: '', period: '' };
 
 function buildUrl(){
   return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.GID}&headers=0&t=${Date.now()}`;
@@ -757,19 +762,68 @@ function toggle({ loading=false, error=false } = {}){
 }
 
 /* ---------- Filtres ---------- */
+// Sélecteur d'équipe : même fenêtre centrée avec logos que sur la page équipe.
+function selectTeam(fullName, label, code){
+  state.team = fullName;
+  els.teamSwitchLabel.textContent = label;
+  if(code){
+    els.teamSwitchLogo.src = teamLogoPath(code);
+    els.teamSwitchLogo.hidden = false;
+    els.teamSwitchLogo.onerror = () => { els.teamSwitchLogo.hidden = true; };
+  }else{
+    els.teamSwitchLogo.hidden = true;
+  }
+  els.teamModalBackdrop.hidden = true;
+  render();
+}
+
+function buildTeamModal(){
+  els.teamModalGrid.innerHTML = '';
+  // Option "toutes les équipes" en premier
+  const all = document.createElement('a');
+  all.href = '#';
+  const allLabel = document.createElement('span');
+  allLabel.textContent = 'Toutes les équipes';
+  all.appendChild(allLabel);
+  all.addEventListener('click', e => { e.preventDefault(); selectTeam('', 'Toutes les équipes', null); });
+  els.teamModalGrid.appendChild(all);
+
+  // Nom complet tel qu'il apparaît dans le calendrier, pour que le filtre corresponde.
+  const fullNames = Array.from(new Set(state.games.flatMap(g => [g.away, g.home])))
+    .filter(Boolean).sort((a, b) => a.localeCompare(b, 'fr-FR'));
+  fullNames.forEach(fullName => {
+    const slug = TEAM_NAME_TO_SLUG[fullName.trim().toLowerCase()];
+    const code = slug ? SLUG_TO_CODE[slug] : null;
+    const a = document.createElement('a');
+    a.href = '#';
+    if(code){
+      const img = document.createElement('img');
+      img.className = 'team-option-logo';
+      img.src = teamLogoPath(code);
+      img.alt = '';
+      img.loading = 'lazy';
+      img.onerror = () => { img.style.display = 'none'; };
+      a.appendChild(img);
+    }
+    const label = document.createElement('span');
+    label.textContent = fullName;
+    a.appendChild(label);
+    a.addEventListener('click', e => { e.preventDefault(); selectTeam(fullName, fullName, code); });
+    els.teamModalGrid.appendChild(a);
+  });
+}
+
+els.teamSwitchBtn.addEventListener('click', e => { e.stopPropagation(); els.teamModalBackdrop.hidden = false; });
+els.teamModalClose.addEventListener('click', () => { els.teamModalBackdrop.hidden = true; });
+els.teamModalBackdrop.addEventListener('click', e => { if(e.target === els.teamModalBackdrop) els.teamModalBackdrop.hidden = true; });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') els.teamModalBackdrop.hidden = true; });
+
 let filtersBuilt = false;
 function buildFilters(){
   if(filtersBuilt) return;
   filtersBuilt = true;
 
-  const teams = Array.from(new Set(state.games.flatMap(g => [g.away, g.home])))
-    .filter(Boolean).sort((a, b) => a.localeCompare(b, 'fr-FR'));
-  teams.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t;
-    opt.textContent = t;
-    els.filterTeam.appendChild(opt);
-  });
+  buildTeamModal();
 
   const periods = Array.from(new Set(state.games.map(g => g.period))).sort((a, b) => a - b);
   periods.forEach(p => {
@@ -781,8 +835,6 @@ function buildFilters(){
     els.filterPeriod.appendChild(opt);
   });
 
-  els.filterTeam.addEventListener('change', () => { state.team = els.filterTeam.value; render(); });
-  els.filterView.addEventListener('change', () => { state.view = els.filterView.value; render(); });
   els.filterPeriod.addEventListener('change', () => { state.period = els.filterPeriod.value; render(); });
 }
 
@@ -801,31 +853,6 @@ function formatLongDate(str){
   const d = parseDate(str);
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
-function monthKey(str){
-  const d = parseDate(str);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-}
-function monthLabel(str){
-  const d = parseDate(str);
-  return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-}
-// Semaine commençant le lundi
-function weekStart(str){
-  const d = parseDate(str);
-  const day = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - day);
-  return d;
-}
-function weekKey(str){
-  const d = weekStart(str);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function weekLabel(str){
-  const s = weekStart(str);
-  const e = new Date(s); e.setDate(e.getDate() + 6);
-  const f = dt => `${dt.getDate()} ${MONTHS[dt.getMonth()].substr(0,4)}`;
-  return `Semaine du ${f(s)} au ${f(e)}`;
-}
 
 /* ---------- Rendu ---------- */
 function filteredGames(){
@@ -839,19 +866,12 @@ function filteredGames(){
 function groupGames(games){
   const map = new Map();
   games.forEach(g => {
-    let key, label;
-    if(state.view === 'period'){
-      key = 'p' + g.period;
+    const key = 'p' + g.period;
+    if(!map.has(key)){
       const inPeriod = state.games.filter(x => x.period === g.period);
-      label = `Période ${g.period} — ${formatShortDate(inPeriod[0].date)} au ${formatShortDate(inPeriod[inPeriod.length-1].date)}`;
-    }else if(state.view === 'month'){
-      key = monthKey(g.date); label = monthLabel(g.date);
-    }else if(state.view === 'week'){
-      key = weekKey(g.date); label = weekLabel(g.date);
-    }else{
-      key = g.date; label = formatLongDate(g.date);
+      const label = `Période ${g.period} — ${formatShortDate(inPeriod[0].date)} au ${formatShortDate(inPeriod[inPeriod.length-1].date)}`;
+      map.set(key, { label, games: [] });
     }
-    if(!map.has(key)) map.set(key, { label, games: [] });
     map.get(key).games.push(g);
   });
   return Array.from(map.values());
@@ -894,7 +914,7 @@ function render(){
     // où le titre du groupe est déjà la date).
     let lastDate = null;
     group.games.forEach((g, idx) => {
-      if(state.view !== 'day' && g.date !== lastDate){
+      if(g.date !== lastDate){
         lastDate = g.date;
         const dateTr = document.createElement('tr');
         dateTr.className = 'date-row';
