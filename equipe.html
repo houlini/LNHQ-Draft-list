@@ -306,16 +306,26 @@
 
   /* ---------- Résumé (Masse salariale / Espace / stats) ---------- */
   .summary-stats{
-    display:flex; flex-wrap:wrap; gap:10px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(84px, 1fr));
+    gap:8px;
     padding:14px clamp(16px,3vw,40px) 6px;
   }
   .stat-card{
-    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
-    padding:9px 16px; min-width:100px;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:7px 10px; min-width:0;
   }
-  .stat-card .stat-label{ font-size:11px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.03em; white-space:nowrap; }
-  .stat-card .stat-value{ font-family:'IBM Plex Mono', monospace; font-size:16px; font-weight:700; margin-top:2px; }
+  .stat-card .stat-label{ font-size:10.5px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .stat-card .stat-value{ font-family:'IBM Plex Mono', monospace; font-size:14.5px; font-weight:700; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .stat-card.is-money .stat-value{ color:var(--accent); }
+  .stat-card.is-money{ grid-column:span 2; }
+
+  @media (max-width:600px){
+    .summary-stats{ grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:6px; }
+    .stat-card{ padding:6px 8px; border-radius:7px; }
+    .stat-card .stat-label{ font-size:9.5px; }
+    .stat-card .stat-value{ font-size:13px; }
+  }
 
   /* ---------- Sections par position (Attaquants / Défenseurs / Gardiens / Espoirs) ---------- */
   .section-block{ padding:14px clamp(16px,3vw,40px) 0; }
@@ -1011,8 +1021,6 @@ function applyData(rows){
   state.summary.moyPoids = avgWeight != null ? Math.round(avgWeight).toString() : '';
   const avgHeightInches = computeTeamAverage(parsed.sections, 7, true);
   state.summary.moyGrandeur = avgHeightInches != null ? inchesToHeight(avgHeightInches) : '';
-  const avgYears = computeTeamAverage(parsed.sections, 9);
-  state.summary.moyContrat = avgYears != null ? avgYears.toFixed(1) : '';
 
   state.sections.forEach(applySectionAverages);
 }
@@ -1071,18 +1079,17 @@ function formatSeasonValue(raw){
 function renderSummary(){
   const s = state.summary;
   const stats = [
-    { label: 'Masse salariale', value: formatMoney(s.masse), cls: 'is-money is-positive' },
+    { label: 'Masse', value: formatMoney(s.masse), cls: 'is-money is-positive' },
     { label: 'Espace', value: formatMoney(s.espace), cls: 'is-money is-negative' },
     { label: 'Total', value: s.tot },
     { label: 'Att.', value: s.att },
     { label: 'Déf.', value: s.def },
     { label: 'Gard.', value: s.gar },
     { label: 'Esp.', value: s.esp },
-    { label: 'Âge moyen', value: s.moyAge },
-    { label: 'OVR moyen', value: s.moyOvr },
-    { label: 'Poids moyen', value: s.moyPoids },
-    { label: 'Grandeur moyenne', value: s.moyGrandeur },
-    { label: 'Contrat moyen', value: s.moyContrat },
+    { label: 'Âge', value: s.moyAge },
+    { label: 'OVR', value: s.moyOvr },
+    { label: 'Poids', value: s.moyPoids },
+    { label: 'Taille', value: s.moyGrandeur },
   ];
   els.summaryStats.innerHTML = '';
   stats.forEach(st => {
