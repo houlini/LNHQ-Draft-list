@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Équipe</title>
+<title>Repêchage</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@400;500&family=Roboto:wght@500;700&display=swap');
@@ -20,8 +20,6 @@
     --line:#E5E2D9;
     --danger:#A3402F;
     --danger-soft:#F6E9E6;
-    --positive:#1E8E3E;
-    --negative:#C5221F;
     --radius:10px;
     --row-py:6px; --row-px:10px; --row-font:12.5px;
     --nav-dark:#2D333B;
@@ -41,8 +39,6 @@
       --line:#2C3033;
       --danger:#E08B78;
       --danger-soft:#2E211E;
-      --positive:#5BB97C;
-      --negative:#F28B82;
     }
   }
 
@@ -244,8 +240,6 @@
     padding:2px 8px; border-radius:6px; font-weight:600;
   }
   .flag-icon{ border-radius:2px; vertical-align:middle; display:inline-block; }
-  .td-positive, .row-field .value.is-positive{ color:var(--positive); font-weight:600; }
-  .td-negative, .row-field .value.is-negative{ color:var(--negative); font-weight:600; }
 
   /* Première colonne gelée : reste visible pendant le défilement horizontal (utile sur mobile) */
   thead th:first-child, tbody td:first-child{
@@ -282,11 +276,17 @@
     font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums;
   }
 
-  /* Vue tableau imposée pour tout le monde, quel que soit l'appareil ou la largeur
-     d'écran (la vue fiche n'est plus proposée). Sur mobile, le tableau défile
-     horizontalement, avec la première colonne gelée. */
-  .table-wrap{ display:block !important; }
-  .list-wrap{ display:none !important; }
+  /* Bascule table / liste selon la largeur d'écran (mode "auto") */
+  @media (min-width:700px){
+    .table-wrap{ display:block; }
+    .list-wrap{ display:none; }
+  }
+
+  /* Modes forcés par le bouton de vue : gagnent sur la largeur d'écran, quel que soit l'appareil */
+  .app.view-table .table-wrap{ display:block !important; }
+  .app.view-table .list-wrap{ display:none !important; }
+  .app.view-list .table-wrap{ display:none !important; }
+  .app.view-list .list-wrap{ display:block !important; }
 
   @media (max-width:380px){
     .nav-btn .nav-btn-label{ font-size:11.5px; }
@@ -297,126 +297,6 @@
   @media (min-width:1200px){
     .row-title{ font-size:19px; }
   }
-
-  /* ---------- Résumé (Masse salariale / Espace / stats) ---------- */
-  .summary-stats{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(84px, 1fr));
-    gap:8px;
-    padding:14px clamp(16px,3vw,40px) 6px;
-  }
-  .stat-card{
-    background:var(--surface); border:1px solid var(--line); border-radius:8px;
-    padding:7px 10px; min-width:0;
-  }
-  .stat-card .stat-label{ font-size:10.5px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .stat-card .stat-value{ font-family:'IBM Plex Mono', monospace; font-size:14.5px; font-weight:700; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .stat-card.is-money .stat-value{ color:var(--accent); }
-  .stat-card.is-money{ grid-column:span 2; }
-
-  @media (max-width:600px){
-    .summary-stats{ grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:6px; }
-    .stat-card{ padding:6px 8px; border-radius:7px; }
-    .stat-card .stat-label{ font-size:9.5px; }
-    .stat-card .stat-value{ font-size:13px; }
-  }
-
-  /* ---------- Sections par position (Attaquants / Défenseurs / Gardiens / Espoirs) ---------- */
-  .section-block{ padding:14px clamp(16px,3vw,40px) 0; }
-  .section-title{
-    display:flex; align-items:baseline; gap:8px;
-    background:var(--accent); color:var(--accent-ink);
-    padding:9px 16px; border-radius:var(--radius) var(--radius) 0 0;
-    font-weight:700; text-transform:uppercase; letter-spacing:0.02em; font-size:13.5px;
-  }
-  .section-title .section-count{ font-weight:500; opacity:0.85; text-transform:none; letter-spacing:0; font-size:12.5px; }
-  .section-block .table-wrap{ border-radius:0 0 var(--radius) var(--radius); border-top:none; margin:0; }
-  /* Largeurs de colonnes fixes et identiques sur les 4 tables (Attaquants/Défenseurs/
-     Gardiens/Espoirs), pour que les colonnes de saison s'alignent d'une table à l'autre
-     au lieu que chacune ajuste ses colonnes selon son propre contenu. */
-  .section-block table{ table-layout:fixed; }
-  .section-block th, .section-block td{ overflow:hidden; text-overflow:ellipsis; }
-  .section-block th:nth-child(1), .section-block td:nth-child(1){ width:170px; }
-  .section-block th:nth-child(n+2):nth-child(-n+9), .section-block td:nth-child(n+2):nth-child(-n+9){ width:56px; }
-  .section-block th:nth-child(n+10), .section-block td:nth-child(n+10){ width:92px; }
-  .section-block .list-wrap{
-    border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius); padding:0 4px;
-  }
-  tr.total-row td{ background:var(--stripe) !important; font-weight:700; border-top:2px solid var(--accent); }
-  .row-card.is-total{ background:var(--stripe); font-weight:700; border-top:2px solid var(--accent); }
-  .section-empty{
-    border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius);
-    padding:16px; color:var(--ink-muted); font-size:14px; text-align:center; background:var(--surface);
-  }
-
-  /* ---------- Choix de repêchage ---------- */
-  .picks-block{ padding:14px clamp(16px,3vw,40px) 30px; }
-  .picks-list{
-    list-style:none; margin:0; padding:0;
-    border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius);
-    background:var(--surface);
-  }
-  .picks-list li{ padding:10px 16px; border-bottom:1px solid var(--line); font-size:14.5px; }
-  .picks-list li:last-child{ border-bottom:none; }
-
-  /* ---------- Sélecteur d'équipe (bannière orange) ---------- */
-  .team-switch-btn{
-    background:var(--surface); color:var(--ink);
-    font-size:16px; padding:10px 18px; border-radius:9px; gap:12px;
-    text-transform:none; letter-spacing:0; font-weight:700;
-  }
-  .team-switch-btn:hover{ background:var(--surface); opacity:0.9; }
-  .team-switch-logo{ width:28px; height:28px; object-fit:contain; }
-
-  .team-modal-backdrop{
-    position:fixed; inset:0; background:rgba(0,0,0,0.55);
-    display:flex; align-items:center; justify-content:center;
-    z-index:200; padding:20px;
-  }
-  .team-modal{
-    background:var(--surface); border-radius:14px; width:100%; max-width:680px;
-    max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.45);
-  }
-  .team-modal-header{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:16px 20px; border-bottom:1px solid var(--line);
-    font-weight:700; font-size:17px; position:sticky; top:0; background:var(--surface);
-    color:var(--ink);
-  }
-  .team-modal-close{
-    background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-muted);
-    line-height:1; padding:4px;
-  }
-  .team-modal-close:hover{ color:var(--ink); }
-  .team-modal-grid{
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
-    gap:10px; padding:18px 20px;
-  }
-  .team-modal-grid a, .team-modal-grid span{
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-    padding:16px 10px; border-radius:10px; border:1px solid var(--line);
-    text-decoration:none; color:var(--ink); font-size:13px; font-weight:600; text-align:center;
-  }
-  .team-modal-grid a:hover{ border-color:var(--accent); background:var(--accent-soft); }
-  .team-modal-grid span.nav-dropdown-current{
-    background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:700;
-  }
-  .team-modal-grid .team-option-logo{ width:40px; height:40px; object-fit:contain; }
-
-  /* ---------- Grand logo d'équipe ---------- */
-  .team-hero{
-    display:flex; align-items:center; gap:14px;
-    padding:16px clamp(16px,3vw,40px) 0;
-  }
-  .team-hero-logo{ width:56px; height:56px; object-fit:contain; }
-  .team-hero-name{
-    font-family:'Oswald', 'IBM Plex Sans', sans-serif; text-transform:uppercase;
-    font-size:26px; font-weight:500; margin:0; color:var(--ink);
-  }
-
-  /* ---------- Couleurs des statistiques résumé ---------- */
-  .stat-card.is-positive .stat-value{ color:var(--positive); }
-  .stat-card.is-negative .stat-value{ color:var(--negative); }
 </style>
 </head>
 <body>
@@ -440,7 +320,7 @@
             <a href="https://sites.lnhq.ca/ligue/calendrier">Calendrier</a>
             <a href="https://sites.lnhq.ca/ligue/dgs">DGs</a>
             <a href="https://sites.lnhq.ca/ligue/règlements">Règlements</a>
-            <a href="masse.html">Masse salariale</a>
+            <a href="https://lnhq.ca/masse.html">Masse salariale</a>
           </div>
         </div>
 
@@ -450,7 +330,7 @@
             <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="nav-dropdown" hidden>
-            <a href="https://lnhq.ca/">Joueurs</a>
+            <span class="nav-dropdown-current" aria-current="page">Joueurs</span>
             <a href="ordre.html">Ordre</a>
           </div>
         </div>
@@ -481,21 +361,21 @@
   </header>
 
   <div class="filter-band">
-    <button class="nav-btn team-switch-btn" id="teamSwitchBtn" aria-haspopup="dialog">
-      <img class="team-switch-logo" id="teamSwitchLogo" alt="" hidden>
-      <span id="teamSwitchLabel">Choisir une équipe</span>
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="searchInput" placeholder="Rechercher…" aria-label="Rechercher dans les données">
+    </div>
+    <button class="nav-btn" id="viewBtn" aria-label="Changer le mode d'affichage" title="Affichage automatique">
+      <span class="nav-btn-label">Auto</span>
       <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
-  </div>
-
-  <div class="team-modal-backdrop" id="teamModalBackdrop" hidden>
-    <div class="team-modal" role="dialog" aria-modal="true" aria-label="Choisir une équipe">
-      <div class="team-modal-header">
-        <span>Choisir une équipe</span>
-        <button class="team-modal-close" id="teamModalClose" aria-label="Fermer">✕</button>
-      </div>
-      <div class="team-modal-grid" id="teamModalGrid"></div>
-    </div>
+    <button class="nav-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
+      <span class="nav-btn-label">Actualiser</span>
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+      </svg>
+    </button>
+    <div class="filter-bar" id="filterBar" hidden></div>
   </div>
 
   <main id="content">
@@ -505,6 +385,7 @@
       <div class="skeleton-row"></div>
       <div class="skeleton-row"></div>
     </div>
+
 
     <div id="errorBox" class="status-box error" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -516,19 +397,14 @@
       </div>
     </div>
 
-    <div class="team-hero" id="teamHero" hidden>
-      <img class="team-hero-logo" id="teamHeroLogo" alt="">
-      <h2 class="team-hero-name" id="teamHeroName"></h2>
+    <div class="table-wrap" id="tableWrap" hidden>
+      <table>
+        <thead><tr id="tableHeadRow"></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
     </div>
 
-    <div id="dataWrap" hidden>
-      <div class="summary-stats" id="summaryStats"></div>
-      <div id="sectionsWrap"></div>
-      <div class="picks-block" id="picksBlock" hidden>
-        <div class="section-title"><span>Choix de repêchage</span></div>
-        <ul class="picks-list" id="picksList"></ul>
-      </div>
-    </div>
+    <div class="list-wrap" id="listWrap" hidden></div>
 
     <p class="empty-state" id="emptyState" hidden></p>
   </main>
@@ -536,153 +412,438 @@
 
 <script>
 /* =========================================================================
-   CONFIGURATION
+   CONFIGURATION — à adapter à votre Google Sheet
    ========================================================================= */
 const CONFIG = {
+  // L'ID se trouve dans l'URL de votre feuille :
+  // https://docs.google.com/spreadsheets/d/CET_ID_ICI/edit#gid=0
   SHEET_ID: '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A',
+
+  // Le gid correspond à l'onglet (visible après "#gid=" dans l'URL). 0 = premier onglet.
+  GID: '1424606319',
+
+  // Titre affiché en haut du widget.
+  TITLE: 'LNHQ',
+
+  // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
+  // un texte = nom exact de l'en-tête (insensible à la casse).
+  // Ici : A, C, F, G, J, L, M, O, Q, R, S, T, U, V, W, X
+  HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23],
+
+  // Colonnes à afficher comme un petit drapeau plutôt que du texte.
+  // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
+  FLAG_COLUMNS: ['NAT'],
+
+  // Colonnes à mettre en évidence (fond orange, texte blanc). Même syntaxe que HIDDEN_COLUMNS.
+  // Ici : D, Y
+  HIGHLIGHT_COLUMNS: [3, 24],
+
+  // Colonnes pour lesquelles afficher un menu déroulant de filtre (nom exact de l'en-tête).
+  // Les valeurs proposées sont détectées automatiquement dans les données.
+  FILTER_COLUMNS: ['PO', 'SH'],
+
+  // Ordre personnalisé des valeurs dans le menu déroulant d'une colonne filtrable
+  // (clé = nom exact de l'en-tête ; valeurs non listées passent après, triées alphabétiquement).
+  FILTER_VALUE_ORDER: {
+    PO: ['C', 'R', 'L', 'D', 'G'],
+  },
+
+  // Renommage du LIBELLÉ AFFICHÉ DANS LE FILTRE seulement (la colonne du tableau garde son vrai nom).
+  FILTER_LABELS: {
+    PO: 'Position',
+    SH: 'Shoot',
+  },
+
+  // Colonnes filtrées par curseur "maximum" plutôt que par liste de valeurs (ex: un plafond salarial).
+  MAX_FILTER_COLUMNS: [
+    { column: '2026-27', label: 'Salaire maximum' },
+  ],
 };
-
-// Correspondance équipe (slug utilisé dans l'URL ?team=...) → gid de son onglet.
-// Même slugs que le menu Équipes de la navigation (déjà confirmés fonctionnels).
-const TEAM_GIDS = {
-  'montreal': { name: 'Montréal Canadiens', gid: '1659712154', code: 'MTL' },
-  'toronto': { name: 'Toronto Maple Leafs', gid: '1170343586', code: 'TOR' },
-  'ottawa': { name: 'Ottawa Senators', gid: '1278633271', code: 'OTT' },
-  'boston': { name: 'Boston Bruins', gid: '1044373152', code: 'BOS' },
-  'buffalo': { name: 'Buffalo Sabres', gid: '807424961', code: 'BUF' },
-  'detroit': { name: 'Detroit Red Wings', gid: '2108797472', code: 'DET' },
-  'florida': { name: 'Florida Panthers', gid: '2131146317', code: 'FLA' },
-  'tampa-bay': { name: 'Tampa Bay Lightning', gid: '1612306797', code: 'TBL' },
-  'carolina': { name: 'Carolina Hurricanes', gid: '1919598722', code: 'CAR' },
-  'columbus': { name: 'Columbus Blue Jackets', gid: '1874895112', code: 'CBJ' },
-  'new-jersey': { name: 'New Jersey Devils', gid: '1923421187', code: 'NJD' },
-  'ny-islanders': { name: 'New York Islanders', gid: '597333970', code: 'NYI' },
-  'ny-rangers': { name: 'New York Rangers', gid: '978631121', code: 'NYR' },
-  'philadelphia': { name: 'Philadelphia Flyers', gid: '805190508', code: 'PHI' },
-  'pittsburgh': { name: 'Pittsburgh Penguins', gid: '954059850', code: 'PIT' },
-  'washington': { name: 'Washington Capitals', gid: '1616951952', code: 'WSH' },
-  'utah': { name: 'Utah Mammoth', gid: '1828953075', code: 'UTA' },
-  'chicago': { name: 'Chicago Blackhawks', gid: '218518637', code: 'CHI' },
-  'colorado': { name: 'Colorado Avalanche', gid: '183375770', code: 'COL' },
-  'dallas': { name: 'Dallas Stars', gid: '1464526439', code: 'DAL' },
-  'minnesota': { name: 'Minnesota Wild', gid: '1161473907', code: 'MIN' },
-  'nashville': { name: 'Nashville Predators', gid: '1918447380', code: 'NSH' },
-  'st-louis': { name: 'St. Louis Blues', gid: '849304283', code: 'STL' },
-  'winnipeg': { name: 'Winnipeg Jets', gid: '79614139', code: 'WPG' },
-  'anaheim': { name: 'Anaheim Ducks', gid: '219196397', code: 'ANA' },
-  'calgary': { name: 'Calgary Flames', gid: '840133937', code: 'CGY' },
-  'edmonton': { name: 'Edmonton Oilers', gid: '2014767334', code: 'EDM' },
-  'los-angeles': { name: 'Los Angeles Kings', gid: '1516021951', code: 'LAK' },
-  'san-jose': { name: 'San Jose Sharks', gid: '1186100424', code: 'SJS' },
-  'seattle': { name: 'Seattle Kraken', gid: '868766828', code: 'SEA' },
-  'vancouver': { name: 'Vancouver Canucks', gid: '1843924531', code: 'VAN' },
-  'vegas': { name: 'Vegas Golden Knights', gid: '721738512', code: 'VGK' },
-};
-
-const urlParams = new URLSearchParams(location.search);
-const requestedTeam = (urlParams.get('team') || '').trim().toLowerCase();
-const currentTeam = TEAM_GIDS[requestedTeam] || null;
-
-// Couleurs approximatives par équipe (primaire = accent, dark = bandeau du haut).
-// Teintes de bonne foi tirées des identités visuelles connues des équipes — ajuste les
-// codes hexadécimaux ci-dessous si tu veux une correspondance plus précise.
-const TEAM_COLORS = {
-  anaheim: { primary:'#F47A38', dark:'#0D0D0D' },
-  boston: { primary:'#FFB81C', dark:'#000000' },
-  buffalo: { primary:'#FCB514', dark:'#002654' },
-  calgary: { primary:'#C8102E', dark:'#4B0009' },
-  carolina: { primary:'#CC0000', dark:'#000000' },
-  chicago: { primary:'#CF0A2C', dark:'#000000' },
-  colorado: { primary:'#6F263D', dark:'#041E42' },
-  columbus: { primary:'#CE1126', dark:'#002654' },
-  dallas: { primary:'#006847', dark:'#111111' },
-  detroit: { primary:'#CE1126', dark:'#000000' },
-  edmonton: { primary:'#FF4C00', dark:'#041E42' },
-  florida: { primary:'#C8102E', dark:'#041E42' },
-  'los-angeles': { primary:'#8C9396', dark:'#000000' },
-  minnesota: { primary:'#A6192E', dark:'#154734' },
-  montreal: { primary:'#AF1E2D', dark:'#192168' },
-  nashville: { primary:'#FFB81C', dark:'#041E42' },
-  'new-jersey': { primary:'#CE1126', dark:'#000000' },
-  'ny-islanders': { primary:'#F47D30', dark:'#00539B' },
-  'ny-rangers': { primary:'#CE1126', dark:'#001E60' },
-  ottawa: { primary:'#C52032', dark:'#000000' },
-  philadelphia: { primary:'#F74902', dark:'#000000' },
-  pittsburgh: { primary:'#FCB514', dark:'#000000' },
-  'san-jose': { primary:'#006D75', dark:'#000000' },
-  seattle: { primary:'#99D9D9', dark:'#001628' },
-  'st-louis': { primary:'#FCB514', dark:'#002F87' },
-  'tampa-bay': { primary:'#0057B8', dark:'#000000' },
-  toronto: { primary:'#003E7E', dark:'#000000' },
-  utah: { primary:'#69B3E7', dark:'#000000' },
-  vancouver: { primary:'#00843D', dark:'#041C2C' },
-  vegas: { primary:'#B4975A', dark:'#101820' },
-  washington: { primary:'#C8102E', dark:'#041E42' },
-  winnipeg: { primary:'#004C97', dark:'#041E42' },
-};
-
-function idealTextColor(hex){
-  const c = hex.replace('#', '');
-  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.6 ? '#12181F' : '#FFFFFF';
-}
-function lightenHex(hex, amt){
-  const c = hex.replace('#', '');
-  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
-  const mix = ch => Math.round(ch + (255 - ch) * amt).toString(16).padStart(2, '0');
-  return '#' + mix(r) + mix(g) + mix(b);
-}
-function darkenHex(hex, amt){
-  const c = hex.replace('#', '');
-  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
-  const mix = ch => Math.round(ch * (1 - amt)).toString(16).padStart(2, '0');
-  return '#' + mix(r) + mix(g) + mix(b);
-}
-
-if(currentTeam){
-  const colors = TEAM_COLORS[requestedTeam];
-  if(colors){
-    // En mode sombre, le texte reste clair : la teinte de survol doit s'assombrir
-    // (pas s'éclaircir vers le blanc) pour rester lisible.
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const root = document.documentElement.style;
-    root.setProperty('--accent', colors.primary);
-    root.setProperty('--accent-ink', idealTextColor(colors.primary));
-    root.setProperty('--accent-soft', prefersDark ? darkenHex(colors.primary, 0.75) : lightenHex(colors.primary, 0.85));
-    root.setProperty('--nav-dark', colors.dark);
-    root.setProperty('--nav-ink', idealTextColor(colors.dark));
-  }
-}
-
 /* ========================================================================= */
 
 const els = {
   app: document.querySelector('.app'),
   title: document.getElementById('sheetTitle'),
+  search: document.getElementById('searchInput'),
+  filterBar: document.getElementById('filterBar'),
+  viewBtn: document.getElementById('viewBtn'),
+  refresh: document.getElementById('refreshBtn'),
   rowCount: document.getElementById('rowCount'),
   lastUpdated: document.getElementById('lastUpdated'),
   loader: document.getElementById('loader'),
   errorBox: document.getElementById('errorBox'),
   errorText: document.getElementById('errorText'),
   retryBtn: document.getElementById('retryBtn'),
-  dataWrap: document.getElementById('dataWrap'),
-  summaryStats: document.getElementById('summaryStats'),
-  sectionsWrap: document.getElementById('sectionsWrap'),
-  picksBlock: document.getElementById('picksBlock'),
-  picksList: document.getElementById('picksList'),
+  tableWrap: document.getElementById('tableWrap'),
+  tableHeadRow: document.getElementById('tableHeadRow'),
+  tableBody: document.getElementById('tableBody'),
+  listWrap: document.getElementById('listWrap'),
   emptyState: document.getElementById('emptyState'),
 };
 
-els.title.textContent = 'LNHQ';
-document.title = currentTeam ? currentTeam.name : 'Équipe';
+/* ---------- Mode d'affichage : auto (selon la largeur) / tableau forcé / liste forcée ---------- */
+const VIEW_MODES = ['auto', 'table', 'list'];
+const VIEW_LABELS = {
+  auto: 'Affichage automatique (selon la largeur d\u2019écran)',
+  table: 'Vue tableau forcée',
+  list: 'Vue liste forcée',
+};
+const VIEW_LABELS_SHORT = { auto: 'Auto', table: 'Tableau', list: 'Fiche' };
 
-// Chemin des logos : dépose un fichier par équipe dans un dossier "logos/" à la racine du
-// repo, nommé exactement comme le code à 3 lettres de l'équipe (ex: logos/BOS.png). Rien
-// ne casse si absent — le logo se cache simplement (onerror) tant qu'il n'est pas ajouté.
-function teamLogoPath(code){ return 'Logos/' + code + '.png'; }
+function loadViewMode(){
+  try{
+    const saved = localStorage.getItem('sheetViewMode');
+    if(VIEW_MODES.includes(saved)) return saved;
+  }catch(e){}
+  return 'table'; // vue tableau par défaut pour tout le monde, peu importe la largeur d'écran
+}
+function saveViewMode(mode){
+  try{ localStorage.setItem('sheetViewMode', mode); }catch(e){}
+}
 
-/* ---------- Menu Équipes : marque l'équipe active, pointe vers equipe.html ---------- */
+let viewMode = loadViewMode();
+function applyViewMode(){
+  els.app.classList.remove('view-table', 'view-list');
+  if(viewMode === 'table') els.app.classList.add('view-table');
+  else if(viewMode === 'list') els.app.classList.add('view-list');
+  els.viewBtn.querySelector('.nav-btn-label').textContent = VIEW_LABELS_SHORT[viewMode];
+  els.viewBtn.title = VIEW_LABELS[viewMode];
+  els.viewBtn.setAttribute('aria-label', VIEW_LABELS[viewMode] + ', cliquer pour changer');
+}
+els.viewBtn.addEventListener('click', () => {
+  viewMode = VIEW_MODES[(VIEW_MODES.indexOf(viewMode) + 1) % VIEW_MODES.length];
+  applyViewMode();
+  saveViewMode(viewMode);
+});
+applyViewMode();
+
+els.title.textContent = CONFIG.TITLE;
+
+/* ---------- Liens vers les fiches de joueurs EA SPORTS NHL 27 (300 joueurs les mieux notés) ----------
+   Base construite à partir d'ea.com/games/nhl/ratings. Les joueurs absents de ce top 300
+   n'auront simplement pas de lien (repli silencieux vers du texte normal). */
+const EA_PLAYERS = {
+  "connor mcdavid": "connor-mc-david/9857",
+  "nathan mackinnon": "nathan-mac-kinnon/9179",
+  "nikita kucherov": "nikita-kucherov/10071",
+  "leon draisaitl": "leon-draisaitl/9753",
+  "cale makar": "cale-makar/20185",
+  "zach werenski": "zach-werenski/14360",
+  "david pastrnak": "david-pastrnak/11798",
+  "sidney crosby": "sidney-crosby/1082",
+  "quinn hughes": "quinn-hughes/17563",
+  "macklin celebrini": "macklin-celebrini/27101",
+  "aleksander barkov": "aleksander-barkov/9459",
+  "mikko rantanen": "mikko-rantanen/10341",
+  "kirill kaprizov": "kirill-kaprizov/22144",
+  "jack eichel": "jack-eichel/12816",
+  "andrei vasilevskiy": "andrei-vasilevskiy/12348",
+  "jack hughes": "jack-hughes/19747",
+  "rasmus dahlin": "rasmus-dahlin/14982",
+  "mitch marner": "mitch-marner/10848",
+  "nick suzuki": "nick-suzuki/13144",
+  "miro heiskanen": "miro-heiskanen/14164",
+  "william nylander": "william-nylander/10681",
+  "ilya sorokin": "ilya-sorokin/22148",
+  "mark scheifele": "mark-scheifele/7708",
+  "jason robertson": "jason-robertson/13077",
+  "auston matthews": "auston-matthews/12820",
+  "connor hellebuyck": "connor-hellebuyck/12346",
+  "kyle connor": "kyle-connor/14367",
+  "martin necas": "martin-necas/14286",
+  "evan bouchard": "evan-bouchard/13100",
+  "sebastian aho": "sebastian-aho/11712",
+  "tim stützle": "tim-stutzle/20377",
+  "sam reinhart": "sam-reinhart/8849",
+  "igor shesterkin": "igor-shesterkin/21312",
+  "matthew boldy": "matthew-boldy/20190",
+  "matthew schaefer": "matthew-schaefer/26374",
+  "clayton keller": "clayton-keller/15488",
+  "jaccob slavin": "jaccob-slavin/12846",
+  "roman josi": "roman-josi/5737",
+  "victor hedman": "victor-hedman/2553",
+  "artemi panarin": "artemi-panarin/12825",
+  "matthew tkachuk": "matthew-tkachuk/13093",
+  "cole caufield": "cole-caufield/20192",
+  "connor bedard": "connor-bedard/22338",
+  "wyatt johnston": "wyatt-johnston/20529",
+  "brandon hagel": "brandon-hagel/12977",
+  "josh morrissey": "josh-morrissey/8894",
+  "logan thompson": "logan-thompson/12241",
+  "lane hutson": "lane-hutson/25539",
+  "jake guentzel": "jake-guentzel/14871",
+  "mark stone": "mark-stone/5053",
+  "jeremy swayman": "jeremy-swayman/22470",
+  "adam fox": "adam-fox/20406",
+  "charlie mcavoy": "charlie-mc-avoy/15521",
+  "lucas raymond": "lucas-raymond/19563",
+  "jesper bratt": "jesper-bratt/15554",
+  "tage thompson": "tage-thompson/15463",
+  "seth jarvis": "seth-jarvis/17428",
+  "moritz seider": "moritz-seider/18322",
+  "jake sanderson": "jake-sanderson/24153",
+  "filip forsberg": "filip-forsberg/10350",
+  "adrian kempe": "adrian-kempe/10679",
+  "dylan larkin": "dylan-larkin/12826",
+  "jakob chychrun": "jakob-chychrun/11874",
+  "noah dobson": "noah-dobson/14375",
+  "alex debrincat": "alex-de-brincat/11899",
+  "brady tkachuk": "brady-tkachuk/19262",
+  "nikolaj ehlers": "nikolaj-ehlers/10276",
+  "kirill marchenko": "kirill-marchenko/25389",
+  "dylan guenther": "dylan-guenther/19102",
+  "brad marchand": "brad-marchand/5309",
+  "alex ovechkin": "alex-ovechkin/1083",
+  "nick schmaltz": "nick-schmaltz/14359",
+  "evgeni malkin": "evgeni-malkin/1325",
+  "nico hischier": "nico-hischier/13433",
+  "brayden point": "brayden-point/9737",
+  "brock faber": "brock-faber/24143",
+  "gustav forsling": "gustav-forsling/11697",
+  "robert thomas": "robert-thomas/13095",
+  "logan cooley": "logan-cooley/24156",
+  "leo carlsson": "leo-carlsson/23453",
+  "shea theodore": "shea-theodore/8927",
+  "ivan demidov": "ivan-demidov/29123",
+  "thomas harley": "thomas-harley/16922",
+  "mikhail sergachev": "mikhail-sergachev/13187",
+  "bo horvat": "bo-horvat/9038",
+  "mathew barzal": "mathew-barzal/10753",
+  "andrei svechnikov": "andrei-svechnikov/16837",
+  "matthew knies": "matthew-knies/24159",
+  "tom wilson": "tom-wilson/7823",
+  "travis sanheim": "travis-sanheim/10790",
+  "vincent trocheck": "vincent-trocheck/6638",
+  "jake oettinger": "jake-oettinger/20106",
+  "jackson lacombe": "jackson-la-combe/26002",
+  "noah hanifin": "noah-hanifin/12824",
+  "k'andre miller": "k-andre-miller/22146",
+  "john tavares": "john-tavares/5904",
+  "michael matheson": "michael-matheson/13600",
+  "erik karlsson": "erik-karlsson/89",
+  "alex tuch": "alex-tuch/14828",
+  "travis konecny": "travis-konecny/10861",
+  "ryan pulock": "ryan-pulock/7520",
+  "dylan strome": "dylan-strome/10845",
+  "jesper wallstedt": "jesper-wallstedt/21899",
+  "gabe vilardi": "gabe-vilardi/13182",
+  "cutter gauthier": "cutter-gauthier/25537",
+  "scott wedgewood": "scott-wedgewood/6625",
+  "kevin fiala": "kevin-fiala/11622",
+  "roope hintz": "roope-hintz/11235",
+  "devon toews": "devon-toews/14818",
+  "troy terry": "troy-terry/17682",
+  "rasmus andersson": "rasmus-andersson/11805",
+  "lukas dostal": "lukas-dostal/16526",
+  "dustin wolf": "dustin-wolf/17010",
+  "joel eriksson ek": "joel-eriksson-ek/12705",
+  "drake batherson": "drake-batherson/14393",
+  "juraj slafkovsky": "juraj-slafkovsky/22759",
+  "morgan geekie": "morgan-geekie/13020",
+  "will smith": "will-smith/27111",
+  "darren raddysh": "darren-raddysh/10880",
+  "brett pesce": "brett-pesce/12515",
+  "mika zibanejad": "mika-zibanejad/8488",
+  "brandt clarke": "brandt-clarke/20415",
+  "bowen byram": "bowen-byram/15032",
+  "spencer knight": "spencer-knight/20194",
+  "pavel dorofeyev": "pavel-dorofeyev/19637",
+  "thomas chabot": "thomas-chabot/11003",
+  "filip hronek": "filip-hronek/13361",
+  "adam pelech": "adam-pelech/7731",
+  "trevor zegras": "trevor-zegras/20188",
+  "esa lindell": "esa-lindell/10399",
+  "john carlson": "john-carlson/995",
+  "shayne gostisbehere": "shayne-gostisbehere/11785",
+  "zach hyman": "zach-hyman/12873",
+  "mikael granlund": "mikael-granlund/4543",
+  "matt duchene": "matt-duchene/371",
+  "ryan o'reilly": "ryan-o-reilly/376",
+  "adam fantilli": "adam-fantilli/25493",
+  "sam bennett": "sam-bennett/9870",
+  "matvei michkov": "matvei-michkov/24114",
+  "mackenzie weegar": "mac-kenzie-weegar/10046",
+  "elias pettersson": "elias-pettersson/15686",
+  "luke hughes": "luke-hughes/24147",
+  "beckett sennecke": "beckett-sennecke/24604",
+  "jordan kyrou": "jordan-kyrou/12030",
+  "vince dunn": "vince-dunn/10891",
+  "juuse saros": "juuse-saros/10408",
+  "j.t. miller": "j-t-miller/9084",
+  "brandon bussi": "brandon-bussi/25246",
+  "jakub dobeš": "jakub-dobes/27080",
+  "william eklund": "william-eklund/21611",
+  "dylan cozens": "dylan-cozens/15161",
+  "jj peterka": "jj-peterka/20400",
+  "jackson blake": "jackson-blake/25536",
+  "ivan barbashev": "ivan-barbashev/10049",
+  "seth jones": "seth-jones/9746",
+  "josh doan": "josh-doan/25996",
+  "aliaksei protas": "aliaksei-protas/19176",
+  "filip gustavsson": "filip-gustavsson/13527",
+  "mackenzie blackwood": "mackenzie-blackwood/10915",
+  "owen power": "owen-power/24166",
+  "brandon montour": "brandon-montour/13341",
+  "matty beniers": "matty-beniers/24154",
+  "jet greaves": "jet-greaves/17043",
+  "rickard rakell": "rickard-rakell/7822",
+  "pierre-luc dubois": "pierre-luc-dubois/11914",
+  "anton lundell": "anton-lundell/18384",
+  "colton parayko": "colton-parayko/12831",
+  "jared mccann": "jared-mc-cann/9952",
+  "vladislav gavrikov": "vladislav-gavrikov/21055",
+  "aaron ekblad": "aaron-ekblad/8976",
+  "brady skjei": "brady-skjei/12849",
+  "bryan rust": "bryan-rust/12354",
+  "nazem kadri": "nazem-kadri/6444",
+  "simon edvinsson": "simon-edvinsson/22080",
+  "ryan nugent-hopkins": "ryan-nugent-hopkins/6083",
+  "damon severson": "damon-severson/7569",
+  "dougie hamilton": "dougie-hamilton/6505",
+  "mattias ekholm": "mattias-ekholm/7373",
+  "jonas brodin": "jonas-brodin/7376",
+  "justin faulk": "justin-faulk/8739",
+  "martin fehervary": "martin-fehervary/13698",
+  "jake mccabe": "jake-mc-cabe/11566",
+  "mattias samuelsson": "mattias-samuelsson/17565",
+  "jonas siegenthaler": "jonas-siegenthaler/11604",
+  "josh manson": "josh-manson/11786",
+  "dylan demelo": "dylan-de-melo/6473",
+  "patrick kane": "patrick-kane/2086",
+  "steven stamkos": "steven-stamkos/4430",
+  "oliver ekman-larsson": "oliver-ekman-larsson/7503",
+  "mats zuccarello": "mats-zuccarello/5196",
+  "anthony cirelli": "anthony-cirelli/11875",
+  "brock nelson": "brock-nelson/10155",
+  "carter verhaeghe": "carter-verhaeghe/9056",
+  "quinton byfield": "quinton-byfield/18553",
+  "timo meier": "timo-meier/11145",
+  "dylan holloway": "dylan-holloway/24708",
+  "jimmy snuggerud": "jimmy-snuggerud/25538",
+  "logan stankoven": "logan-stankoven/19603",
+  "linus ullmark": "linus-ullmark/10312",
+  "tomas hertl": "tomas-hertl/9509",
+  "morgan rielly": "morgan-rielly/7598",
+  "brock boeser": "brock-boeser/15487",
+  "jake walman": "jake-walman/15511",
+  "karel vejmelka": "karel-vejmelka/11467",
+  "darnell nurse": "darnell-nurse/9103",
+  "matt coronato": "matt-coronato/24157",
+  "pavel zacha": "pavel-zacha/11415",
+  "owen tippett": "owen-tippett/13106",
+  "frank nazar": "frank-nazar/27108",
+  "rasmus sandin": "rasmus-sandin/16469",
+  "joel hofer": "joel-hofer/17028",
+  "morgan frost": "morgan-frost/13165",
+  "alexis lafrenière": "alexis-lafreniere/16793",
+  "mason mctavish": "mason-mc-tavish/20500",
+  "marco rossi": "marco-rossi/18524",
+  "simon nemec": "simon-nemec/24127",
+  "ryan mcleod": "ryan-mc-leod/13104",
+  "luke evangelista": "luke-evangelista/18487",
+  "dan vladar": "dan-vladar/14842",
+  "jacob middleton": "jacob-middleton/9910",
+  "philip broberg": "philip-broberg/19271",
+  "denton mateychuk": "denton-mateychuk/22324",
+  "alexander nikishin": "alexander-nikishin/29400",
+  "niko mikkola": "niko-mikkola/13370",
+  "sam malinski": "sam-malinski/27019",
+  "mason marchment": "mason-marchment/12067",
+  "alexander wennberg": "alexander-wennberg/10467",
+  "marcus pettersson": "marcus-pettersson/11701",
+  "brandon carlo": "brandon-carlo/10653",
+  "john marino": "john-marino/21062",
+  "anthony mantha": "anthony-mantha/9239",
+  "adam larsson": "adam-larsson/599",
+  "ivan provorov": "ivan-provorov/12155",
+  "sergei bobrovsky": "sergei-bobrovsky/7507",
+  "john gibson": "john-gibson/8700",
+  "nicolas hague": "nicolas-hague/13111",
+  "nikita zadorov": "nikita-zadorov/9879",
+  "jamie oleksiak": "jamie-oleksiak/8489",
+  "mason lohrei": "mason-lohrei/27014",
+  "samuel girard": "samuel-girard/11955",
+  "hampus lindholm": "hampus-lindholm/9616",
+  "brayden mcnabb": "brayden-mc-nabb/5879",
+  "j.j. moser": "j-j-moser/17532",
+  "shane pinto": "shane-pinto/22487",
+  "brenden dillon": "brenden-dillon/6172",
+  "mikey anderson": "mikey-anderson/20404",
+  "erik cernak": "erik-cernak/13645",
+  "gabriel landeskog": "gabriel-landeskog/6422",
+  "jacob trouba": "jacob-trouba/10525",
+  "artem zub": "artem-zub/22160",
+  "taylor hall": "taylor-hall/6721",
+  "kaiden guhle": "kaiden-guhle/17353",
+  "dmitry orlov": "dmitry-orlov/9271",
+  "johnathan kovacevic": "johnathan-kovacevic/21076",
+  "charlie coyle": "charlie-coyle/9417",
+  "christopher tanev": "christopher-tanev/8478",
+  "jordan eberle": "jordan-eberle/6107",
+  "connor murphy": "connor-murphy/9098",
+  "drew doughty": "drew-doughty/4452",
+  "blake coleman": "blake-coleman/12839",
+  "kris letang": "kris-letang/1298",
+  "claude giroux": "claude-giroux/5296",
+  "brent burns": "brent-burns/133",
+  "jordan staal": "jordan-staal/1297",
+  "jacob markstrom": "jacob-markstrom/5183",
+  "valeri nichushkin": "valeri-nichushkin/10526",
+  "artturi lehkonen": "artturi-lehkonen/9454",
+  "tyler toffoli": "tyler-toffoli/6538",
+  "thatcher demko": "thatcher-demko/14870",
+  "conor garland": "conor-garland/11176",
+  "pavel buchnevich": "pavel-buchnevich/14362",
+  "josh norris": "josh-norris/21283",
+  "elias lindholm": "elias-lindholm/10309",
+  "darcy kuemper": "darcy-kuemper/6106",
+  "brayden schenn": "brayden-schenn/4966",
+  "william karlsson": "william-karlsson/9603",
+  "dylan samberg": "dylan-samberg/22273",
+  "alex vlasic": "alex-vlasic/20195",
+  "yaroslav askarov": "yaroslav-askarov/24100",
+  "zach benson": "zach-benson/22361",
+  "jack quinn": "jack-quinn/16943",
+  "porter martone": "porter-martone/24609",
+  "radko gudas": "radko-gudas/5920",
+  "matt roy": "matt-roy/15503",
+  "cam york": "cam-york/20193",
+  "alex laferriere": "alex-laferriere/26980",
+  "olen zellweger": "olen-zellweger/19118",
+  "sean walker": "sean-walker/17126",
+  "jake debrusk": "jake-de-brusk/10735",
+  "dmitri voronkov": "dmitri-voronkov/21935",
+  "chandler stephenson": "chandler-stephenson/7636",
+  "tyler bertuzzi": "tyler-bertuzzi/9007",
+  "sean durzi": "sean-durzi/13145",
+  "connor mcmichael": "connor-mc-michael/16893",
+  "benjamin kindel": "benjamin-kindel/26628",
+  "neal pionk": "neal-pionk/15536",
+  "noah cates": "noah-cates/24450",
+  "mikael backlund": "mikael-backlund/5387",
+  "eetu luostarinen": "eetu-luostarinen/15150",
+  "sean couturier": "sean-couturier/6840",
+};
+
+function eaLinkFor(row){
+  // Colonne B ("JOUEUR"), au format "Nom, Prénom" — on la convertit en "Prénom Nom"
+  // pour chercher dans la base EA_PLAYERS (colonne A n'est plus utilisée, désormais vide).
+  const raw = (row.raw[1] || '').trim();
+  if(!raw) return null;
+  const parts = raw.split(',');
+  const key = (parts.length >= 2
+    ? (parts[1].trim() + ' ' + parts[0].trim())
+    : raw
+  ).toLowerCase();
+  const value = EA_PLAYERS[key];
+  return value ? 'https://www.ea.com/games/nhl/ratings/player-ratings/' + value : null;
+}
+
+/* ---------- Navigation du site : menus déroulants et liste des équipes ----------
+   ATTENTION : seuls les liens des 32 équipes ci-dessous sont encore des suppositions
+   (construites sur le modèle d'Anaheim) — tous les autres liens (Accueil, Ligue,
+   Repêchage > Ordre, Nouvelles) sont confirmés. */
+const TEAM_BASE_URL = 'equipe.html?team=';
 const TEAMS = [
   ['Anaheim', 'anaheim'], ['Boston', 'boston'], ['Buffalo', 'buffalo'],
   ['Calgary', 'calgary'], ['Caroline', 'carolina'], ['Chicago', 'chicago'],
@@ -697,62 +858,13 @@ const TEAMS = [
   ['Washington', 'washington'], ['Winnipeg', 'winnipeg'],
 ];
 
-function buildTeamOption(name, slug, withLogo){
-  const isCurrent = slug === requestedTeam;
-  const el = document.createElement(isCurrent ? 'span' : 'a');
-  if(isCurrent){
-    el.className = 'nav-dropdown-current';
-    el.setAttribute('aria-current', 'page');
-  }else{
-    el.href = 'equipe.html?team=' + slug;
-  }
-  if(withLogo){
-    const img = document.createElement('img');
-    img.className = 'team-option-logo';
-    img.src = teamLogoPath(TEAM_GIDS[slug].code);
-    img.alt = '';
-    img.loading = 'lazy';
-    img.onerror = () => { img.style.display = 'none'; };
-    el.appendChild(img);
-  }
-  const label = document.createElement('span');
-  label.textContent = name;
-  el.appendChild(label);
-  return el;
-}
-
 const teamsDropdown = document.getElementById('teamsDropdown');
-TEAMS.forEach(([name, slug]) => teamsDropdown.appendChild(buildTeamOption(name, slug, false)));
-
-// Sélecteur agrandi (bannière orange) : fenêtre centrée avec logo par équipe
-const teamModalGrid = document.getElementById('teamModalGrid');
-const teamModalBackdrop = document.getElementById('teamModalBackdrop');
-const teamModalClose = document.getElementById('teamModalClose');
-const teamSwitchBtn = document.getElementById('teamSwitchBtn');
-TEAMS.forEach(([name, slug]) => teamModalGrid.appendChild(buildTeamOption(name, slug, true)));
-
-function openTeamModal(){ teamModalBackdrop.hidden = false; }
-function closeTeamModal(){ teamModalBackdrop.hidden = true; }
-teamSwitchBtn.addEventListener('click', e => { e.stopPropagation(); openTeamModal(); });
-teamModalClose.addEventListener('click', closeTeamModal);
-teamModalBackdrop.addEventListener('click', e => { if(e.target === teamModalBackdrop) closeTeamModal(); });
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeTeamModal(); });
-
-const switchLogo = document.getElementById('teamSwitchLogo');
-const switchLabel = document.getElementById('teamSwitchLabel');
-const heroLogo = document.getElementById('teamHeroLogo');
-const heroName = document.getElementById('teamHeroName');
-if(currentTeam){
-  switchLogo.src = teamLogoPath(currentTeam.code);
-  switchLogo.hidden = false;
-  switchLogo.onerror = () => { switchLogo.hidden = true; };
-  switchLabel.textContent = currentTeam.name;
-
-  heroLogo.src = teamLogoPath(currentTeam.code);
-  heroLogo.onerror = () => { heroLogo.hidden = true; };
-  heroName.textContent = currentTeam.name;
-  document.getElementById('teamHero').hidden = false;
-}
+TEAMS.forEach(([name, slug]) => {
+  const a = document.createElement('a');
+  a.href = TEAM_BASE_URL + slug;
+  a.textContent = name;
+  teamsDropdown.appendChild(a);
+});
 
 document.querySelectorAll('.nav-item').forEach(item => {
   const btn = item.querySelector(':scope > .nav-btn');
@@ -776,200 +888,34 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ---------- Drapeaux (colonne CNT) ---------- */
-const NAT_TO_ISO2 = {
-  can:'ca', usa:'us', swe:'se', fin:'fi', rus:'ru', cze:'cz', svk:'sk', ger:'de', sui:'ch',
-  fra:'fr', den:'dk', nor:'no', lat:'lv', blr:'by', kaz:'kz', aut:'at', ita:'it', svn:'si',
-  hun:'hu', pol:'pl', jpn:'jp', kor:'kr', chn:'cn', gbr:'gb', ned:'nl', ukr:'ua', est:'ee',
-  ltu:'lt', rou:'ro', cro:'hr', srb:'rs', bul:'bg', esp:'es', aus:'au', nzl:'nz', rsa:'za',
-  mex:'mx', bra:'br', arg:'ar', chi:'cl', isl:'is', irl:'ie', bel:'be', por:'pt', gre:'gr',
-  tur:'tr', isr:'il', ind:'in', tha:'th', hkg:'hk', tpe:'tw', sgp:'sg', mas:'my', phi:'ph',
-  ina:'id', mgl:'mn', geo:'ge', arm:'am', aze:'az', uzb:'uz', kgz:'kg', tkm:'tm', tjk:'tj',
-  mda:'md', lux:'lu', mlt:'mt', cyp:'cy', and:'ad', mon:'mc', lie:'li', smr:'sm', bih:'ba',
-  mkd:'mk', mne:'me', alb:'al',
+const state = {
+  columns: [],   // [{ label, isNumeric }]
+  rows: [],      // [{ display: [...], numeric: [...] }]
+  filtered: [],
+  sortCol: -1,
+  sortDir: 1,
+  query: '',
+  activeFilters: new Map(), // colIndex (brut) -> valeur sélectionnée
+  activeMaxFilters: new Map(), // colIndex (brut) -> valeur maximum
 };
-function flagSpan(raw){
-  const span = document.createElement('span');
-  const code = (raw || '').trim().toLowerCase();
-  const iso2 = code.length === 2 ? code : NAT_TO_ISO2[code];
-  if(iso2 && /^[a-z]{2}$/.test(iso2)){
-    const img = document.createElement('img');
-    img.src = `https://flagcdn.com/24x18/${iso2}.png`;
-    img.alt = raw.toUpperCase();
-    img.title = raw.toUpperCase();
-    img.width = 20; img.height = 15;
-    img.loading = 'lazy';
-    img.className = 'flag-icon';
-    img.onerror = () => { span.textContent = raw; };
-    span.appendChild(img);
-  }else{
-    span.textContent = raw;
-  }
-  return span;
-}
-
-/* =========================================================================
-   Lecture et interprétation du rapport d'équipe (structure en sections)
-   ========================================================================= */
-const SEASON_LABELS = ['2026-27','2027-28','2028-29','2029-30','2030-31','2031-32','2032-33','2033-34','2034-35','2035-36'];
-const SECTION_NAMES = ['ATTAQUANTS', 'DÉFENSEURS', 'GARDIENS', 'ESPOIRS'];
-const PLAYER_HEADERS = ['Joueur', 'OVR', 'Âge', 'NAT', 'PO', 'TIR', 'GR', 'Poids', 'Ans', ...SEASON_LABELS];
-// Index, dans une ligne brute de la feuille, de chaque colonne ci-dessus.
-const PLAYER_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-
-function cellsToRows(table){
-  return table.rows.map(r => (r.c || []).map(c => c ? (c.f != null ? c.f : (c.v != null ? String(c.v) : '')) : ''));
-}
-
-function parseSheet(rows){
-  const g = (r, i) => (rows[r] && rows[r][i] != null) ? rows[r][i] : '';
-  const summary = {
-    masse: g(1, 2), espace: g(2, 2),
-    tot: g(2, 14), att: g(2, 15), def: g(2, 16), gar: g(2, 17), esp: g(2, 18), moyAge: g(2, 19),
-    totalEquipe: null,
-  };
-  const sections = [];
-  const picks = [];
-  let i = 3;
-  while(i < rows.length){
-    const label = (rows[i][1] || '').trim();
-    if(SECTION_NAMES.includes(label)){
-      const players = [];
-      let j = i + 1;
-      while(j < rows.length){
-        const l2 = (rows[j][1] || '').trim();
-        if(l2 === ''){ j++; continue; }
-        if(l2.startsWith('TOTAL') || SECTION_NAMES.includes(l2) || l2 === 'CHOIX') break;
-        players.push(rows[j]);
-        j++;
-      }
-      let totalRow = null;
-      if(j < rows.length && (rows[j][1] || '').trim().startsWith('TOTAL')){
-        totalRow = rows[j];
-        j++;
-      }
-      sections.push({ name: label, players, totalRow });
-      i = j;
-    }else if(label === 'CHOIX'){
-      let j = i + 1;
-      while(j < rows.length && (rows[j][1] || '').trim() !== ''){
-        picks.push(rows[j][1]);
-        j++;
-      }
-      i = j;
-    }else if(label.startsWith('TOTAL')){
-      summary.totalEquipe = rows[i];
-      i++;
-    }else{
-      i++;
-    }
-  }
-  return { summary, sections, picks };
-}
-
-/* ---------- État + chargement ---------- */
-const state = { summary: {}, sections: [], picks: [] };
 
 function buildUrl(){
-  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${currentTeam.gid}&headers=0&t=${Date.now()}`;
+  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.GID}&t=${Date.now()}`;
 }
-const CACHE_KEY = 'teamCache_' + CONFIG.SHEET_ID + '_' + (currentTeam ? currentTeam.gid : '');
+
+/* ---------- Cache local : affichage instantané au chargement suivant ---------- */
+const CACHE_KEY = 'sheetCache_' + CONFIG.SHEET_ID + '_' + CONFIG.GID;
+
 function loadFromCache(){
-  try{ const raw = localStorage.getItem(CACHE_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
 }
-function saveToCache(rows){
-  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ rows, ts: Date.now() })); }catch(e){}
-}
-
-function computeAvgAge(sections){
-  const ages = [];
-  sections
-    .filter(s => s.name !== 'ESPOIRS') // âge moyen du groupe NHL (comme TOT/ATT/DEF/GAR)
-    .forEach(s => s.players.forEach(p => {
-      const n = parseFloat(p[3]);
-      if(!Number.isNaN(n)) ages.push(n);
-    }));
-  if(!ages.length) return '';
-  return (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(2);
-}
-
-function computeCounts(sections){
-  const byName = name => (sections.find(s => s.name === name) || { players: [] }).players.length;
-  const att = byName('ATTAQUANTS');
-  const def = byName('DÉFENSEURS');
-  const gar = byName('GARDIENS');
-  const esp = byName('ESPOIRS');
-  return { att, def, gar, esp, tot: att + def + gar };
-}
-
-function average(nums){
-  if(!nums.length) return null;
-  return nums.reduce((a, b) => a + b, 0) / nums.length;
-}
-function heightToInches(str){
-  const m = String(str || '').match(/(\d+)'\s*(\d+)/);
-  return m ? parseInt(m[1], 10) * 12 + parseInt(m[2], 10) : null;
-}
-function inchesToHeight(inches){
-  const feet = Math.floor(inches / 12);
-  const rem = Math.round(inches - feet * 12);
-  return `${feet}'${rem}"`;
-}
-
-// Calcule les moyennes (âge, grandeur, poids, années de contrat restant) d'une section et
-// les écrit directement dans sa ligne TOTAL — ces moyennes n'existent pas dans la feuille,
-// on les calcule ici plutôt que de laisser ces colonnes vides sur la ligne TOTAL.
-function applySectionAverages(section){
-  if(!section.totalRow || !section.players.length) return;
-  const ovrs = section.players.map(p => parseFloat(p[2])).filter(n => !Number.isNaN(n));
-  const ages = section.players.map(p => parseFloat(p[3])).filter(n => !Number.isNaN(n));
-  const heights = section.players.map(p => heightToInches(p[7])).filter(n => n != null);
-  const weights = section.players.map(p => parseFloat(p[8])).filter(n => !Number.isNaN(n));
-  const years = section.players.map(p => parseFloat(p[9])).filter(n => !Number.isNaN(n));
-  if(ovrs.length) section.totalRow[2] = average(ovrs).toFixed(1);
-  if(ages.length) section.totalRow[3] = average(ages).toFixed(2);
-  if(heights.length) section.totalRow[7] = inchesToHeight(average(heights));
-  if(weights.length) section.totalRow[8] = Math.round(average(weights)).toString();
-  if(years.length) section.totalRow[9] = average(years).toFixed(1);
-}
-
-// Moyenne d'équipe (Att.+Déf.+Gard., espoirs exclus, même portée qu'Âge moyen) pour une
-// colonne brute donnée. isHeight convertit d'abord le format "5'10"" en pouces.
-function computeTeamAverage(sections, rawCol, isHeight){
-  const vals = [];
-  sections.filter(s => s.name !== 'ESPOIRS').forEach(s => s.players.forEach(p => {
-    if(isHeight){
-      const inches = heightToInches(p[rawCol]);
-      if(inches != null) vals.push(inches);
-    }else{
-      const n = parseFloat(p[rawCol]);
-      if(!Number.isNaN(n)) vals.push(n);
-    }
-  }));
-  return average(vals);
-}
-
-function applyData(rows){
-  const parsed = parseSheet(rows);
-  state.summary = parsed.summary;
-  state.sections = parsed.sections;
-  state.picks = parsed.picks;
-  state.summary.moyAge = computeAvgAge(parsed.sections);
-  const counts = computeCounts(parsed.sections);
-  state.summary.tot = counts.tot;
-  state.summary.att = counts.att;
-  state.summary.def = counts.def;
-  state.summary.gar = counts.gar;
-  state.summary.esp = counts.esp;
-
-  const avgOvr = computeTeamAverage(parsed.sections, 2);
-  state.summary.moyOvr = avgOvr != null ? avgOvr.toFixed(1) : '';
-  const avgWeight = computeTeamAverage(parsed.sections, 8);
-  state.summary.moyPoids = avgWeight != null ? Math.round(avgWeight).toString() : '';
-  const avgHeightInches = computeTeamAverage(parsed.sections, 7, true);
-  state.summary.moyGrandeur = avgHeightInches != null ? inchesToHeight(avgHeightInches) : '';
-
-  state.sections.forEach(applySectionAverages);
+function saveToCache(table){
+  try{
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ table, ts: Date.now() }));
+  }catch(e){ /* stockage indisponible ou plein : on ignore silencieusement */ }
 }
 
 async function loadData({ background=false } = {}){
@@ -984,245 +930,395 @@ async function loadData({ background=false } = {}){
     if(json.status === 'error'){
       throw new Error(json.errors && json.errors[0] && json.errors[0].reason || 'erreur_gviz');
     }
-    const rows = cellsToRows(json.table);
-    applyData(rows);
-    saveToCache(rows);
+    parseTable(json.table);
+    saveToCache(json.table);
     toggle({ loading:false });
     els.lastUpdated.textContent = 'Mis à jour à ' + new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' }).format(new Date());
   }catch(err){
     console.error(err);
-    if(!background) toggle({ loading:false, error:true });
+    if(!background){
+      toggle({ loading:false, error:true });
+    }
+    // En arrière-plan : on garde les données déjà affichées (issues du cache) et on retentera au prochain chargement.
   }
+}
+
+function makeColumnMatcher(list, rawLabels){
+  const indices = new Set((list || []).filter(v => typeof v === 'number'));
+  const labels = new Set((list || []).filter(v => typeof v === 'string').map(v => v.trim().toLowerCase()));
+  return i => indices.has(i) || labels.has(rawLabels[i].trim().toLowerCase());
+}
+
+function parseTable(table){
+  const rawLabels = table.cols.map((c, i) => c.label || c.id || ('Colonne ' + (i + 1)));
+  state.rawLabels = rawLabels;
+  const isHidden = makeColumnMatcher(CONFIG.HIDDEN_COLUMNS, rawLabels);
+  const isFlag = makeColumnMatcher(CONFIG.FLAG_COLUMNS, rawLabels);
+  const isHighlight = makeColumnMatcher(CONFIG.HIGHLIGHT_COLUMNS, rawLabels);
+
+  state.columns = rawLabels
+    .map((label, i) => ({
+      rawLabel: label,
+      label,
+      isNumeric: table.cols[i].type === 'number',
+      isFlag: isFlag(i),
+      isHighlight: isHighlight(i),
+    }))
+    .filter((_, i) => !isHidden(i));
+
+  state.rows = table.rows.map(r => {
+    const raw = (r.c || []).map(cell =>
+      cell ? (cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : '')) : ''
+    );
+    const display = raw.filter((_, i) => !isHidden(i));
+    return { display, raw };
+  });
+
+  renderFilterBar();
+  applyFilterAndSort();
+}
+
+function parseNumericCell(raw){
+  if(raw === '' || raw == null) return null;
+  const n = parseFloat(String(raw).replace(/[^\d.-]/g, ''));
+  return Number.isNaN(n) ? null : n;
+}
+
+function formatMoney(n){
+  return new Intl.NumberFormat('fr-CA').format(Math.round(n)) + ' $';
+}
+
+function renderFilterBar(){
+  els.filterBar.innerHTML = '';
+  let any = false;
+
+  (CONFIG.FILTER_COLUMNS || []).forEach(name => {
+    const colIndex = state.rawLabels.findIndex(
+      l => l.trim().toLowerCase() === String(name).trim().toLowerCase()
+    );
+    if(colIndex === -1) return;
+    any = true;
+
+    const order = (CONFIG.FILTER_VALUE_ORDER || {})[name];
+    const values = Array.from(
+      new Set(state.rows.map(r => r.raw[colIndex]).filter(v => v !== ''))
+    ).sort((a, b) => {
+      if(order){
+        const ia = order.findIndex(o => o.toLowerCase() === a.trim().toLowerCase());
+        const ib = order.findIndex(o => o.toLowerCase() === b.trim().toLowerCase());
+        if(ia !== -1 || ib !== -1){
+          if(ia === -1) return 1;
+          if(ib === -1) return -1;
+          return ia - ib;
+        }
+      }
+      return a.localeCompare(b, 'fr-FR');
+    });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'filter-control';
+
+    const label = document.createElement('label');
+    label.textContent = (CONFIG.FILTER_LABELS || {})[name] || state.rawLabels[colIndex];
+    label.htmlFor = 'filter-col-' + colIndex;
+
+    const select = document.createElement('select');
+    select.id = 'filter-col-' + colIndex;
+
+    const optAll = document.createElement('option');
+    optAll.value = '';
+    optAll.textContent = 'Tous';
+    select.appendChild(optAll);
+
+    values.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      if(state.activeFilters.get(colIndex) === v) opt.selected = true;
+      select.appendChild(opt);
+    });
+
+    select.addEventListener('change', () => {
+      if(select.value === '') state.activeFilters.delete(colIndex);
+      else state.activeFilters.set(colIndex, select.value);
+      render();
+    });
+
+    wrap.appendChild(label);
+    wrap.appendChild(select);
+    els.filterBar.appendChild(wrap);
+  });
+
+  (CONFIG.MAX_FILTER_COLUMNS || []).forEach(entry => {
+    const colIndex = state.rawLabels.findIndex(
+      l => l.trim().toLowerCase() === String(entry.column).trim().toLowerCase()
+    );
+    if(colIndex === -1) return;
+
+    const numbers = state.rows
+      .map(r => parseNumericCell(r.raw[colIndex]))
+      .filter(n => n !== null);
+    if(!numbers.length) return;
+    const dataMin = Math.min(...numbers);
+    const dataMax = Math.max(...numbers);
+    if(dataMin === dataMax) return;
+    any = true;
+
+    const step = Math.max(1, Math.round((dataMax - dataMin) / 100));
+    const current = state.activeMaxFilters.has(colIndex) ? state.activeMaxFilters.get(colIndex) : dataMax;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'filter-control filter-range';
+
+    const label = document.createElement('label');
+    label.textContent = entry.label;
+    label.htmlFor = 'filter-max-' + colIndex;
+
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.id = 'filter-max-' + colIndex;
+    input.min = dataMin;
+    input.max = dataMax;
+    input.step = step;
+    input.value = current;
+
+    const valueSpan = document.createElement('span');
+    valueSpan.className = 'filter-range-value';
+    valueSpan.textContent = formatMoney(current);
+
+    input.addEventListener('input', () => {
+      valueSpan.textContent = formatMoney(Number(input.value));
+    });
+    input.addEventListener('change', () => {
+      const v = Number(input.value);
+      if(v >= dataMax) state.activeMaxFilters.delete(colIndex);
+      else state.activeMaxFilters.set(colIndex, v);
+      render();
+    });
+
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    wrap.appendChild(valueSpan);
+    els.filterBar.appendChild(wrap);
+  });
+
+  els.filterBar.hidden = !any;
+}
+
+// Codes pays à 3 lettres (norme CIO/IIHF, utilisée dans le hockey) → code ISO à 2 lettres
+const NAT_TO_ISO2 = {
+  can:'ca', usa:'us', swe:'se', fin:'fi', rus:'ru', cze:'cz', svk:'sk', ger:'de', sui:'ch',
+  fra:'fr', den:'dk', nor:'no', lat:'lv', blr:'by', kaz:'kz', aut:'at', ita:'it', svn:'si',
+  hun:'hu', pol:'pl', jpn:'jp', kor:'kr', chn:'cn', gbr:'gb', ned:'nl', ukr:'ua', est:'ee',
+  ltu:'lt', rou:'ro', cro:'hr', srb:'rs', bul:'bg', esp:'es', aus:'au', nzl:'nz', rsa:'za',
+  mex:'mx', bra:'br', arg:'ar', chi:'cl', isl:'is', irl:'ie', bel:'be', por:'pt', gre:'gr',
+  tur:'tr', isr:'il', ind:'in', tha:'th', hkg:'hk', tpe:'tw', sgp:'sg', mas:'my', phi:'ph',
+  ina:'id', mgl:'mn', geo:'ge', arm:'am', aze:'az', uzb:'uz', kgz:'kg', tkm:'tm', tjk:'tj',
+  mda:'md', lux:'lu', mlt:'mt', cyp:'cy', and:'ad', mon:'mc', lie:'li', smr:'sm', bih:'ba',
+  mkd:'mk', mne:'me', alb:'al',
+};
+
+function appendFlag(container, raw){
+  const code = (raw || '').trim().toLowerCase();
+  const iso2 = code.length === 2 ? code : NAT_TO_ISO2[code];
+  if(iso2 && /^[a-z]{2}$/.test(iso2)){
+    const img = document.createElement('img');
+    img.src = `https://flagcdn.com/24x18/${iso2}.png`;
+    img.alt = raw.toUpperCase();
+    img.title = raw.toUpperCase();
+    img.width = 24; img.height = 18;
+    img.loading = 'lazy';
+    img.className = 'flag-icon';
+    img.onerror = () => { container.textContent = raw; };
+    container.appendChild(img);
+  }else{
+    container.textContent = raw;
+  }
+}
+
+function applyFilterAndSort(){
+  const q = state.query.trim().toLocaleLowerCase('fr-FR');
+  let rows = state.rows.filter(r => {
+    for(const [colIndex, val] of state.activeFilters){
+      if((r.raw[colIndex] || '') !== val) return false;
+    }
+    for(const [colIndex, maxVal] of state.activeMaxFilters){
+      const v = parseNumericCell(r.raw[colIndex]);
+      if(v !== null && v > maxVal) return false;
+    }
+    if(q && !r.display.some(v => v.toLocaleLowerCase('fr-FR').includes(q))) return false;
+    return true;
+  });
+
+  if(state.sortCol >= 0){
+    const col = state.sortCol;
+    const numeric = state.columns[col] && state.columns[col].isNumeric;
+    rows.sort((a, b) => {
+      const av = a.display[col] || '';
+      const bv = b.display[col] || '';
+      if(numeric){
+        return (parseFloat(av.replace(/[^\d.-]/g,'')) - parseFloat(bv.replace(/[^\d.-]/g,''))) * state.sortDir;
+      }
+      return av.localeCompare(bv, 'fr-FR') * state.sortDir;
+    });
+  }
+  state.filtered = rows;
 }
 
 function toggle({ loading=false, error=false } = {}){
   els.loader.hidden = !loading;
   els.errorBox.hidden = !error;
   const showData = !loading && !error;
-  els.dataWrap.hidden = !showData;
+  els.tableWrap.hidden = !showData;
+  els.listWrap.hidden = !showData;
   if(showData) render();
 }
 
-/* ---------- Rendu ---------- */
-function formatMoney(v){
-  const n = parseFloat(String(v).replace(/[^\d.-]/g, ''));
-  if(Number.isNaN(n) || v === '') return v || '';
-  return new Intl.NumberFormat('fr-CA').format(Math.round(n)) + ' $';
+function render(){
+  applyFilterAndSort();
+  renderTableHead();
+  renderTableBody();
+  renderList();
+
+  const total = state.rows.length;
+  const shown = state.filtered.length;
+  els.rowCount.textContent = state.query
+    ? `${shown} résultat${shown > 1 ? 's' : ''} sur ${total}`
+    : `${total} ligne${total > 1 ? 's' : ''}`;
+
+  els.emptyState.hidden = shown !== 0;
+  if(shown === 0){
+    els.emptyState.textContent = state.query
+      ? `Aucun résultat pour « ${state.query} ».`
+      : 'Aucune donnée à afficher.';
+  }
 }
 
-// Pour les colonnes de salaire par saison : ignore le format (parfois incohérent) de la
-// feuille et reformate nous-mêmes si la valeur est un nombre ; laisse tel quel si c'est du
-// texte (UFA, RFA...) ; masque complètement un montant de 0$ pour un affichage plus propre.
-function formatSeasonValue(raw){
-  const val = (raw || '').trim();
-  if(val === '') return '';
-  const isNumeric = /^-?[\d\s,.$]+$/.test(val);
-  if(!isNumeric) return val; // UFA, RFA, etc. — texte tel quel
-  const n = parseFloat(val.replace(/[^\d.-]/g, ''));
-  if(Number.isNaN(n) || n === 0) return '';
-  return new Intl.NumberFormat('fr-CA').format(Math.round(n)) + ' $';
-}
-
-function renderSummary(){
-  const s = state.summary;
-  const stats = [
-    { label: 'Masse', value: formatMoney(s.masse), cls: 'is-money is-positive' },
-    { label: 'Espace', value: formatMoney(s.espace), cls: 'is-money is-negative' },
-    { label: 'Total', value: s.tot },
-    { label: 'Att.', value: s.att },
-    { label: 'Déf.', value: s.def },
-    { label: 'Gard.', value: s.gar },
-    { label: 'Esp.', value: s.esp },
-    { label: 'Âge', value: s.moyAge },
-    { label: 'OVR', value: s.moyOvr },
-    { label: 'Poids', value: s.moyPoids },
-    { label: 'Taille', value: s.moyGrandeur },
-  ];
-  els.summaryStats.innerHTML = '';
-  stats.forEach(st => {
-    if(st.value === '' || st.value == null) return;
-    const card = document.createElement('div');
-    card.className = 'stat-card' + (st.cls ? ' ' + st.cls : '');
-    const label = document.createElement('div');
-    label.className = 'stat-label';
-    label.textContent = st.label;
-    const value = document.createElement('div');
-    value.className = 'stat-value';
-    value.textContent = st.value;
-    card.appendChild(label);
-    card.appendChild(value);
-    els.summaryStats.appendChild(card);
-  });
-}
-
-function buildPlayerCells(container, playerRow, tag){
-  PLAYER_COLS.forEach((ci, idx) => {
-    const cell = document.createElement(tag);
-    const raw = playerRow[ci] || '';
-    const isMoney = idx >= 9; // colonnes de saison
-    if(idx === 3){ // NAT → drapeau
-      cell.appendChild(flagSpan(raw));
-    }else if(isMoney){
-      cell.textContent = formatSeasonValue(raw);
-    }else{
-      cell.textContent = raw;
+function renderTableHead(){
+  els.tableHeadRow.innerHTML = '';
+  state.columns.forEach((col, i) => {
+    const th = document.createElement('th');
+    th.textContent = col.label;
+    if(col.isHighlight) th.classList.add('col-highlight');
+    if(state.sortCol === i){
+      const mark = document.createElement('span');
+      mark.className = 'sort-mark';
+      mark.textContent = state.sortDir === 1 ? '↑' : '↓';
+      th.appendChild(mark);
     }
-    if(isMoney || idx === 1 || idx === 2) cell.classList.add('is-numeric');
-    container.appendChild(cell);
+    th.addEventListener('click', () => {
+      state.sortDir = (state.sortCol === i) ? -state.sortDir : 1;
+      state.sortCol = i;
+      render();
+    });
+    els.tableHeadRow.appendChild(th);
   });
 }
 
-function renderSections(){
-  els.sectionsWrap.innerHTML = '';
-  let totalShown = 0;
+function renderTableBody(){
+  els.tableBody.innerHTML = '';
+  state.filtered.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    if(idx < 20) tr.classList.add('row-in');
+    if(idx < 20) tr.style.animationDelay = (idx * 25) + 'ms';
+    row.display.forEach((val, i) => {
+      const td = document.createElement('td');
+      const col = state.columns[i];
+      const link = i === 0 ? eaLinkFor(row) : null;
+      if(link){
+        const a = document.createElement('a');
+        a.href = link;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = val;
+        a.className = 'team-link';
+        td.appendChild(a);
+      }else if(col && col.isFlag){
+        appendFlag(td, val);
+      }else{
+        td.textContent = val;
+        if(col && col.isNumeric) td.classList.add('is-numeric');
+      }
+      if(col && col.isHighlight) td.classList.add('col-highlight');
+      tr.appendChild(td);
+    });
+    els.tableBody.appendChild(tr);
+  });
+}
 
-  state.sections.forEach(section => {
-    const players = section.players;
-    totalShown += players.length;
-
-    const block = document.createElement('div');
-    block.className = 'section-block';
+function renderList(){
+  els.listWrap.innerHTML = '';
+  state.filtered.forEach((row, idx) => {
+    const card = document.createElement('div');
+    card.className = 'row-card';
+    if(idx < 20) card.classList.add('row-in');
+    if(idx < 20) card.style.animationDelay = (idx * 25) + 'ms';
 
     const title = document.createElement('div');
-    title.className = 'section-title';
-    const titleName = document.createElement('span');
-    titleName.textContent = section.name;
-    const count = document.createElement('span');
-    count.className = 'section-count';
-    count.textContent = players.length + (players.length > 1 ? ' joueurs' : ' joueur');
-    title.appendChild(titleName);
-    title.appendChild(count);
-    block.appendChild(title);
-
-    if(players.length === 0){
-      const empty = document.createElement('div');
-      empty.className = 'section-empty';
-      empty.textContent = 'Aucun joueur.';
-      block.appendChild(empty);
-      els.sectionsWrap.appendChild(block);
-      return;
+    title.className = 'row-title';
+    const titleLink = eaLinkFor(row);
+    if(titleLink){
+      const a = document.createElement('a');
+      a.href = titleLink;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = row.display[0] || '—';
+      a.className = 'team-link';
+      title.appendChild(a);
+    }else{
+      title.textContent = row.display[0] || '—';
     }
+    card.appendChild(title);
 
-    // ---- Vue tableau ----
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'table-wrap';
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const headRow = document.createElement('tr');
-    PLAYER_HEADERS.forEach((h, idx) => {
-      const th = document.createElement('th');
-      th.textContent = h;
-      if(idx >= 1) th.classList.add('is-numeric');
-      if(idx === 0) th.classList.remove('is-numeric');
-      headRow.appendChild(th);
+    row.display.slice(1).forEach((val, i) => {
+      if(val === '') return;
+      const col = state.columns[i + 1];
+      const field = document.createElement('div');
+      field.className = 'row-field';
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = col ? col.label : '';
+      const value = document.createElement('span');
+      value.className = 'value'
+        + (col && col.isNumeric ? ' is-numeric' : '')
+        + (col && col.isHighlight ? ' is-highlight' : '');
+      if(col && col.isFlag){
+        appendFlag(value, val);
+      }else{
+        value.textContent = val;
+      }
+      field.appendChild(label);
+      field.appendChild(value);
+      card.appendChild(field);
     });
-    thead.appendChild(headRow);
-    const tbody = document.createElement('tbody');
-    players.forEach((p, idx) => {
-      const tr = document.createElement('tr');
-      if(idx < 20) tr.classList.add('row-in');
-      buildPlayerCells(tr, p, 'td');
-      tbody.appendChild(tr);
-    });
-    if(section.totalRow){
-      const tr = document.createElement('tr');
-      tr.className = 'total-row';
-      buildPlayerCells(tr, section.totalRow, 'td');
-      tr.children[0].textContent = section.totalRow[1] || '';
-      tbody.appendChild(tr);
-    }
-    table.appendChild(thead);
-    table.appendChild(tbody);
-    tableWrap.appendChild(table);
-    block.appendChild(tableWrap);
-
-    // ---- Vue fiche (mobile) ----
-    const listWrap = document.createElement('div');
-    listWrap.className = 'list-wrap';
-    players.forEach((p, idx) => {
-      listWrap.appendChild(buildPlayerCard(p, idx));
-    });
-    if(section.totalRow){
-      const card = buildPlayerCard(section.totalRow, 0, true);
-      listWrap.appendChild(card);
-    }
-    block.appendChild(listWrap);
-
-    els.sectionsWrap.appendChild(block);
+    els.listWrap.appendChild(card);
   });
-
-  return totalShown;
 }
 
-function buildPlayerCard(playerRow, idx, isTotal){
-  const card = document.createElement('div');
-  card.className = 'row-card' + (isTotal ? ' is-total' : '');
-  if(!isTotal && idx < 20) card.classList.add('row-in');
-  const title = document.createElement('div');
-  title.className = 'row-title';
-  title.textContent = isTotal ? (playerRow[1] || '') : (playerRow[1] || '—');
-  card.appendChild(title);
-  PLAYER_HEADERS.forEach((h, i) => {
-    if(i === 0) return;
-    const ci = PLAYER_COLS[i];
-    const raw = playerRow[ci] || '';
-    const isMoney = i >= 9;
-    const val = isMoney ? formatSeasonValue(raw) : raw;
-    if(!isMoney && val === '') return; // champs bio : on saute s'ils sont vides
-    const field = document.createElement('div');
-    field.className = 'row-field';
-    const label = document.createElement('span');
-    label.className = 'label';
-    label.textContent = h;
-    const value = document.createElement('span');
-    value.className = 'value' + (isMoney ? ' is-numeric' : '');
-    if(i === 3) value.appendChild(flagSpan(val));
-    else value.textContent = val === '' ? '—' : val; // saisons : toujours affichées, tiret si vide
-    field.appendChild(label);
-    field.appendChild(value);
-    card.appendChild(field);
-  });
-  return card;
+let searchTimer;
+els.search.addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    state.query = e.target.value;
+    render();
+  }, 200);
+});
+
+function refresh(){
+  els.refresh.classList.add('is-loading');
+  loadData({ background:true }).finally(() => els.refresh.classList.remove('is-loading'));
 }
-
-function renderPicks(){
-  const picks = state.picks;
-  els.picksList.innerHTML = '';
-  picks.forEach(p => {
-    const li = document.createElement('li');
-    li.textContent = p;
-    els.picksList.appendChild(li);
-  });
-  els.picksBlock.hidden = picks.length === 0;
-}
-
-function render(){
-  renderSummary();
-  renderSections();
-  renderPicks();
-
-  const teamName = currentTeam ? currentTeam.name + ' — ' : '';
-  els.rowCount.textContent = teamName + `${state.sections.reduce((n, s) => n + s.players.length, 0)} joueurs`;
-  els.emptyState.hidden = true;
-}
-
+els.refresh.addEventListener('click', refresh);
 els.retryBtn.addEventListener('click', () => loadData());
 
-if(!currentTeam){
-  els.loader.hidden = true;
-  els.errorBox.hidden = false;
-  els.errorText.textContent = 'Choisis une équipe dans le menu « Équipes » ci-dessus pour afficher sa liste de joueurs.';
-  els.retryBtn.hidden = true;
+const cached = loadFromCache();
+if(cached && cached.table){
+  parseTable(cached.table);
+  toggle({ loading:false });
+  els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
+  loadData({ background:true });
 }else{
-  const cached = loadFromCache();
-  if(cached && cached.rows){
-    applyData(cached.rows);
-    toggle({ loading:false });
-    els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
-    loadData({ background:true });
-  }else{
-    loadData();
-  }
+  loadData();
 }
 </script>
 </body>
