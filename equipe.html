@@ -298,6 +298,21 @@
     .row-title{ font-size:19px; }
   }
 
+  /* ---------- Infos du DG (nom, gamertag, Discord) ---------- */
+  .dg-bar{
+    display:flex; flex-wrap:wrap; gap:8px 20px;
+    padding:12px clamp(16px,3vw,40px) 0;
+    font-size:13.5px;
+  }
+  .dg-item{ display:flex; align-items:baseline; gap:6px; min-width:0; }
+  .dg-item .dg-label{
+    font-size:10.5px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap;
+  }
+  .dg-item .dg-value{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (max-width:600px){
+    .dg-bar{ gap:6px 14px; font-size:12.5px; }
+  }
+
   /* ---------- Résumé (Masse salariale / Espace / stats) ---------- */
   .summary-stats{
     display:grid;
@@ -418,7 +433,7 @@
         <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
       </a>
       <nav class="site-nav" id="siteNav">
-        <a class="nav-btn" href="https://sites.lnhq.ca">Accueil</a>
+        <a class="nav-btn" href="https://sites.lnhq.ca"><span>Accueil</span></a>
 
         <div class="nav-item">
           <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
@@ -426,7 +441,7 @@
             <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="nav-dropdown" hidden>
-            <a href="https://sites.lnhq.ca/ligue/calendrier">Calendrier</a>
+            <a href="calendrier.html">Calendrier</a>
             <a href="https://sites.lnhq.ca/ligue/dgs">DGs</a>
             <a href="https://sites.lnhq.ca/ligue/règlements">Règlements</a>
             <a href="masse.html">Masse salariale</a>
@@ -506,6 +521,7 @@
     </div>
 
     <div id="dataWrap" hidden>
+      <div class="dg-bar" id="dgBar" hidden></div>
       <div class="summary-stats" id="summaryStats"></div>
       <div id="sectionsWrap"></div>
       <div class="picks-block" id="picksBlock" hidden>
@@ -524,6 +540,7 @@
    ========================================================================= */
 const CONFIG = {
   SHEET_ID: '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A',
+  DGS_GID: '82046881', // onglet "DGS" : DG, gamertag, Discord par équipe
 };
 
 // Correspondance équipe (slug utilisé dans l'URL ?team=...) → gid de son onglet.
@@ -651,6 +668,7 @@ const els = {
   errorText: document.getElementById('errorText'),
   retryBtn: document.getElementById('retryBtn'),
   dataWrap: document.getElementById('dataWrap'),
+  dgBar: document.getElementById('dgBar'),
   summaryStats: document.getElementById('summaryStats'),
   sectionsWrap: document.getElementById('sectionsWrap'),
   picksBlock: document.getElementById('picksBlock'),
@@ -949,6 +967,59 @@ function applyData(rows){
   state.sections.forEach(applySectionAverages);
 }
 
+/* ---------- Infos du DG (onglet DGS) ----------
+   Les colonnes sont repérées par leur NOM d'en-tête, pas par leur position : ajouter une
+   colonne "DISCORD" dans l'onglet DGS suffira pour qu'elle apparaisse ici, où qu'elle soit. */
+async function loadDgInfo(){
+  if(!currentTeam) return;
+  try{
+    const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.DGS_GID}&headers=0&t=${Date.now()}`;
+    const res = await fetch(url);
+    if(!res.ok) return;
+    const text = await res.text();
+    const m = text.match(/setResponse\(([\s\S]*)\);\s*$/);
+    if(!m) return;
+    const json = JSON.parse(m[1]);
+    const rows = json.table.rows.map(r => (r.c || []).map(c => c ? (c.f != null ? c.f : (c.v != null ? String(c.v) : '')) : ''));
+    if(!rows.length) return;
+
+    const header = rows[0].map(h => (h || '').trim().toUpperCase());
+    const findCol = (...names) => header.findIndex(h => names.includes(h));
+    const colCode = 2; // abréviation d'équipe (ANA, BOS...) — pas d'en-tête dans la feuille
+    const colDg = findCol('DG');
+    const colGamertag = findCol('GAMERTAG');
+    const colDiscord = findCol('DISCORD');
+
+    const teamRow = rows.slice(1).find(r => (r[colCode] || '').trim().toUpperCase() === currentTeam.code);
+    if(!teamRow) return;
+
+    const items = [
+      { label: 'DG', value: colDg >= 0 ? teamRow[colDg] : '' },
+      { label: 'Gamertag', value: colGamertag >= 0 ? teamRow[colGamertag] : '' },
+      { label: 'Discord', value: colDiscord >= 0 ? teamRow[colDiscord] : '' },
+    ].filter(it => (it.value || '').trim() !== '');
+
+    if(!items.length) return;
+    els.dgBar.innerHTML = '';
+    items.forEach(it => {
+      const wrap = document.createElement('div');
+      wrap.className = 'dg-item';
+      const label = document.createElement('span');
+      label.className = 'dg-label';
+      label.textContent = it.label;
+      const value = document.createElement('span');
+      value.className = 'dg-value';
+      value.textContent = it.value.trim();
+      wrap.appendChild(label);
+      wrap.appendChild(value);
+      els.dgBar.appendChild(wrap);
+    });
+    els.dgBar.hidden = false;
+  }catch(e){
+    console.error('Infos DG non chargées:', e);
+  }
+}
+
 async function loadData({ background=false } = {}){
   if(!background) toggle({ loading:true });
   try{
@@ -1191,6 +1262,7 @@ if(!currentTeam){
   els.errorText.textContent = 'Choisis une équipe dans le menu « Équipes » ci-dessus pour afficher sa liste de joueurs.';
   els.retryBtn.hidden = true;
 }else{
+  loadDgInfo();
   const cached = loadFromCache();
   if(cached && cached.rows){
     applyData(cached.rows);
