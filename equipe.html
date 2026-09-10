@@ -298,19 +298,22 @@
     .row-title{ font-size:19px; }
   }
 
-  /* ---------- Infos du DG (nom, gamertag, Discord) ---------- */
+  /* ---------- Infos du DG (nom, gamertag, Discord) — dans la bannière colorée ---------- */
   .dg-bar{
-    display:flex; flex-wrap:wrap; gap:8px 20px;
-    padding:12px clamp(16px,3vw,40px) 0;
-    font-size:13.5px;
+    display:flex; flex-wrap:wrap; align-items:center; gap:6px 18px;
+    font-size:13.5px; min-width:0;
   }
   .dg-item{ display:flex; align-items:baseline; gap:6px; min-width:0; }
   .dg-item .dg-label{
-    font-size:10.5px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap;
+    font-size:10.5px; color:var(--accent-ink); opacity:0.75;
+    text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap;
   }
-  .dg-item .dg-value{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dg-item .dg-value{
+    font-weight:700; color:var(--accent-ink);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
   @media (max-width:600px){
-    .dg-bar{ gap:6px 14px; font-size:12.5px; }
+    .dg-bar{ gap:4px 12px; font-size:12.5px; }
   }
 
   /* ---------- Résumé (Masse salariale / Espace / stats) ---------- */
@@ -490,6 +493,7 @@
       <span id="teamSwitchLabel">Choisir une équipe</span>
       <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
+    <div class="dg-bar" id="dgBar" hidden></div>
   </div>
 
   <div class="team-modal-backdrop" id="teamModalBackdrop" hidden>
@@ -521,7 +525,6 @@
     </div>
 
     <div id="dataWrap" hidden>
-      <div class="dg-bar" id="dgBar" hidden></div>
       <div class="summary-stats" id="summaryStats"></div>
       <div id="sectionsWrap"></div>
       <div class="picks-block" id="picksBlock" hidden>
