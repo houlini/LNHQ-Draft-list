@@ -361,6 +361,14 @@
     border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius); padding:0 4px;
   }
   tr.total-row td{ background:var(--stripe) !important; font-weight:700; border-top:2px solid var(--accent); }
+  /* Joueur marqué dans la colonne AB : ne compte ni dans la masse ni dans les stats. */
+  tr.non-counted td{ opacity:0.62; font-style:italic; }
+  tr.non-counted td:first-child::after{
+    content:'hors calcul'; display:inline-block; margin-left:6px;
+    font-size:9.5px; font-style:normal; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.03em; padding:1px 5px; border-radius:999px;
+    border:1px solid currentColor; opacity:0.8; vertical-align:middle;
+  }
   .row-card.is-total{ background:var(--stripe); font-weight:700; border-top:2px solid var(--accent); }
   .section-empty{
     border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius);
@@ -815,6 +823,14 @@ const PLAYER_HEADERS = ['Joueur', 'OVR', 'Âge', 'NAT', 'PO', 'TIR', 'GR', 'Poid
 // Index, dans une ligne brute de la feuille, de chaque colonne ci-dessus.
 const PLAYER_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
+// Colonne AB (index 27) : joueur qui ne compte ni dans la masse ni dans les stats d'équipe.
+// Vide = faux. Accepte VRAI/TRUE/OUI/X/1 (insensible à la casse) comme vrai.
+const NON_COUNTED_COL = 27;
+function isNonCounted(row){
+  const v = (row[NON_COUNTED_COL] || '').trim().toUpperCase();
+  return ['VRAI', 'TRUE', 'OUI', 'YES', 'X', '1'].includes(v);
+}
+
 function cellsToRows(table){
   return table.rows.map(r => (r.c || []).map(c => c ? (c.f != null ? c.f : (c.v != null ? String(c.v) : '')) : ''));
 }
@@ -884,6 +900,7 @@ function computeAvgAge(sections){
   sections
     .filter(s => s.name !== 'ESPOIRS') // âge moyen du groupe NHL (comme TOT/ATT/DEF/GAR)
     .forEach(s => s.players.forEach(p => {
+      if(isNonCounted(p)) return;
       const n = parseFloat(p[3]);
       if(!Number.isNaN(n)) ages.push(n);
     }));
@@ -892,11 +909,16 @@ function computeAvgAge(sections){
 }
 
 function computeCounts(sections){
-  const byName = name => (sections.find(s => s.name === name) || { players: [] }).players.length;
-  const att = byName('ATTAQUANTS');
-  const def = byName('DÉFENSEURS');
-  const gar = byName('GARDIENS');
-  const esp = byName('ESPOIRS');
+  // Les joueurs marqués en colonne AB ne comptent pas dans Att./Déf./Gard. ni dans le
+  // Total ; ils restent comptés dans Esp. pour qu'on sache combien il y en a.
+  const byName = (name, skipFlagged) => {
+    const players = (sections.find(s => s.name === name) || { players: [] }).players;
+    return skipFlagged ? players.filter(p => !isNonCounted(p)).length : players.length;
+  };
+  const att = byName('ATTAQUANTS', true);
+  const def = byName('DÉFENSEURS', true);
+  const gar = byName('GARDIENS', true);
+  const esp = byName('ESPOIRS', false);
   return { att, def, gar, esp, tot: att + def + gar };
 }
 
@@ -919,11 +941,15 @@ function inchesToHeight(inches){
 // on les calcule ici plutôt que de laisser ces colonnes vides sur la ligne TOTAL.
 function applySectionAverages(section){
   if(!section.totalRow || !section.players.length) return;
-  const ovrs = section.players.map(p => parseFloat(p[2])).filter(n => !Number.isNaN(n));
-  const ages = section.players.map(p => parseFloat(p[3])).filter(n => !Number.isNaN(n));
-  const heights = section.players.map(p => heightToInches(p[7])).filter(n => n != null);
-  const weights = section.players.map(p => parseFloat(p[8])).filter(n => !Number.isNaN(n));
-  const years = section.players.map(p => parseFloat(p[9])).filter(n => !Number.isNaN(n));
+  // Les joueurs marqués en colonne AB sont exclus des moyennes, y compris de celles
+  // de leur propre section.
+  const counted = section.players.filter(p => !isNonCounted(p));
+  if(!counted.length) return;
+  const ovrs = counted.map(p => parseFloat(p[2])).filter(n => !Number.isNaN(n));
+  const ages = counted.map(p => parseFloat(p[3])).filter(n => !Number.isNaN(n));
+  const heights = counted.map(p => heightToInches(p[7])).filter(n => n != null);
+  const weights = counted.map(p => parseFloat(p[8])).filter(n => !Number.isNaN(n));
+  const years = counted.map(p => parseFloat(p[9])).filter(n => !Number.isNaN(n));
   if(ovrs.length) section.totalRow[2] = average(ovrs).toFixed(1);
   if(ages.length) section.totalRow[3] = average(ages).toFixed(2);
   if(heights.length) section.totalRow[7] = inchesToHeight(average(heights));
@@ -936,6 +962,7 @@ function applySectionAverages(section){
 function computeTeamAverage(sections, rawCol, isHeight){
   const vals = [];
   sections.filter(s => s.name !== 'ESPOIRS').forEach(s => s.players.forEach(p => {
+    if(isNonCounted(p)) return;
     if(isHeight){
       const inches = heightToInches(p[rawCol]);
       if(inches != null) vals.push(inches);
@@ -1172,6 +1199,7 @@ function renderSections(){
     players.forEach((p, idx) => {
       const tr = document.createElement('tr');
       if(idx < 20) tr.classList.add('row-in');
+      if(isNonCounted(p)) tr.classList.add('non-counted');
       buildPlayerCells(tr, p, 'td');
       tbody.appendChild(tr);
     });
