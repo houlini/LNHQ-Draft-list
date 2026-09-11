@@ -1,0 +1,271 @@
+/* =========================================================================
+   LNHQ — styles partagés par toutes les pages (tokens, en-tête/nav, base
+   des tableaux). Les styles propres à une seule page restent dans son
+   propre <style> (résumé d'équipe, calendrier, modale de sélection...).
+   ========================================================================= */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@400;500&family=Roboto:wght@500;700&display=swap');
+
+:root{
+  --bg:#FAFAF7;
+  --surface:#FFFFFF;
+  --ink:#181B20;
+  --ink-muted:#6B7178;
+  --accent:#E8590C;
+  --accent-soft:#FBEADC;
+  --accent-ink:#FFFFFF;
+  --stripe:#F1EEE7;
+  --line:#E5E2D9;
+  --danger:#A3402F;
+  --danger-soft:#F6E9E6;
+  --positive:#1E8E3E;
+  --negative:#C5221F;
+  --radius:10px;
+  --row-py:6px; --row-px:10px; --row-font:12.5px;
+  --nav-dark:#2D333B;
+  --nav-ink:#FFFFFF;
+  --nav-ink-muted:rgba(255,255,255,0.72);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15181B;
+    --surface:#1D2125;
+    --ink:#EDEBE4;
+    --ink-muted:#9AA0A6;
+    --accent:#FF7A33;
+    --accent-soft:#3A2416;
+    --accent-ink:#181B20;
+    --stripe:#1A1D20;
+    --line:#2C3033;
+    --danger:#E08B78;
+    --danger-soft:#2E211E;
+    --positive:#5BB97C;
+    --negative:#F28B82;
+  }
+}
+
+*{box-sizing:border-box;}
+[hidden]{ display:none !important; }
+html,body{margin:0;padding:0; height:100%;}
+html{ font-size:16px; }
+body{
+  font-family:'IBM Plex Sans', system-ui, sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column;
+  height:100vh; height:100dvh;
+  overflow:hidden;
+  font-size:clamp(15px, 1.1vw + 12px, 17px);
+  line-height:1.5;
+}
+button, input{font-family:inherit;}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+.app{
+  width:100%; max-width:none; margin:0;
+  display:flex; flex-direction:column;
+  flex:1; min-height:0;
+}
+
+/* ---------- En-tête (rendu par <site-header>, voir site-nav.js) ---------- */
+.app-header{
+  flex-shrink:0;
+  background:var(--nav-dark);
+  padding:clamp(10px,2vw,16px) clamp(16px,3vw,40px) 10px;
+}
+.header-row{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.brand{ display:flex; align-items:center; gap:10px; min-width:0; text-decoration:none; }
+.brand-logo{ width:32px; height:32px; flex-shrink:0; object-fit:contain; }
+.app-title{
+  color:var(--nav-ink);
+  text-transform:uppercase;
+  font-family:'Oswald', 'IBM Plex Sans', sans-serif;
+  font-size:clamp(26px, 3.2vw + 12px, 40px); font-weight:400; letter-spacing:0;
+  margin:0; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+.site-nav{ display:flex; align-items:center; gap:2px; flex-shrink:0; flex-wrap:wrap; }
+.nav-item{ position:relative; }
+
+.nav-btn{
+  display:inline-flex; align-items:center; gap:6px;
+  background:transparent; border:none; cursor:pointer;
+  color:var(--nav-ink); font-weight:700; text-transform:uppercase;
+  font-size:12.5px; letter-spacing:0.03em;
+  padding:8px 6px; border-radius:6px;
+  white-space:nowrap; text-decoration:none;
+}
+.nav-btn:hover{ background:rgba(255,255,255,0.1); }
+.nav-btn .nav-caret, .nav-btn .nav-icon{ width:13px; height:13px; flex-shrink:0; }
+.nav-btn.is-loading .nav-icon{ animation:spin 0.8s linear infinite; }
+@keyframes spin{ to { transform:rotate(360deg); } }
+
+.site-nav .nav-btn{ font-family:'Roboto', 'IBM Plex Sans', sans-serif; font-weight:700; letter-spacing:0.02em; }
+.nav-dropdown{ font-family:'Roboto', 'IBM Plex Sans', sans-serif; }
+
+.nav-dropdown{
+  position:absolute; top:100%; right:0; margin-top:6px;
+  background:var(--nav-dark); border:1px solid rgba(255,255,255,0.15);
+  border-radius:8px; box-shadow:0 10px 28px rgba(0,0,0,0.35);
+  padding:6px; min-width:170px; z-index:50;
+  display:flex; flex-direction:column; gap:1px;
+}
+.nav-dropdown a, .nav-dropdown .nav-dropdown-current{
+  display:block; padding:9px 12px; border-radius:6px;
+  color:var(--nav-ink); text-decoration:none; font-size:13.5px; font-weight:500;
+  text-transform:none; letter-spacing:normal; white-space:nowrap;
+}
+.nav-dropdown a:hover{ background:rgba(255,255,255,0.12); }
+.nav-dropdown .nav-dropdown-current{
+  background:rgba(255,255,255,0.08); font-weight:700; color:var(--accent); cursor:default;
+}
+.nav-dropdown.teams-grid{
+  display:grid; grid-template-columns:repeat(2, minmax(120px,1fr));
+  min-width:280px; max-height:70vh; overflow-y:auto;
+}
+
+.meta-row{
+  margin:10px 2px 0; font-size:clamp(12px, 0.3vw + 12px, 13.5px); color:var(--nav-ink);
+  opacity:0.82;
+  display:flex; justify-content:space-between; gap:8px;
+}
+
+/* ---------- Bannière orange (contenu variable : recherche, filtres, sélecteur d'équipe...) ---------- */
+.filter-band{
+  flex-shrink:0;
+  background:var(--accent);
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
+  padding:12px clamp(16px,3vw,40px);
+}
+.search-field{ position:relative; min-width:0; flex:1 1 200px; max-width:280px; }
+.search-field svg{
+  position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  width:17px; height:17px; stroke:var(--ink-muted); pointer-events:none;
+}
+.search-field input{
+  width:100%; height:40px; padding:0 14px 0 38px;
+  border:1px solid transparent; border-radius:9px;
+  background:var(--surface); color:var(--ink); font-size:16px;
+}
+.filter-band .nav-btn{ border:1px solid rgba(255,255,255,0.4); }
+.filter-band .nav-btn:hover{ background:rgba(255,255,255,0.15); }
+.filter-band .nav-btn[aria-pressed="true"]{ background:rgba(255,255,255,0.25); }
+
+.filter-bar{
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
+}
+.filter-control{ display:flex; align-items:center; gap:6px; }
+.filter-control label{
+  font-size:12.5px; color:var(--nav-ink); opacity:0.85; white-space:nowrap;
+}
+.filter-control select{
+  height:36px; padding:0 28px 0 10px;
+  border:1px solid rgba(255,255,255,0.5); border-radius:8px;
+  background:var(--surface); color:var(--ink); font-size:13.5px;
+  cursor:pointer;
+}
+.filter-control.filter-range input[type="range"]{
+  width:140px; accent-color:var(--nav-dark);
+}
+.filter-control.filter-range .filter-range-value{
+  font-family:'IBM Plex Mono', monospace; font-size:13px;
+  color:var(--nav-ink); min-width:80px;
+}
+
+/* ---------- Contenu ---------- */
+main{
+  padding:10px clamp(16px,3vw,40px) 20px;
+  flex:1; min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+.status-box{
+  display:flex; gap:10px; align-items:flex-start;
+  padding:16px; border-radius:var(--radius); font-size:15px; line-height:1.55;
+}
+.status-box.error{ background:var(--danger-soft); color:var(--danger); }
+.status-box svg{width:20px; height:20px; flex-shrink:0; margin-top:1px;}
+.status-box .retry{
+  margin-top:8px; display:inline-block; font-weight:600; cursor:pointer;
+  text-decoration:underline; color:inherit; background:none; border:none; font-size:15px; padding:0;
+}
+
+.empty-state{ text-align:center; padding:48px 16px; color:var(--ink-muted); font-size:15px; }
+
+/* ---------- Squelette de chargement ---------- */
+.skeleton-row{
+  height:38px; border-radius:6px; margin-bottom:8px;
+  background:linear-gradient(90deg, var(--surface) 25%, var(--accent-soft) 37%, var(--surface) 63%);
+  background-size:400% 100%;
+  animation:shimmer 1.3s ease infinite;
+}
+@keyframes shimmer{ 0%{background-position:100% 50%;} 100%{background-position:0 50%;} }
+
+/* ---------- Tableau (base commune à toutes les pages) ---------- */
+.table-wrap{ display:none; overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); }
+table{ width:auto; border-collapse:collapse; font-size:var(--row-font); }
+thead th{
+  position:sticky; top:0;
+  background:var(--stripe); text-align:left; font-weight:700;
+  padding:calc(var(--row-py) + 2px) var(--row-px); border-bottom:2px solid var(--accent);
+  cursor:pointer; user-select:none; white-space:nowrap;
+  color:var(--ink);
+}
+thead th:hover{ color:var(--accent); }
+thead th .sort-mark{ margin-left:4px; color:var(--accent); }
+tbody td{
+  padding:var(--row-py) var(--row-px); border-bottom:1px solid var(--line);
+  vertical-align:top; white-space:nowrap;
+}
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr:nth-child(even){ background:var(--stripe); }
+tbody tr:hover{ background:var(--accent-soft); }
+td.is-numeric, th.is-numeric{
+  font-family:'IBM Plex Mono', monospace; text-align:right; font-variant-numeric:tabular-nums;
+}
+
+/* Colonnes mises en évidence (ex: D, Y) */
+td.col-highlight{
+  background:var(--accent) !important; color:var(--accent-ink) !important;
+  font-weight:600;
+}
+th.col-highlight{ background:var(--accent) !important; color:var(--accent-ink) !important; }
+th.col-highlight .sort-mark{ color:var(--accent-ink); }
+th.col-highlight:hover{ color:var(--accent-ink); }
+.flag-icon{ border-radius:2px; vertical-align:middle; display:inline-block; }
+.td-positive{ color:var(--positive); font-weight:600; }
+.td-negative{ color:var(--negative); font-weight:600; }
+.team-link{ color:inherit; text-decoration:none; }
+.team-link:hover{ text-decoration:underline; color:var(--accent); }
+
+/* Première colonne gelée : reste visible pendant le défilement horizontal (utile sur mobile) */
+thead th:first-child, tbody td:first-child{
+  position:sticky; left:0; z-index:2;
+  background:var(--surface);
+  box-shadow:2px 0 4px -2px rgba(0,0,0,0.18);
+}
+thead th:first-child{ z-index:3; }
+tbody tr:hover td:first-child{ background:var(--accent-soft); }
+
+.row-in{ animation:rowIn 0.35s ease both; }
+@keyframes rowIn{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
+@media (prefers-reduced-motion: reduce){
+  .row-in{ animation:none; }
+  .skeleton-row{ animation:none; }
+}
+
+/* Vue tableau imposée pour tout le monde, quel que soit l'appareil ou la largeur
+   d'écran (aucune page n'a de vue fiche). Sur mobile, le tableau défile
+   horizontalement, avec la première colonne gelée. */
+.table-wrap{ display:block !important; }
+/* Doit rester APRÈS la règle ci-dessus : à priorité égale, la dernière gagne, et
+   l'attribut hidden doit continuer de masquer le tableau pendant le chargement. */
+[hidden]{ display:none !important; }
+
+@media (max-width:380px){
+  .nav-btn .nav-btn-label{ font-size:11.5px; }
+}

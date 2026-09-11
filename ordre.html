@@ -5,305 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ordre de repêchage</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css">
+<script src="site-nav.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@400;500&family=Roboto:wght@500;700&display=swap');
-
-  :root{
-    --bg:#FAFAF7;
-    --surface:#FFFFFF;
-    --ink:#181B20;
-    --ink-muted:#6B7178;
-    --accent:#E8590C;
-    --accent-soft:#FBEADC;
-    --accent-ink:#FFFFFF;
-    --stripe:#F1EEE7;
-    --line:#E5E2D9;
-    --danger:#A3402F;
-    --danger-soft:#F6E9E6;
-    --positive:#1E8E3E;
-    --negative:#C5221F;
-    --radius:10px;
-    --row-py:6px; --row-px:10px; --row-font:12.5px;
-    --nav-dark:#2D333B;
-    --nav-ink:#FFFFFF;
-    --nav-ink-muted:rgba(255,255,255,0.72);
-  }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#15181B;
-      --surface:#1D2125;
-      --ink:#EDEBE4;
-      --ink-muted:#9AA0A6;
-      --accent:#FF7A33;
-      --accent-soft:#3A2416;
-      --accent-ink:#181B20;
-      --stripe:#1A1D20;
-      --line:#2C3033;
-      --danger:#E08B78;
-      --danger-soft:#2E211E;
-      --positive:#5BB97C;
-      --negative:#F28B82;
-    }
-  }
-
-  *{box-sizing:border-box;}
-  [hidden]{ display:none !important; }
-  html,body{margin:0;padding:0; height:100%;}
-  html{ font-size:16px; }
-  body{
-    font-family:'IBM Plex Sans', system-ui, sans-serif;
-    background:var(--bg);
-    color:var(--ink);
-    -webkit-font-smoothing:antialiased;
-    display:flex; flex-direction:column;
-    height:100vh; height:100dvh;
-    overflow:hidden;
-    font-size:clamp(15px, 1.1vw + 12px, 17px);
-    line-height:1.5;
-  }
-  button, input{font-family:inherit;}
-  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
-
-  .app{
-    width:100%; max-width:none; margin:0;
-    display:flex; flex-direction:column;
-    flex:1; min-height:0;
-  }
-
-  /* ---------- En-tête ---------- */
-  .app-header{
-    flex-shrink:0;
-    background:var(--nav-dark);
-    padding:clamp(10px,2vw,16px) clamp(16px,3vw,40px) 10px;
-  }
-  .header-row{
-    display:flex; align-items:center; justify-content:space-between; gap:16px;
-  }
-  .brand{ display:flex; align-items:center; gap:10px; min-width:0; text-decoration:none; }
-  .brand-logo{ width:32px; height:32px; flex-shrink:0; object-fit:contain; }
-  .app-title{
-    color:var(--nav-ink);
-    text-transform:uppercase;
-    font-family:'Oswald', 'IBM Plex Sans', sans-serif;
-    font-size:clamp(26px, 3.2vw + 12px, 40px); font-weight:400; letter-spacing:0;
-    margin:0; min-width:0;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  }
-
-  .site-nav{ display:flex; align-items:center; gap:2px; flex-shrink:0; flex-wrap:wrap; }
-  .nav-item{ position:relative; }
-
-  .nav-btn{
-    display:inline-flex; align-items:center; gap:6px;
-    background:transparent; border:none; cursor:pointer;
-    color:var(--nav-ink); font-weight:700; text-transform:uppercase;
-    font-size:12.5px; letter-spacing:0.03em;
-    padding:8px 6px; border-radius:6px;
-    white-space:nowrap; text-decoration:none;
-  }
-  .nav-btn:hover{ background:rgba(255,255,255,0.1); }
-  .nav-btn .nav-caret, .nav-btn .nav-icon{ width:13px; height:13px; flex-shrink:0; }
-  .nav-btn.is-loading .nav-icon{ animation:spin 0.8s linear infinite; }
-  @keyframes spin{ to { transform:rotate(360deg); } }
-
-  .site-nav .nav-btn{ font-family:'Roboto', 'IBM Plex Sans', sans-serif; font-weight:700; letter-spacing:0.02em; }
-  .nav-dropdown{ font-family:'Roboto', 'IBM Plex Sans', sans-serif; }
-
-  .nav-dropdown{
-    position:absolute; top:100%; right:0; margin-top:6px;
-    background:var(--nav-dark); border:1px solid rgba(255,255,255,0.15);
-    border-radius:8px; box-shadow:0 10px 28px rgba(0,0,0,0.35);
-    padding:6px; min-width:170px; z-index:50;
-    display:flex; flex-direction:column; gap:1px;
-  }
-  .nav-dropdown a, .nav-dropdown .nav-dropdown-current{
-    display:block; padding:9px 12px; border-radius:6px;
-    color:var(--nav-ink); text-decoration:none; font-size:13.5px; font-weight:500;
-    text-transform:none; letter-spacing:normal; white-space:nowrap;
-  }
-  .nav-dropdown a:hover{ background:rgba(255,255,255,0.12); }
-  .nav-dropdown .nav-dropdown-current{
-    background:rgba(255,255,255,0.08); font-weight:700; color:var(--accent); cursor:default;
-  }
-  .nav-dropdown.teams-grid{
-    display:grid; grid-template-columns:repeat(2, minmax(120px,1fr));
-    min-width:280px; max-height:70vh; overflow-y:auto;
-  }
-
-  .meta-row{
-    margin:10px 2px 0; font-size:clamp(12px, 0.3vw + 12px, 13.5px); color:var(--nav-ink);
-    opacity:0.82;
-    display:flex; justify-content:space-between; gap:8px;
-  }
-
-  /* ---------- Bannière orange : recherche, affichage, densité, filtres ---------- */
-  .filter-band{
-    flex-shrink:0;
-    background:var(--accent);
-    display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
-    padding:12px clamp(16px,3vw,40px);
-  }
-  .search-field{ position:relative; min-width:0; flex:1 1 200px; max-width:280px; }
-  .search-field svg{
-    position:absolute; left:12px; top:50%; transform:translateY(-50%);
-    width:17px; height:17px; stroke:var(--ink-muted); pointer-events:none;
-  }
-  .search-field input{
-    width:100%; height:40px; padding:0 14px 0 38px;
-    border:1px solid transparent; border-radius:9px;
-    background:var(--surface); color:var(--ink); font-size:16px;
-  }
-  .filter-band .nav-btn{ border:1px solid rgba(255,255,255,0.4); }
-  .filter-band .nav-btn:hover{ background:rgba(255,255,255,0.15); }
-  .filter-band .nav-btn[aria-pressed="true"]{ background:rgba(255,255,255,0.25); }
-
-  .filter-bar{
-    display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
-  }
-  .filter-control{ display:flex; align-items:center; gap:6px; }
-  .filter-control label{
-    font-size:12.5px; color:var(--nav-ink); opacity:0.85; white-space:nowrap;
-  }
-  .filter-control select{
-    height:36px; padding:0 28px 0 10px;
-    border:1px solid rgba(255,255,255,0.5); border-radius:8px;
-    background:var(--surface); color:var(--ink); font-size:13.5px;
-    cursor:pointer;
-  }
-  .filter-control.filter-range input[type="range"]{
-    width:140px; accent-color:var(--nav-dark);
-  }
-  .filter-control.filter-range .filter-range-value{
-    font-family:'IBM Plex Mono', monospace; font-size:13px;
-    color:var(--nav-ink); min-width:80px;
-  }
-
-  /* ---------- Contenu ---------- */
-  main{
-    padding:10px clamp(16px,3vw,40px) 20px;
-    flex:1; min-height:0;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-  }
-
-  .status-box{
-    display:flex; gap:10px; align-items:flex-start;
-    padding:16px; border-radius:var(--radius); font-size:15px; line-height:1.55;
-  }
-  .status-box.error{ background:var(--danger-soft); color:var(--danger); }
-  .status-box svg{width:20px; height:20px; flex-shrink:0; margin-top:1px;}
-  .status-box .retry{
-    margin-top:8px; display:inline-block; font-weight:600; cursor:pointer;
-    text-decoration:underline; color:inherit; background:none; border:none; font-size:15px; padding:0;
-  }
-
-  .empty-state{ text-align:center; padding:48px 16px; color:var(--ink-muted); font-size:15px; }
-
-  /* ---------- Squelette de chargement ---------- */
-  .skeleton-row{
-    height:38px; border-radius:6px; margin-bottom:8px;
-    background:linear-gradient(90deg, var(--surface) 25%, var(--accent-soft) 37%, var(--surface) 63%);
-    background-size:400% 100%;
-    animation:shimmer 1.3s ease infinite;
-  }
-  @keyframes shimmer{ 0%{background-position:100% 50%;} 100%{background-position:0 50%;} }
-
-  /* ---------- Tableau (large écran) ---------- */
-  .table-wrap{ display:none; overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); }
-  table{ width:auto; border-collapse:collapse; font-size:var(--row-font); }
-  thead th{
-    position:sticky; top:0;
-    background:var(--stripe); text-align:left; font-weight:700;
-    padding:calc(var(--row-py) + 2px) var(--row-px); border-bottom:2px solid var(--accent);
-    cursor:pointer; user-select:none; white-space:nowrap;
-    color:var(--ink);
-  }
-  thead th:hover{ color:var(--accent); }
-  thead th .sort-mark{ margin-left:4px; color:var(--accent); }
-  tbody td{
-    padding:var(--row-py) var(--row-px); border-bottom:1px solid var(--line);
-    vertical-align:top; white-space:nowrap;
-  }
-  tbody tr:last-child td{ border-bottom:none; }
-  tbody tr:nth-child(even){ background:var(--stripe); }
-  tbody tr:hover{ background:var(--accent-soft); }
-  td.is-numeric, th.is-numeric{
-    font-family:'IBM Plex Mono', monospace; text-align:right; font-variant-numeric:tabular-nums;
-  }
-
-  /* Colonnes mises en évidence (ex: D, Y) */
-  td.col-highlight{
-    background:var(--accent) !important; color:var(--accent-ink) !important;
-    font-weight:600;
-  }
-  th.col-highlight{ background:var(--accent) !important; color:var(--accent-ink) !important; }
-  th.col-highlight .sort-mark{ color:var(--accent-ink); }
-  th.col-highlight:hover{ color:var(--accent-ink); }
-  .row-field .value.is-highlight{
-    background:var(--accent); color:var(--accent-ink);
-    padding:2px 8px; border-radius:6px; font-weight:600;
-  }
-  .flag-icon{ border-radius:2px; vertical-align:middle; display:inline-block; }
-  .td-positive, .row-field .value.is-positive{ color:var(--positive); font-weight:600; }
-  .td-negative, .row-field .value.is-negative{ color:var(--negative); font-weight:600; }
-
-  /* Première colonne gelée : reste visible pendant le défilement horizontal (utile sur mobile) */
-  thead th:first-child, tbody td:first-child{
-    position:sticky; left:0; z-index:2;
-    background:var(--surface);
-    box-shadow:2px 0 4px -2px rgba(0,0,0,0.18);
-  }
-  thead th:first-child{ z-index:3; }
-  tbody tr:hover td:first-child{ background:var(--accent-soft); }
-
-  .row-in{ animation:rowIn 0.35s ease both; }
-  @keyframes rowIn{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
-  @media (prefers-reduced-motion: reduce){
-    .row-in{ animation:none; }
-    .skeleton-row{ animation:none; }
-  }
-
-  /* ---------- Liste (mobile) ---------- */
-  .list-wrap{ display:block; }
-  .row-card{
-    padding:16px 4px; border-bottom:1px solid var(--line);
-  }
-  .row-card:last-child{ border-bottom:none; }
-  .row-title{ font-weight:600; font-size:18px; line-height:1.4; margin-bottom:9px; }
-  .team-link{ color:inherit; text-decoration:none; }
-  .team-link:hover{ text-decoration:underline; color:var(--accent); }
-  .row-field{
-    display:flex; justify-content:space-between; gap:16px;
-    padding:5px 0; font-size:15px;
-  }
-  .row-field .label{ color:var(--ink-muted); flex-shrink:0; }
-  .row-field .value{ text-align:right; }
-  .row-field .value.is-numeric{
-    font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums;
-  }
-
-  /* Bascule table / liste selon la largeur d'écran (mode "auto") */
-  @media (min-width:700px){
-    .table-wrap{ display:block; }
-    .list-wrap{ display:none; }
-  }
-
-  /* Modes forcés par le bouton de vue : gagnent sur la largeur d'écran, quel que soit l'appareil */
-  .app.view-table .table-wrap{ display:block !important; }
-  .app.view-table .list-wrap{ display:none !important; }
-  .app.view-list .table-wrap{ display:none !important; }
-  .app.view-list .list-wrap{ display:block !important; }
-
-  @media (max-width:380px){
-    .nav-btn .nav-btn-label{ font-size:11.5px; }
-  }
-
-  /* Confort accru pour grand écran : uniquement la vue liste mobile,
-     le tableau desktop reste piloté par le bouton de densité */
-  @media (min-width:1200px){
-    .row-title{ font-size:19px; }
-  }
-
   /* ---------- Résumé (Masse salariale / Espace / stats) ---------- */
   .summary-stats{
     display:flex; flex-wrap:wrap; gap:10px;
@@ -340,11 +44,7 @@
   .section-block th:nth-child(2), .section-block td:nth-child(2){ width:84px; }
   .section-block th:nth-child(4), .section-block td:nth-child(4){ width:52px; }
   .section-block th:nth-child(5), .section-block td:nth-child(5){ width:52px; }
-  .section-block .list-wrap{
-    border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius); padding:0 4px;
-  }
   tr.total-row td{ background:var(--stripe) !important; font-weight:700; border-top:2px solid var(--accent); }
-  .row-card.is-total{ background:var(--stripe); font-weight:700; border-top:2px solid var(--accent); }
   .section-empty{
     border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius);
     padding:16px; color:var(--ink-muted); font-size:14px; text-align:center; background:var(--surface);
@@ -433,73 +133,13 @@
 <body>
 
 <div class="app">
-  <header class="app-header">
-    <div class="header-row">
-      <a class="brand" href="https://sites.lnhq.ca">
-        <img class="brand-logo" src="logo-lnhq.png" alt="LNHQ">
-        <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
-      </a>
-      <nav class="site-nav" id="siteNav">
-        <a class="nav-btn" href="https://sites.lnhq.ca"><span>Accueil</span></a>
-
-        <div class="nav-item">
-          <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-            <span>Ligue</span>
-            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="nav-dropdown" hidden>
-            <a href="calendrier.html">Calendrier</a>
-            <a href="https://sites.lnhq.ca/ligue/dgs">DGs</a>
-            <a href="https://sites.lnhq.ca/ligue/règlements">Règlements</a>
-            <a href="masse.html">Masse salariale</a>
-          </div>
-        </div>
-
-        <div class="nav-item">
-          <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-            <span>Repêchage</span>
-            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="nav-dropdown" hidden>
-            <a href="index.html">Joueurs</a>
-            <span class="nav-dropdown-current" aria-current="page">Ordre</span>
-          </div>
-        </div>
-
-        <div class="nav-item">
-          <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-            <span>Équipes</span>
-            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="nav-dropdown teams-grid" id="teamsDropdown" hidden></div>
-        </div>
-
-        <div class="nav-item">
-          <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-            <span>Nouvelles</span>
-            <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="nav-dropdown" hidden>
-            <a href="https://sites.lnhq.ca/nouvelles/2026-27">2026-27</a>
-          </div>
-        </div>
-      </nav>
-    </div>
-    <div class="meta-row">
-      <span id="rowCount" aria-live="polite"></span>
-      <span id="lastUpdated"></span>
-    </div>
-  </header>
+  <site-header class="app-header" current-page="ordre"></site-header>
 
   <div class="filter-band">
     <div class="search-field">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="search" id="searchInput" placeholder="Rechercher un joueur ou une équipe…" aria-label="Rechercher un joueur ou une équipe">
     </div>
-    <button class="nav-btn" id="viewBtn" aria-label="Changer le mode d'affichage" title="Affichage automatique">
-      <span class="nav-btn-label">Auto</span>
-      <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
     <button class="nav-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
       <span class="nav-btn-label">Actualiser</span>
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -548,7 +188,6 @@ const els = {
   app: document.querySelector('.app'),
   title: document.getElementById('sheetTitle'),
   search: document.getElementById('searchInput'),
-  viewBtn: document.getElementById('viewBtn'),
   refresh: document.getElementById('refreshBtn'),
   rowCount: document.getElementById('rowCount'),
   lastUpdated: document.getElementById('lastUpdated'),
@@ -564,50 +203,6 @@ const els = {
 els.title.textContent = 'LNHQ';
 document.title = 'Ordre de repêchage';
 
-document.querySelectorAll('.nav-item').forEach(item => {
-  const btn = item.querySelector(':scope > .nav-btn');
-  const menu = item.querySelector(':scope > .nav-dropdown');
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const willOpen = menu.hidden;
-    document.querySelectorAll('.nav-dropdown').forEach(m => { m.hidden = true; });
-    document.querySelectorAll('.nav-item > .nav-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
-    if(willOpen){ menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
-  });
-});
-document.addEventListener('click', () => {
-  document.querySelectorAll('.nav-dropdown').forEach(m => { m.hidden = true; });
-  document.querySelectorAll('.nav-item > .nav-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
-});
-document.addEventListener('keydown', e => {
-  if(e.key === 'Escape'){
-    document.querySelectorAll('.nav-dropdown').forEach(m => { m.hidden = true; });
-    document.querySelectorAll('.nav-item > .nav-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
-  }
-});
-
-/* ---------- Menu Équipes (bannière foncée) ---------- */
-const TEAMS = [
-  ['Anaheim', 'anaheim'], ['Boston', 'boston'], ['Buffalo', 'buffalo'],
-  ['Calgary', 'calgary'], ['Caroline', 'carolina'], ['Chicago', 'chicago'],
-  ['Colorado', 'colorado'], ['Columbus', 'columbus'], ['Dallas', 'dallas'],
-  ['Detroit', 'detroit'], ['Edmonton', 'edmonton'], ['Floride', 'florida'],
-  ['Los Angeles', 'los-angeles'], ['Minnesota', 'minnesota'], ['Montréal', 'montreal'],
-  ['Nashville', 'nashville'], ['New Jersey', 'new-jersey'], ['NY Islanders', 'ny-islanders'],
-  ['NY Rangers', 'ny-rangers'], ['Ottawa', 'ottawa'], ['Philadelphie', 'philadelphia'],
-  ['Pittsburgh', 'pittsburgh'], ['San Jose', 'san-jose'], ['Seattle', 'seattle'],
-  ['St. Louis', 'st-louis'], ['Tampa Bay', 'tampa-bay'], ['Toronto', 'toronto'],
-  ['Utah', 'utah'], ['Vancouver', 'vancouver'], ['Vegas', 'vegas'],
-  ['Washington', 'washington'], ['Winnipeg', 'winnipeg'],
-];
-const teamsDropdown = document.getElementById('teamsDropdown');
-TEAMS.forEach(([name, slug]) => {
-  const a = document.createElement('a');
-  a.href = 'equipe.html?team=' + slug;
-  a.textContent = name;
-  teamsDropdown.appendChild(a);
-});
-
 // Code d'équipe (colonne de la feuille DRAFT, ex: "BOS") → slug de la page équipe.
 const CODE_TO_SLUG = {
   MTL:'montreal', TOR:'toronto', OTT:'ottawa', BOS:'boston', BUF:'buffalo', DET:'detroit',
@@ -619,39 +214,6 @@ const CODE_TO_SLUG = {
 };
 function teamLogoPath(code){ return 'Logos/' + code + '.png'; }
 
-/* ---------- Mode d'affichage : auto / tableau forcé / fiche forcée ---------- */
-const VIEW_MODES = ['auto', 'table', 'list'];
-const VIEW_LABELS = {
-  auto: 'Affichage automatique (selon la largeur d\u2019écran)',
-  table: 'Vue tableau forcée',
-  list: 'Vue fiche forcée',
-};
-const VIEW_LABELS_SHORT = { auto: 'Auto', table: 'Tableau', list: 'Fiche' };
-function loadViewMode(){
-  try{
-    const saved = localStorage.getItem('sheetViewMode');
-    if(VIEW_MODES.includes(saved)) return saved;
-  }catch(e){}
-  return 'table';
-}
-function saveViewMode(mode){
-  try{ localStorage.setItem('sheetViewMode', mode); }catch(e){}
-}
-let viewMode = loadViewMode();
-function applyViewMode(){
-  els.app.classList.remove('view-table', 'view-list');
-  if(viewMode === 'table') els.app.classList.add('view-table');
-  else if(viewMode === 'list') els.app.classList.add('view-list');
-  els.viewBtn.querySelector('.nav-btn-label').textContent = VIEW_LABELS_SHORT[viewMode];
-  els.viewBtn.title = VIEW_LABELS[viewMode];
-  els.viewBtn.setAttribute('aria-label', VIEW_LABELS[viewMode] + ', cliquer pour changer');
-}
-els.viewBtn.addEventListener('click', () => {
-  viewMode = VIEW_MODES[(VIEW_MODES.indexOf(viewMode) + 1) % VIEW_MODES.length];
-  applyViewMode();
-  saveViewMode(viewMode);
-});
-applyViewMode();
 
 /* =========================================================================
    Données : liste plate de picks, groupée par ronde
@@ -829,38 +391,6 @@ function render(){
     table.appendChild(tbody);
     tableWrap.appendChild(table);
     block.appendChild(tableWrap);
-
-    // Vue fiche (mobile)
-    const listWrap = document.createElement('div');
-    listWrap.className = 'list-wrap';
-    filtered.forEach((p, idx) => {
-      const card = document.createElement('div');
-      card.className = 'row-card';
-      if(idx < 20) card.classList.add('row-in');
-      const cardTitle = document.createElement('div');
-      cardTitle.className = 'row-title';
-      cardTitle.textContent = '#' + p.overall + ' — ' + p.player;
-      card.appendChild(cardTitle);
-      [['Équipe', null, p.team], ['Position', p.pos], ['OVR', p.ovr]].forEach(entry => {
-        const [label, plainVal, teamCode] = entry;
-        if((plainVal == null && !teamCode) || plainVal === '') return;
-        const field = document.createElement('div');
-        field.className = 'row-field';
-        const lab = document.createElement('span');
-        lab.className = 'label';
-        lab.textContent = label;
-        const val = document.createElement('span');
-        val.className = 'value';
-        if(teamCode) val.appendChild(teamCell(teamCode));
-        else val.textContent = plainVal;
-        field.appendChild(lab);
-        field.appendChild(val);
-        card.appendChild(field);
-      });
-      listWrap.appendChild(card);
-    });
-    block.appendChild(listWrap);
-
     els.roundsWrap.appendChild(block);
   });
 
