@@ -74,9 +74,12 @@ button, input{font-family:inherit;}
   padding:clamp(10px,2vw,16px) clamp(16px,3vw,40px) 10px;
 }
 .header-row{
-  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px;
 }
-.brand{ display:flex; align-items:center; gap:10px; min-width:0; text-decoration:none; }
+/* flex-shrink:0 : le bloc logo+titre garde sa largeur naturelle plutôt que de se
+   laisser écraser jusqu'à 0px par la nav — s'il manque de place, c'est la nav qui
+   passe à la ligne suivante (flex-wrap ci-dessus), jamais le logo qui disparaît. */
+.brand{ display:flex; flex-shrink:0; align-items:center; gap:10px; min-width:0; text-decoration:none; }
 .brand-logo{ width:32px; height:32px; flex-shrink:0; object-fit:contain; }
 .app-title{
   color:var(--nav-ink);
