@@ -552,6 +552,7 @@
 const CONFIG = {
   SHEET_ID: '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A',
   DGS_GID: '82046881', // onglet "DGS" : DG, gamertag, Discord par équipe
+  DB_GID: '1134615479', // onglet "PLAYERSDATABASE" : colonne AB "Espoir" (TRUE = hors calcul)
 };
 
 // Correspondance équipe (slug utilisé dans l'URL ?team=...) → gid de son onglet.
@@ -823,12 +824,44 @@ const PLAYER_HEADERS = ['Joueur', 'OVR', 'Âge', 'NAT', 'PO', 'TIR', 'GR', 'Poid
 // Index, dans une ligne brute de la feuille, de chaque colonne ci-dessus.
 const PLAYER_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
-// Colonne AB (index 27) : joueur qui ne compte ni dans la masse ni dans les stats d'équipe.
-// Vide = faux. Accepte VRAI/TRUE/OUI/X/1 (insensible à la casse) comme vrai.
-const NON_COUNTED_COL = 27;
+/* ---------- Joueurs "Espoir" (hors calcul) ----------
+   Le drapeau vit dans PLAYERSDATABASE (colonne AB "Espoir"), pas dans les onglets
+   d'équipe. On charge donc la liste des noms marqués une fois, et on s'en sert pour
+   déplacer ces joueurs vers la section ESPOIRS et les exclure des calculs — sans avoir
+   à modifier les formules des 32 onglets d'équipe. */
+const DB_NAME_COL = 1;   // "JOUEUR", format "Nom, Prénom" (même format que les onglets d'équipe)
+const DB_FLAG_COL = 27;  // colonne AB "Espoir"
+const nonCountedNames = new Set();
+
+function normalizeName(str){
+  return (str || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+function isTruthyFlag(v){
+  return ['VRAI', 'TRUE', 'OUI', 'YES', 'X', '1'].includes((v || '').trim().toUpperCase());
+}
 function isNonCounted(row){
-  const v = (row[NON_COUNTED_COL] || '').trim().toUpperCase();
-  return ['VRAI', 'TRUE', 'OUI', 'YES', 'X', '1'].includes(v);
+  return nonCountedNames.has(normalizeName(row[1]));
+}
+
+async function loadNonCountedList(){
+  try{
+    const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.DB_GID}&headers=0&t=${Date.now()}`;
+    const res = await fetch(url);
+    if(!res.ok) return;
+    const text = await res.text();
+    const m = text.match(/setResponse\(([\s\S]*)\);\s*$/);
+    if(!m) return;
+    const json = JSON.parse(m[1]);
+    json.table.rows.forEach(r => {
+      const cells = (r.c || []).map(c => c ? (c.f != null ? c.f : (c.v != null ? String(c.v) : '')) : '');
+      if(isTruthyFlag(cells[DB_FLAG_COL])){
+        const n = normalizeName(cells[DB_NAME_COL]);
+        if(n) nonCountedNames.add(n);
+      }
+    });
+  }catch(e){
+    console.error('Liste des espoirs hors calcul non chargée:', e);
+  }
 }
 
 function cellsToRows(table){
@@ -974,8 +1007,22 @@ function computeTeamAverage(sections, rawCol, isHeight){
   return average(vals);
 }
 
+// Déplace les joueurs marqués "Espoir" hors des sections régulières vers ESPOIRS.
+// (Les formules des onglets d'équipe les placent encore comme joueurs réguliers.)
+function moveNonCountedToProspects(sections){
+  const prospects = sections.find(s => s.name === 'ESPOIRS');
+  if(!prospects) return;
+  sections.filter(s => s.name !== 'ESPOIRS').forEach(s => {
+    const moved = s.players.filter(isNonCounted);
+    if(!moved.length) return;
+    s.players = s.players.filter(p => !isNonCounted(p));
+    prospects.players.push(...moved);
+  });
+}
+
 function applyData(rows){
   const parsed = parseSheet(rows);
+  moveNonCountedToProspects(parsed.sections);
   state.summary = parsed.summary;
   state.sections = parsed.sections;
   state.picks = parsed.picks;
@@ -1294,15 +1341,19 @@ if(!currentTeam){
   els.retryBtn.hidden = true;
 }else{
   loadDgInfo();
-  const cached = loadFromCache();
-  if(cached && cached.rows){
-    applyData(cached.rows);
-    toggle({ loading:false });
-    els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
-    loadData({ background:true });
-  }else{
-    loadData();
-  }
+  // La liste doit être chargée avant tout traitement, sinon le déplacement vers ESPOIRS
+  // n'aurait aucun effet sur le premier rendu.
+  loadNonCountedList().then(() => {
+    const cached = loadFromCache();
+    if(cached && cached.rows){
+      applyData(cached.rows);
+      toggle({ loading:false });
+      els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
+      loadData({ background:true });
+    }else{
+      loadData();
+    }
+  });
 }
 </script>
 </body>
