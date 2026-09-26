@@ -43,6 +43,23 @@
 #editeur tbody tr:nth-child(even), #editeur tbody tr:hover,
 #editeur tbody tr:hover td:first-child{ background:transparent; }
 
+/* Images dans le texte : cliquer une image ouvre la barre de placement. */
+#editeur .toastui-editor-contents img{ cursor:pointer; max-width:100%; }
+#editeur .toastui-editor-contents img[src$="#gauche"]{ float:left; width:45%; margin:0.3em 1em 0.5em 0; }
+#editeur .toastui-editor-contents img[src$="#droite"]{ float:right; width:45%; margin:0.3em 0 0.5em 1em; }
+#editeur .toastui-editor-contents h1, #editeur .toastui-editor-contents h2,
+#editeur .toastui-editor-contents h3, #editeur .toastui-editor-contents table{ clear:both; }
+.pub-placement{
+  position:fixed; z-index:50; display:flex; gap:4px; padding:4px;
+  background:#222; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,0.3);
+}
+.pub-placement[hidden]{ display:none; }
+.pub-placement button{
+  border:none; border-radius:6px; padding:7px 10px; cursor:pointer;
+  background:transparent; color:#fff; font-size:13px; font-weight:600;
+}
+.pub-placement button:hover{ background:rgba(255,255,255,0.15); }
+
 /* Menu « Taille » */
 .pub-menu-taille{ list-style:none; margin:0; padding:4px 0; min-width:150px; }
 .pub-menu-taille li{ padding:6px 14px; cursor:pointer; color:#222; }

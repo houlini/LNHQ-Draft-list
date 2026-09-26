@@ -71,6 +71,14 @@ a.news-team:hover{ color:var(--accent); }
 .news-text h4, .news-text h5, .news-text h6{ font-size:1.05em; }
 .news-text a{ color:var(--accent); }
 .news-text img{ display:block; max-width:100%; height:auto; border-radius:6px; margin:0.6em 0; }
+/* Image placée à gauche ou à droite dans l'éditeur (#gauche / #droite à la fin de l'adresse) :
+   le texte l'entoure. Sur téléphone, trop étroit, elle reprend toute la largeur. */
+.news-text{ display:flow-root; }
+@media (min-width:560px){
+  .news-text img[src$="#gauche"]{ float:left; width:45%; margin:0.3em 1.1em 0.6em 0; }
+  .news-text img[src$="#droite"]{ float:right; width:45%; margin:0.3em 0 0.6em 1.1em; }
+  .news-text h1, .news-text h2, .news-text h3, .news-text table, .news-text hr{ clear:both; }
+}
 .news-text blockquote{
   padding:10px 14px; border-left:4px solid var(--accent); border-radius:0 6px 6px 0;
   background:var(--accent-soft); color:var(--ink); font-style:italic;

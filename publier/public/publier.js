@@ -17,6 +17,30 @@
     taille: "L'image est trop lourde.",
   };
 
+  // Modèles proposés selon le type choisi (Markdown, comme le texte de l'éditeur).
+  const MODELES = {
+    'Transaction': [
+      '## Détails de la transaction', '',
+      '**Mon équipe reçoit :**', '', '- Joueur ou choix', '',
+      "**L'autre équipe reçoit :**", '', '- Joueur ou choix', '',
+      '## Pourquoi cet échange', '', '> Commentaire du DG',
+    ].join('\n'),
+    'Résultat': [
+      '## Pointage', '',
+      '| Équipe | 1re | 2e | 3e | Final |', '| --- | --- | --- | --- | --- |',
+      '| Visiteur | 0 | 0 | 0 | 0 |', '| Domicile | 0 | 0 | 0 | 0 |', '',
+      '## Faits saillants', '', '- ', '',
+      '## Joueur du match', '', '**Nom** : buts, passes',
+    ].join('\n'),
+    'Blessure': [
+      '## Joueur blessé', '',
+      '**Joueur :** ', '', '**Blessure :** ', '', '**Absence prévue :** ', '',
+      "## Impact sur l'équipe", '', 'Qui le remplace dans l’alignement ?',
+    ].join('\n'),
+    'Général': '',
+  };
+  let dernierModele = '';
+
   let couverture = null; // { blob, url }
   let envoisEnCours = 0;
   let editeur = null;
@@ -148,6 +172,58 @@
     dessinerCouverture();
   });
 
+  /* ---------- Modèle selon le type ---------- */
+  // Remplace le texte seulement s'il est vide ou encore identique au modèle précédent ;
+  // sinon, on demande avant d'écraser ce que la personne a écrit.
+  function appliquerModele(){
+    const modele = MODELES[$('type').value] || '';
+    const actuel = editeur.getMarkdown().trim();
+    const intact = !actuel || actuel === dernierModele;
+    if(!intact && !modele) return;
+    if(!intact && !confirm('Remplacer ton texte par le modèle « ' + $('type').value + ' » ?')) return;
+    editeur.setMarkdown(modele, false);
+    dernierModele = editeur.getMarkdown().trim();
+  }
+
+  /* ---------- Placement d'une image : pleine largeur, à gauche ou à droite ---------- */
+  // Le placement est noté à la fin de l'adresse (#gauche, #droite) : le site et
+  // l'éditeur l'appliquent par CSS, et l'image se charge normalement.
+  const PLACEMENTS = [
+    { texte: 'Pleine largeur', suffixe: '' },
+    { texte: 'À gauche', suffixe: '#gauche' },
+    { texte: 'À droite', suffixe: '#droite' },
+  ];
+  const barrePlacement = document.createElement('div');
+  barrePlacement.className = 'pub-placement';
+  barrePlacement.hidden = true;
+  document.body.append(barrePlacement);
+  let imageChoisie = '';
+
+  function echapperRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  PLACEMENTS.forEach(p => {
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.textContent = p.texte;
+    bouton.addEventListener('click', () => {
+      const motif = new RegExp('\\(' + echapperRegex(imageChoisie) + '(#(?:gauche|droite))?\\)', 'g');
+      editeur.setMarkdown(editeur.getMarkdown().replace(motif, '(' + imageChoisie + p.suffixe + ')'), false);
+      barrePlacement.hidden = true;
+    });
+    barrePlacement.append(bouton);
+  });
+
+  $('editeur').addEventListener('click', e => {
+    const img = e.target.closest('.toastui-editor-ww-container img');
+    if(!img){ barrePlacement.hidden = true; return; }
+    imageChoisie = (img.getAttribute('src') || '').replace(/#.*$/, '');
+    const r = img.getBoundingClientRect();
+    barrePlacement.style.left = Math.max(8, r.left) + 'px';
+    barrePlacement.style.top = Math.max(8, r.top - 44) + 'px';
+    barrePlacement.hidden = false;
+  });
+  document.addEventListener('scroll', () => { barrePlacement.hidden = true; }, true);
+
   /* ---------- Menu « Taille » de la barre d'outils ---------- */
   function menuTaille(){
     const tailles = [
@@ -209,6 +285,8 @@
         false, /^https:\/\/lnhq\.ca\//.test(r.page || '') ? r.page : null);
       $('titre').value = '';
       editeur.setMarkdown('');
+      dernierModele = '';
+      $('type').value = 'Général';
       if(couverture) URL.revokeObjectURL(couverture.url);
       couverture = null;
       dessinerCouverture();
@@ -250,6 +328,7 @@
       ],
       hooks: { addImageBlobHook: imageDansLeTexte },
     });
+    $('type').addEventListener('change', appliquerModele);
     $('formulaire').hidden = false;
   }
 
