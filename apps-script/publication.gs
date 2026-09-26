@@ -209,34 +209,47 @@ function ouvrirOnglet(nom) {
 }
 
 // Corps du message Discord (envoyé par le Worker vers le webhook du fil).
+// Un aperçu seulement : la bannière en haut (1er embed, image seule), puis le titre,
+// les premières lignes et un lien vers l'article complet sur le site.
 function messageDiscord(v, date, pageUrl) {
-  const discord = texteDiscord(v.texte);
-  const images = v.photos.map(urlPhoto).concat(discord.images);
-  const principal = {
+  const couleur = COULEURS_TYPE[v.type] || COULEURS_TYPE['Général'];
+  // Bannière : la couverture, sinon la première image placée dans le texte.
+  const dansLeTexte = /!\[[^\]]*\]\((https:\/\/[^)\s#]+)/.exec(v.texte);
+  const banniere = v.photos.length ? urlPhoto(v.photos[0]) : (dansLeTexte ? dansLeTexte[1] : '');
+  const embeds = [];
+  if (banniere) embeds.push({ color: couleur, image: { url: banniere } });
+  embeds.push({
     title: tronquer(v.titre, 256),
     url: pageUrl,
-    description: tronquer(discord.texte, 4000),
-    color: COULEURS_TYPE[v.type] || COULEURS_TYPE['Général'],
+    description: apercuDiscord(v.texte) + '\n\n[**Lire la suite →**](' + pageUrl + ')',
+    color: couleur,
     footer: { text: v.type + ' · ' + v.equipe },
     timestamp: date.toISOString(),
-  };
-  const embeds = [principal];
-  if (images.length) principal.image = { url: images[0] };
-  // Discord regroupe en galerie les embeds qui partagent la même url (4 images au total).
-  images.slice(1, 4).forEach(url => embeds.push({ url: pageUrl, image: { url: url } }));
+  });
   // Aucune mention (@everyone, @here, rôles) possible depuis le texte d'une nouvelle.
   return { embeds: embeds, allowed_mentions: { parse: [] } };
 }
 
-// Discord ne sait afficher ni images dans le texte, ni couleurs, ni tableaux :
-// les images passent en galerie, les couleurs sont retirées, les tableaux deviennent
-// un bloc de texte à largeur fixe (colonnes alignées).
-function texteDiscord(texte) {
-  const images = [];
-  let t = texte.replace(/!\[[^\]]*\]\((https:\/\/[^)\s]+)\)/g, (m, url) => { images.push(url); return ''; });
-  t = t.replace(/<\/?span[^>]*>/gi, '');
-  t = t.replace(/(^\|.*\|[ \t]*$\n?)+/gm, bloc => '```\n' + bloc.trimEnd() + '\n```\n');
-  return { texte: t.replace(/\n{3,}/g, '\n\n').trim(), images: images };
+const APERCU_LIGNES = 4;
+const APERCU_CARACTERES = 350;
+
+// Premières lignes du texte, sans images, couleurs ni tableaux (que Discord
+// n'affiche pas) ; les titres deviennent du gras.
+function apercuDiscord(texte) {
+  const lignes = texte
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/<\/?span[^>]*>|<br\s*\/?>/gi, '')
+    .replace(/(^\|.*\|[ \t]*$\n?)+/gm, '')
+    .replace(/^#{1,6}\s+(.+)$/gm, '**$1**')
+    .replace(/^>\s?/gm, '')
+    .split('\n').map(l => l.trim()).filter(Boolean);
+  let apercu = lignes.slice(0, APERCU_LIGNES).join('\n\n');
+  if (apercu.length > APERCU_CARACTERES) {
+    apercu = apercu.slice(0, APERCU_CARACTERES).replace(/\s+\S*$/, '') + '…';
+  } else if (lignes.length > APERCU_LIGNES) {
+    apercu += '…';
+  }
+  return apercu;
 }
 
 function urlPhoto(id) {
