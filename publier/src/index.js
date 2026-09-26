@@ -19,15 +19,60 @@ export default {
     if (url.pathname === '/api/moi' && request.method === 'GET') {
       return appelerScript(env, 'moi', courriel);
     }
+    if (url.pathname === '/api/reessayer' && request.method === 'POST') {
+      return reessayerDiscord(env, courriel);
+    }
     const action = { '/api/publier': 'publier', '/api/photo': 'photo' }[url.pathname];
     if (action && request.method === 'POST') {
       const taille = Number(request.headers.get('Content-Length') || 0);
       if (!taille || taille > MAX_OCTETS_ENVOI) return json({ ok: false, erreur: 'taille' }, 413);
+      if (action === 'publier') return publier(env, courriel, request.body);
       return appelerScript(env, action, courriel, request.body);
     }
     return json({ ok: false, erreur: 'introuvable' }, 404);
   },
 };
+
+// Le script enregistre la publication et prépare le message ; le Worker l'envoie
+// à Discord (qui bloque souvent les adresses partagées de Google Apps Script).
+async function publier(env, courriel, corps) {
+  const r = await scriptJson(env, 'publier', courriel, corps);
+  if (!r.ok || typeof r.discord !== 'object') return json(r, r.ok ? 200 : 400);
+  const { flux, message } = r.discord;
+  const envoi = await envoyerDiscord(env, flux, message);
+  await scriptJson(env, 'discord', courriel, JSON.stringify({ flux, id: r.id, ...envoi }));
+  return json({ ...r, discord: !envoi.erreur }, 200);
+}
+
+// Dirigeants : renvoie à Discord les publications qui n'y sont pas arrivées.
+async function reessayerDiscord(env, courriel) {
+  const r = await scriptJson(env, 'enAttente', courriel);
+  if (!r.ok) return json(r, 400);
+  const resultats = [];
+  for (const p of r.attente) {
+    const envoi = await envoyerDiscord(env, p.flux, p.message);
+    await scriptJson(env, 'discord', courriel, JSON.stringify({ flux: p.flux, id: p.id, ...envoi }));
+    resultats.push({ flux: p.flux, titre: p.titre, ok: !envoi.erreur, erreur: envoi.erreur });
+  }
+  return json({ ok: true, resultats }, 200);
+}
+
+async function envoyerDiscord(env, flux, message) {
+  const webhook = env['WEBHOOK_' + flux];
+  if (!webhook) return { erreur: 'Webhook ' + flux + ' manquant dans le Worker' };
+  try {
+    const rep = await fetch(webhook + '?wait=true', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(message),
+    });
+    const texte = await rep.text();
+    if (!rep.ok) return { erreur: 'Discord a refusé (' + rep.status + ') : ' + texte.slice(0, 300) };
+    return { idDiscord: JSON.parse(texte).id };
+  } catch (err) {
+    return { erreur: 'Discord injoignable : ' + err.message };
+  }
+}
 
 // Vérifie le jeton signé qu'Access ajoute à chaque requête autorisée, et renvoie le courriel.
 async function verifierAcces(request, env) {
@@ -58,6 +103,11 @@ async function verifierAcces(request, env) {
 // Le corps est transmis sans être relu (photos incluses) ; action, courriel et secret
 // passent dans l'adresse, construite ici : le navigateur ne peut pas les imposer.
 async function appelerScript(env, action, courriel, corps) {
+  const resultat = await scriptJson(env, action, courriel, corps);
+  return json(resultat, resultat.ok ? 200 : resultat.erreur === 'script' ? 502 : 400);
+}
+
+async function scriptJson(env, action, courriel, corps) {
   const cible = new URL(env.SCRIPT_URL);
   cible.searchParams.set('action', action);
   cible.searchParams.set('courriel', courriel);
@@ -74,11 +124,10 @@ async function appelerScript(env, action, courriel, corps) {
 
   const texte = await rep.text();
   try {
-    const resultat = JSON.parse(texte);
-    return json(resultat, resultat.ok ? 200 : 400);
+    return JSON.parse(texte);
   } catch {
     console.error('Réponse inattendue du script :', rep.status, texte.slice(0, 300));
-    return json({ ok: false, erreur: 'script' }, 502);
+    return { ok: false, erreur: 'script' };
   }
 }
 

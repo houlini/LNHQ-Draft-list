@@ -320,6 +320,18 @@
     majBouton();
   });
 
+  // Dirigeants : renvoie à Discord la dernière publication de chaque fil qui n'y est pas arrivée.
+  $('reessayer').addEventListener('click', async () => {
+    const bouton = $('reessayer');
+    bouton.disabled = true;
+    const r = await api('/api/reessayer', { method: 'POST' });
+    bouton.disabled = false;
+    if(!r.ok){ afficher(ERREURS[r.erreur] || 'Impossible de joindre Discord pour le moment.', true); return; }
+    if(!r.resultats.length){ afficher('Rien à renvoyer : tout est déjà sur Discord.', false); return; }
+    const echecs = r.resultats.filter(x => !x.ok);
+    afficher(r.resultats.map(x => `« ${x.titre} » : ${x.ok ? 'envoyée sur Discord' : x.erreur}`).join(' — '), echecs.length > 0);
+  });
+
   /* ---------- Démarrage ---------- */
   async function demarrer(){
     moi = await api('/api/moi');
@@ -330,6 +342,7 @@
       return;
     }
     $('choixFlux').hidden = !moi.annonces;
+    $('reessayer').hidden = !moi.annonces;
     document.querySelectorAll('input[name="flux"]').forEach(r => r.addEventListener('change', majQui));
     majQui();
 

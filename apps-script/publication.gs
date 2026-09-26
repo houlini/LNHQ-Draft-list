@@ -10,8 +10,9 @@
    « Qui a accès : Tout le monde ».
 
    Réglages (Paramètres du projet → Propriétés du script) :
-     WEBHOOK_NOUVELLES, WEBHOOK_ANNONCES   webhooks Discord (secrets)
      PAGE_NOUVELLES, PAGE_ANNONCES         pages du site, pour les liens Discord
+   Les webhooks Discord sont des secrets du Worker (WEBHOOK_NOUVELLES,
+   WEBHOOK_ANNONCES) : c'est lui qui envoie les messages.
    ========================================================================= */
 
 const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
@@ -71,6 +72,8 @@ function traiter(p, corps) {
   if (p.action === 'moi') return { ok: true, equipe: membre.equipe, annonces: membre.annonces };
   if (p.action === 'publier') return publier(JSON.parse(corps || '{}'), membre);
   if (p.action === 'photo') return photoSeule(JSON.parse(corps || '{}'));
+  if (p.action === 'discord') return noterDiscord(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'enAttente') return enAttente(membre);
   return { ok: false, erreur: 'action' };
 }
 
@@ -114,43 +117,64 @@ function publier(d, membre) {
   const date = new Date();
   const pageUrl = (reglages['PAGE_' + flux] || 'https://lnhq.ca/') + '#n-' + id;
 
-  let discord;
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
-    discord = publierDiscord(reglages['WEBHOOK_' + flux], v, date, pageUrl);
     const onglet = ouvrirOnglet(flux);
-    onglet.appendRow([date, v.equipe, v.type, v.titre, v.texte, v.photos.join(','), true, false, discord.id, id]);
+    onglet.appendRow([date, v.equipe, v.type, v.titre, v.texte, v.photos.join(','), true, false, '', id]);
     const cases = onglet.getRange(onglet.getLastRow(), 7, 1, 2);
     cases.insertCheckboxes();
     cases.setValues([[true, false]]);
     // L'auteur reste dans ce classeur privé, jamais dans le classeur public.
-    // Colonne F : raison du refus de Discord, s'il y a lieu.
     SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL)
-      .appendRow([date, membre.courriel, flux, v.titre, id, discord.erreur]);
+      .appendRow([date, membre.courriel, flux, v.titre, id, '']);
   } finally {
     verrou.releaseLock();
   }
-  return { ok: true, id: id, page: pageUrl, discord: !discord.erreur };
+  // Le message Discord est envoyé par le Worker Cloudflare : Discord bloque souvent
+  // les adresses de Google partagées par tous les scripts (erreur 429 / 1015).
+  return { ok: true, id: id, page: pageUrl, discord: { flux: flux, message: messageDiscord(v, date, pageUrl) } };
 }
 
-// À lancer à la main depuis l'éditeur (bouton Exécuter) : republie sur Discord la
-// dernière publication qui n'y est pas arrivée, et affiche la réponse de Discord.
-function reessayerDiscord() {
+// Le Worker rapporte le résultat de l'envoi à Discord : id du message dans la
+// colonne « ID Discord », ou raison du refus dans le JOURNAL (colonne F).
+function noterDiscord(d, membre) {
+  const flux = d.flux === 'ANNONCES' ? 'ANNONCES' : 'NOUVELLES';
+  const id = String(d.id || '');
+  const journal = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL);
+  const entrees = journal.getDataRange().getValues();
+  const j = entrees.findIndex(l => String(l[4]) === id);
+  // Seul l'auteur de la publication (ou un dirigeant) peut noter son résultat.
+  if (!id || j < 1 || (entrees[j][1] !== membre.courriel && !membre.annonces)) return { ok: false, erreur: 'acces' };
+  journal.getRange(j + 1, 6).setValue(d.erreur ? String(d.erreur).slice(0, 500) : '');
+  const idDiscord = String(d.idDiscord || '').replace(/\D/g, '');
+  if (idDiscord) {
+    const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
+    const ids = onglet.getRange(1, 10, onglet.getLastRow(), 1).getValues().map(l => String(l[0]));
+    const ligne = ids.indexOf(id);
+    if (ligne > 0) onglet.getRange(ligne + 1, 9).setValue(idDiscord);
+  }
+  return { ok: true };
+}
+
+// Dirigeants seulement : la dernière publication visible de chaque fil qui n'est
+// pas arrivée sur Discord, prête à être renvoyée par le Worker.
+function enAttente(membre) {
+  if (!membre.annonces) return { ok: false, erreur: 'annonces' };
   const reglages = PropertiesService.getScriptProperties().getProperties();
+  const attente = [];
   ['NOUVELLES', 'ANNONCES'].forEach(flux => {
     const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
     if (!onglet || onglet.getLastRow() < 2) return;
     const lignes = onglet.getRange(2, 1, onglet.getLastRow() - 1, ENTETES.length).getValues();
-    const i = lignes.map(l => !l[8] && l[6] === true).lastIndexOf(true);
-    if (i < 0) { console.log(flux + ' : rien à republier.'); return; }
+    const i = lignes.map(l => !l[8] && l[6] === true && !!l[9]).lastIndexOf(true);
+    if (i < 0) return;
     const l = lignes[i];
     const v = { equipe: l[1], type: l[2], titre: l[3], texte: l[4], photos: String(l[5]).split(',').filter(String) };
     const pageUrl = (reglages['PAGE_' + flux] || 'https://lnhq.ca/') + '#n-' + l[9];
-    const r = publierDiscord(reglages['WEBHOOK_' + flux], v, new Date(l[0]), pageUrl);
-    if (r.id) onglet.getRange(i + 2, 9).setValue(r.id);
-    console.log(flux + ' « ' + v.titre + ' » : ' + (r.id ? 'publié sur Discord.' : 'refusé — ' + r.erreur));
+    attente.push({ flux: flux, id: String(l[9]), titre: v.titre, message: messageDiscord(v, new Date(l[0]), pageUrl) });
   });
+  return { ok: true, attente: attente };
 }
 
 function enregistrerPhoto(photo) {
@@ -184,9 +208,8 @@ function ouvrirOnglet(nom) {
   return onglet;
 }
 
-// Renvoie { id, erreur } : l'id du message Discord, ou la raison du refus.
-function publierDiscord(webhook, v, date, pageUrl) {
-  if (!webhook) return { id: '', erreur: 'Webhook Discord manquant (propriétés du script)' };
+// Corps du message Discord (envoyé par le Worker vers le webhook du fil).
+function messageDiscord(v, date, pageUrl) {
   const discord = texteDiscord(v.texte);
   const images = v.photos.map(urlPhoto).concat(discord.images);
   const principal = {
@@ -201,25 +224,8 @@ function publierDiscord(webhook, v, date, pageUrl) {
   if (images.length) principal.image = { url: images[0] };
   // Discord regroupe en galerie les embeds qui partagent la même url (4 images au total).
   images.slice(1, 4).forEach(url => embeds.push({ url: pageUrl, image: { url: url } }));
-
-  try {
-    const rep = UrlFetchApp.fetch(webhook + '?wait=true', {
-      method: 'post',
-      contentType: 'application/json',
-      // Aucune mention (@everyone, @here, rôles) possible depuis le texte d'une nouvelle.
-      payload: JSON.stringify({ embeds: embeds, allowed_mentions: { parse: [] } }),
-      muteHttpExceptions: true,
-    });
-    if (rep.getResponseCode() >= 300) {
-      const erreur = 'Discord a refusé (' + rep.getResponseCode() + ') : ' + rep.getContentText().slice(0, 400);
-      console.error(erreur);
-      return { id: '', erreur: erreur };
-    }
-    return { id: JSON.parse(rep.getContentText()).id, erreur: '' };
-  } catch (err) {
-    console.error(err);
-    return { id: '', erreur: 'Discord injoignable : ' + err.message };
-  }
+  // Aucune mention (@everyone, @here, rôles) possible depuis le texte d'une nouvelle.
+  return { embeds: embeds, allowed_mentions: { parse: [] } };
 }
 
 // Discord ne sait afficher ni images dans le texte, ni couleurs, ni tableaux :

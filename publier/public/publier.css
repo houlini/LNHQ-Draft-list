@@ -104,6 +104,13 @@
 .pub-message.is-succes{ background:var(--accent-soft); color:var(--ink); }
 .pub-message a{ color:var(--accent); font-weight:700; }
 
+.pub-actions{ display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:12px; }
+.pub-reessayer{
+  margin-right:auto; min-height:44px; padding:0 14px; border-radius:8px; cursor:pointer;
+  background:transparent; color:var(--ink-muted); border:1px dashed var(--ink-muted); font-size:14px;
+}
+.pub-reessayer:hover{ color:var(--accent); border-color:var(--accent); }
+.pub-reessayer[hidden]{ display:none; }
 .pub-envoyer{
   align-self:flex-end; min-height:48px; padding:0 28px; border:none; border-radius:9px; cursor:pointer;
   background:var(--accent); color:var(--accent-ink);
