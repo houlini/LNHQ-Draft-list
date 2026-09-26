@@ -2,9 +2,10 @@
    Cloudflare Access ; /api/moi indique l'équipe et le droit de publier des annonces. */
 (function(){
   const $ = id => document.getElementById(id);
-  const MAX_PHOTOS = 5;
   const COTE_MAX = 1600;
   const QUALITE_JPEG = 0.85;
+  // Même palette que nouvelles.js, qui refuse toute autre couleur à l'affichage.
+  const COULEURS = ['#E8590C', '#E03131', '#2F9E44', '#1C7ED6', '#E0A800', '#868E96'];
   const PAGES = { NOUVELLES: 'https://lnhq.ca/nouvelles-test.html', ANNONCES: 'https://lnhq.ca/annonces.html' };
   const ERREURS = {
     acces: "Accès refusé. Recharge la page pour te reconnecter.",
@@ -12,11 +13,12 @@
     inconnu: "Ton courriel n'est pas dans la liste d'accès de la ligue. Contacte le dirigeant de la ligue.",
     annonces: "Tu n'as pas le droit de publier une annonce.",
     vide: 'Le titre et le texte sont obligatoires.',
-    photo: "Une des photos n'a pas pu être enregistrée.",
-    taille: 'Les photos sont trop lourdes. Retires-en une et réessaie.',
+    photo: "L'image n'a pas pu être enregistrée.",
+    taille: "L'image est trop lourde.",
   };
 
-  const photos = []; // { blob, url }
+  let couverture = null; // { blob, url }
+  let envoisEnCours = 0;
   let editeur = null;
   let moi = null;
 
@@ -56,7 +58,7 @@
     $('lienFil').href = PAGES[fluxChoisi()];
   }
 
-  /* ---------- Photos : réduites dans le navigateur avant l'envoi ---------- */
+  /* ---------- Images : réduites dans le navigateur avant l'envoi ---------- */
   async function reduire(fichier){
     const image = await createImageBitmap(fichier);
     const echelle = Math.min(1, COTE_MAX / Math.max(image.width, image.height));
@@ -67,7 +69,7 @@
     image.close();
     const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', QUALITE_JPEG));
     if(!blob) throw new Error('conversion impossible');
-    return { blob, url: URL.createObjectURL(blob) };
+    return blob;
   }
 
   function enBase64(blob){
@@ -79,47 +81,107 @@
     });
   }
 
-  function dessinerPhotos(){
-    const vignettes = photos.map((p, i) => {
-      const fig = document.createElement('figure');
-      fig.className = 'pub-photo';
-      const img = document.createElement('img');
-      img.src = p.url;
-      img.alt = '';
-      const retirer = document.createElement('button');
-      retirer.type = 'button';
-      retirer.className = 'pub-retirer';
-      retirer.setAttribute('aria-label', 'Retirer cette photo');
-      retirer.textContent = '×';
-      retirer.addEventListener('click', () => {
-        URL.revokeObjectURL(p.url);
-        photos.splice(i, 1);
-        dessinerPhotos();
+  function majBouton(){
+    const bouton = $('envoyer');
+    bouton.disabled = envoisEnCours > 0;
+    bouton.textContent = envoisEnCours > 0 ? 'Envoi de l’image…' : 'Publier';
+  }
+
+  // Image placée dans le texte (bouton image, glisser-déposer ou coller) : enregistrée
+  // tout de suite, puis insérée à l'endroit du curseur avec son adresse définitive.
+  async function imageDansLeTexte(fichier, inserer){
+    envoisEnCours++;
+    majBouton();
+    try{
+      const blob = await reduire(fichier);
+      const r = await api('/api/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mime: 'image/jpeg', data: await enBase64(blob) }),
       });
-      fig.append(img, retirer);
-      if(i === 0) fig.append(Object.assign(document.createElement('figcaption'), { textContent: 'Couverture' }));
-      return fig;
+      if(r.ok && /^https:\/\/lh3\.googleusercontent\.com\//.test(r.url || '')) inserer(r.url, '');
+      else afficher(ERREURS[r.erreur] || ERREURS.photo, true);
+    }catch(err){
+      afficher(`Impossible de lire « ${fichier.name || 'image'} ». Essaie une image JPEG ou PNG.`, true);
+    }finally{
+      envoisEnCours--;
+      majBouton();
+    }
+  }
+
+  function dessinerCouverture(){
+    if(!couverture){
+      $('apercus').replaceChildren();
+      $('ajoutPhotos').hidden = false;
+      return;
+    }
+    const fig = document.createElement('figure');
+    fig.className = 'pub-photo';
+    const img = document.createElement('img');
+    img.src = couverture.url;
+    img.alt = '';
+    const retirer = document.createElement('button');
+    retirer.type = 'button';
+    retirer.className = 'pub-retirer';
+    retirer.setAttribute('aria-label', "Retirer l'image de couverture");
+    retirer.textContent = '×';
+    retirer.addEventListener('click', () => {
+      URL.revokeObjectURL(couverture.url);
+      couverture = null;
+      dessinerCouverture();
     });
-    $('apercus').replaceChildren(...vignettes);
-    $('ajoutPhotos').hidden = photos.length >= MAX_PHOTOS;
+    fig.append(img, retirer);
+    $('apercus').replaceChildren(fig);
+    $('ajoutPhotos').hidden = true;
   }
 
   $('fichiers').addEventListener('change', async e => {
-    const choisis = [...e.target.files].slice(0, MAX_PHOTOS - photos.length);
+    const fichier = e.target.files[0];
     e.target.value = '';
-    for(const fichier of choisis){
-      try{
-        photos.push(await reduire(fichier));
-      }catch(err){
-        afficher(`Impossible de lire « ${fichier.name} ». Essaie une photo JPEG ou PNG.`, true);
-      }
+    if(!fichier) return;
+    try{
+      const blob = await reduire(fichier);
+      couverture = { blob, url: URL.createObjectURL(blob) };
+    }catch(err){
+      afficher(`Impossible de lire « ${fichier.name} ». Essaie une image JPEG ou PNG.`, true);
     }
-    dessinerPhotos();
+    dessinerCouverture();
   });
+
+  /* ---------- Menu « Taille » de la barre d'outils ---------- */
+  function menuTaille(){
+    const tailles = [
+      { texte: 'Titre', niveau: 2, cls: 'pub-taille-titre' },
+      { texte: 'Sous-titre', niveau: 3, cls: 'pub-taille-sous-titre' },
+      { texte: 'Normal', niveau: 0, cls: 'pub-taille-normal' },
+    ];
+    const liste = document.createElement('ul');
+    liste.className = 'pub-menu-taille';
+    tailles.forEach(t => {
+      const item = document.createElement('li');
+      item.className = t.cls;
+      item.textContent = t.texte;
+      item.addEventListener('click', () => {
+        editeur.exec('heading', { level: t.niveau });
+        editeur.eventEmitter.emit('closePopup');
+        editeur.focus();
+      });
+      liste.append(item);
+    });
+    return {
+      name: 'taille',
+      tooltip: 'Taille du texte',
+      text: 'Taille',
+      className: 'pub-bouton-taille toastui-editor-toolbar-icons',
+      style: { backgroundImage: 'none', width: 'auto', padding: '0 8px', fontWeight: '700', fontSize: '13px' },
+      popup: { body: liste, style: { width: 'auto' } },
+    };
+  }
 
   /* ---------- Envoi ---------- */
   $('formulaire').addEventListener('submit', async e => {
     e.preventDefault();
+    if(envoisEnCours > 0) return;
     const titre = $('titre').value.trim();
     const texte = editeur.getMarkdown().trim();
     if(!titre || !texte){ afficher(ERREURS.vide, true); return; }
@@ -130,17 +192,16 @@
     $('message').hidden = true;
 
     const flux = fluxChoisi();
-    const corps = {
-      flux,
-      titre,
-      type: $('type').value,
-      texte,
-      photos: await Promise.all(photos.map(async p => ({ mime: 'image/jpeg', data: await enBase64(p.blob) }))),
-    };
     const r = await api('/api/publier', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(corps),
+      body: JSON.stringify({
+        flux,
+        titre,
+        type: $('type').value,
+        texte,
+        couverture: couverture ? { mime: 'image/jpeg', data: await enBase64(couverture.blob) } : null,
+      }),
     });
 
     if(r.ok){
@@ -148,14 +209,13 @@
         false, /^https:\/\/lnhq\.ca\//.test(r.page || '') ? r.page : null);
       $('titre').value = '';
       editeur.setMarkdown('');
-      photos.forEach(p => URL.revokeObjectURL(p.url));
-      photos.length = 0;
-      dessinerPhotos();
+      if(couverture) URL.revokeObjectURL(couverture.url);
+      couverture = null;
+      dessinerCouverture();
     }else{
       afficher(ERREURS[r.erreur] || 'La publication a échoué. Réessaie dans un instant.', true);
     }
-    bouton.disabled = false;
-    bouton.textContent = 'Publier';
+    majBouton();
   });
 
   /* ---------- Démarrage ---------- */
@@ -171,16 +231,24 @@
     document.querySelectorAll('input[name="flux"]').forEach(r => r.addEventListener('change', majQui));
     majQui();
 
+    // L'extension de couleur de Toast UI 3.1.0 s'enregistre par erreur sous le nom « uml ».
+    const extensionCouleur = toastui.Editor.plugin.colorSyntax || toastui.Editor.plugin.uml;
     editeur = new toastui.Editor({
       el: $('editeur'),
-      height: '380px',
+      height: '420px',
       initialEditType: 'wysiwyg',
       hideModeSwitch: true,
       language: 'fr-FR',
       usageStatistics: false,
       placeholder: 'Écris ta nouvelle ici…',
-      // Pas de bouton image : les photos passent par la zone « Photos » (réduites et hébergées).
-      toolbarItems: [['heading', 'bold', 'italic', 'strike'], ['hr', 'quote'], ['ul', 'ol'], ['table', 'link']],
+      plugins: extensionCouleur ? [[extensionCouleur, { preset: COULEURS }]] : [],
+      toolbarItems: [
+        [menuTaille(), 'bold', 'italic', 'strike'],
+        ['hr', 'quote'],
+        ['ul', 'ol'],
+        ['table', 'image', 'link'],
+      ],
+      hooks: { addImageBlobHook: imageDansLeTexte },
     });
     $('formulaire').hidden = false;
   }

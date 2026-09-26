@@ -28,12 +28,38 @@
 .pub-champ input[type="text"]:focus, .pub-champ select:focus{ border-color:var(--accent); outline:none; }
 
 /* L'éditeur Toast UI reste clair, même quand le site est en mode sombre. */
-#editeur{ border-radius:8px; overflow:hidden; background:#fff; color:#222; }
-#editeur .toastui-editor-defaultUI{ border-color:var(--line); }
+#editeur{ border-radius:8px; background:#fff; color:#222; }
+#editeur .toastui-editor-defaultUI{ border-color:var(--line); border-radius:8px; }
 
-.pub-photos{ display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:10px; }
+/* site.css stylise tous les tableaux comme les tableaux de stats (fond sombre, 1re
+   colonne figée) : on rend aux tableaux de l'éditeur leur apparence d'origine. */
+#editeur table{ font-size:inherit; }
+#editeur thead th, #editeur tbody td,
+#editeur thead th:first-child, #editeur tbody td:first-child{
+  position:static; box-shadow:none; white-space:normal; cursor:text; user-select:text;
+  color:#222; background:#fff; padding:5px 12px; border:1px solid #d9dadf;
+}
+#editeur thead th, #editeur thead th:first-child{ background:#f4f5f7; font-weight:700; }
+#editeur tbody tr:nth-child(even), #editeur tbody tr:hover,
+#editeur tbody tr:hover td:first-child{ background:transparent; }
+
+/* Menu « Taille » */
+.pub-menu-taille{ list-style:none; margin:0; padding:4px 0; min-width:150px; }
+.pub-menu-taille li{ padding:6px 14px; cursor:pointer; color:#222; }
+.pub-menu-taille li:hover{ background:#f4f5f7; }
+.pub-taille-titre{ font-size:20px; font-weight:700; }
+.pub-taille-sous-titre{ font-size:16px; font-weight:700; }
+.pub-taille-normal{ font-size:14px; }
+
+/* Palette de couleurs : seulement les 6 couleurs de la ligue, pas de couleur libre. */
+#editeur .tui-colorpicker-slider-container,
+#editeur .tui-colorpicker-palette-hex,
+#editeur .tui-colorpicker-palette-preview,
+#editeur .tui-colorpicker-palette-toggle-slider{ display:none !important; }
+
+.pub-photos{ display:block; max-width:360px; }
 .pub-photos:empty{ display:none; }
-.pub-photo{ position:relative; margin:0; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--stripe); }
+.pub-photo{ position:relative; margin:0; aspect-ratio:16 / 9; border-radius:8px; overflow:hidden; background:var(--stripe); }
 .pub-photo img{ display:block; width:100%; height:100%; object-fit:cover; }
 .pub-photo figcaption{
   position:absolute; left:6px; bottom:6px;

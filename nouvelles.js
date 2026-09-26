@@ -112,7 +112,10 @@
     return badge;
   }
 
-  // Le Form Nouvelles est ouvert à tous : le HTML produit par le Markdown est
+  // Couleurs de texte permises (même palette que l'éditeur de publier.lnhq.ca).
+  const COULEURS = ['#e8590c', '#e03131', '#2f9e44', '#1c7ed6', '#e0a800', '#868e96'];
+
+  // Le texte vient de membres de la ligue : le HTML produit par le Markdown est
   // nettoyé par DOMPurify avant d'être inséré. Sans les deux bibliothèques
   // (CDN inaccessible), on affiche le texte brut plutôt que du HTML non nettoyé.
   function renderText(text){
@@ -120,6 +123,12 @@
     if(window.marked && window.DOMPurify){
       box.innerHTML = DOMPurify.sanitize(marked.parse(text));
       box.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
+      // Seul style accepté : une couleur de la palette sur un <span>.
+      box.querySelectorAll('[style]').forEach(n => {
+        const couleur = /^\s*color:\s*(#[0-9a-f]{6})\s*;?\s*$/i.exec(n.getAttribute('style') || '');
+        n.removeAttribute('style');
+        if(n.tagName === 'SPAN' && couleur && COULEURS.includes(couleur[1].toLowerCase())) n.style.color = couleur[1];
+      });
     }else{
       box.classList.add('is-plain');
       box.textContent = text;

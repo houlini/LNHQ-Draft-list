@@ -19,10 +19,11 @@ export default {
     if (url.pathname === '/api/moi' && request.method === 'GET') {
       return appelerScript(env, 'moi', courriel);
     }
-    if (url.pathname === '/api/publier' && request.method === 'POST') {
+    const action = { '/api/publier': 'publier', '/api/photo': 'photo' }[url.pathname];
+    if (action && request.method === 'POST') {
       const taille = Number(request.headers.get('Content-Length') || 0);
       if (!taille || taille > MAX_OCTETS_ENVOI) return json({ ok: false, erreur: 'taille' }, 413);
-      return appelerScript(env, 'publier', courriel, request.body);
+      return appelerScript(env, action, courriel, request.body);
     }
     return json({ ok: false, erreur: 'introuvable' }, 404);
   },
