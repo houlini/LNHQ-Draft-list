@@ -172,6 +172,27 @@
     dessinerCouverture();
   });
 
+  /* ---------- Nettoyage du texte collé ---------- */
+  // Un texte copié d'une page web arrive avec son code de mise en forme
+  // (<span style="color: rgb(...); font-family: ...">). On ne garde que les
+  // <span> de couleur de la palette ; les autres balises sont retirées, le texte reste.
+  function nettoyerSpans(md){
+    const garde = [];
+    return md.replace(/<span\b[^>]*>|<\/span>/gi, balise => {
+      if(balise[1] === '/') return garde.pop() ? balise : '';
+      const couleur = /^<span style="color:\s*(#[0-9a-f]{6})\s*;?"\s*>$/i.exec(balise);
+      const ok = !!couleur && COULEURS.includes(couleur[1].toUpperCase());
+      garde.push(ok);
+      return ok ? balise : '';
+    });
+  }
+
+  function nettoyerEditeur(){
+    const avant = editeur.getMarkdown();
+    const apres = nettoyerSpans(avant);
+    if(apres !== avant) editeur.setMarkdown(apres, false);
+  }
+
   /* ---------- Modèle selon le type ---------- */
   // Remplace le texte seulement s'il est vide ou encore identique au modèle précédent ;
   // sinon, on demande avant d'écraser ce que la personne a écrit.
@@ -259,7 +280,7 @@
     e.preventDefault();
     if(envoisEnCours > 0) return;
     const titre = $('titre').value.trim();
-    const texte = editeur.getMarkdown().trim();
+    const texte = nettoyerSpans(editeur.getMarkdown()).trim();
     if(!titre || !texte){ afficher(ERREURS.vide, true); return; }
 
     const bouton = $('envoyer');
@@ -332,6 +353,7 @@
       hooks: { addImageBlobHook: imageDansLeTexte },
     });
     $('type').addEventListener('change', appliquerModele);
+    $('editeur').addEventListener('paste', () => setTimeout(nettoyerEditeur, 0));
     $('formulaire').hidden = false;
   }
 
