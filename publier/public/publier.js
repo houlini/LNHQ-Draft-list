@@ -281,8 +281,11 @@
     });
 
     if(r.ok){
-      afficher(flux === 'ANNONCES' ? 'Annonce publiée sur le site et sur Discord.' : 'Nouvelle publiée sur le site et sur Discord.',
-        false, /^https:\/\/lnhq\.ca\//.test(r.page || '') ? r.page : null);
+      const quoi = flux === 'ANNONCES' ? 'Annonce publiée' : 'Nouvelle publiée';
+      afficher(r.discord === false
+        ? quoi + " sur le site, mais Discord l'a refusée. Préviens le dirigeant de la ligue."
+        : quoi + ' sur le site et sur Discord.',
+        r.discord === false, /^https:\/\/lnhq\.ca\//.test(r.page || '') ? r.page : null);
       $('titre').value = '';
       editeur.setMarkdown('');
       dernierModele = '';

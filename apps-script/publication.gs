@@ -114,22 +114,43 @@ function publier(d, membre) {
   const date = new Date();
   const pageUrl = (reglages['PAGE_' + flux] || 'https://lnhq.ca/') + '#n-' + id;
 
+  let discord;
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
-    const idDiscord = publierDiscord(reglages['WEBHOOK_' + flux], v, date, pageUrl);
+    discord = publierDiscord(reglages['WEBHOOK_' + flux], v, date, pageUrl);
     const onglet = ouvrirOnglet(flux);
-    onglet.appendRow([date, v.equipe, v.type, v.titre, v.texte, v.photos.join(','), true, false, idDiscord, id]);
+    onglet.appendRow([date, v.equipe, v.type, v.titre, v.texte, v.photos.join(','), true, false, discord.id, id]);
     const cases = onglet.getRange(onglet.getLastRow(), 7, 1, 2);
     cases.insertCheckboxes();
     cases.setValues([[true, false]]);
     // L'auteur reste dans ce classeur privé, jamais dans le classeur public.
+    // Colonne F : raison du refus de Discord, s'il y a lieu.
     SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL)
-      .appendRow([date, membre.courriel, flux, v.titre, id]);
+      .appendRow([date, membre.courriel, flux, v.titre, id, discord.erreur]);
   } finally {
     verrou.releaseLock();
   }
-  return { ok: true, id: id, page: pageUrl };
+  return { ok: true, id: id, page: pageUrl, discord: !discord.erreur };
+}
+
+// À lancer à la main depuis l'éditeur (bouton Exécuter) : republie sur Discord la
+// dernière publication qui n'y est pas arrivée, et affiche la réponse de Discord.
+function reessayerDiscord() {
+  const reglages = PropertiesService.getScriptProperties().getProperties();
+  ['NOUVELLES', 'ANNONCES'].forEach(flux => {
+    const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
+    if (!onglet || onglet.getLastRow() < 2) return;
+    const lignes = onglet.getRange(2, 1, onglet.getLastRow() - 1, ENTETES.length).getValues();
+    const i = lignes.map(l => !l[8] && l[6] === true).lastIndexOf(true);
+    if (i < 0) { console.log(flux + ' : rien à republier.'); return; }
+    const l = lignes[i];
+    const v = { equipe: l[1], type: l[2], titre: l[3], texte: l[4], photos: String(l[5]).split(',').filter(String) };
+    const pageUrl = (reglages['PAGE_' + flux] || 'https://lnhq.ca/') + '#n-' + l[9];
+    const r = publierDiscord(reglages['WEBHOOK_' + flux], v, new Date(l[0]), pageUrl);
+    if (r.id) onglet.getRange(i + 2, 9).setValue(r.id);
+    console.log(flux + ' « ' + v.titre + ' » : ' + (r.id ? 'publié sur Discord.' : 'refusé — ' + r.erreur));
+  });
 }
 
 function enregistrerPhoto(photo) {
@@ -163,11 +184,9 @@ function ouvrirOnglet(nom) {
   return onglet;
 }
 
+// Renvoie { id, erreur } : l'id du message Discord, ou la raison du refus.
 function publierDiscord(webhook, v, date, pageUrl) {
-  if (!webhook) {
-    console.warn('Webhook Discord manquant : rien publié sur Discord.');
-    return '';
-  }
+  if (!webhook) return { id: '', erreur: 'Webhook Discord manquant (propriétés du script)' };
   const discord = texteDiscord(v.texte);
   const images = v.photos.map(urlPhoto).concat(discord.images);
   const principal = {
@@ -183,18 +202,24 @@ function publierDiscord(webhook, v, date, pageUrl) {
   // Discord regroupe en galerie les embeds qui partagent la même url (4 images au total).
   images.slice(1, 4).forEach(url => embeds.push({ url: pageUrl, image: { url: url } }));
 
-  const rep = UrlFetchApp.fetch(webhook + '?wait=true', {
-    method: 'post',
-    contentType: 'application/json',
-    // Aucune mention (@everyone, @here, rôles) possible depuis le texte d'une nouvelle.
-    payload: JSON.stringify({ embeds: embeds, allowed_mentions: { parse: [] } }),
-    muteHttpExceptions: true,
-  });
-  if (rep.getResponseCode() >= 300) {
-    console.error('Discord a refusé (' + rep.getResponseCode() + ') : ' + rep.getContentText());
-    return '';
+  try {
+    const rep = UrlFetchApp.fetch(webhook + '?wait=true', {
+      method: 'post',
+      contentType: 'application/json',
+      // Aucune mention (@everyone, @here, rôles) possible depuis le texte d'une nouvelle.
+      payload: JSON.stringify({ embeds: embeds, allowed_mentions: { parse: [] } }),
+      muteHttpExceptions: true,
+    });
+    if (rep.getResponseCode() >= 300) {
+      const erreur = 'Discord a refusé (' + rep.getResponseCode() + ') : ' + rep.getContentText().slice(0, 400);
+      console.error(erreur);
+      return { id: '', erreur: erreur };
+    }
+    return { id: JSON.parse(rep.getContentText()).id, erreur: '' };
+  } catch (err) {
+    console.error(err);
+    return { id: '', erreur: 'Discord injoignable : ' + err.message };
   }
-  return JSON.parse(rep.getContentText()).id;
 }
 
 // Discord ne sait afficher ni images dans le texte, ni couleurs, ni tableaux :
