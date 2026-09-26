@@ -43,6 +43,12 @@
 #editeur tbody tr:nth-child(even), #editeur tbody tr:hover,
 #editeur tbody tr:hover td:first-child{ background:transparent; }
 
+/* Menu « … » (outils qui ne tiennent pas dans la barre, sur téléphone) : une seule
+   ligne par défaut, qui dépasse de l'écran ; on le laisse passer à la ligne. */
+#editeur .toastui-editor-dropdown-toolbar{
+  left:10px; width:auto; height:auto !important; flex-wrap:wrap; row-gap:4px; padding-block:4px;
+}
+
 /* Images dans le texte : cliquer une image ouvre la barre de placement. */
 #editeur .toastui-editor-contents img{ cursor:pointer; max-width:100%; }
 #editeur .toastui-editor-contents img[src$="#gauche"]{ float:left; width:45%; margin:0.3em 1em 0.5em 0; }
