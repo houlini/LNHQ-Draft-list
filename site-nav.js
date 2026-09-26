@@ -15,19 +15,21 @@
    ========================================================================= */
 (function(){
   const TEAM_BASE_URL = 'equipe.html?team=';
+  // [nom affiché, slug de equipe.html, code des fichiers Logos/XXX.png]
   const TEAMS = [
-    ['Anaheim', 'anaheim'], ['Boston', 'boston'], ['Buffalo', 'buffalo'],
-    ['Calgary', 'calgary'], ['Caroline', 'carolina'], ['Chicago', 'chicago'],
-    ['Colorado', 'colorado'], ['Columbus', 'columbus'], ['Dallas', 'dallas'],
-    ['Detroit', 'detroit'], ['Edmonton', 'edmonton'], ['Floride', 'florida'],
-    ['Los Angeles', 'los-angeles'], ['Minnesota', 'minnesota'], ['Montréal', 'montreal'],
-    ['Nashville', 'nashville'], ['New Jersey', 'new-jersey'], ['NY Islanders', 'ny-islanders'],
-    ['NY Rangers', 'ny-rangers'], ['Ottawa', 'ottawa'], ['Philadelphie', 'philadelphia'],
-    ['Pittsburgh', 'pittsburgh'], ['San Jose', 'san-jose'], ['Seattle', 'seattle'],
-    ['St. Louis', 'st-louis'], ['Tampa Bay', 'tampa-bay'], ['Toronto', 'toronto'],
-    ['Utah', 'utah'], ['Vancouver', 'vancouver'], ['Vegas', 'vegas'],
-    ['Washington', 'washington'], ['Winnipeg', 'winnipeg'],
+    ['Anaheim', 'anaheim', 'ANA'], ['Boston', 'boston', 'BOS'], ['Buffalo', 'buffalo', 'BUF'],
+    ['Calgary', 'calgary', 'CGY'], ['Caroline', 'carolina', 'CAR'], ['Chicago', 'chicago', 'CHI'],
+    ['Colorado', 'colorado', 'COL'], ['Columbus', 'columbus', 'CBJ'], ['Dallas', 'dallas', 'DAL'],
+    ['Detroit', 'detroit', 'DET'], ['Edmonton', 'edmonton', 'EDM'], ['Floride', 'florida', 'FLA'],
+    ['Los Angeles', 'los-angeles', 'LAK'], ['Minnesota', 'minnesota', 'MIN'], ['Montréal', 'montreal', 'MTL'],
+    ['Nashville', 'nashville', 'NSH'], ['New Jersey', 'new-jersey', 'NJD'], ['NY Islanders', 'ny-islanders', 'NYI'],
+    ['NY Rangers', 'ny-rangers', 'NYR'], ['Ottawa', 'ottawa', 'OTT'], ['Philadelphie', 'philadelphia', 'PHI'],
+    ['Pittsburgh', 'pittsburgh', 'PIT'], ['San Jose', 'san-jose', 'SJS'], ['Seattle', 'seattle', 'SEA'],
+    ['St. Louis', 'st-louis', 'STL'], ['Tampa Bay', 'tampa-bay', 'TBL'], ['Toronto', 'toronto', 'TOR'],
+    ['Utah', 'utah', 'UTA'], ['Vancouver', 'vancouver', 'VAN'], ['Vegas', 'vegas', 'VGK'],
+    ['Washington', 'washington', 'WSH'], ['Winnipeg', 'winnipeg', 'WPG'],
   ];
+  window.LNHQ_TEAMS = Object.freeze(TEAMS.map(([name, slug, code]) => Object.freeze({ name, slug, code })));
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({
