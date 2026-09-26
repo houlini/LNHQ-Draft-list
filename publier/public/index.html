@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publier — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css">
+<link rel="stylesheet" href="vendor/toastui-editor-3.2.2/toastui-editor.min.css">
+<link rel="stylesheet" href="publier.css">
+<script src="vendor/toastui-editor-3.2.2/toastui-editor-all.min.js" defer></script>
+<script src="vendor/toastui-editor-3.2.2/fr-fr.min.js" defer></script>
+<script src="publier.js" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">Publier</h1>
+      </a>
+      <nav class="site-nav">
+        <a class="nav-btn" id="lienFil" href="https://lnhq.ca/nouvelles-test.html">Voir les nouvelles</a>
+      </nav>
+    </div>
+    <div class="meta-row"><span id="qui">Vérification de ton accès…</span></div>
+  </header>
+
+  <main>
+    <div id="refus" class="status-box error pub-carte" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div id="refusTexte"></div>
+    </div>
+
+    <form id="formulaire" class="pub-carte" novalidate hidden>
+      <fieldset id="choixFlux" class="pub-flux" hidden>
+        <legend>Publier dans</legend>
+        <label><input type="radio" name="flux" value="NOUVELLES" checked> Nouvelles</label>
+        <label><input type="radio" name="flux" value="ANNONCES"> Annonces de la ligue</label>
+      </fieldset>
+
+      <div class="pub-ligne">
+        <label class="pub-champ pub-titre">
+          <span>Titre</span>
+          <input id="titre" type="text" maxlength="200" autocomplete="off">
+        </label>
+        <label class="pub-champ">
+          <span>Type</span>
+          <select id="type">
+            <option>Général</option>
+            <option>Transaction</option>
+            <option>Résultat</option>
+            <option>Blessure</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="pub-champ">
+        <span>Texte</span>
+        <div id="editeur"></div>
+      </div>
+
+      <div class="pub-champ">
+        <span>Photos <small>jusqu'à 5 · la première sert d'image de couverture</small></span>
+        <div id="apercus" class="pub-photos"></div>
+        <label class="pub-ajout" id="ajoutPhotos">
+          <input type="file" id="fichiers" accept="image/*" multiple>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Ajouter des photos
+        </label>
+      </div>
+
+      <p id="message" class="pub-message" role="status" hidden></p>
+
+      <button type="submit" id="envoyer" class="pub-envoyer">Publier</button>
+    </form>
+  </main>
+</div>
+
+</body>
+</html>

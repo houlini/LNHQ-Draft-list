@@ -1,0 +1,21 @@
+name = "lnhq-publier"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Joignable seulement par publier.lnhq.ca, derrière Cloudflare Access :
+# l'adresse *.workers.dev permettrait de contourner Access.
+workers_dev = false
+preview_urls = false
+routes = [{ pattern = "publier.lnhq.ca", custom_domain = true }]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[vars]
+# Valeurs affichées dans Zero Trust → Access → Applications → (l'application) → Vue d'ensemble.
+ACCESS_TEAM_DOMAIN = "https://A-REMPLIR.cloudflareaccess.com"
+ACCESS_AUD = "A-REMPLIR"
+
+# Secrets (jamais dans ce fichier) : npx wrangler secret put SCRIPT_URL
+#                                    npx wrangler secret put SCRIPT_SECRET
