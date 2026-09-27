@@ -65,7 +65,7 @@
   let envoisEnCours = 0;
   let editeur = null;
   let moi = null;
-  let modification = null; // { id, flux } quand on modifie une publication (?modifier=id)
+  let modification = null; // { id, flux, equipe } quand on modifie une publication (?modifier=id)
 
   async function api(chemin, options){
     try{
@@ -100,10 +100,10 @@
 
   function majQui(){
     const flux = fluxChoisi();
-    let qui;
-    if(flux === 'ANNONCES') qui = 'Annonce signée : Commissaire de la ligue';
-    else qui = moi.equipe === 'Ligue' ? 'Tu publies au nom de la ligue' : 'Tu publies pour ' + moi.equipe;
-    $('qui').textContent = modification ? 'Modification · ' + qui.charAt(0).toLowerCase() + qui.slice(1) : qui;
+    // Une modification garde l'équipe d'origine de la publication, pas celle du dirigeant.
+    if(modification) $('qui').textContent = 'Modification · publication de ' + (modification.equipe || 'la ligue');
+    else if(flux === 'ANNONCES') $('qui').textContent = 'Annonce signée : Commissaire de la ligue';
+    else $('qui').textContent = moi.equipe === 'Ligue' ? 'Tu publies au nom de la ligue' : 'Tu publies pour ' + moi.equipe;
     $('lienFil').href = PAGES[flux];
   }
 
@@ -461,7 +461,7 @@
       afficher(ERREURS[r.erreur] || 'Impossible de charger cette publication.', true);
       return;
     }
-    modification = { id: r.id, flux: r.flux };
+    modification = { id: r.id, flux: r.flux, equipe: r.equipe };
     $('choixFlux').hidden = true;
     remplirTypes(r.type);
     $('titre').value = r.titre;

@@ -202,7 +202,7 @@ function lire(d, membre) {
   if (!pub) return { ok: false, erreur: 'introuvable' };
   const photo = String(pub.l[5]).split(',').filter(String)[0] || '';
   return {
-    ok: true, id: id, flux: pub.flux, type: pub.l[2], titre: pub.l[3], texte: pub.l[4],
+    ok: true, id: id, flux: pub.flux, equipe: pub.l[1], type: pub.l[2], titre: pub.l[3], texte: pub.l[4],
     couverture: photo ? urlPhoto(photo) : '',
   };
 }
