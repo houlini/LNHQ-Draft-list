@@ -74,20 +74,31 @@
 
 /* Images dans le texte : cliquer une image ouvre la barre de placement. */
 #editeur .toastui-editor-contents img{ cursor:pointer; max-width:100%; }
-#editeur .toastui-editor-contents img[src$="#gauche"]{ float:left; width:45%; margin:0.3em 1em 0.5em 0; }
-#editeur .toastui-editor-contents img[src$="#droite"]{ float:right; width:45%; margin:0.3em 0 0.5em 1em; }
-#editeur .toastui-editor-contents h1, #editeur .toastui-editor-contents h2,
-#editeur .toastui-editor-contents h3, #editeur .toastui-editor-contents table{ clear:both; }
+/* Placement et taille notés à la fin de l'adresse : #gauche-45, #droite-30, #centre-60…
+   (mêmes règles que nouvelles.css). Les titres et le texte passent à côté de l'image. */
+#editeur .toastui-editor-contents img[src*="#gauche"]{ float:left; width:45%; margin:0.3em 1em 0.5em 0; }
+#editeur .toastui-editor-contents img[src*="#droite"]{ float:right; width:45%; margin:0.3em 0 0.5em 1em; }
+#editeur .toastui-editor-contents img[src*="#centre"]{ display:block; width:60%; margin:0.5em auto; }
+#editeur .toastui-editor-contents img[src*="#"][src$="-30"]{ width:30%; }
+#editeur .toastui-editor-contents img[src*="#"][src$="-45"]{ width:45%; }
+#editeur .toastui-editor-contents img[src*="#"][src$="-60"]{ width:60%; }
+#editeur .toastui-editor-contents :is(table, hr){ clear:both; }
+
 .pub-placement{
-  position:fixed; z-index:50; display:flex; gap:4px; padding:4px;
+  position:fixed; z-index:50; display:flex; flex-direction:column; gap:4px; padding:4px;
+  max-width:calc(100vw - 16px);
   background:#222; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,0.3);
 }
 .pub-placement[hidden]{ display:none; }
+.pub-placement > div{ display:flex; flex-wrap:wrap; gap:4px; }
+.pub-placement > div + div{ border-top:1px solid rgba(255,255,255,0.15); padding-top:4px; }
 .pub-placement button{
   border:none; border-radius:6px; padding:7px 10px; cursor:pointer;
   background:transparent; color:#fff; font-size:13px; font-weight:600;
 }
 .pub-placement button:hover{ background:rgba(255,255,255,0.15); }
+.pub-placement button.is-actif{ background:#E8590C; }
+.pub-placement button:disabled{ opacity:0.35; cursor:default; background:transparent; }
 
 /* Menu « Taille » */
 .pub-menu-taille{ list-style:none; margin:0; padding:4px 0; min-width:150px; }

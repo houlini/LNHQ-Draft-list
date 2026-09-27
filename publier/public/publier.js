@@ -248,42 +248,65 @@
     dernierModele = editeur.getMarkdown().trim();
   }
 
-  /* ---------- Placement d'une image : pleine largeur, à gauche ou à droite ---------- */
-  // Le placement est noté à la fin de l'adresse (#gauche, #droite) : le site et
-  // l'éditeur l'appliquent par CSS, et l'image se charge normalement.
-  const PLACEMENTS = [
-    { texte: 'Pleine largeur', suffixe: '' },
-    { texte: 'À gauche', suffixe: '#gauche' },
-    { texte: 'À droite', suffixe: '#droite' },
-  ];
+  /* ---------- Placement et taille d'une image dans le texte ---------- */
+  // Notés à la fin de l'adresse (#droite-30, #centre-60…) : le site et l'éditeur
+  // l'appliquent par CSS, et l'image se charge normalement. Sans suffixe : pleine largeur.
+  const POSITIONS = [['', 'Pleine largeur'], ['gauche', 'Gauche'], ['centre', 'Centre'], ['droite', 'Droite']];
+  const TAILLES = [['30', 'Petite'], ['45', 'Moyenne'], ['60', 'Grande']];
+  const TAILLE_DEFAUT = { gauche: '45', droite: '45', centre: '60' };
   const barrePlacement = document.createElement('div');
   barrePlacement.className = 'pub-placement';
   barrePlacement.hidden = true;
   document.body.append(barrePlacement);
   let imageChoisie = '';
+  let placement = { position: '', taille: '' };
 
   function echapperRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-  PLACEMENTS.forEach(p => {
-    const bouton = document.createElement('button');
-    bouton.type = 'button';
-    bouton.textContent = p.texte;
-    bouton.addEventListener('click', () => {
-      const motif = new RegExp('\\(' + echapperRegex(imageChoisie) + '(#(?:gauche|droite))?\\)', 'g');
-      editeur.setMarkdown(editeur.getMarkdown().replace(motif, '(' + imageChoisie + p.suffixe + ')'), false);
-      barrePlacement.hidden = true;
+  function appliquerPlacement(){
+    const suffixe = placement.position ? '#' + placement.position + '-' + placement.taille : '';
+    const motif = new RegExp('\\(' + echapperRegex(imageChoisie) + '(#[a-z0-9-]*)?\\)', 'g');
+    editeur.setMarkdown(editeur.getMarkdown().replace(motif, '(' + imageChoisie + suffixe + ')'), false);
+    barrePlacement.hidden = true;
+  }
+
+  function rangee(choix, cle){
+    const ligne = document.createElement('div');
+    choix.forEach(([valeur, texte]) => {
+      const bouton = document.createElement('button');
+      bouton.type = 'button';
+      bouton.textContent = texte;
+      bouton.dataset[cle] = valeur;
+      bouton.addEventListener('click', () => {
+        placement[cle] = valeur;
+        if(cle === 'position') placement.taille = valeur ? (placement.taille || TAILLE_DEFAUT[valeur]) : '';
+        appliquerPlacement();
+      });
+      ligne.append(bouton);
     });
-    barrePlacement.append(bouton);
-  });
+    barrePlacement.append(ligne);
+  }
+  rangee(POSITIONS, 'position');
+  rangee(TAILLES, 'taille');
 
   $('editeur').addEventListener('click', e => {
     const img = e.target.closest('.toastui-editor-ww-container img');
     if(!img){ barrePlacement.hidden = true; return; }
-    imageChoisie = (img.getAttribute('src') || '').replace(/#.*$/, '');
+    const src = img.getAttribute('src') || '';
+    imageChoisie = src.replace(/#.*$/, '');
+    // Ancien format sans taille (#droite) : taille moyenne.
+    const m = /#(gauche|droite|centre)(?:-(30|45|60))?$/.exec(src);
+    placement = m ? { position: m[1], taille: m[2] || TAILLE_DEFAUT[m[1]] } : { position: '', taille: '' };
+    barrePlacement.querySelectorAll('button').forEach(b => {
+      const actif = b.dataset.position !== undefined ? b.dataset.position === placement.position : b.dataset.taille === placement.taille;
+      b.classList.toggle('is-actif', actif);
+      // Pleine largeur : pas de taille à choisir.
+      if(b.dataset.taille !== undefined) b.disabled = !placement.position;
+    });
     const r = img.getBoundingClientRect();
-    barrePlacement.style.left = Math.max(8, r.left) + 'px';
-    barrePlacement.style.top = Math.max(8, r.top - 44) + 'px';
     barrePlacement.hidden = false;
+    barrePlacement.style.left = Math.max(8, Math.min(r.left, innerWidth - barrePlacement.offsetWidth - 8)) + 'px';
+    barrePlacement.style.top = Math.max(8, r.top - barrePlacement.offsetHeight - 6) + 'px';
   });
   document.addEventListener('scroll', () => { barrePlacement.hidden = true; }, true);
 

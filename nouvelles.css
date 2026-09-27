@@ -94,9 +94,15 @@ a.news-team:hover{ color:var(--accent); }
    le texte l'entoure. Sur téléphone, trop étroit, elle reprend toute la largeur. */
 .news-text{ display:flow-root; }
 @media (min-width:560px){
-  .news-text img[src$="#gauche"]{ float:left; width:45%; margin:0.3em 1.1em 0.6em 0; }
-  .news-text img[src$="#droite"]{ float:right; width:45%; margin:0.3em 0 0.6em 1.1em; }
-  .news-text h1, .news-text h2, .news-text h3, .news-text table, .news-text hr{ clear:both; }
+  .news-text img[src*="#gauche"]{ float:left; width:45%; margin:0.3em 1.1em 0.6em 0; }
+  .news-text img[src*="#droite"]{ float:right; width:45%; margin:0.3em 0 0.6em 1.1em; }
+  .news-text img[src*="#centre"]{ width:60%; margin:0.6em auto; }
+  /* Taille choisie dans l'éditeur : -30 (petite), -45 (moyenne), -60 (grande). */
+  .news-text img[src*="#"][src$="-30"]{ width:30%; }
+  .news-text img[src*="#"][src$="-45"]{ width:45%; }
+  .news-text img[src*="#"][src$="-60"]{ width:60%; }
+  /* Les titres passent à côté de l'image ; seuls les tableaux et les lignes vont dessous. */
+  .news-text table, .news-text hr{ clear:both; }
 }
 .news-text blockquote{
   padding:10px 14px; border-left:4px solid var(--accent); border-radius:0 6px 6px 0;
