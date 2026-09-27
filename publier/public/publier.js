@@ -385,11 +385,11 @@
     if(!moi.ok){
       $('qui').textContent = '';
       $('refusTexte').textContent = ERREURS[moi.erreur] || 'Accès impossible pour le moment. Réessaie plus tard.';
-      // Session périmée (ex. ouverte avant un changement de configuration d'Access) :
-      // la déconnexion efface le jeton, et la page redemande un code par courriel.
+      // Session périmée : le Worker a effacé le jeton ; en rechargeant, Access
+      // redemande un code par courriel.
       if(moi.erreur === 'acces' || moi.erreur === 'session'){
         const lien = document.createElement('a');
-        lien.href = '/cdn-cgi/access/logout';
+        lien.href = '/';
         lien.textContent = 'Se reconnecter';
         $('refusTexte').append(' ', lien);
       }
