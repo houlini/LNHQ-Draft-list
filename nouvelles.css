@@ -106,6 +106,13 @@ a.news-team:hover{ color:var(--accent); }
 .news-text h4, .news-text h5, .news-text h6{ font-size:1.05em; }
 .news-text a{ color:var(--accent); }
 .news-text img{ display:block; max-width:100%; height:auto; border-radius:6px; margin:0.6em 0; }
+/* Logo d'équipe inséré avec le bouton « Logo » de l'éditeur (adresse terminée par #logo) :
+   dans la ligne de texte, à sa hauteur, comme un emoji. */
+.news-text img[src$="#logo"]{
+  display:inline; width:auto !important; height:1.4em; max-width:none; margin:0 0.1em;
+  vertical-align:-0.3em; border-radius:0; float:none;
+}
+
 /* Image placée à gauche ou à droite dans l'éditeur (#gauche / #droite à la fin de l'adresse) :
    le texte l'entoure. Sur téléphone, trop étroit, elle reprend toute la largeur. */
 .news-text{ display:flow-root; }

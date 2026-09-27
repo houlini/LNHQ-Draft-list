@@ -291,7 +291,8 @@
 
   $('editeur').addEventListener('click', e => {
     const img = e.target.closest('.toastui-editor-ww-container img');
-    if(!img){ barrePlacement.hidden = true; return; }
+    // Les logos d'équipe restent dans la ligne de texte : pas de placement ni de taille.
+    if(!img || /#logo$/.test(img.getAttribute('src') || '')){ barrePlacement.hidden = true; return; }
     const src = img.getAttribute('src') || '';
     imageChoisie = src.replace(/#.*$/, '');
     // Ancien format sans taille (#droite) : taille moyenne.
@@ -311,6 +312,48 @@
   document.addEventListener('scroll', () => { barrePlacement.hidden = true; }, true);
 
   /* ---------- Menu « Taille » de la barre d'outils ---------- */
+  /* ---------- Menu « Logo » : insère un logo d'équipe dans la ligne de texte ---------- */
+  // Adresse terminée par #logo : le site et l'éditeur l'affichent à la hauteur du texte.
+  const EQUIPES = [
+    ['ANA', 'Anaheim'], ['BOS', 'Boston'], ['BUF', 'Buffalo'], ['CGY', 'Calgary'], ['CAR', 'Caroline'],
+    ['CHI', 'Chicago'], ['COL', 'Colorado'], ['CBJ', 'Columbus'], ['DAL', 'Dallas'], ['DET', 'Detroit'],
+    ['EDM', 'Edmonton'], ['FLA', 'Floride'], ['LAK', 'Los Angeles'], ['MIN', 'Minnesota'], ['MTL', 'Montréal'],
+    ['NSH', 'Nashville'], ['NJD', 'New Jersey'], ['NYI', 'NY Islanders'], ['NYR', 'NY Rangers'], ['OTT', 'Ottawa'],
+    ['PHI', 'Philadelphie'], ['PIT', 'Pittsburgh'], ['SJS', 'San Jose'], ['SEA', 'Seattle'], ['STL', 'St. Louis'],
+    ['TBL', 'Tampa Bay'], ['TOR', 'Toronto'], ['UTA', 'Utah'], ['VAN', 'Vancouver'], ['VGK', 'Vegas'],
+    ['WSH', 'Washington'], ['WPG', 'Winnipeg'],
+  ];
+  function menuLogos(){
+    const grille = document.createElement('div');
+    grille.className = 'pub-menu-logos';
+    const choix = EQUIPES.map(([code, nom]) => [nom, 'https://lnhq.ca/Logos/' + code + '.png'])
+      .concat([['LNHQ', 'https://lnhq.ca/logo-lnhq.png']]);
+    choix.forEach(([nom, src]) => {
+      const bouton = document.createElement('button');
+      bouton.type = 'button';
+      bouton.title = nom;
+      bouton.setAttribute('aria-label', 'Logo ' + nom);
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = '';
+      bouton.append(img);
+      bouton.addEventListener('click', () => {
+        editeur.exec('addImage', { imageUrl: src + '#logo', altText: nom });
+        editeur.eventEmitter.emit('closePopup');
+        editeur.focus();
+      });
+      grille.append(bouton);
+    });
+    return {
+      name: 'logos',
+      tooltip: "Logo d'équipe",
+      text: 'Logo',
+      className: 'pub-bouton-taille toastui-editor-toolbar-icons',
+      style: { backgroundImage: 'none', width: 'auto', padding: '0 8px', fontWeight: '700', fontSize: '13px' },
+      popup: { body: grille, style: { width: 'auto' } },
+    };
+  }
+
   function menuTaille(){
     const tailles = [
       { texte: 'Titre', niveau: 2, cls: 'pub-taille-titre' },
@@ -438,7 +481,7 @@
       placeholder: 'Écris ta nouvelle ici…',
       plugins: extensionCouleur ? [[extensionCouleur, { preset: COULEURS }]] : [],
       toolbarItems: [
-        [menuTaille(), 'bold', 'italic', 'strike'],
+        [menuTaille(), 'bold', 'italic', 'strike', menuLogos()],
         ['hr', 'quote'],
         ['ul', 'ol'],
         ['table', 'image', 'link'],

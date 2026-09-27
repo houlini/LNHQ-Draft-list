@@ -308,7 +308,8 @@ function ouvrirOnglet(nom) {
 function messageDiscord(v, date, pageUrl) {
   const couleur = COULEURS_TYPE[v.type] || COULEURS_TYPE['Général'];
   // Bannière : la couverture, sinon la première image placée dans le texte.
-  const dansLeTexte = /!\[[^\]]*\]\((https:\/\/[^)\s#]+)/.exec(v.texte);
+  // (une photo envoyée, jamais un logo d'équipe inséré avec le bouton « Logo »)
+  const dansLeTexte = /!\[[^\]]*\]\((https:\/\/lh3\.googleusercontent\.com\/[^)\s#]+)/.exec(v.texte);
   const banniere = v.photos.length ? urlPhoto(v.photos[0]) : (dansLeTexte ? dansLeTexte[1] : '');
   const embeds = [];
   if (banniere) embeds.push({ color: couleur, image: { url: banniere } });
