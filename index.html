@@ -6,7 +6,7 @@
 <title>LNHQ — Accueil</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="nouvelles.css?v=11">
+<link rel="stylesheet" href="nouvelles.css?v=12">
 <script src="site-nav.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/18.0.14/lib/marked.umd.min.js" integrity="sha512-trN9mtGYvoySPVI909KTnwbJI9AkKPydRCV/qAsUG1+q39hhpKltEag9b5JpdjeIZn5i8IH62hHRFdbKwMFh9w==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha512-flQmhkXNRQ3iUfvtdCobtpMjCb6kE+zLnTiAulAQJ3WykVfy84JvCMOo6vhwWXHTXjR25h9Zj+LyGFRWKjRoag==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
@@ -22,6 +22,7 @@
       <button type="button" role="tab" data-fil="ANNONCES" aria-selected="true">Annonces</button>
       <button type="button" role="tab" data-fil="NOUVELLES" aria-selected="false">Nouvelles</button>
     </div>
+    <a class="live-pill" id="livePill" href="tv.html" hidden><span class="live-point"></span><span id="liveTexte">En direct</span></a>
     <a class="publish-btn" id="publishBtn" target="_blank" rel="noopener" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Publier
@@ -49,6 +50,28 @@
     <p class="empty-state" id="emptyState" hidden>Aucune annonce pour l'instant.</p>
   </main>
 </div>
+
+<script>
+/* Pastille « En direct » : un DG diffuse sur Twitch avec #LNHQ (même API que LNHQ TV). */
+(function(){
+  const pastille = document.getElementById('livePill');
+  const texte = document.getElementById('liveTexte');
+  async function verifier(){
+    try{
+      const d = await (await fetch('https://api.lnhq.ca/twitch')).json();
+      const live = (d.chaines || []).filter(c => c.live && c.lnhq).sort((a, b) => (b.spectateurs || 0) - (a.spectateurs || 0));
+      pastille.hidden = !live.length;
+      if(!live.length) return;
+      const premier = live[0];
+      texte.textContent = 'En direct · ' + (premier.nom || premier.chaine) + (live.length > 1 ? ' +' + (live.length - 1) : '');
+      pastille.href = 'tv.html?chaine=' + encodeURIComponent(premier.chaine);
+      pastille.title = live.map(c => (c.nom || c.chaine) + (c.equipe ? ' (' + c.equipe + ')' : '')).join(', ') + ' — regarder sur LNHQ TV';
+    }catch(e){ pastille.hidden = true; }
+  }
+  verifier();
+  setInterval(() => { if(!document.hidden) verifier(); }, 2 * 60 * 1000);
+})();
+</script>
 
 </body>
 </html>

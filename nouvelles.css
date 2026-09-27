@@ -12,6 +12,21 @@
 .feed-tabs button:hover{ background:rgba(255,255,255,0.12); }
 .feed-tabs button[aria-selected="true"]{ background:var(--surface); color:var(--ink); }
 
+/* Pastille « En direct » (accueil) : visible seulement quand un DG diffuse avec #LNHQ. */
+.live-pill{
+  display:inline-flex; align-items:center; gap:8px; margin-right:auto; max-width:100%;
+  padding:7px 14px; border-radius:999px; background:rgba(0,0,0,0.22);
+  color:inherit; font-weight:700; font-size:13.5px; text-decoration:none; white-space:nowrap;
+}
+.live-pill span:last-child{ overflow:hidden; text-overflow:ellipsis; }
+.live-pill:hover{ background:rgba(0,0,0,0.32); }
+.live-point{
+  flex-shrink:0; width:9px; height:9px; border-radius:50%; background:#fff;
+  box-shadow:0 0 0 0 rgba(255,255,255,0.7); animation:pouls 1.8s ease-out infinite;
+}
+@keyframes pouls{ to{ box-shadow:0 0 0 8px rgba(255,255,255,0); } }
+@media (prefers-reduced-motion: reduce){ .live-point{ animation:none; } }
+
 .publish-btn{
   display:inline-flex; align-items:center; gap:8px;
   background:var(--surface); color:var(--ink);

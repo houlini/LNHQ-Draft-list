@@ -96,6 +96,7 @@
                 ${menuItem('DGs', 'dgs.html', currentPage === 'dgs')}
                 ${menuItem('Règlements', 'reglements.html', currentPage === 'reglements')}
                 ${menuItem('Masse salariale', 'masse.html', currentPage === 'masse')}
+                ${menuItem('Draft 2026', 'ordre.html', currentPage === 'ordre')}
               </div>
             </div>
 
@@ -106,7 +107,6 @@
               </button>
               <div class="nav-dropdown" hidden>
                 ${menuItem('Joueurs', 'joueurs.html', currentPage === 'joueurs')}
-                ${menuItem('Draft 2026', 'ordre.html', currentPage === 'ordre')}
               </div>
             </div>
 
