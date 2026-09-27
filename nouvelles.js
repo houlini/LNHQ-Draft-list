@@ -11,7 +11,12 @@
     'Résultat': 'type-resultat',
     'Blessure': 'type-blessure',
     'Général': 'type-general',
+    'Règlement': 'type-reglement',
+    'Calendrier': 'type-calendrier',
+    'Événement': 'type-evenement',
   };
+  // Au-delà de cette hauteur (px), le texte est replié derrière « Lire la suite ».
+  const HAUTEUR_REPLI = 420;
   const DRIVE_ID = /^[A-Za-z0-9_-]{20,}$/;
 
   const feed = document.getElementById('feed');
@@ -150,15 +155,53 @@
       time.dateTime = n.date.toISOString();
       meta.append(time);
     }
-    body.append(meta, el('h2', 'news-title', n.titre), renderText(n.texte));
+    const texte = renderText(n.texte);
+    const suite = el('button', 'news-more', 'Lire la suite');
+    suite.type = 'button';
+    suite.hidden = true;
+    suite.addEventListener('click', () => {
+      const replie = texte.classList.toggle('is-collapsed');
+      suite.textContent = replie ? 'Lire la suite' : 'Réduire';
+      if(replie) card.scrollIntoView({ block: 'nearest' });
+    });
+    body.append(meta, el('h2', 'news-title', n.titre), texte, suite);
 
     if(n.photos.length > 1){
       const gallery = el('div', 'news-gallery');
       n.photos.slice(1).forEach(id => gallery.append(photoLink(id, null, 400)));
       body.append(gallery);
     }
+    // Lien vers l'éditeur ; seul l'auteur (ou un dirigeant) pourra réellement modifier.
+    if(n.id && feed.dataset.formUrl){
+      const modifier = el('a', 'news-edit', 'Modifier');
+      modifier.href = feed.dataset.formUrl + '?modifier=' + encodeURIComponent(n.id);
+      modifier.target = '_blank';
+      modifier.rel = 'noopener';
+      body.append(modifier);
+    }
     card.append(body);
     return card;
+  }
+
+  // Replie les textes trop longs. Refait quand une image du texte finit de charger
+  // (elle allonge le texte), sauf si le lecteur a déjà ouvert l'article.
+  function replier(card){
+    const texte = card.querySelector('.news-text');
+    const suite = card.querySelector('.news-more');
+    if(!texte || !suite || suite.dataset.ouvert) return;
+    const cible = location.hash === '#' + card.id;
+    const long = texte.scrollHeight > HAUTEUR_REPLI + 120;
+    texte.classList.toggle('is-collapsed', long && !cible);
+    suite.hidden = !long;
+    suite.textContent = long && !cible ? 'Lire la suite' : 'Réduire';
+  }
+
+  function preparerReplis(){
+    els.list.querySelectorAll('.news-card').forEach(card => {
+      replier(card);
+      card.querySelector('.news-more').addEventListener('click', e => { e.currentTarget.dataset.ouvert = '1'; });
+      card.querySelectorAll('.news-text img').forEach(img => img.addEventListener('load', () => replier(card)));
+    });
   }
 
   function show(state){
@@ -175,6 +218,7 @@
     els.empty.hidden = !!items.length;
     els.rowCount.textContent = items.length + ' ' + noun + (items.length > 1 ? 's' : '');
     show('data');
+    preparerReplis();
   }
 
   // Le contenu arrive après le chargement : le navigateur ne peut pas suivre seul

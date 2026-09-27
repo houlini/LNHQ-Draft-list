@@ -18,7 +18,21 @@
 const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
 const ONGLET_ACCES = 'ACCES';
 const ONGLET_JOURNAL = 'JOURNAL';
-const TYPES = ['Général', 'Transaction', 'Résultat', 'Blessure'];
+const TYPES = {
+  NOUVELLES: ['Général', 'Transaction', 'Résultat', 'Blessure'],
+  ANNONCES: ['Général', 'Règlement', 'Calendrier', 'Événement'],
+};
+// Les annonces sont signées au nom de la ligue, pas de l'équipe de la personne.
+const SIGNATURE_ANNONCES = 'Commissaire de la ligue';
+// Code des logos (lnhq.ca/Logos/XXX.png), pour l'avatar des messages Discord.
+const CODES_EQUIPES = {
+  'Anaheim': 'ANA', 'Boston': 'BOS', 'Buffalo': 'BUF', 'Calgary': 'CGY', 'Caroline': 'CAR', 'Chicago': 'CHI',
+  'Colorado': 'COL', 'Columbus': 'CBJ', 'Dallas': 'DAL', 'Detroit': 'DET', 'Edmonton': 'EDM', 'Floride': 'FLA',
+  'Los Angeles': 'LAK', 'Minnesota': 'MIN', 'Montréal': 'MTL', 'Nashville': 'NSH', 'New Jersey': 'NJD',
+  'NY Islanders': 'NYI', 'NY Rangers': 'NYR', 'Ottawa': 'OTT', 'Philadelphie': 'PHI', 'Pittsburgh': 'PIT',
+  'San Jose': 'SJS', 'Seattle': 'SEA', 'St. Louis': 'STL', 'Tampa Bay': 'TBL', 'Toronto': 'TOR', 'Utah': 'UTA',
+  'Vancouver': 'VAN', 'Vegas': 'VGK', 'Washington': 'WSH', 'Winnipeg': 'WPG',
+};
 const EQUIPES = [
   'Anaheim', 'Boston', 'Buffalo', 'Calgary', 'Caroline', 'Chicago', 'Colorado', 'Columbus',
   'Dallas', 'Detroit', 'Edmonton', 'Floride', 'Los Angeles', 'Minnesota', 'Montréal', 'Nashville',
@@ -26,7 +40,10 @@ const EQUIPES = [
   'Seattle', 'St. Louis', 'Tampa Bay', 'Toronto', 'Utah', 'Vancouver', 'Vegas', 'Washington', 'Winnipeg',
 ];
 const ENTETES = ['Date', 'Équipe', 'Type', 'Titre', 'Texte', 'Photos', 'Visible', 'Épinglé', 'ID Discord', 'ID réponse'];
-const COULEURS_TYPE = { 'Transaction': 0x1C7ED6, 'Résultat': 0x2F9E44, 'Blessure': 0xE03131, 'Général': 0xE8590C };
+const COULEURS_TYPE = {
+  'Transaction': 0x1C7ED6, 'Résultat': 0x2F9E44, 'Blessure': 0xE03131, 'Général': 0xE8590C,
+  'Règlement': 0x7048E8, 'Calendrier': 0x1098AD, 'Événement': 0xE0A800,
+};
 const TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_OCTETS_PHOTO = 5 * 1024 * 1024;
 
@@ -71,6 +88,8 @@ function traiter(p, corps) {
   if (!membre) return { ok: false, erreur: 'inconnu' };
   if (p.action === 'moi') return { ok: true, equipe: membre.equipe, annonces: membre.annonces };
   if (p.action === 'publier') return publier(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'lire') return lire(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'modifier') return modifier(JSON.parse(corps || '{}'), membre);
   if (p.action === 'photo') return photoSeule(JSON.parse(corps || '{}'));
   if (p.action === 'discord') return noterDiscord(JSON.parse(corps || '{}'), membre);
   if (p.action === 'enAttente') return enAttente(membre);
@@ -97,17 +116,15 @@ function trouverMembre(courriel) {
 function publier(d, membre) {
   const flux = d.flux === 'ANNONCES' ? 'ANNONCES' : 'NOUVELLES';
   if (flux === 'ANNONCES' && !membre.annonces) return { ok: false, erreur: 'annonces' };
-  const titre = String(d.titre || '').trim().slice(0, 200);
-  const texte = String(d.texte || '').trim().slice(0, 20000);
-  if (!titre || !texte) return { ok: false, erreur: 'vide' };
-  if (d.couverture && !TYPES_PHOTO.includes(d.couverture.mime)) return { ok: false, erreur: 'photo' };
+  const champs = lireChamps(d, flux);
+  if (champs.erreur) return { ok: false, erreur: champs.erreur };
 
   const v = {
-    titre: titre,
-    texte: texte,
-    type: TYPES.includes(d.type) ? d.type : 'Général',
+    titre: champs.titre,
+    texte: champs.texte,
+    type: champs.type,
     // L'équipe vient de la liste d'accès, jamais du navigateur.
-    equipe: flux === 'ANNONCES' ? 'Ligue' : membre.equipe,
+    equipe: flux === 'ANNONCES' ? SIGNATURE_ANNONCES : membre.equipe,
     // Colonne Photos du classeur : la couverture seulement ; les autres images sont dans le texte.
     photos: d.couverture ? [enregistrerPhoto(d.couverture)] : [],
   };
@@ -134,6 +151,71 @@ function publier(d, membre) {
   // Le message Discord est envoyé par le Worker Cloudflare : Discord bloque souvent
   // les adresses de Google partagées par tous les scripts (erreur 429 / 1015).
   return { ok: true, id: id, page: pageUrl, discord: { flux: flux, message: messageDiscord(v, date, pageUrl) } };
+}
+
+function lireChamps(d, flux) {
+  const titre = String(d.titre || '').trim().slice(0, 200);
+  const texte = String(d.texte || '').trim().slice(0, 20000);
+  if (!titre || !texte) return { erreur: 'vide' };
+  if (d.couverture && d.couverture !== 'garder' && !TYPES_PHOTO.includes(d.couverture.mime)) return { erreur: 'photo' };
+  return { titre: titre, texte: texte, type: TYPES[flux].includes(d.type) ? d.type : 'Général' };
+}
+
+// Retrouve une publication par son id (colonne « ID réponse ») dans l'un des deux fils.
+function trouverPublication(id) {
+  if (!/^[0-9a-f-]{36}$/.test(id)) return null;
+  for (const flux of ['NOUVELLES', 'ANNONCES']) {
+    const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
+    if (!onglet || onglet.getLastRow() < 2) continue;
+    const lignes = onglet.getRange(2, 1, onglet.getLastRow() - 1, ENTETES.length).getValues();
+    const i = lignes.findIndex(l => String(l[9]) === id);
+    if (i >= 0) return { flux: flux, onglet: onglet, rangee: i + 2, l: lignes[i] };
+  }
+  return null;
+}
+
+// Seul l'auteur (d'après le JOURNAL privé) ou un dirigeant peut modifier une publication.
+function peutModifier(id, membre) {
+  if (membre.annonces) return true;
+  const entrees = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).getDataRange().getValues();
+  return entrees.some(l => String(l[4]) === id && l[1] === membre.courriel);
+}
+
+function lire(d, membre) {
+  const id = String(d.id || '');
+  const pub = trouverPublication(id);
+  if (!pub) return { ok: false, erreur: 'introuvable' };
+  if (!peutModifier(id, membre)) return { ok: false, erreur: 'auteur' };
+  const photo = String(pub.l[5]).split(',').filter(String)[0] || '';
+  return {
+    ok: true, id: id, flux: pub.flux, type: pub.l[2], titre: pub.l[3], texte: pub.l[4],
+    couverture: photo ? urlPhoto(photo) : '',
+  };
+}
+
+// d.couverture : 'garder' (inchangée), null (retirée) ou une nouvelle image.
+function modifier(d, membre) {
+  const id = String(d.id || '');
+  const pub = trouverPublication(id);
+  if (!pub) return { ok: false, erreur: 'introuvable' };
+  if (!peutModifier(id, membre)) return { ok: false, erreur: 'auteur' };
+  const champs = lireChamps(d, pub.flux);
+  if (champs.erreur) return { ok: false, erreur: champs.erreur };
+
+  const anciennes = String(pub.l[5]).split(',').filter(String);
+  const photos = d.couverture === 'garder' ? anciennes : d.couverture ? [enregistrerPhoto(d.couverture)] : [];
+  // Colonnes C à F : Type, Titre, Texte, Photos. L'équipe et la date d'origine restent.
+  pub.onglet.getRange(pub.rangee, 3, 1, 4).setValues([[champs.type, champs.titre, champs.texte, photos.join(',')]]);
+  SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL)
+    .appendRow([new Date(), membre.courriel, pub.flux, 'Modification : ' + champs.titre, id, '']);
+
+  const reglages = PropertiesService.getScriptProperties().getProperties();
+  const pageUrl = (reglages['PAGE_' + pub.flux] || 'https://lnhq.ca/') + '#n-' + id;
+  const v = { titre: champs.titre, texte: champs.texte, type: champs.type, equipe: pub.l[1], photos: photos };
+  return {
+    ok: true, id: id, page: pageUrl,
+    discord: { flux: pub.flux, idDiscord: String(pub.l[8] || ''), message: messageDiscord(v, new Date(pub.l[0]), pageUrl) },
+  };
 }
 
 // Le Worker rapporte le résultat de l'envoi à Discord : id du message dans la
@@ -226,8 +308,16 @@ function messageDiscord(v, date, pageUrl) {
     footer: { text: v.type + ' · ' + v.equipe },
     timestamp: date.toISOString(),
   });
-  // Aucune mention (@everyone, @here, rôles) possible depuis le texte d'une nouvelle.
-  return { embeds: embeds, allowed_mentions: { parse: [] } };
+  // Nom et avatar affichés dans Discord à la place du nom du webhook : l'équipe
+  // (avec son logo) pour une nouvelle, la ligue pour une annonce.
+  const code = CODES_EQUIPES[v.equipe];
+  return {
+    username: code ? v.equipe + ' · LNHQ' : v.equipe === SIGNATURE_ANNONCES ? 'Commissaire · LNHQ' : 'LNHQ',
+    avatar_url: code ? 'https://lnhq.ca/Logos/' + code + '.png' : 'https://lnhq.ca/logo-lnhq.png',
+    embeds: embeds,
+    // Aucune mention (@everyone, @here, rôles) possible depuis le texte d'une nouvelle.
+    allowed_mentions: { parse: [] },
+  };
 }
 
 const APERCU_LIGNES = 4;

@@ -15,10 +15,14 @@
     vide: 'Le titre et le texte sont obligatoires.',
     photo: "L'image n'a pas pu être enregistrée.",
     taille: "L'image est trop lourde.",
+    auteur: "Seul l'auteur de cette publication (ou un dirigeant de la ligue) peut la modifier.",
+    introuvable: 'Publication introuvable : elle a peut-être été retirée du classeur.',
   };
 
-  // Modèles proposés selon le type choisi (Markdown, comme le texte de l'éditeur).
-  const MODELES = {
+  // Types et modèles de chaque fil (Markdown, comme le texte de l'éditeur). Pas de
+  // tableau dans les modèles d'annonces : Discord ne sait pas les afficher.
+  const MODELES = { NOUVELLES: {
+    'Général': '',
     'Transaction': [
       '## Détails de la transaction', '',
       '**Mon équipe reçoit :**', '', '- Joueur ou choix', '',
@@ -37,14 +41,31 @@
       '**Joueur :** ', '', '**Blessure :** ', '', '**Absence prévue :** ', '',
       "## Impact sur l'équipe", '', 'Qui le remplace dans l’alignement ?',
     ].join('\n'),
+  }, ANNONCES: {
     'Général': '',
-  };
+    'Règlement': [
+      '## Ce qui change', '', '- ', '',
+      '**En vigueur :** ', '',
+      '## Pourquoi', '', 'Explication pour les DG.',
+    ].join('\n'),
+    'Calendrier': [
+      '## Dates importantes', '',
+      '- **Date** : événement', '- **Date** : événement', '',
+      '## À faire avant', '', '- ',
+    ].join('\n'),
+    'Événement': [
+      '## Quoi', '', 'Description de l’événement.', '',
+      '## Quand', '', '**Date :** ', '', '**Heure :** ', '',
+      '## Détails', '', '- ',
+    ].join('\n'),
+  } };
   let dernierModele = '';
 
-  let couverture = null; // { blob, url }
+  let couverture = null; // { blob, url } nouvelle image, ou { existante: true, url }
   let envoisEnCours = 0;
   let editeur = null;
   let moi = null;
+  let modification = null; // { id, flux } quand on modifie une publication (?modifier=id)
 
   async function api(chemin, options){
     try{
@@ -56,30 +77,51 @@
     }
   }
 
-  function afficher(texte, erreur, lien){
+  // liens : [[texte, adresse], ...] ajoutés après le message.
+  function afficher(texte, erreur, liens){
     const msg = $('message');
     msg.className = 'pub-message' + (erreur ? ' is-erreur' : ' is-succes');
     msg.textContent = texte;
-    if(lien){
+    (liens || []).forEach(([libelle, href]) => {
       const a = document.createElement('a');
-      a.href = lien;
-      a.textContent = 'Voir la publication';
-      a.target = '_blank';
-      a.rel = 'noopener';
+      a.href = href;
+      a.textContent = libelle;
+      if(!href.startsWith('?')){ a.target = '_blank'; a.rel = 'noopener'; }
       msg.append(' ', a);
-    }
+    });
     msg.hidden = false;
   }
 
   function fluxChoisi(){
+    if(modification) return modification.flux;
     const coche = document.querySelector('input[name="flux"]:checked');
     return coche ? coche.value : 'NOUVELLES';
   }
 
   function majQui(){
-    const auNomDeLaLigue = moi.equipe === 'Ligue' || fluxChoisi() === 'ANNONCES';
-    $('qui').textContent = auNomDeLaLigue ? 'Tu publies au nom de la ligue' : 'Tu publies pour ' + moi.equipe;
-    $('lienFil').href = PAGES[fluxChoisi()];
+    const flux = fluxChoisi();
+    let qui;
+    if(flux === 'ANNONCES') qui = 'Annonce signée : Commissaire de la ligue';
+    else qui = moi.equipe === 'Ligue' ? 'Tu publies au nom de la ligue' : 'Tu publies pour ' + moi.equipe;
+    $('qui').textContent = modification ? 'Modification · ' + qui.charAt(0).toLowerCase() + qui.slice(1) : qui;
+    $('lienFil').href = PAGES[flux];
+  }
+
+  // Les types (et leurs modèles) ne sont pas les mêmes pour les nouvelles et les annonces.
+  function remplirTypes(choisi){
+    const types = Object.keys(MODELES[fluxChoisi()]);
+    $('type').replaceChildren(...types.map(t => new Option(t, t)));
+    $('type').value = types.includes(choisi) ? choisi : 'Général';
+  }
+
+  function changerFlux(){
+    remplirTypes('Général');
+    appliquerModele();
+    majQui();
+  }
+
+  function lienPage(page){
+    return /^https:\/\/lnhq\.ca\//.test(page || '') ? page : null;
   }
 
   /* ---------- Images : réduites dans le navigateur avant l'envoi ---------- */
@@ -108,7 +150,7 @@
   function majBouton(){
     const bouton = $('envoyer');
     bouton.disabled = envoisEnCours > 0;
-    bouton.textContent = envoisEnCours > 0 ? 'Envoi de l’image…' : 'Publier';
+    bouton.textContent = envoisEnCours > 0 ? 'Envoi de l’image…' : modification ? 'Enregistrer les modifications' : 'Publier';
   }
 
   // Image placée dans le texte (bouton image, glisser-déposer ou coller) : enregistrée
@@ -150,7 +192,7 @@
     retirer.setAttribute('aria-label', "Retirer l'image de couverture");
     retirer.textContent = '×';
     retirer.addEventListener('click', () => {
-      URL.revokeObjectURL(couverture.url);
+      if(couverture.blob) URL.revokeObjectURL(couverture.url);
       couverture = null;
       dessinerCouverture();
     });
@@ -197,7 +239,7 @@
   // Remplace le texte seulement s'il est vide ou encore identique au modèle précédent ;
   // sinon, on demande avant d'écraser ce que la personne a écrit.
   function appliquerModele(){
-    const modele = MODELES[$('type').value] || '';
+    const modele = MODELES[fluxChoisi()][$('type').value] || '';
     const actuel = editeur.getMarkdown().trim();
     const intact = !actuel || actuel === dernierModele;
     if(!intact && !modele) return;
@@ -285,33 +327,38 @@
 
     const bouton = $('envoyer');
     bouton.disabled = true;
-    bouton.textContent = 'Publication en cours…';
+    bouton.textContent = modification ? 'Enregistrement…' : 'Publication en cours…';
     $('message').hidden = true;
 
     const flux = fluxChoisi();
-    const r = await api('/api/publier', {
+    const image = !couverture ? null
+      : couverture.existante ? 'garder'
+      : { mime: 'image/jpeg', data: await enBase64(couverture.blob) };
+    const r = await api(modification ? '/api/modifier' : '/api/publier', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        flux,
-        titre,
-        type: $('type').value,
-        texte,
-        couverture: couverture ? { mime: 'image/jpeg', data: await enBase64(couverture.blob) } : null,
-      }),
+      body: JSON.stringify(Object.assign(modification ? { id: modification.id } : { flux },
+        { titre, type: $('type').value, texte, couverture: image })),
     });
 
-    if(r.ok){
+    const page = r.ok ? lienPage(r.page) : null;
+    const liens = page ? [['Voir la publication', page], ['Modifier', '?modifier=' + encodeURIComponent(r.id)]] : [];
+    if(r.ok && modification){
+      afficher(r.discord === false
+        ? "Modifications enregistrées sur le site, mais Discord a refusé la mise à jour."
+        : 'Modifications enregistrées sur le site et sur Discord.', r.discord === false, liens.slice(0, 1));
+      if(couverture) couverture.existante = true; // déjà envoyée : ne pas la renvoyer au prochain enregistrement
+    }else if(r.ok){
       const quoi = flux === 'ANNONCES' ? 'Annonce publiée' : 'Nouvelle publiée';
       afficher(r.discord === false
         ? quoi + " sur le site, mais Discord l'a refusée. Préviens le dirigeant de la ligue."
         : quoi + ' sur le site et sur Discord.',
-        r.discord === false, /^https:\/\/lnhq\.ca\//.test(r.page || '') ? r.page : null);
+        r.discord === false, liens);
       $('titre').value = '';
       editeur.setMarkdown('');
       dernierModele = '';
       $('type').value = 'Général';
-      if(couverture) URL.revokeObjectURL(couverture.url);
+      if(couverture && couverture.blob) URL.revokeObjectURL(couverture.url);
       couverture = null;
       dessinerCouverture();
     }else{
@@ -343,7 +390,8 @@
     }
     $('choixFlux').hidden = !moi.annonces;
     $('reessayer').hidden = !moi.annonces;
-    document.querySelectorAll('input[name="flux"]').forEach(r => r.addEventListener('change', majQui));
+    document.querySelectorAll('input[name="flux"]').forEach(r => r.addEventListener('change', changerFlux));
+    remplirTypes('Général');
     majQui();
 
     // L'extension de couleur de Toast UI 3.1.0 s'enregistre par erreur sous le nom « uml ».
@@ -367,7 +415,31 @@
     });
     $('type').addEventListener('change', appliquerModele);
     $('editeur').addEventListener('paste', () => setTimeout(nettoyerEditeur, 0));
+
+    const idModif = new URLSearchParams(location.search).get('modifier');
+    if(idModif) await chargerModification(idModif);
     $('formulaire').hidden = false;
+  }
+
+  // Lien « Modifier » (?modifier=id) : l'éditeur se remplit avec la publication existante.
+  async function chargerModification(id){
+    $('qui').textContent = 'Chargement de la publication…';
+    const r = await api('/api/article?id=' + encodeURIComponent(id));
+    if(!r.ok){
+      majQui();
+      afficher(ERREURS[r.erreur] || 'Impossible de charger cette publication.', true);
+      return;
+    }
+    modification = { id: r.id, flux: r.flux };
+    $('choixFlux').hidden = true;
+    remplirTypes(r.type);
+    $('titre').value = r.titre;
+    editeur.setMarkdown(r.texte, false);
+    dernierModele = '';
+    couverture = r.couverture ? { existante: true, url: r.couverture } : null;
+    dessinerCouverture();
+    majQui();
+    majBouton();
   }
 
   demarrer();

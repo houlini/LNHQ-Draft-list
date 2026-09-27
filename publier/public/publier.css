@@ -50,7 +50,9 @@
 @media (max-width:560px){
   #editeur .toastui-editor-defaultUI-toolbar{ padding:0 8px; }
   #editeur .toastui-editor-toolbar-icons{ margin:6px 3px; }
-}
+  /* Fenêtres des outils (taille, couleur, tableau, lien…) : placées sous le bouton
+     par Toast UI, elles sortaient de l'écran à droite. On les cale sur la largeur de l'éditeur. */
+  #editeur .toastui-editor-popup{ left:8px !important; right:8px; width:auto !important; max-width:none; margin-left:0 !important; }}
 #editeur .toastui-editor-toolbar-group:has(> .more):not([style*="none"]){ display:contents; }
 #editeur .toastui-editor-toolbar-icons.more{ display:none; }
 #editeur .toastui-editor-toolbar-group:has(> .more):not([style*="none"]) > .toastui-editor-dropdown-toolbar{
@@ -88,6 +90,9 @@
 #editeur .tui-colorpicker-palette-hex,
 #editeur .tui-colorpicker-palette-preview,
 #editeur .tui-colorpicker-palette-toggle-slider{ display:none !important; }
+/* Sans le curseur, le bouton OK (placé en absolu sous le curseur) sortait de la fenêtre. */
+#editeur .toastui-editor-popup-color{ height:auto !important; }
+#editeur .toastui-editor-popup-color button{ position:static; display:block; margin:4px 0 0 auto; }
 
 .pub-photos{ display:block; max-width:360px; }
 .pub-photos:empty{ display:none; }

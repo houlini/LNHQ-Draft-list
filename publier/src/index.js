@@ -19,15 +19,18 @@ export default {
     if (url.pathname === '/api/moi' && request.method === 'GET') {
       return appelerScript(env, 'moi', courriel);
     }
+    if (url.pathname === '/api/article' && request.method === 'GET') {
+      return appelerScript(env, 'lire', courriel, JSON.stringify({ id: url.searchParams.get('id') || '' }));
+    }
     if (url.pathname === '/api/reessayer' && request.method === 'POST') {
       return reessayerDiscord(env, courriel);
     }
-    const action = { '/api/publier': 'publier', '/api/photo': 'photo' }[url.pathname];
+    const action = { '/api/publier': 'publier', '/api/modifier': 'modifier', '/api/photo': 'photo' }[url.pathname];
     if (action && request.method === 'POST') {
       const taille = Number(request.headers.get('Content-Length') || 0);
       if (!taille || taille > MAX_OCTETS_ENVOI) return json({ ok: false, erreur: 'taille' }, 413);
-      if (action === 'publier') return publier(env, courriel, request.body);
-      return appelerScript(env, action, courriel, request.body);
+      if (action === 'photo') return appelerScript(env, action, courriel, request.body);
+      return publier(env, action, courriel, request.body);
     }
     return json({ ok: false, erreur: 'introuvable' }, 404);
   },
@@ -35,11 +38,12 @@ export default {
 
 // Le script enregistre la publication et prépare le message ; le Worker l'envoie
 // à Discord (qui bloque souvent les adresses partagées de Google Apps Script).
-async function publier(env, courriel, corps) {
-  const r = await scriptJson(env, 'publier', courriel, corps);
+// Une modification met à jour le message Discord existant (idDiscord) au lieu d'en publier un nouveau.
+async function publier(env, action, courriel, corps) {
+  const r = await scriptJson(env, action, courriel, corps);
   if (!r.ok || typeof r.discord !== 'object') return json(r, r.ok ? 200 : 400);
-  const { flux, message } = r.discord;
-  const envoi = await envoyerDiscord(env, flux, message);
+  const { flux, message, idDiscord } = r.discord;
+  const envoi = await envoyerDiscord(env, flux, message, idDiscord);
   await scriptJson(env, 'discord', courriel, JSON.stringify({ flux, id: r.id, ...envoi }));
   return json({ ...r, discord: !envoi.erreur }, 200);
 }
@@ -57,15 +61,20 @@ async function reessayerDiscord(env, courriel) {
   return json({ ok: true, resultats }, 200);
 }
 
-async function envoyerDiscord(env, flux, message) {
+async function envoyerDiscord(env, flux, message, idDiscord) {
   const webhook = env['WEBHOOK_' + flux];
   if (!webhook) return { erreur: 'Webhook ' + flux + ' manquant dans le Worker' };
+  // Un message déjà publié se modifie sur place ; son nom et son avatar ne changent pas.
+  const modif = /^\d+$/.test(idDiscord || '');
+  const { username, avatar_url, ...contenu } = message;
   try {
-    const rep = await fetch(webhook + '?wait=true', {
-      method: 'POST',
+    const rep = await fetch(modif ? `${webhook}/messages/${idDiscord}` : webhook + '?wait=true', {
+      method: modif ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(message),
+      body: JSON.stringify(modif ? contenu : message),
     });
+    // Message supprimé dans Discord entre-temps : on en publie un nouveau.
+    if (modif && rep.status === 404) return envoyerDiscord(env, flux, message, '');
     const texte = await rep.text();
     if (!rep.ok) return { erreur: 'Discord a refusé (' + rep.status + ') : ' + texte.slice(0, 300) };
     return { idDiscord: JSON.parse(texte).id };
