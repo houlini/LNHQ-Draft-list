@@ -3,7 +3,7 @@
    des tableaux). Les styles propres à une seule page restent dans son
    propre <style> (résumé d'équipe, calendrier, modale de sélection...).
    ========================================================================= */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@400;500&family=Roboto:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@400;500;700&family=Roboto:wght@500;700&display=swap');
 
 :root{
   --bg:#FAFAF7;

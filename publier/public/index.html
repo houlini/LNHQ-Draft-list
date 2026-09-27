@@ -41,6 +41,13 @@
     </div>
 
     <form id="formulaire" class="pub-carte" novalidate hidden>
+      <div id="zoneModif" class="pub-modif" hidden>
+        <label class="pub-champ">
+          <span>Modifier une publication <small>dirigeants seulement</small></span>
+          <select id="choixModif"><option value="">Nouvelle publication</option></select>
+        </label>
+      </div>
+
       <fieldset id="choixFlux" class="pub-flux" hidden>
         <legend>Publier dans</legend>
         <label><input type="radio" name="flux" value="NOUVELLES" checked> Nouvelles</label>

@@ -15,7 +15,7 @@
     vide: 'Le titre et le texte sont obligatoires.',
     photo: "L'image n'a pas pu être enregistrée.",
     taille: "L'image est trop lourde.",
-    auteur: "Seul l'auteur de cette publication (ou un dirigeant de la ligue) peut la modifier.",
+    dirigeant: 'Seuls les dirigeants de la ligue peuvent modifier une publication.',
     introuvable: 'Publication introuvable : elle a peut-être été retirée du classeur.',
   };
 
@@ -342,7 +342,8 @@
     });
 
     const page = r.ok ? lienPage(r.page) : null;
-    const liens = page ? [['Voir la publication', page], ['Modifier', '?modifier=' + encodeURIComponent(r.id)]] : [];
+    const liens = page ? [['Voir la publication', page]] : [];
+    if(page && moi.annonces) liens.push(['Modifier', '?modifier=' + encodeURIComponent(r.id)]);
     if(r.ok && modification){
       afficher(r.discord === false
         ? "Modifications enregistrées sur le site, mais Discord a refusé la mise à jour."
@@ -426,7 +427,29 @@
 
     const idModif = new URLSearchParams(location.search).get('modifier');
     if(idModif) await chargerModification(idModif);
+    if(moi.annonces) listerRecentes(idModif);
     $('formulaire').hidden = false;
+  }
+
+  // Dirigeants : liste des publications récentes ; en choisir une ouvre sa modification.
+  async function listerRecentes(idActuel){
+    const r = await api('/api/recentes');
+    if(!r.ok) return;
+    const date = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short' });
+    const choix = $('choixModif');
+    r.publications.forEach(p => {
+      const quand = p.date ? ' · ' + date.format(new Date(p.date)) : '';
+      choix.append(new Option(`${p.titre} — ${p.flux === 'ANNONCES' ? 'Annonce' : p.equipe}${quand}`, p.id));
+    });
+    choix.value = r.publications.some(p => p.id === idActuel) ? idActuel : '';
+    choix.addEventListener('change', () => {
+      if(!modification && editeur.getMarkdown().trim() && !confirm('Ouvrir cette publication ? Ton texte en cours sera perdu.')){
+        choix.value = '';
+        return;
+      }
+      location.href = choix.value ? '?modifier=' + encodeURIComponent(choix.value) : location.pathname;
+    });
+    $('zoneModif').hidden = false;
   }
 
   // Lien « Modifier » (?modifier=id) : l'éditeur se remplit avec la publication existante.

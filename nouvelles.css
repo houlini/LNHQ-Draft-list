@@ -69,6 +69,8 @@ a.news-team:hover{ color:var(--accent); }
   font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
   line-height:1.2; margin:1em 0 0.4em;
 }
+/* Gras dans un titre (bouton « B » de l'éditeur) : plus épais que le titre normal. */
+.news-text :is(h1, h2, h3, h4, h5, h6) strong{ font-weight:700; }
 .news-text h1, .news-text h2{ font-size:1.5em; }
 .news-text h3{ font-size:1.22em; }
 .news-text h4, .news-text h5, .news-text h6{ font-size:1.05em; }
@@ -114,11 +116,6 @@ a.news-team:hover{ color:var(--accent); }
 }
 .news-more:hover{ border-color:var(--accent); }
 .news-more[hidden]{ display:none; }
-.news-edit{
-  display:block; width:max-content; margin:12px 0 0 auto;
-  font-size:13px; color:var(--ink-muted); text-decoration:none;
-}
-.news-edit:hover{ color:var(--accent); text-decoration:underline; }
 
 /* ---------- Galerie (photos 2 et suivantes) ---------- */
 .news-gallery{ display:grid; grid-template-columns:repeat(auto-fill, minmax(88px, 1fr)); gap:8px; margin-top:14px; }

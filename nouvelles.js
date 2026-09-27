@@ -171,14 +171,6 @@
       n.photos.slice(1).forEach(id => gallery.append(photoLink(id, null, 400)));
       body.append(gallery);
     }
-    // Lien vers l'éditeur ; seul l'auteur (ou un dirigeant) pourra réellement modifier.
-    if(n.id && feed.dataset.formUrl){
-      const modifier = el('a', 'news-edit', 'Modifier');
-      modifier.href = feed.dataset.formUrl + '?modifier=' + encodeURIComponent(n.id);
-      modifier.target = '_blank';
-      modifier.rel = 'noopener';
-      body.append(modifier);
-    }
     card.append(body);
     return card;
   }

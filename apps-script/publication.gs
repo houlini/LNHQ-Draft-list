@@ -89,6 +89,7 @@ function traiter(p, corps) {
   if (p.action === 'moi') return { ok: true, equipe: membre.equipe, annonces: membre.annonces };
   if (p.action === 'publier') return publier(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lire') return lire(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'recentes') return recentes(membre);
   if (p.action === 'modifier') return modifier(JSON.parse(corps || '{}'), membre);
   if (p.action === 'photo') return photoSeule(JSON.parse(corps || '{}'));
   if (p.action === 'discord') return noterDiscord(JSON.parse(corps || '{}'), membre);
@@ -174,18 +175,31 @@ function trouverPublication(id) {
   return null;
 }
 
-// Seul l'auteur (d'après le JOURNAL privé) ou un dirigeant peut modifier une publication.
-function peutModifier(id, membre) {
-  if (membre.annonces) return true;
-  const entrees = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).getDataRange().getValues();
-  return entrees.some(l => String(l[4]) === id && l[1] === membre.courriel);
+// Seuls les dirigeants (case « Annonces » de l'onglet ACCES) modifient les publications.
+function peutModifier(membre) {
+  return membre.annonces === true;
+}
+
+// Dirigeants : les publications les plus récentes des deux fils, pour choisir laquelle modifier.
+function recentes(membre) {
+  if (!peutModifier(membre)) return { ok: false, erreur: 'dirigeant' };
+  const liste = [];
+  ['NOUVELLES', 'ANNONCES'].forEach(flux => {
+    const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
+    if (!onglet || onglet.getLastRow() < 2) return;
+    onglet.getRange(2, 1, onglet.getLastRow() - 1, ENTETES.length).getValues().forEach(l => {
+      if (l[9] && l[3]) liste.push({ id: String(l[9]), flux: flux, titre: String(l[3]), equipe: String(l[1]), date: new Date(l[0]).getTime() || 0 });
+    });
+  });
+  liste.sort((a, b) => b.date - a.date);
+  return { ok: true, publications: liste.slice(0, 20) };
 }
 
 function lire(d, membre) {
   const id = String(d.id || '');
+  if (!peutModifier(membre)) return { ok: false, erreur: 'dirigeant' };
   const pub = trouverPublication(id);
   if (!pub) return { ok: false, erreur: 'introuvable' };
-  if (!peutModifier(id, membre)) return { ok: false, erreur: 'auteur' };
   const photo = String(pub.l[5]).split(',').filter(String)[0] || '';
   return {
     ok: true, id: id, flux: pub.flux, type: pub.l[2], titre: pub.l[3], texte: pub.l[4],
@@ -196,9 +210,9 @@ function lire(d, membre) {
 // d.couverture : 'garder' (inchangée), null (retirée) ou une nouvelle image.
 function modifier(d, membre) {
   const id = String(d.id || '');
+  if (!peutModifier(membre)) return { ok: false, erreur: 'dirigeant' };
   const pub = trouverPublication(id);
   if (!pub) return { ok: false, erreur: 'introuvable' };
-  if (!peutModifier(id, membre)) return { ok: false, erreur: 'auteur' };
   const champs = lireChamps(d, pub.flux);
   if (champs.erreur) return { ok: false, erreur: champs.erreur };
 

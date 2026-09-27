@@ -27,6 +27,9 @@ export default {
     if (url.pathname === '/api/article' && request.method === 'GET') {
       return appelerScript(env, 'lire', courriel, JSON.stringify({ id: url.searchParams.get('id') || '' }));
     }
+    if (url.pathname === '/api/recentes' && request.method === 'GET') {
+      return appelerScript(env, 'recentes', courriel);
+    }
     if (url.pathname === '/api/reessayer' && request.method === 'POST') {
       return reessayerDiscord(env, courriel);
     }

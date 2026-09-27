@@ -8,6 +8,9 @@
 }
 .status-box.pub-carte{ flex-direction:row; }
 
+.pub-modif{ padding-bottom:16px; border-bottom:1px solid var(--line); }
+.pub-modif select{ width:100%; }
+
 .pub-flux{ border:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:8px 22px; }
 .pub-flux legend{ font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted); margin-bottom:6px; }
 .pub-flux label{ display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
@@ -59,6 +62,15 @@
   display:flex !important; position:static; flex-basis:100%; flex-wrap:wrap; height:auto;
   padding:0; border:0; border-top:1px solid #ebedf2; border-radius:0; box-shadow:none; background:transparent;
 }
+
+/* Titres comme sur le site (Oswald, graisse moyenne) : le gras ajouté dans un
+   titre se voit, alors qu'il était invisible dans un titre déjà en gras. */
+#editeur .toastui-editor-contents :is(h1, h2, h3){
+  font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; border-bottom:none; color:#222;
+}
+#editeur .toastui-editor-contents :is(h1, h2){ font-size:24px; }
+#editeur .toastui-editor-contents h3{ font-size:19px; }
+#editeur .toastui-editor-contents :is(h1, h2, h3) strong{ font-weight:700; }
 
 /* Images dans le texte : cliquer une image ouvre la barre de placement. */
 #editeur .toastui-editor-contents img{ cursor:pointer; max-width:100%; }
