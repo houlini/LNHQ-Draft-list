@@ -6,7 +6,7 @@
    exactement comme avant.
 
    Attributs :
-   - current-page : "joueurs" | "ordre" | "calendrier" | "masse" | "dgs" (marque
+   - current-page : "joueurs" | "ordre" | "calendrier" | "masse" | "dgs" | "reglements" (marque
      l'élément courant dans les menus Ligue/Repêchage). Absent pour les
      pages d'équipe.
    - current-team : slug de l'équipe active (ex: "boston"), pour marquer
@@ -93,7 +93,7 @@
               <div class="nav-dropdown" hidden>
                 ${menuItem('Calendrier', 'calendrier.html', currentPage === 'calendrier')}
                 ${menuItem('DGs', 'dgs.html', currentPage === 'dgs')}
-                <a href="https://sites.lnhq.ca/ligue/règlements">Règlements</a>
+                ${menuItem('Règlements', 'reglements.html', currentPage === 'reglements')}
                 ${menuItem('Masse salariale', 'masse.html', currentPage === 'masse')}
               </div>
             </div>

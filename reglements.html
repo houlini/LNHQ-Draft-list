@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Règlements de la LNHQ</title>
+<link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css">
+<script src="site-nav.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/18.0.14/lib/marked.umd.min.js" integrity="sha512-trN9mtGYvoySPVI909KTnwbJI9AkKPydRCV/qAsUG1+q39hhpKltEag9b5JpdjeIZn5i8IH62hHRFdbKwMFh9w==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha512-flQmhkXNRQ3iUfvtdCobtpMjCb6kE+zLnTiAulAQJ3WykVfy84JvCMOo6vhwWXHTXjR25h9Zj+LyGFRWKjRoag==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+<style>
+  .reg-page{
+    display:grid; grid-template-columns:1fr; gap:20px; align-items:start;
+    padding:16px clamp(16px,3vw,40px) 40px;
+  }
+  /* ---------- Table des matières : repliable sur téléphone, colonne fixe sur ordinateur ---------- */
+  .reg-toc{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); }
+  .reg-toc summary{
+    cursor:pointer; padding:12px 16px; font-weight:700; font-size:13px;
+    text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted);
+  }
+  .reg-toc ol{ list-style:none; margin:0; padding:0 8px 10px; }
+  .reg-toc a{
+    display:block; padding:7px 10px; border-radius:6px; font-size:14px;
+    color:var(--ink); text-decoration:none; line-height:1.3;
+  }
+  .reg-toc a:hover{ background:var(--accent-soft); color:var(--accent); }
+  @media (min-width:1000px){
+    .reg-page{ grid-template-columns:280px 1fr; }
+    .reg-toc{ position:sticky; top:12px; max-height:calc(100vh - 24px); overflow-y:auto; }
+    .reg-toc summary{ pointer-events:none; list-style:none; }
+    .reg-toc summary::-webkit-details-marker{ display:none; }
+  }
+
+  /* ---------- Sections et articles ---------- */
+  .reg-section{ margin-bottom:26px; scroll-margin-top:12px; }
+  .reg-section-titre{
+    background:var(--accent); color:var(--accent-ink);
+    font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; text-transform:uppercase;
+    font-size:clamp(17px, 0.6vw + 14px, 21px); letter-spacing:0.01em;
+    margin:0; padding:10px 16px; border-radius:var(--radius) var(--radius) 0 0;
+  }
+  .reg-articles{
+    background:var(--surface); border:1px solid var(--line); border-top:none;
+    border-radius:0 0 var(--radius) var(--radius);
+  }
+  .reg-article{ padding:14px clamp(14px, 2.5vw, 22px); border-top:1px solid var(--line); scroll-margin-top:12px; }
+  .reg-article:first-child{ border-top:none; }
+  .reg-article:target{ background:var(--accent-soft); }
+  .reg-article-titre{
+    margin:0 0 6px; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
+    font-size:17px; letter-spacing:0.01em; color:var(--accent);
+  }
+  .reg-article-titre a{ color:inherit; text-decoration:none; }
+  .reg-article-titre a:hover{ text-decoration:underline; }
+  .reg-texte{ font-size:15.5px; line-height:1.6; overflow-wrap:anywhere; }
+  .reg-texte > :first-child{ margin-top:0; }
+  .reg-texte > :last-child{ margin-bottom:0; }
+  .reg-texte p, .reg-texte ul, .reg-texte ol{ margin:0 0 0.7em; }
+  .reg-texte ul, .reg-texte ol{ padding-left:1.3em; }
+  .reg-texte a{ color:var(--accent); }
+  .reg-texte table{ display:block; max-width:100%; overflow-x:auto; border-collapse:collapse; font-size:14px; }
+  .reg-texte th, .reg-texte td{ border:1px solid var(--line); padding:4px 10px; position:static; background:transparent; }
+  mark{ background:var(--accent-soft); color:inherit; border-radius:3px; box-shadow:0 0 0 1px var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <site-header class="app-header" current-page="reglements"></site-header>
+
+  <div class="filter-band">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="searchInput" placeholder="Rechercher dans les règlements…" aria-label="Rechercher dans les règlements">
+    </div>
+  </div>
+
+  <main id="content">
+    <div id="loader" style="padding:16px clamp(16px,3vw,40px)">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+    </div>
+
+    <div id="errorBox" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <div>Impossible de charger les règlements.</div>
+        <button class="retry" id="retryBtn">Réessayer</button>
+      </div>
+    </div>
+
+    <div class="reg-page" id="regPage" hidden>
+      <details class="reg-toc" id="toc">
+        <summary>Table des matières</summary>
+        <ol id="tocList"></ol>
+      </details>
+      <div id="sections"></div>
+    </div>
+
+    <p class="empty-state" id="emptyState" hidden></p>
+  </main>
+</div>
+
+<script>
+/* =========================================================================
+   LNHQ — règlements, lus dans l'onglet « REGLEMENTS » du classeur :
+   A Section (ex. « 8.0 — TRANSACTIONS ») · B Titre (ex. « 8.5 DATE LIMITE »,
+   vide pour une annexe) · C Texte (Markdown : - liste, **gras**) · D Visible.
+   L'ordre des lignes du classeur est l'ordre d'affichage. Pour ajouter un
+   article : insérer une ligne avec la même Section.
+   ========================================================================= */
+const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
+const ONGLET = 'REGLEMENTS';
+const CACHE_KEY = 'reglementsCache_' + SHEET_ID;
+
+const els = {
+  title: document.getElementById('sheetTitle'),
+  search: document.getElementById('searchInput'),
+  rowCount: document.getElementById('rowCount'),
+  lastUpdated: document.getElementById('lastUpdated'),
+  loader: document.getElementById('loader'),
+  errorBox: document.getElementById('errorBox'),
+  retryBtn: document.getElementById('retryBtn'),
+  page: document.getElementById('regPage'),
+  toc: document.getElementById('toc'),
+  tocList: document.getElementById('tocList'),
+  sections: document.getElementById('sections'),
+  empty: document.getElementById('emptyState'),
+};
+els.title.textContent = 'LNHQ';
+
+const state = { articles: [], query: '' };
+let marque = false;
+
+function buildUrl(){
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1`
+    + `&sheet=${encodeURIComponent(ONGLET)}&t=${Date.now()}`;
+}
+
+// L'API renvoie en silence le 1er onglet (DRAFT) si l'onglet n'existe pas : on vérifie les en-têtes.
+function parseTable(table){
+  const labels = table.cols.map(c => (c.label || '').trim().toLowerCase());
+  if(labels[0] !== 'section' || labels[2] !== 'texte') throw new Error('onglet_introuvable');
+  return table.rows.map(r => {
+    const c = r.c || [];
+    const str = i => (c[i] && c[i].v != null ? String(c[i].v).trim() : '');
+    const visible = !c[3] || c[3].v == null || c[3].v === true || /^(true|oui|vrai|1)?$/i.test(String(c[3].v));
+    return { section: str(0), titre: str(1), texte: str(2), visible };
+  }).filter(a => a.visible && a.section && (a.titre || a.texte));
+}
+
+// « 8.5 DATE LIMITE » → ancre #art-8-5 ; « 8.0 — TRANSACTIONS » → #sec-8 ; « ANNEXE A — … » → #annexe-a
+function ancre(prefixe, texte){
+  const m = /^(\d+(?:\.\d+)*)/.exec(texte) || /^ANNEXE ([A-Z])/i.exec(texte);
+  const base = m ? m[1] : texte;
+  return prefixe + '-' + base.toLowerCase().replace(/\.0$/, '').replace(/[^a-z0-9]+/g, '-');
+}
+
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text != null) e.textContent = text;
+  return e;
+}
+
+function renderTexte(texte){
+  const box = el('div', 'reg-texte');
+  if(window.marked && window.DOMPurify){
+    box.innerHTML = DOMPurify.sanitize(marked.parse(texte), { FORBID_ATTR: ['style'] });
+    box.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
+  }else{
+    box.style.whiteSpace = 'pre-line';
+    box.textContent = texte;
+  }
+  return box;
+}
+
+// Surligne la recherche dans le texte affiché (nœuds texte seulement, jamais le HTML).
+function surligner(racine, q){
+  if(!q) return;
+  const marcheur = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT);
+  const noeuds = [];
+  while(marcheur.nextNode()) noeuds.push(marcheur.currentNode);
+  noeuds.forEach(n => {
+    const bas = n.data.toLocaleLowerCase('fr-CA');
+    let i = bas.indexOf(q);
+    if(i < 0) return;
+    const frag = document.createDocumentFragment();
+    let j = 0;
+    while(i >= 0){
+      frag.append(n.data.slice(j, i), el('mark', null, n.data.slice(i, i + q.length)));
+      j = i + q.length;
+      i = bas.indexOf(q, j);
+    }
+    frag.append(n.data.slice(j));
+    n.replaceWith(frag);
+  });
+}
+
+function render(){
+  const q = state.query.trim().toLocaleLowerCase('fr-CA');
+  const liste = state.articles.filter(a => !q || (a.section + ' ' + a.titre + ' ' + a.texte).toLocaleLowerCase('fr-CA').includes(q));
+
+  const parSection = new Map();
+  liste.forEach(a => {
+    if(!parSection.has(a.section)) parSection.set(a.section, []);
+    parSection.get(a.section).push(a);
+  });
+
+  els.tocList.replaceChildren();
+  els.sections.replaceChildren();
+  parSection.forEach((articles, section) => {
+    const id = ancre('sec', section);
+    const lien = el('a', null, section);
+    lien.href = '#' + id;
+    lien.addEventListener('click', () => { if(!matchMedia('(min-width:1000px)').matches) els.toc.open = false; });
+    const li = el('li');
+    li.append(lien);
+    els.tocList.append(li);
+
+    const bloc = el('section', 'reg-section');
+    bloc.id = id;
+    const conteneur = el('div', 'reg-articles');
+    articles.forEach(a => {
+      const art = el('article', 'reg-article');
+      if(a.titre){
+        art.id = ancre('art', a.titre);
+        const h = el('h3', 'reg-article-titre');
+        const lienArt = el('a', null, a.titre);
+        lienArt.href = '#' + art.id;
+        h.append(lienArt);
+        art.append(h);
+      }
+      if(a.texte) art.append(renderTexte(a.texte));
+      surligner(art, q);
+      conteneur.append(art);
+    });
+    bloc.append(el('h2', 'reg-section-titre', section), conteneur);
+    els.sections.append(bloc);
+  });
+
+  const n = liste.length;
+  els.page.hidden = !n;
+  els.empty.hidden = !!n;
+  els.empty.textContent = q ? `Aucun résultat pour « ${state.query} ».` : 'Aucun règlement pour l’instant.';
+  els.rowCount.textContent = q ? `${n} article${n > 1 ? 's' : ''} trouvé${n > 1 ? 's' : ''}` : `${parSection.size} sections · ${n} articles`;
+  if(matchMedia('(min-width:1000px)').matches) els.toc.open = true;
+}
+
+// Le contenu arrive après le chargement : on suit nous-mêmes un lien vers #art-8-5.
+function allerAncre(){
+  if(marque || !location.hash) return;
+  const cible = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if(cible){ cible.scrollIntoView({ block: 'start' }); marque = true; }
+}
+
+function show(etat){
+  els.loader.hidden = etat !== 'loading';
+  els.errorBox.hidden = etat !== 'error';
+  if(etat !== 'data'){ els.page.hidden = true; els.empty.hidden = true; }
+}
+
+async function load({ background = false } = {}){
+  if(!background) show('loading');
+  try{
+    const res = await fetch(buildUrl());
+    if(!res.ok) throw new Error('http_' + res.status);
+    const match = (await res.text()).match(/setResponse\(([\s\S]*)\);\s*$/);
+    if(!match) throw new Error('format_inattendu');
+    const json = JSON.parse(match[1]);
+    if(json.status === 'error') throw new Error('erreur_gviz');
+    state.articles = parseTable(json.table);
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify(state.articles)); }catch(e){}
+    show('data');
+    render();
+    els.lastUpdated.textContent = 'Mis à jour à '
+      + new Intl.DateTimeFormat('fr-CA', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+    allerAncre();
+  }catch(err){
+    console.error(err);
+    if(!background) show('error');
+  }
+}
+
+let searchTimer;
+els.search.addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { state.query = e.target.value; render(); }, 200);
+});
+els.retryBtn.addEventListener('click', () => load());
+
+// marked et DOMPurify sont chargés en « defer » : on attend la fin du chargement de la page.
+window.addEventListener('DOMContentLoaded', () => {
+  if(window.marked) marked.use({ breaks: true, gfm: true });
+  let cached = null;
+  try{ cached = JSON.parse(localStorage.getItem(CACHE_KEY)); }catch(e){}
+  if(Array.isArray(cached) && cached.length){
+    state.articles = cached;
+    show('data');
+    render();
+    els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
+    allerAncre();
+    load({ background: true });
+  }else{
+    load();
+  }
+});
+</script>
+</body>
+</html>
