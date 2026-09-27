@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DGs de la ligue</title>
+<link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css">
+<script src="site-nav.js"></script>
+<style>
+  /* ---------- Fiches des DG ---------- */
+  #dgGrid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    gap:14px; padding:16px clamp(16px,3vw,40px) 30px;
+  }
+  .dg-card{
+    display:flex; gap:14px; align-items:flex-start;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px;
+  }
+  .dg-logo{ width:52px; height:52px; object-fit:contain; flex-shrink:0; }
+  .dg-body{ min-width:0; flex:1; }
+  .dg-team{
+    display:block; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
+    text-transform:uppercase; letter-spacing:0.01em; font-size:17px; line-height:1.2;
+    color:var(--accent); text-decoration:none;
+  }
+  a.dg-team:hover{ text-decoration:underline; }
+  .dg-name{ font-weight:700; font-size:15.5px; margin:3px 0 8px; overflow-wrap:anywhere; }
+  .dg-infos{ display:grid; grid-template-columns:auto 1fr; gap:4px 10px; margin:0; font-size:14px; }
+  .dg-infos dt{ color:var(--ink-muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em; align-self:center; }
+  .dg-infos dd{ margin:0; min-width:0; overflow-wrap:anywhere; font-family:'IBM Plex Mono', monospace; font-size:13.5px; }
+  .dg-infos .vide{ color:var(--ink-muted); font-family:inherit; }
+  /* Cliquer un identifiant le copie (pour l'ajouter sur la console ou Discord). */
+  .dg-copier{
+    all:unset; cursor:pointer; border-radius:4px; padding:1px 4px; margin:-1px -4px;
+  }
+  .dg-copier:hover{ background:var(--accent-soft); }
+  .dg-copier:focus-visible{ outline:2px solid var(--accent); }
+  .dg-copier.is-copie::after{ content:' ✓ copié'; color:var(--accent); font-family:'IBM Plex Sans', sans-serif; font-size:12px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <site-header class="app-header" current-page="dgs"></site-header>
+
+  <div class="filter-band">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="searchInput" placeholder="Rechercher une équipe, un DG, un gamertag…" aria-label="Rechercher une équipe, un DG ou un gamertag">
+    </div>
+    <button class="nav-btn" id="refreshBtn" aria-label="Actualiser les données" title="Actualiser">
+      <span class="nav-btn-label">Actualiser</span>
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+      </svg>
+    </button>
+  </div>
+
+  <main id="content">
+    <div id="loader">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+    </div>
+
+    <div id="errorBox" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <div>Impossible de charger la liste des DG.</div>
+        <button class="retry" id="retryBtn">Réessayer</button>
+      </div>
+    </div>
+
+    <div id="dgGrid" hidden></div>
+
+    <p class="empty-state" id="emptyState" hidden></p>
+  </main>
+</div>
+
+<script>
+/* =========================================================================
+   LNHQ — DGs de la ligue, lus dans l'onglet « DGs » du classeur :
+   B Équipe · C Code · E DG · G Gamertag · H Discord (ligne 1 = en-têtes).
+   ========================================================================= */
+const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
+const ONGLET = 'DGs';
+const CACHE_KEY = 'dgsCache_' + SHEET_ID;
+
+const els = {
+  title: document.getElementById('sheetTitle'),
+  search: document.getElementById('searchInput'),
+  refresh: document.getElementById('refreshBtn'),
+  rowCount: document.getElementById('rowCount'),
+  lastUpdated: document.getElementById('lastUpdated'),
+  loader: document.getElementById('loader'),
+  errorBox: document.getElementById('errorBox'),
+  retryBtn: document.getElementById('retryBtn'),
+  grid: document.getElementById('dgGrid'),
+  empty: document.getElementById('emptyState'),
+};
+els.title.textContent = 'LNHQ';
+
+const slugs = new Map((window.LNHQ_TEAMS || []).map(t => [t.code, t.slug]));
+const state = { dgs: [], query: '' };
+
+function buildUrl(){
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1`
+    + `&sheet=${encodeURIComponent(ONGLET)}&t=${Date.now()}`;
+}
+
+// L'API renvoie en silence le 1er onglet (DRAFT) si « DGs » n'existe pas :
+// on vérifie l'en-tête de la colonne B.
+function parseTable(table){
+  if(((table.cols[1] || {}).label || '').trim().toUpperCase() !== 'ÉQUIPE') throw new Error('onglet_introuvable');
+  return table.rows.map(r => {
+    const c = r.c || [];
+    const str = i => (c[i] && c[i].v != null ? String(c[i].v).trim() : '');
+    return { equipe: str(1), code: str(2).toUpperCase(), dg: str(4), gamertag: str(6), discord: str(7) };
+  }).filter(d => d.equipe);
+}
+
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text != null) e.textContent = text;
+  return e;
+}
+
+function identifiant(valeur){
+  if(!valeur) return el('span', 'vide', '—');
+  const b = el('button', 'dg-copier', valeur);
+  b.type = 'button';
+  b.title = 'Copier';
+  b.addEventListener('click', async () => {
+    try{
+      await navigator.clipboard.writeText(valeur);
+      b.classList.add('is-copie');
+      setTimeout(() => b.classList.remove('is-copie'), 1500);
+    }catch(e){}
+  });
+  return b;
+}
+
+function renderCard(d){
+  const card = el('article', 'dg-card');
+  const logo = el('img', 'dg-logo');
+  logo.src = 'Logos/' + d.code + '.png';
+  logo.alt = '';
+  logo.loading = 'lazy';
+  logo.onerror = () => { logo.style.visibility = 'hidden'; };
+
+  const body = el('div', 'dg-body');
+  const slug = slugs.get(d.code);
+  const equipe = el(slug ? 'a' : 'span', 'dg-team', d.equipe);
+  if(slug) equipe.href = 'equipe.html?team=' + slug;
+
+  const infos = el('dl', 'dg-infos');
+  infos.append(el('dt', null, 'Gamertag'), el('dd'), el('dt', null, 'Discord'), el('dd'));
+  infos.children[1].append(identifiant(d.gamertag));
+  infos.children[3].append(identifiant(d.discord));
+
+  body.append(equipe, el('div', 'dg-name', d.dg || 'Poste vacant'), infos);
+  card.append(logo, body);
+  return card;
+}
+
+function render(){
+  const q = state.query.trim().toLocaleLowerCase('fr-CA');
+  const liste = state.dgs.filter(d => !q
+    || [d.equipe, d.code, d.dg, d.gamertag, d.discord].join(' ').toLocaleLowerCase('fr-CA').includes(q));
+  els.grid.replaceChildren(...liste.map(renderCard));
+  els.grid.hidden = !liste.length;
+  els.empty.hidden = !!liste.length;
+  els.empty.textContent = q ? `Aucun résultat pour « ${state.query} ».` : 'Aucun DG dans la liste.';
+  els.rowCount.textContent = q ? `${liste.length} résultat${liste.length > 1 ? 's' : ''}` : `${state.dgs.length} équipes`;
+}
+
+function show(state){
+  els.loader.hidden = state !== 'loading';
+  els.errorBox.hidden = state !== 'error';
+  if(state !== 'data'){ els.grid.hidden = true; els.empty.hidden = true; }
+}
+
+async function load({ background = false } = {}){
+  if(!background) show('loading');
+  try{
+    const res = await fetch(buildUrl());
+    if(!res.ok) throw new Error('http_' + res.status);
+    const match = (await res.text()).match(/setResponse\(([\s\S]*)\);\s*$/);
+    if(!match) throw new Error('format_inattendu');
+    const json = JSON.parse(match[1]);
+    if(json.status === 'error') throw new Error('erreur_gviz');
+    state.dgs = parseTable(json.table);
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify(state.dgs)); }catch(e){}
+    show('data');
+    render();
+    els.lastUpdated.textContent = 'Mis à jour à '
+      + new Intl.DateTimeFormat('fr-CA', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+  }catch(err){
+    console.error(err);
+    if(!background) show('error');
+  }
+}
+
+let searchTimer;
+els.search.addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { state.query = e.target.value; render(); }, 150);
+});
+els.refresh.addEventListener('click', () => {
+  els.refresh.classList.add('is-loading');
+  load({ background: true }).finally(() => els.refresh.classList.remove('is-loading'));
+});
+els.retryBtn.addEventListener('click', () => load());
+
+let cached = null;
+try{ cached = JSON.parse(localStorage.getItem(CACHE_KEY)); }catch(e){}
+if(Array.isArray(cached) && cached.length){
+  state.dgs = cached;
+  show('data');
+  render();
+  els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
+  load({ background: true });
+}else{
+  load();
+}
+</script>
+</body>
+</html>
