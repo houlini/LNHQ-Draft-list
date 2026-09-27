@@ -67,7 +67,7 @@ a.news-team:hover{ color:var(--accent); }
 /* Casse normale : en majuscules, un titre dans le texte se confondrait avec le titre de la nouvelle. */
 .news-text h1, .news-text h2, .news-text h3, .news-text h4, .news-text h5, .news-text h6{
   font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
-  line-height:1.2; margin:1em 0 0.4em;
+  line-height:1.2; margin:1em 0 0.4em; color:var(--accent);
 }
 /* Gras dans un titre (bouton « B » de l'éditeur) : plus épais que le titre normal. */
 .news-text :is(h1, h2, h3, h4, h5, h6) strong{ font-weight:700; }
