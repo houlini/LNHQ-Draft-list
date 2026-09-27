@@ -71,8 +71,9 @@ async function etat(env) {
       if (!s) return;
       const tags = (s.tags || []).map(t => t.toLowerCase());
       c.live = true;
-      // Tag Twitch « LNHQ », ou « #LNHQ » dans le titre du direct.
-      c.lnhq = tags.includes(TAG) || new RegExp('#' + TAG + '\\b', 'i').test(s.title || '');
+      // Tag Twitch « LNHQ », ou le mot LNHQ dans le titre, avec ou sans « # » : la
+      // diffusion PlayStation n'a pas de tags et retire les « # » du titre.
+      c.lnhq = tags.includes(TAG) || new RegExp('(^|[^a-z0-9])' + TAG + '($|[^a-z0-9])', 'i').test(s.title || '');
       c.nom = s.user_name;
       c.titre = s.title;
       c.jeu = s.game_name;
