@@ -66,7 +66,7 @@
 /* Titres comme sur le site (Oswald, graisse moyenne) : le gras ajouté dans un
    titre se voit, alors qu'il était invisible dans un titre déjà en gras. */
 #editeur .toastui-editor-contents :is(h1, h2, h3){
-  font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; border-bottom:none; color:#E8590C;
+  font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; border-bottom:none; color:#222;
 }
 #editeur .toastui-editor-contents :is(h1, h2){ font-size:24px; }
 #editeur .toastui-editor-contents h3{ font-size:19px; }
