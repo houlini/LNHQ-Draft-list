@@ -356,7 +356,7 @@ function apercuDiscord(texte) {
 
 // Lien d'une publication sur le site (page d'accueil, onglet de son fil).
 function lienPage(flux, id) {
-  return 'https://lnhq.ca/accueil.html?fil=' + flux.toLowerCase() + '#n-' + id;
+  return 'https://lnhq.ca/?fil=' + flux.toLowerCase() + '#n-' + id;
 }
 
 function urlPhoto(id) {

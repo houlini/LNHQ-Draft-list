@@ -6,7 +6,7 @@
   const QUALITE_JPEG = 0.85;
   // Même palette que nouvelles.js, qui refuse toute autre couleur à l'affichage.
   const COULEURS = ['#E8590C', '#E03131', '#2F9E44', '#1C7ED6', '#E0A800', '#868E96'];
-  const PAGES = { NOUVELLES: 'https://lnhq.ca/accueil.html?fil=nouvelles', ANNONCES: 'https://lnhq.ca/accueil.html?fil=annonces' };
+  const PAGES = { NOUVELLES: 'https://lnhq.ca/?fil=nouvelles', ANNONCES: 'https://lnhq.ca/?fil=annonces' };
   const ERREURS = {
     acces: 'Accès refusé : ta session de connexion n’est plus valide.',
     session: "Ta session a peut-être expiré. Recharge la page pour te reconnecter, ton texte sera perdu : copie-le d'abord.",

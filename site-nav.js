@@ -78,12 +78,12 @@
 
       this.innerHTML = `
         <div class="header-row">
-          <a class="brand" href="https://sites.lnhq.ca">
+          <a class="brand" href="./">
             <img class="brand-logo" src="logo-lnhq.png" alt="LNHQ">
             <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
           </a>
           <nav class="site-nav" id="siteNav">
-            <a class="nav-btn" href="https://sites.lnhq.ca"><span>Accueil</span></a>
+            <a class="nav-btn" href="./"><span>Accueil</span></a>
 
             <div class="nav-item">
               <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
@@ -104,7 +104,7 @@
                 <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <div class="nav-dropdown" hidden>
-                ${menuItem('Joueurs', 'index.html', currentPage === 'joueurs')}
+                ${menuItem('Joueurs', 'joueurs.html', currentPage === 'joueurs')}
                 ${menuItem('Ordre', 'ordre.html', currentPage === 'ordre')}
               </div>
             </div>
@@ -123,7 +123,9 @@
                 <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <div class="nav-dropdown" hidden>
-                <a href="https://sites.lnhq.ca/nouvelles/2026-27">2026-27</a>
+                <a href="./?fil=annonces">Annonces</a>
+                <a href="./?fil=nouvelles">Nouvelles</a>
+                <a href="https://sites.lnhq.ca/nouvelles/2026-27">Archives 2026-27</a>
               </div>
             </div>
           </nav>

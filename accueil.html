@@ -2,53 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LNHQ — Accueil</title>
-<link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="nouvelles.css?v=11">
-<script src="site-nav.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/18.0.14/lib/marked.umd.min.js" integrity="sha512-trN9mtGYvoySPVI909KTnwbJI9AkKPydRCV/qAsUG1+q39hhpKltEag9b5JpdjeIZn5i8IH62hHRFdbKwMFh9w==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha512-flQmhkXNRQ3iUfvtdCobtpMjCb6kE+zLnTiAulAQJ3WykVfy84JvCMOo6vhwWXHTXjR25h9Zj+LyGFRWKjRoag==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
-<script src="nouvelles.js?v=10" defer></script>
+<!-- L'accueil est maintenant lnhq.ca (index.html). Cette page garde valides les liens
+     déjà envoyés sur Discord (accueil.html?fil=...#n-...) en y renvoyant. -->
+<script>location.replace('./' + location.search + location.hash);</script>
+<meta http-equiv="refresh" content="0; url=./">
 </head>
 <body>
-
-<div class="app">
-  <site-header class="app-header"></site-header>
-
-  <div class="filter-band feed-band">
-    <div class="feed-tabs" role="tablist" aria-label="Fil affiché">
-      <button type="button" role="tab" data-fil="ANNONCES" aria-selected="true">Annonces</button>
-      <button type="button" role="tab" data-fil="NOUVELLES" aria-selected="false">Nouvelles</button>
-    </div>
-    <a class="publish-btn" id="publishBtn" target="_blank" rel="noopener" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Publier
-    </a>
-  </div>
-
-  <main id="feed" data-tab="ANNONCES" data-form-url="https://publier.lnhq.ca/">
-    <div id="loader" class="news-skeleton">
-      <div class="skeleton-row"></div>
-      <div class="skeleton-row"></div>
-    </div>
-
-    <div id="errorBox" class="status-box error news-status" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <div>
-        <div>Impossible de charger les publications.</div>
-        <button class="retry" id="retryBtn">Réessayer</button>
-      </div>
-    </div>
-
-    <div class="news-list" id="newsList" hidden></div>
-
-    <p class="empty-state" id="emptyState" hidden>Aucune annonce pour l'instant.</p>
-  </main>
-</div>
-
+<p><a href="./">Aller à l'accueil de la LNHQ</a></p>
 </body>
 </html>
