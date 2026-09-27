@@ -10,7 +10,8 @@
 .publish-btn:hover{ opacity:0.9; }
 .publish-btn svg{ width:16px; height:16px; }
 
-.news-skeleton, .news-status, .news-list{ max-width:760px; margin-left:auto; margin-right:auto; }
+/* Largeur qui suit l'écran : 760px au minimum sur ordinateur, jusqu'à 1100px sur grand écran. */
+.news-skeleton, .news-status, .news-list{ max-width:clamp(760px, 72vw, 1100px); margin-left:auto; margin-right:auto; }
 .news-skeleton .skeleton-row{ height:190px; border-radius:var(--radius); margin-bottom:18px; }
 
 .news-list{ display:flex; flex-direction:column; gap:18px; padding:6px 0 24px; }
