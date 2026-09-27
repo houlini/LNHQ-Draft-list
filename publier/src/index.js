@@ -58,6 +58,7 @@ async function publier(env, action, courriel, corps) {
     if (d.couverture && d.couverture.data) couverture = { octets: Uint8Array.from(atob(d.couverture.data), c => c.charCodeAt(0)), type: d.couverture.mime };
   } catch { /* corps déjà validé par le script */ }
   const envoi = await envoyerDiscord(env, flux, message, idDiscord, couverture);
+  if (envoi.silencieux) return json({ ...r, discord: null }, 200);
   await scriptJson(env, 'discord', courriel, JSON.stringify({ flux, id: r.id, ...envoi }));
   return json({ ...r, discord: !envoi.erreur }, 200);
 }
@@ -78,6 +79,9 @@ async function reessayerDiscord(env, courriel) {
 // La bannière est jointe au message comme fichier : un lien Google Drive tout juste
 // créé n'est pas encore lisible quelques secondes, et Discord garde alors une image vide.
 async function envoyerDiscord(env, flux, message, idDiscord, couverture) {
+  // « aucun » dans la colonne ID Discord : publication volontairement absente de Discord
+  // (ex. ajoutée à la main dans le classeur) ; une modification ne doit pas l'y publier.
+  if (idDiscord === 'aucun') return { silencieux: true };
   const webhook = env['WEBHOOK_' + flux];
   if (!webhook) return { erreur: 'Webhook ' + flux + ' manquant dans le Worker' };
   // Un message déjà publié se modifie sur place ; son nom et son avatar ne changent pas.

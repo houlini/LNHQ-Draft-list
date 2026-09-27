@@ -1,5 +1,17 @@
 /* LNHQ — styles du fil de nouvelles / annonces (voir nouvelles.js). */
 
+/* Onglets Annonces / Nouvelles (accueil.html) */
+.feed-band{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
+.feed-tabs{ display:inline-flex; padding:4px; gap:4px; border-radius:11px; background:rgba(0,0,0,0.18); }
+.feed-tabs button{
+  min-height:40px; padding:0 18px; border:none; border-radius:8px; cursor:pointer;
+  background:transparent; color:inherit;
+  font-family:'Roboto', 'IBM Plex Sans', sans-serif; font-weight:700; font-size:14px;
+  letter-spacing:0.02em; text-transform:uppercase;
+}
+.feed-tabs button:hover{ background:rgba(255,255,255,0.12); }
+.feed-tabs button[aria-selected="true"]{ background:var(--surface); color:var(--ink); }
+
 .publish-btn{
   display:inline-flex; align-items:center; gap:8px;
   background:var(--surface); color:var(--ink);

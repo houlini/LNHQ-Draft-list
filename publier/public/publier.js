@@ -6,7 +6,7 @@
   const QUALITE_JPEG = 0.85;
   // Même palette que nouvelles.js, qui refuse toute autre couleur à l'affichage.
   const COULEURS = ['#E8590C', '#E03131', '#2F9E44', '#1C7ED6', '#E0A800', '#868E96'];
-  const PAGES = { NOUVELLES: 'https://lnhq.ca/nouvelles-test.html', ANNONCES: 'https://lnhq.ca/annonces.html' };
+  const PAGES = { NOUVELLES: 'https://lnhq.ca/accueil.html?fil=nouvelles', ANNONCES: 'https://lnhq.ca/accueil.html?fil=annonces' };
   const ERREURS = {
     acces: 'Accès refusé : ta session de connexion n’est plus valide.',
     session: "Ta session a peut-être expiré. Recharge la page pour te reconnecter, ton texte sera perdu : copie-le d'abord.",
@@ -368,8 +368,8 @@
     const liens = page ? [['Voir la publication', page]] : [];
     if(page && moi.annonces) liens.push(['Modifier', '?modifier=' + encodeURIComponent(r.id)]);
     if(r.ok && modification){
-      afficher(r.discord === false
-        ? "Modifications enregistrées sur le site, mais Discord a refusé la mise à jour."
+      afficher(r.discord === false ? "Modifications enregistrées sur le site, mais Discord a refusé la mise à jour."
+        : r.discord === null ? 'Modifications enregistrées sur le site (cette publication n’est pas sur Discord).'
         : 'Modifications enregistrées sur le site et sur Discord.', r.discord === false, liens.slice(0, 1));
       if(couverture) couverture.existante = true; // déjà envoyée : ne pas la renvoyer au prochain enregistrement
     }else if(r.ok){

@@ -1,7 +1,9 @@
 /* =========================================================================
-   LNHQ — fil de nouvelles / annonces, lu dans un onglet du classeur rempli par
-   le script du Google Form (apps-script/nouvelles.gs). Réglé par les attributs
-   de <main id="feed"> : data-tab (onglet), data-form-url, data-noun.
+   LNHQ — fils d'annonces et de nouvelles, lus dans les onglets ANNONCES et
+   NOUVELLES du classeur (remplis par publier.lnhq.ca). Réglé par les attributs
+   de <main id="feed"> : data-tab (fil affiché au départ), data-form-url.
+   Si la page a des onglets (.feed-tabs button[data-fil]), on passe d'un fil à
+   l'autre sans recharger ; le fil choisi est dans l'adresse (?fil=nouvelles).
    ========================================================================= */
 (function(){
   const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
@@ -19,10 +21,18 @@
   const HAUTEUR_REPLI = 420;
   const DRIVE_ID = /^[A-Za-z0-9_-]{20,}$/;
 
+  const FILS = {
+    ANNONCES: { nom: 'annonce', vide: "Aucune annonce pour l'instant." },
+    NOUVELLES: { nom: 'nouvelle', vide: "Aucune nouvelle pour l'instant." },
+  };
   const feed = document.getElementById('feed');
-  const tab = feed.dataset.tab;
-  const noun = feed.dataset.noun || 'nouvelle';
-  const CACHE_KEY = 'feedCache_' + tab;
+  const onglets = [...document.querySelectorAll('.feed-tabs [data-fil]')];
+  const demande = (new URLSearchParams(location.search).get('fil') || '').toUpperCase();
+  let tab = FILS[demande] && onglets.length ? demande : feed.dataset.tab;
+  let noun = FILS[tab] ? FILS[tab].nom : 'nouvelle';
+  let CACHE_KEY = 'feedCache_' + tab;
+  // Numéro du chargement en cours : la réponse d'un fil quitté entre-temps est ignorée.
+  let chargement = 0;
   const teams = new Map((window.LNHQ_TEAMS || []).map(t => [t.name.toLowerCase(), t]));
   const dateFmt = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -223,6 +233,7 @@
   }
 
   async function load({ background = false } = {}){
+    const numero = ++chargement;
     if(!background) show('loading');
     try{
       const res = await fetch(buildUrl());
@@ -231,6 +242,7 @@
       if(!match) throw new Error('format_inattendu');
       const json = JSON.parse(match[1]);
       if(json.status === 'error') throw new Error('erreur_gviz');
+      if(numero !== chargement) return;
       apply(json.table);
       try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ table: json.table, ts: Date.now() })); }catch(e){}
       els.lastUpdated.textContent = 'Mis à jour à '
@@ -238,20 +250,39 @@
       scrollToHash();
     }catch(err){
       console.error(err);
-      if(!background) show('error');
+      if(!background && numero === chargement) show('error');
     }
   }
 
   els.retryBtn.addEventListener('click', () => load());
 
-  let cached = null;
-  try{ cached = JSON.parse(localStorage.getItem(CACHE_KEY)); }catch(e){}
-  if(cached && cached.table){
-    apply(cached.table);
-    els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
-    scrollToHash();
-    load({ background: true });
-  }else{
-    load();
+  // Affiche un fil : d'abord la copie gardée dans le navigateur, puis les données fraîches.
+  function ouvrirFil(){
+    onglets.forEach(b => b.setAttribute('aria-selected', String(b.dataset.fil === tab)));
+    if(FILS[tab]) els.empty.textContent = FILS[tab].vide;
+    let cached = null;
+    try{ cached = JSON.parse(localStorage.getItem(CACHE_KEY)); }catch(e){}
+    if(cached && cached.table){
+      apply(cached.table);
+      els.lastUpdated.textContent = 'Dernières données enregistrées — actualisation en cours…';
+      scrollToHash();
+      load({ background: true });
+    }else{
+      load();
+    }
   }
+
+  onglets.forEach(b => b.addEventListener('click', () => {
+    if(b.dataset.fil === tab) return;
+    tab = b.dataset.fil;
+    noun = FILS[tab].nom;
+    CACHE_KEY = 'feedCache_' + tab;
+    const url = new URL(location.href);
+    url.searchParams.set('fil', tab.toLowerCase());
+    url.hash = '';
+    history.replaceState(null, '', url);
+    ouvrirFil();
+  }));
+
+  ouvrirFil();
 })();

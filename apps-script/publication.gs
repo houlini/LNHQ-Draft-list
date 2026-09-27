@@ -9,8 +9,6 @@
    déploiement → Application Web : « Exécuter en tant que : moi »,
    « Qui a accès : Tout le monde ».
 
-   Réglages (Paramètres du projet → Propriétés du script) :
-     PAGE_NOUVELLES, PAGE_ANNONCES         pages du site, pour les liens Discord
    Les webhooks Discord sont des secrets du Worker (WEBHOOK_NOUVELLES,
    WEBHOOK_ANNONCES) : c'est lui qui envoie les messages.
    ========================================================================= */
@@ -61,6 +59,9 @@ function installer() {
     classeur.insertSheet(ONGLET_JOURNAL).appendRow(['Date', 'Courriel', 'Flux', 'Titre', 'ID']);
   }
   dossierPhotos();
+  // Onglets publics des deux fils, avec leurs en-têtes et le format texte forcé :
+  // à créer ici plutôt qu'à la main (sinon un ID Discord devient un nombre arrondi).
+  ['NOUVELLES', 'ANNONCES'].forEach(ouvrirOnglet);
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
@@ -130,10 +131,9 @@ function publier(d, membre) {
     photos: d.couverture ? [enregistrerPhoto(d.couverture)] : [],
   };
 
-  const reglages = PropertiesService.getScriptProperties().getProperties();
   const id = Utilities.getUuid();
   const date = new Date();
-  const pageUrl = (reglages['PAGE_' + flux] || 'https://lnhq.ca/') + '#n-' + id;
+  const pageUrl = lienPage(flux, id);
 
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
@@ -223,8 +223,7 @@ function modifier(d, membre) {
   SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL)
     .appendRow([new Date(), membre.courriel, pub.flux, 'Modification : ' + champs.titre, id, '']);
 
-  const reglages = PropertiesService.getScriptProperties().getProperties();
-  const pageUrl = (reglages['PAGE_' + pub.flux] || 'https://lnhq.ca/') + '#n-' + id;
+  const pageUrl = lienPage(pub.flux, id);
   const v = { titre: champs.titre, texte: champs.texte, type: champs.type, equipe: pub.l[1], photos: photos };
   return {
     ok: true, id: id, page: pageUrl,
@@ -257,7 +256,6 @@ function noterDiscord(d, membre) {
 // pas arrivée sur Discord, prête à être renvoyée par le Worker.
 function enAttente(membre) {
   if (!membre.annonces) return { ok: false, erreur: 'annonces' };
-  const reglages = PropertiesService.getScriptProperties().getProperties();
   const attente = [];
   ['NOUVELLES', 'ANNONCES'].forEach(flux => {
     const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
@@ -267,7 +265,7 @@ function enAttente(membre) {
     if (i < 0) return;
     const l = lignes[i];
     const v = { equipe: l[1], type: l[2], titre: l[3], texte: l[4], photos: String(l[5]).split(',').filter(String) };
-    const pageUrl = (reglages['PAGE_' + flux] || 'https://lnhq.ca/') + '#n-' + l[9];
+    const pageUrl = lienPage(flux, l[9]);
     attente.push({ flux: flux, id: String(l[9]), titre: v.titre, message: messageDiscord(v, new Date(l[0]), pageUrl) });
   });
   return { ok: true, attente: attente };
@@ -354,6 +352,11 @@ function apercuDiscord(texte) {
     apercu += '…';
   }
   return apercu;
+}
+
+// Lien d'une publication sur le site (page d'accueil, onglet de son fil).
+function lienPage(flux, id) {
+  return 'https://lnhq.ca/accueil.html?fil=' + flux.toLowerCase() + '#n-' + id;
 }
 
 function urlPhoto(id) {

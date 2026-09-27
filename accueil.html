@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nouvelles (test)</title>
+<title>LNHQ — Accueil</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="nouvelles.css?v=9">
@@ -17,14 +17,18 @@
 <div class="app">
   <site-header class="app-header"></site-header>
 
-  <div class="filter-band">
+  <div class="filter-band feed-band">
+    <div class="feed-tabs" role="tablist" aria-label="Fil affiché">
+      <button type="button" role="tab" data-fil="ANNONCES" aria-selected="true">Annonces</button>
+      <button type="button" role="tab" data-fil="NOUVELLES" aria-selected="false">Nouvelles</button>
+    </div>
     <a class="publish-btn" id="publishBtn" target="_blank" rel="noopener" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Publier une nouvelle
+      Publier
     </a>
   </div>
 
-  <main id="feed" data-tab="NOUVELLES" data-form-url="https://publier.lnhq.ca/" data-noun="nouvelle">
+  <main id="feed" data-tab="ANNONCES" data-form-url="https://publier.lnhq.ca/">
     <div id="loader" class="news-skeleton">
       <div class="skeleton-row"></div>
       <div class="skeleton-row"></div>
@@ -35,14 +39,14 @@
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
       <div>
-        <div>Impossible de charger les nouvelles.</div>
+        <div>Impossible de charger les publications.</div>
         <button class="retry" id="retryBtn">Réessayer</button>
       </div>
     </div>
 
     <div class="news-list" id="newsList" hidden></div>
 
-    <p class="empty-state" id="emptyState" hidden>Aucune nouvelle pour l'instant.</p>
+    <p class="empty-state" id="emptyState" hidden>Aucune annonce pour l'instant.</p>
   </main>
 </div>
 
