@@ -76,12 +76,12 @@
 #editeur .toastui-editor-contents img{ cursor:pointer; max-width:100%; }
 /* Placement et taille notés à la fin de l'adresse : #gauche-45, #droite-30, #centre-60…
    (mêmes règles que nouvelles.css). Les titres et le texte passent à côté de l'image. */
-#editeur .toastui-editor-contents img[src*="#gauche"]{ float:left; width:45%; margin:0.3em 1em 0.5em 0; }
-#editeur .toastui-editor-contents img[src*="#droite"]{ float:right; width:45%; margin:0.3em 0 0.5em 1em; }
-#editeur .toastui-editor-contents img[src*="#centre"]{ display:block; width:60%; margin:0.5em auto; }
-#editeur .toastui-editor-contents img[src*="#"][src$="-30"]{ width:30%; }
-#editeur .toastui-editor-contents img[src*="#"][src$="-45"]{ width:45%; }
-#editeur .toastui-editor-contents img[src*="#"][src$="-60"]{ width:60%; }
+#editeur .toastui-editor-contents img[src*="#gauche"]{ float:left; width:300px; max-width:60%; margin:0.3em 1em 0.5em 0; }
+#editeur .toastui-editor-contents img[src*="#droite"]{ float:right; width:300px; max-width:60%; margin:0.3em 0 0.5em 1em; }
+#editeur .toastui-editor-contents img[src*="#centre"]{ display:block; width:420px; max-width:100%; margin:0.5em auto; }
+#editeur .toastui-editor-contents img[src*="#"][src$="-30"]{ width:200px; }
+#editeur .toastui-editor-contents img[src*="#"][src$="-45"]{ width:300px; }
+#editeur .toastui-editor-contents img[src*="#"][src$="-60"]{ width:420px; }
 #editeur .toastui-editor-contents :is(table, hr){ clear:both; }
 
 .pub-placement{
