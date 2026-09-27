@@ -32,6 +32,8 @@
   .dg-infos dd{ margin:0; min-width:0; overflow-wrap:anywhere; font-family:'IBM Plex Mono', monospace; font-size:13.5px; }
   .dg-infos .vide{ color:var(--ink-muted); font-family:inherit; }
   /* Cliquer un identifiant le copie (pour l'ajouter sur la console ou Discord). */
+  .dg-twitch{ color:var(--accent); text-decoration:none; }
+  .dg-twitch:hover{ text-decoration:underline; }
   .dg-copier{
     all:unset; cursor:pointer; border-radius:4px; padding:1px 4px; margin:-1px -4px;
   }
@@ -116,10 +118,13 @@ function buildUrl(){
 // on vérifie l'en-tête de la colonne B.
 function parseTable(table){
   if(((table.cols[1] || {}).label || '').trim().toUpperCase() !== 'ÉQUIPE') throw new Error('onglet_introuvable');
+  // Colonne TWITCH : repérée par son en-tête, où qu'elle soit (ajoutée pour LNHQ TV).
+  const colTwitch = table.cols.findIndex(c => (c.label || '').trim().toUpperCase() === 'TWITCH');
   return table.rows.map(r => {
     const c = r.c || [];
-    const str = i => (c[i] && c[i].v != null ? String(c[i].v).trim() : '');
-    return { equipe: str(1), code: str(2).toUpperCase(), dg: str(4), gamertag: str(6), discord: str(7) };
+    const str = i => (i >= 0 && c[i] && c[i].v != null ? String(c[i].v).trim() : '');
+    const twitch = /(?:twitch\.tv\/)?@?([a-z0-9_]{3,25})\/?$/i.exec(str(colTwitch).replace(/^https?:\/\/(www\.)?/i, ''));
+    return { equipe: str(1), code: str(2).toUpperCase(), dg: str(4), gamertag: str(6), discord: str(7), twitch: twitch ? twitch[1] : '' };
   }).filter(d => d.equipe);
 }
 
@@ -162,6 +167,13 @@ function renderCard(d){
   infos.append(el('dt', null, 'Gamertag'), el('dd'), el('dt', null, 'Discord'), el('dd'));
   infos.children[1].append(identifiant(d.gamertag));
   infos.children[3].append(identifiant(d.discord));
+  if(d.twitch){
+    const lien = el('a', 'dg-twitch', d.twitch);
+    lien.href = 'tv.html?chaine=' + encodeURIComponent(d.twitch.toLowerCase());
+    const dd = el('dd');
+    dd.append(lien);
+    infos.append(el('dt', null, 'Twitch'), dd);
+  }
 
   body.append(equipe, el('div', 'dg-name', d.dg || 'Poste vacant'), infos);
   card.append(logo, body);

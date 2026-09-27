@@ -6,7 +6,7 @@
    exactement comme avant.
 
    Attributs :
-   - current-page : "joueurs" | "ordre" | "calendrier" | "masse" | "dgs" | "reglements" (marque
+   - current-page : "joueurs" | "ordre" | "calendrier" | "masse" | "dgs" | "reglements" | "tv" (marque
      l'élément courant dans les menus Ligue/Repêchage). Absent pour les
      pages d'équipe.
    - current-team : slug de l'équipe active (ex: "boston"), pour marquer
@@ -84,6 +84,7 @@
           </a>
           <nav class="site-nav" id="siteNav">
             <a class="nav-btn" href="./"><span>Accueil</span></a>
+            <a class="nav-btn" href="tv.html"${currentPage === 'tv' ? ' aria-current="page"' : ''}><span>TV</span></a>
 
             <div class="nav-item">
               <button class="nav-btn" aria-haspopup="true" aria-expanded="false">

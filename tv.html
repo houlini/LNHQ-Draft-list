@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LNHQ TV</title>
+<link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css">
+<script src="site-nav.js"></script>
+<style>
+  .tv-page{ padding:16px clamp(16px,3vw,40px) 40px; display:flex; flex-direction:column; gap:22px; }
+
+  /* ---------- Lecteur (+ clavardage à droite sur grand écran) ---------- */
+  .tv-scene{ display:grid; grid-template-columns:1fr; gap:14px; }
+  @media (min-width:1100px){ .tv-scene.avec-chat{ grid-template-columns:1fr 340px; } }
+  .tv-lecteur{ position:relative; aspect-ratio:16 / 9; background:#000; border-radius:var(--radius); overflow:hidden; }
+  .tv-lecteur iframe, .tv-chat iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .tv-chat{ position:relative; display:none; border-radius:var(--radius); overflow:hidden; background:var(--surface); border:1px solid var(--line); }
+  @media (min-width:1100px){ .tv-scene.avec-chat .tv-chat{ display:block; } }
+  .tv-infos{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+  .tv-infos img{ width:36px; height:36px; object-fit:contain; }
+  .tv-infos-titre{ flex:1 1 240px; min-width:0; }
+  .tv-infos-titre strong{ display:block; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:19px; color:var(--accent); text-transform:uppercase; }
+  .tv-infos-titre span{ display:block; color:var(--ink-muted); font-size:14px; overflow-wrap:anywhere; }
+  .tv-lien{ color:var(--accent); font-weight:700; font-size:14px; text-decoration:none; white-space:nowrap; }
+  .tv-lien:hover{ text-decoration:underline; }
+  .tv-vide{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center;
+    aspect-ratio:16 / 9; max-height:420px; width:100%;
+    background:var(--surface); border:1px dashed var(--line); border-radius:var(--radius); color:var(--ink-muted); padding:20px;
+  }
+  .tv-vide img{ width:64px; height:64px; opacity:0.6; }
+
+  /* ---------- Listes de chaînes ---------- */
+  .tv-groupe h2{
+    margin:0 0 10px; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
+    font-size:18px; text-transform:uppercase; letter-spacing:0.02em; display:flex; align-items:center; gap:8px;
+  }
+  .tv-grille{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+  .tv-carte{
+    all:unset; box-sizing:border-box; cursor:pointer;
+    display:flex; gap:12px; align-items:center; padding:12px 14px; min-height:64px;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+  }
+  .tv-carte:hover{ border-color:var(--accent); }
+  .tv-carte:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .tv-carte.is-choisie{ border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); background:var(--accent-soft); }
+  .tv-carte.is-hors-ligne{ opacity:0.72; }
+  .tv-carte.is-hors-ligne:hover, .tv-carte.is-hors-ligne.is-choisie{ opacity:1; }
+  .tv-carte img{ width:42px; height:42px; object-fit:contain; flex-shrink:0; }
+  .tv-carte-corps{ min-width:0; flex:1; }
+  .tv-carte-nom{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; }
+  .tv-carte-nom span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tv-carte-detail{ color:var(--ink-muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tv-badge{
+    flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase;
+    padding:2px 7px; border-radius:999px; background:#E03131; color:#fff;
+  }
+  .tv-badge.is-autre{ background:var(--stripe); color:var(--ink-muted); }
+  .tv-point{ width:10px; height:10px; border-radius:50%; background:#E03131; box-shadow:0 0 0 3px rgba(224,49,49,0.25); }
+  .tv-compte{ font-weight:400; color:var(--ink-muted); font-family:'IBM Plex Sans', sans-serif; font-size:14px; text-transform:none; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <site-header class="app-header" current-page="tv"></site-header>
+
+  <div class="filter-band">
+    <span id="resume" style="font-weight:700">LNHQ TV</span>
+  </div>
+
+  <main id="content">
+    <div id="loader" style="padding:16px clamp(16px,3vw,40px)">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+    </div>
+
+    <div id="errorBox" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <div id="errorText">Impossible de savoir qui est en direct pour le moment.</div>
+        <button class="retry" id="retryBtn">Réessayer</button>
+      </div>
+    </div>
+
+    <div class="tv-page" id="tvPage" hidden>
+      <section id="scene"></section>
+      <section class="tv-groupe" id="groupeLive" hidden>
+        <h2><span class="tv-point"></span>En direct <span class="tv-compte" id="compteLive"></span></h2>
+        <div class="tv-grille" id="grilleLive"></div>
+      </section>
+      <section class="tv-groupe" id="groupeHors" hidden>
+        <h2>Hors ligne <span class="tv-compte" id="compteHors"></span></h2>
+        <div class="tv-grille" id="grilleHors"></div>
+      </section>
+      <p class="empty-state" id="aucuneChaine" hidden>Aucune chaîne Twitch pour l'instant : ajoute-les dans la colonne TWITCH de l'onglet DGs du classeur.</p>
+    </div>
+  </main>
+</div>
+
+<script>
+/* =========================================================================
+   LNHQ TV — chaînes Twitch des DG (colonne TWITCH de l'onglet DGs), lues par
+   l'API api.lnhq.ca/twitch (clés Twitch côté serveur, mise à jour chaque minute).
+   Une chaîne compte « en direct » si elle diffuse avec le tag LNHQ (ou #LNHQ dans
+   le titre). Un clic sur une chaîne change le lecteur ; ?chaine=nom dans l'adresse.
+   ========================================================================= */
+const API = 'https://api.lnhq.ca/twitch';
+const RAFRAICHIR_MS = 60 * 1000;
+
+const els = {
+  title: document.getElementById('sheetTitle'),
+  rowCount: document.getElementById('rowCount'),
+  lastUpdated: document.getElementById('lastUpdated'),
+  loader: document.getElementById('loader'),
+  errorBox: document.getElementById('errorBox'),
+  errorText: document.getElementById('errorText'),
+  retryBtn: document.getElementById('retryBtn'),
+  page: document.getElementById('tvPage'),
+  scene: document.getElementById('scene'),
+  resume: document.getElementById('resume'),
+  groupeLive: document.getElementById('groupeLive'),
+  grilleLive: document.getElementById('grilleLive'),
+  compteLive: document.getElementById('compteLive'),
+  groupeHors: document.getElementById('groupeHors'),
+  grilleHors: document.getElementById('grilleHors'),
+  compteHors: document.getElementById('compteHors'),
+  aucune: document.getElementById('aucuneChaine'),
+};
+els.title.textContent = 'LNHQ';
+
+const state = {
+  chaines: [],
+  choisie: (new URLSearchParams(location.search).get('chaine') || '').toLowerCase(),
+  // Le son n'est activé qu'après un clic : les navigateurs bloquent la lecture auto avec son.
+  sonActif: false,
+  lecteurDe: '',
+};
+const nombre = new Intl.NumberFormat('fr-CA');
+
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text != null) e.textContent = text;
+  return e;
+}
+
+function logo(code, cls){
+  const img = el('img', cls);
+  img.src = code ? 'Logos/' + code + '.png' : 'logo-lnhq.png';
+  img.alt = '';
+  img.onerror = () => { img.src = 'logo-lnhq.png'; };
+  return img;
+}
+
+const enDirect = c => c.live && c.lnhq;
+
+function depuis(iso){
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  return min < 60 ? min + ' min' : Math.floor(min / 60) + ' h ' + String(min % 60).padStart(2, '0');
+}
+
+function iframe(src, titre){
+  const f = el('iframe');
+  f.src = src;
+  f.title = titre;
+  f.allowFullscreen = true;
+  f.setAttribute('allow', 'autoplay; fullscreen');
+  return f;
+}
+
+// Lecteur et clavardage : reconstruits seulement si la chaîne change (sinon la
+// vidéo redémarrerait à chaque mise à jour de la liste).
+function renderScene(){
+  const c = state.chaines.find(x => x.chaine === state.choisie);
+  if(!c){
+    state.lecteurDe = '';
+    const vide = el('div', 'tv-vide');
+    vide.append(logo('', ''), el('strong', null, 'Personne n’est en direct avec le tag #LNHQ pour l’instant.'),
+      el('span', null, 'Les directs apparaissent ici automatiquement. Choisis une chaîne plus bas pour voir ses anciennes vidéos.'));
+    els.scene.replaceChildren(vide);
+    return;
+  }
+  const hote = location.hostname;
+  if(state.lecteurDe !== c.chaine){
+    state.lecteurDe = c.chaine;
+    const scene = el('div', 'tv-scene avec-chat');
+    const lecteur = el('div', 'tv-lecteur');
+    lecteur.append(iframe(`https://player.twitch.tv/?channel=${c.chaine}&parent=${hote}&autoplay=true&muted=${!state.sonActif}`, 'Lecteur Twitch de ' + c.chaine));
+    const chat = el('div', 'tv-chat');
+    const sombre = matchMedia('(prefers-color-scheme: dark)').matches ? '&darkpopout' : '';
+    chat.append(iframe(`https://www.twitch.tv/embed/${c.chaine}/chat?parent=${hote}${sombre}`, 'Clavardage Twitch de ' + c.chaine));
+    scene.append(lecteur, chat);
+    const infos = el('div', 'tv-infos');
+    infos.id = 'tvInfos';
+    els.scene.replaceChildren(scene, infos);
+  }
+  // Titre, équipe et spectateurs : mis à jour à chaque rafraîchissement.
+  const infos = document.getElementById('tvInfos');
+  const texte = el('div', 'tv-infos-titre');
+  texte.append(el('strong', null, (c.nom || c.chaine) + (c.equipe ? ' · ' + c.equipe : '')),
+    el('span', null, enDirect(c) ? `${c.titre || ''}${c.spectateurs != null ? ' — ' + nombre.format(c.spectateurs) + ' spectateurs' : ''}` : 'Hors ligne — anciennes vidéos de la chaîne'));
+  const lien = el('a', 'tv-lien', 'Ouvrir sur Twitch ↗');
+  lien.href = 'https://www.twitch.tv/' + c.chaine;
+  lien.target = '_blank';
+  lien.rel = 'noopener';
+  infos.replaceChildren(logo(c.code, ''), texte, lien);
+}
+
+function carte(c){
+  const b = el('button', 'tv-carte' + (enDirect(c) ? '' : ' is-hors-ligne') + (c.chaine === state.choisie ? ' is-choisie' : ''));
+  b.type = 'button';
+  b.setAttribute('aria-pressed', String(c.chaine === state.choisie));
+  const corps = el('div', 'tv-carte-corps');
+  const nom = el('div', 'tv-carte-nom');
+  nom.append(el('span', null, c.nom || c.chaine));
+  if(enDirect(c)) nom.append(el('span', 'tv-badge', 'En direct'));
+  else if(c.live) nom.append(el('span', 'tv-badge is-autre', 'En ligne sans #LNHQ'));
+  const detail = enDirect(c)
+    ? `${nombre.format(c.spectateurs || 0)} spectateurs · depuis ${depuis(c.debut)}${c.titre ? ' · ' + c.titre : ''}`
+    : [c.equipe, c.dg].filter(Boolean).join(' · ');
+  corps.append(nom, el('div', 'tv-carte-detail', detail));
+  b.title = enDirect(c) && c.titre ? c.titre : (c.nom || c.chaine);
+  b.append(logo(c.code, ''), corps);
+  b.addEventListener('click', () => choisir(c.chaine));
+  return b;
+}
+
+function choisir(chaine){
+  if(chaine === state.choisie) return;
+  state.choisie = chaine;
+  state.sonActif = true;
+  const url = new URL(location.href);
+  url.searchParams.set('chaine', chaine);
+  history.replaceState(null, '', url);
+  render();
+  els.scene.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function render(){
+  const live = state.chaines.filter(enDirect).sort((a, b) => (b.spectateurs || 0) - (a.spectateurs || 0));
+  const hors = state.chaines.filter(c => !enDirect(c)).sort((a, b) => (b.live - a.live) || a.equipe.localeCompare(b.equipe, 'fr'));
+  // Par défaut : le direct le plus regardé.
+  if(!state.choisie && live.length) state.choisie = live[0].chaine;
+
+  renderScene();
+  els.grilleLive.replaceChildren(...live.map(carte));
+  els.grilleHors.replaceChildren(...hors.map(carte));
+  els.groupeLive.hidden = !live.length;
+  els.groupeHors.hidden = !hors.length;
+  els.compteLive.textContent = live.length ? '(' + live.length + ')' : '';
+  els.compteHors.textContent = hors.length ? '(' + hors.length + ')' : '';
+  els.aucune.hidden = !!state.chaines.length;
+  els.resume.textContent = live.length ? `🔴 ${live.length} en direct` : 'Personne en direct';
+  els.rowCount.textContent = `${state.chaines.length} chaîne${state.chaines.length > 1 ? 's' : ''}`;
+}
+
+function show(etat){
+  els.loader.hidden = etat !== 'loading';
+  els.errorBox.hidden = etat !== 'error';
+  els.page.hidden = etat !== 'data';
+}
+
+async function load({ background = false } = {}){
+  if(!background) show('loading');
+  try{
+    const rep = await fetch(API);
+    const d = await rep.json();
+    // Sans clés Twitch (ou Twitch indisponible), la liste des chaînes reste affichée, toutes hors ligne.
+    if(!d.chaines) throw new Error(d.erreur || 'http_' + rep.status);
+    state.chaines = d.chaines;
+    show('data');
+    render();
+    els.lastUpdated.textContent = d.ok
+      ? 'Mis à jour à ' + new Intl.DateTimeFormat('fr-CA', { hour: '2-digit', minute: '2-digit' }).format(new Date())
+      : 'Statut des directs indisponible pour le moment';
+  }catch(err){
+    console.error(err);
+    if(!background) show('error');
+  }
+}
+
+els.retryBtn.addEventListener('click', () => load());
+load();
+setInterval(() => { if(!document.hidden) load({ background: true }); }, RAFRAICHIR_MS);
+</script>
+</body>
+</html>
