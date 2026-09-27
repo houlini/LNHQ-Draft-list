@@ -43,10 +43,19 @@
 #editeur tbody tr:nth-child(even), #editeur tbody tr:hover,
 #editeur tbody tr:hover td:first-child{ background:transparent; }
 
-/* Menu « … » (outils qui ne tiennent pas dans la barre, sur téléphone) : une seule
-   ligne par défaut, qui dépasse de l'écran ; on le laisse passer à la ligne. */
-#editeur .toastui-editor-dropdown-toolbar{
-  left:10px; width:auto; height:auto !important; flex-wrap:wrap; row-gap:4px; padding-block:4px;
+/* Sur téléphone, Toast UI range les outils qui ne tiennent pas dans un menu « … ».
+   On cache ce bouton et on affiche son contenu en permanence, en 2e ligne de la barre. */
+#editeur .toastui-editor-toolbar, #editeur .toastui-editor-defaultUI-toolbar{ height:auto; }
+#editeur .toastui-editor-defaultUI-toolbar{ flex-wrap:wrap; }
+@media (max-width:560px){
+  #editeur .toastui-editor-defaultUI-toolbar{ padding:0 8px; }
+  #editeur .toastui-editor-toolbar-icons{ margin:6px 3px; }
+}
+#editeur .toastui-editor-toolbar-group:has(> .more):not([style*="none"]){ display:contents; }
+#editeur .toastui-editor-toolbar-icons.more{ display:none; }
+#editeur .toastui-editor-toolbar-group:has(> .more):not([style*="none"]) > .toastui-editor-dropdown-toolbar{
+  display:flex !important; position:static; flex-basis:100%; flex-wrap:wrap; height:auto;
+  padding:0; border:0; border-top:1px solid #ebedf2; border-radius:0; box-shadow:none; background:transparent;
 }
 
 /* Images dans le texte : cliquer une image ouvre la barre de placement. */
