@@ -171,6 +171,7 @@
     suite.hidden = true;
     suite.addEventListener('click', () => {
       const replie = texte.classList.toggle('is-collapsed');
+      card.classList.toggle('is-deplie', !replie);
       suite.textContent = replie ? 'Lire la suite' : 'Réduire';
       if(replie) card.scrollIntoView({ block: 'nearest' });
     });
@@ -194,6 +195,7 @@
     const cible = location.hash === '#' + card.id;
     const long = texte.scrollHeight > HAUTEUR_REPLI + 120;
     texte.classList.toggle('is-collapsed', long && !cible);
+    card.classList.toggle('is-deplie', long && cible);
     suite.hidden = !long;
     suite.textContent = long && !cible ? 'Lire la suite' : 'Réduire';
   }

@@ -55,7 +55,10 @@
     align-self:start; position:sticky; top:12px;
     margin:18px 0 18px 18px; border-radius:8px; overflow:hidden;
   }
-  .news-card > .news-cover img{ max-height:80vh; }
+  /* Une image très haute ne dépasse pas la hauteur d'un article replié ; elle
+     s'agrandit seulement quand on ouvre l'article (« Lire la suite »). */
+  .news-card > .news-cover img{ max-height:480px; }
+  .news-card.is-deplie > .news-cover img{ max-height:80vh; }
 }
 
 .news-body{ padding:14px clamp(14px, 2.5vw, 22px) 18px; }
