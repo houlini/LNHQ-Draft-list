@@ -267,7 +267,7 @@ function show(etat){
 async function load({ background = false } = {}){
   if(!background) show('loading');
   try{
-    const rep = await fetch(API);
+    const rep = await fetch(API, { cache: 'no-store' });
     const d = await rep.json();
     // Sans clés Twitch (ou Twitch indisponible), la liste des chaînes reste affichée, toutes hors ligne.
     if(!d.chaines) throw new Error(d.erreur || 'http_' + rep.status);
@@ -286,6 +286,7 @@ async function load({ background = false } = {}){
 els.retryBtn.addEventListener('click', () => load());
 load();
 setInterval(() => { if(!document.hidden) load({ background: true }); }, RAFRAICHIR_MS);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) load({ background: true }); });
 </script>
 </body>
 </html>

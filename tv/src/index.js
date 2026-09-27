@@ -1,12 +1,12 @@
 // LNHQ TV — Worker de api.lnhq.ca. GET /twitch : les chaînes Twitch des DG (colonne
 // TWITCH de l'onglet DGs du classeur) et, pour chacune, si elle est en direct avec le
-// tag LNHQ. Les clés Twitch restent ici (secrets) ; la réponse est gardée 60 s en cache
+// tag LNHQ. Les clés Twitch restent ici (secrets) ; la réponse est gardée 30 s en cache
 // pour ne pas interroger Twitch à chaque visiteur.
 
 const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
 const ONGLET = 'DGs';
 const TAG = 'lnhq';
-const DUREE_CACHE = 60;
+const DUREE_CACHE = 30;
 const ORIGINES = ['https://lnhq.ca', 'https://www.lnhq.ca'];
 
 export default {
@@ -22,15 +22,20 @@ export default {
       return new Response('Introuvable', { status: 404, headers: cors });
     }
 
+    // Copie partagée de 30 s. Son âge est vérifié ici (en-tête X-Genere) : les réglages
+    // de cache de la zone Cloudflare peuvent allonger la durée annoncée à 4 h.
     const cache = caches.default;
     const cle = new Request('https://api.lnhq.ca/twitch?cache');
     let rep = await cache.match(cle);
+    if (rep && !(Date.now() - Number(rep.headers.get('X-Genere') || 0) < DUREE_CACHE * 1000)) rep = null;
     if (!rep) {
       rep = await construire(env);
       if (rep.ok) ctx.waitUntil(cache.put(cle, rep.clone()));
     }
     const finale = new Response(rep.body, rep);
     Object.entries(cors).forEach(([k, v]) => finale.headers.set(k, v));
+    // Le navigateur ne garde rien : un direct terminé disparaît au prochain appel.
+    finale.headers.set('Cache-Control', 'no-store');
     return finale;
   },
 };
@@ -138,6 +143,10 @@ async function jetonTwitch(env) {
 function json(donnees, statut = 200, cache = DUREE_CACHE) {
   return new Response(JSON.stringify(donnees), {
     status: statut,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=' + cache },
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': cache ? 'public, max-age=' + cache : 'no-store',
+      'X-Genere': String(Date.now()),
+    },
   });
 }
