@@ -8,7 +8,7 @@
   const COULEURS = ['#E8590C', '#E03131', '#2F9E44', '#1C7ED6', '#E0A800', '#868E96'];
   const PAGES = { NOUVELLES: 'https://lnhq.ca/nouvelles-test.html', ANNONCES: 'https://lnhq.ca/annonces.html' };
   const ERREURS = {
-    acces: "Accès refusé. Recharge la page pour te reconnecter.",
+    acces: 'Accès refusé : ta session de connexion n’est plus valide.',
     session: "Ta session a peut-être expiré. Recharge la page pour te reconnecter, ton texte sera perdu : copie-le d'abord.",
     inconnu: "Ton courriel n'est pas dans la liste d'accès de la ligue. Contacte le dirigeant de la ligue.",
     annonces: "Tu n'as pas le droit de publier une annonce.",
@@ -385,6 +385,14 @@
     if(!moi.ok){
       $('qui').textContent = '';
       $('refusTexte').textContent = ERREURS[moi.erreur] || 'Accès impossible pour le moment. Réessaie plus tard.';
+      // Session périmée (ex. ouverte avant un changement de configuration d'Access) :
+      // la déconnexion efface le jeton, et la page redemande un code par courriel.
+      if(moi.erreur === 'acces' || moi.erreur === 'session'){
+        const lien = document.createElement('a');
+        lien.href = '/cdn-cgi/access/logout';
+        lien.textContent = 'Se reconnecter';
+        $('refusTexte').append(' ', lien);
+      }
       $('refus').hidden = false;
       return;
     }
