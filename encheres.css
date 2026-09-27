@@ -1,0 +1,77 @@
+/* LNHQ — enchères des agents libres (encheres.html et la page de mise de publier.lnhq.ca). */
+.ench-page{ padding:16px clamp(16px,3vw,40px) 40px; display:flex; flex-direction:column; gap:26px; }
+.ench-band{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
+.ench-regles{ font-size:13.5px; font-weight:600; }
+.ench-lancer{
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--surface); color:var(--ink);
+  font-family:'Roboto', 'IBM Plex Sans', sans-serif; font-weight:700; font-size:14px;
+  letter-spacing:0.02em; text-transform:uppercase;
+  padding:10px 18px; border-radius:9px; text-decoration:none;
+}
+.ench-lancer:hover{ opacity:0.9; }
+.ench-lancer svg{ width:16px; height:16px; }
+
+.ench-titre{
+  margin:0 0 12px; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
+  font-size:19px; text-transform:uppercase; letter-spacing:0.02em;
+}
+.ench-compte{ font-family:'IBM Plex Sans', sans-serif; font-weight:400; font-size:14px; color:var(--ink-muted); text-transform:none; }
+.ench-vide{ margin:0; padding:18px; text-align:center; color:var(--ink-muted); background:var(--surface); border:1px dashed var(--line); border-radius:var(--radius); }
+
+/* ---------- Carte d'une enchère en cours ---------- */
+.ench-grille{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap:14px; }
+.ench-carte{
+  display:flex; flex-direction:column; gap:12px; padding:14px 16px;
+  background:var(--surface); border:1px solid var(--line); border-top:4px solid var(--accent);
+  border-radius:var(--radius); scroll-margin-top:12px;
+}
+.ench-carte.is-ciblee{ box-shadow:0 0 0 2px var(--accent); }
+.ench-joueur strong{ display:block; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:20px; color:var(--accent); text-transform:uppercase; line-height:1.2; overflow-wrap:anywhere; }
+.ench-joueur span{ color:var(--ink-muted); font-size:13.5px; }
+.ench-meneur{ display:flex; align-items:center; gap:12px; }
+.ench-logo{ width:40px; height:40px; object-fit:contain; flex-shrink:0; }
+.ench-qui{ flex:1; min-width:0; }
+.ench-qui strong{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ench-etiquette{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
+.ench-montant{ text-align:right; }
+.ench-montant strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:24px; line-height:1; }
+.ench-montant span{ font-size:12px; color:var(--ink-muted); }
+.ench-chrono{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
+  padding:8px 12px; border-radius:8px; background:var(--accent-soft);
+}
+.ench-chrono > span:first-child{ font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted); }
+.ench-reste{ font-family:'IBM Plex Mono', monospace; font-size:17px; }
+.ench-fin{ margin-left:auto; font-size:12.5px; color:var(--ink-muted); }
+.ench-historique{ list-style:none; margin:0; padding:0; font-size:13px; }
+.ench-historique li{ display:grid; grid-template-columns:1fr auto auto; gap:10px; padding:3px 0; border-bottom:1px solid var(--line); }
+.ench-historique li:first-child{ font-weight:700; }
+.ench-historique time{ color:var(--ink-muted); min-width:7.5em; text-align:right; }
+.ench-pied{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; font-size:13px; color:var(--ink-muted); }
+.ench-bouton{
+  display:inline-flex; align-items:center; min-height:40px; padding:0 16px; border-radius:8px;
+  background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:14px; text-decoration:none; border:none; cursor:pointer;
+}
+.ench-bouton:hover{ opacity:0.9; }
+.ench-bouton:disabled{ opacity:0.45; cursor:not-allowed; }
+
+/* ---------- Jetons des équipes ---------- */
+.ench-jetons table{ width:100%; }
+.ench-equipe{ display:inline-flex; align-items:center; gap:8px; }
+.ench-equipe .ench-logo{ width:22px; height:22px; }
+.ench-dispo{ font-weight:700; color:var(--accent); }
+@media (max-width:600px){
+  .ench-jetons th, .ench-jetons td{ padding-left:6px; padding-right:6px; font-size:13px; }
+  .ench-jetons th{ font-size:11px; letter-spacing:0; }
+  .ench-page{ padding-left:12px; padding-right:12px; }
+}
+
+/* ---------- Enchères terminées ---------- */
+.ench-liste{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap:10px; }
+.ench-ligne{ display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); scroll-margin-top:12px; }
+.ench-ligne.is-annulee{ opacity:0.6; }
+.ench-ligne.is-ciblee{ box-shadow:0 0 0 2px var(--accent); }
+.ench-ligne-texte{ min-width:0; }
+.ench-ligne-texte strong{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ench-ligne-texte span{ font-size:13px; color:var(--ink-muted); }

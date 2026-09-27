@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enchères — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css">
+<link rel="stylesheet" href="https://lnhq.ca/encheres.css">
+<link rel="stylesheet" href="encheres-mise.css">
+<script src="https://lnhq.ca/encheres-donnees.js" defer></script>
+<script src="encheres-mise.js" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">Enchères</h1>
+      </a>
+      <nav class="site-nav">
+        <a class="nav-btn" href="https://lnhq.ca/encheres.html">Voir les enchères</a>
+        <a class="nav-btn" href="/">Publier</a>
+      </nav>
+    </div>
+    <div class="meta-row"><span id="qui">Vérification de ton accès…</span><span id="jetonsMoi"></span></div>
+  </header>
+
+  <main class="ench-page">
+    <div id="refus" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div id="refusTexte"></div>
+    </div>
+
+    <p id="message" class="pub-message" role="status" hidden></p>
+
+    <div id="contenu" hidden>
+      <section class="mise-lancer" id="blocLancer">
+        <h2 class="ench-titre">Lancer une enchère</h2>
+        <form id="formLancer" class="mise-form" novalidate>
+          <label class="mise-champ mise-joueur">
+            <span>Agent libre</span>
+            <input id="joueur" list="listeJoueurs" autocomplete="off" placeholder="Tape un nom…" required>
+            <datalist id="listeJoueurs"></datalist>
+          </label>
+          <label class="mise-champ">
+            <span>Mise de départ</span>
+            <input id="montantLancer" type="number" inputmode="numeric" min="50" step="1" value="50" required>
+          </label>
+          <button type="submit" class="ench-bouton" id="btnLancer">Lancer l'enchère</button>
+        </form>
+        <p class="mise-aide" id="aideLancer"></p>
+      </section>
+
+      <section>
+        <h2 class="ench-titre">Enchères en cours <span class="ench-compte" id="compteEnCours"></span></h2>
+        <div class="ench-grille" id="enCours"></div>
+        <p class="ench-vide" id="aucuneEnCours" hidden>Aucune enchère en cours.</p>
+      </section>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

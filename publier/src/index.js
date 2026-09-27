@@ -33,6 +33,10 @@ export default {
     if (url.pathname === '/api/reessayer' && request.method === 'POST') {
       return reessayerDiscord(env, courriel);
     }
+    const enchere = { '/api/encheres/lancer': 'lancerEnchere', '/api/encheres/miser': 'miserEnchere' }[url.pathname];
+    if (enchere && request.method === 'POST') {
+      return actionEnchere(env, enchere, courriel, await request.text());
+    }
     const action = { '/api/publier': 'publier', '/api/modifier': 'modifier', '/api/photo': 'photo' }[url.pathname];
     if (action && request.method === 'POST') {
       const taille = Number(request.headers.get('Content-Length') || 0);
@@ -42,7 +46,51 @@ export default {
     }
     return json({ ok: false, erreur: 'introuvable' }, 404);
   },
+
+  // Chaque minute (wrangler.toml → crons) : ferme les enchères dont le chrono est écoulé.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(cloturerEncheres(env));
+  },
 };
+
+/* ---------- Enchères des agents libres ---------- */
+// Le script vérifie tout (équipe, jetons, minimum, chrono) sous verrou ; le Worker
+// publie ensuite l'annonce dans le canal Discord des agents libres.
+async function actionEnchere(env, action, courriel, corps) {
+  const r = await scriptJson(env, action, courriel, corps);
+  if (r.ok && r.discord) {
+    const envoi = await envoyerDiscord(env, r.discord.flux, r.discord.message);
+    if (envoi.erreur) console.error('Discord (enchère) :', envoi.erreur);
+    r.discord = !envoi.erreur;
+  }
+  return json(r, r.ok ? 200 : 400);
+}
+
+// Lecture rapide de l'onglet public ENCHERES : on n'appelle le script (plus lent)
+// que s'il y a vraiment une enchère à fermer.
+async function cloturerEncheres(env) {
+  try {
+    const rep = await fetch('https://docs.google.com/spreadsheets/d/1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A/gviz/tq?tqx=out:json&headers=1&sheet=ENCHERES');
+    const m = (await rep.text()).match(/setResponse\(([\s\S]*)\);\s*$/);
+    if (!m) return;
+    const table = JSON.parse(m[1]).table;
+    if (((table.cols[0] || {}).label || '') !== 'ID') return;
+    const maintenant = Date.now();
+    const echue = table.rows.some(r => {
+      const c = r.c || [];
+      const statut = c[10] && c[10].v, fin = c[9] && c[9].v;
+      return statut === 'En cours' && fin && new Date(fin).getTime() <= maintenant;
+    });
+    if (!echue) return;
+    const r = await scriptJson(env, 'cloturerEncheres', 'systeme');
+    for (const msg of r.messages || []) {
+      const envoi = await envoyerDiscord(env, msg.flux, msg.message);
+      if (envoi.erreur) console.error('Discord (fin d\'enchère) :', envoi.erreur);
+    }
+  } catch (err) {
+    console.error('Clôture des enchères :', err.message);
+  }
+}
 
 // Le script enregistre la publication et prépare le message ; le Worker l'envoie
 // à Discord (qui bloque souvent les adresses partagées de Google Apps Script).

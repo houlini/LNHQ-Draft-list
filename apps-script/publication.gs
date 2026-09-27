@@ -62,6 +62,7 @@ function installer() {
   // Onglets publics des deux fils, avec leurs en-têtes et le format texte forcé :
   // à créer ici plutôt qu'à la main (sinon un ID Discord devient un nombre arrondi).
   ['NOUVELLES', 'ANNONCES'].forEach(ouvrirOnglet);
+  installerEncheres();
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
@@ -85,6 +86,8 @@ function doPost(e) {
 function traiter(p, corps) {
   const secret = PropertiesService.getScriptProperties().getProperty('SECRET');
   if (!secret || p.secret !== secret) return { ok: false, erreur: 'secret' };
+  // Appelée chaque minute par le Worker (tâche planifiée), sans membre connecté.
+  if (p.action === 'cloturerEncheres') return cloturerEncheres();
   const membre = trouverMembre(p.courriel);
   if (!membre) return { ok: false, erreur: 'inconnu' };
   if (p.action === 'moi') return { ok: true, equipe: membre.equipe, annonces: membre.annonces };
@@ -95,6 +98,8 @@ function traiter(p, corps) {
   if (p.action === 'photo') return photoSeule(JSON.parse(corps || '{}'));
   if (p.action === 'discord') return noterDiscord(JSON.parse(corps || '{}'), membre);
   if (p.action === 'enAttente') return enAttente(membre);
+  if (p.action === 'lancerEnchere') return lancerEnchere(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'miserEnchere') return miserEnchere(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
 }
 
@@ -366,4 +371,238 @@ function urlPhoto(id) {
 
 function tronquer(texte, max) {
   return texte.length > max ? texte.slice(0, max - 1) + '…' : texte;
+}
+
+/* =========================================================================
+   ENCHÈRES DES AGENTS LIBRES (lnhq.ca/encheres.html, mises sur publier.lnhq.ca)
+
+   Onglets du classeur public (créés par installer) :
+     ENCHERES  une ligne par enchère ;  MISES  l'historique de chaque mise ;
+     JETONS    jetons de départ de chaque équipe pour la saison (modifiable par
+               les dirigeants : pénalité, bonus, nouvelle saison).
+   Agents libres : lignes de PLAYERSDATABASE dont la colonne Z (LNHQ TM) vaut
+   « UFA ». À la fin d'une enchère, Z prend le code de l'équipe gagnante.
+   Jetons disponibles = départ − enchères gagnées − enchères où l'équipe est en tête.
+   Seuls les dirigeants corrigent ou annulent (directement dans le classeur :
+   Statut « Annulée » rend les jetons).
+   ========================================================================= */
+const ONGLET_JOUEURS = 'PLAYERSDATABASE';
+const COL_JOUEUR = 2;           // B  JOUEUR
+const COL_EQUIPE_JOUEUR = 26;   // Z  LNHQ TM
+const STATUT_UFA = 'UFA';
+const ENCHERES_ENTETES = ['ID', 'Joueur', 'Naissance', 'Position', 'OV', 'Équipe en tête', 'Mise', 'Nb mises', 'Début', 'Fin', 'Statut', 'Saison', 'Lancée par'];
+const MISES_ENTETES = ['Date', 'ID enchère', 'Joueur', 'Équipe', 'Mise'];
+const JETONS_ENTETES = ['Équipe', 'Code', 'Jetons de départ', 'Saison'];
+const MISE_MINIMALE = 50;
+const SURENCHERE_MINIMALE = 20;
+const HEURES_LANCEMENT = 24;
+const HEURES_RELANCE = 12;
+const JETONS_PAR_SAISON = 1000;
+const SAISON_DEPART = '2026-27';
+const EN_COURS = 'En cours';
+
+function installerEncheres() {
+  const classeur = SpreadsheetApp.openById(SHEET_ID);
+  [['ENCHERES', ENCHERES_ENTETES], ['MISES', MISES_ENTETES]].forEach(([nom, entetes]) => {
+    if (classeur.getSheetByName(nom)) return;
+    const o = classeur.insertSheet(nom);
+    o.appendRow(entetes);
+    o.setFrozenRows(1);
+    // Format texte sur les colonnes entières : sinon le classeur transforme les dates ISO
+    // en dates locales et le site ne sait plus quand finit une enchère.
+    o.getRange(1, 1, o.getMaxRows(), entetes.length).setNumberFormat('@');
+  });
+  if (!classeur.getSheetByName('JETONS')) {
+    const o = classeur.insertSheet('JETONS');
+    o.appendRow(JETONS_ENTETES);
+    o.setFrozenRows(1);
+    EQUIPES.forEach(nom => o.appendRow([nom, CODES_EQUIPES[nom], JETONS_PAR_SAISON, SAISON_DEPART]));
+    o.getRange('D:D').setNumberFormat('@');
+  }
+}
+
+function ongletEncheres(nom) {
+  return SpreadsheetApp.openById(SHEET_ID).getSheetByName(nom);
+}
+
+function lireEncheres() {
+  const o = ongletEncheres('ENCHERES');
+  if (o.getLastRow() < 2) return [];
+  return o.getRange(2, 1, o.getLastRow() - 1, ENCHERES_ENTETES.length).getDisplayValues().map((l, i) => ({
+    rangee: i + 2, id: l[0], joueur: l[1], naissance: l[2], position: l[3], ov: l[4],
+    equipe: l[5], mise: Number(l[6]) || 0, nb: Number(l[7]) || 0, debut: l[8], fin: l[9],
+    statut: l[10], saison: l[11],
+  })).filter(e => e.id);
+}
+
+// Jetons de départ et saison courante, lus dans l'onglet JETONS.
+function lireJetons() {
+  const o = ongletEncheres('JETONS');
+  const depart = {};
+  let saison = SAISON_DEPART;
+  if (o && o.getLastRow() >= 2) {
+    o.getRange(2, 1, o.getLastRow() - 1, 4).getDisplayValues().forEach(l => {
+      if (l[1]) depart[l[1].trim().toUpperCase()] = Number(String(l[2]).replace(/[^\d-]/g, '')) || 0;
+      if (l[3]) saison = l[3].trim();
+    });
+  }
+  return { depart: depart, saison: saison };
+}
+
+function jetonsEquipe(code, encheres, config) {
+  const depart = config.depart[code] != null ? config.depart[code] : JETONS_PAR_SAISON;
+  let depenses = 0, engages = 0;
+  encheres.filter(e => e.saison === config.saison && e.equipe === code).forEach(e => {
+    if (e.statut === 'Terminée') depenses += e.mise;
+    else if (e.statut === EN_COURS) engages += e.mise;
+  });
+  return { depart: depart, depenses: depenses, engages: engages, disponibles: depart - depenses - engages };
+}
+
+// Agent libre : même nom (colonne B) et « UFA » en colonne Z. La date de naissance,
+// si fournie, départage deux joueurs du même nom.
+function trouverAgentLibre(nom, naissance) {
+  const o = ongletEncheres(ONGLET_JOUEURS);
+  const valeurs = o.getRange(2, COL_JOUEUR, o.getLastRow() - 1, COL_EQUIPE_JOUEUR - COL_JOUEUR + 1).getDisplayValues();
+  const iNaissance = 5 - COL_JOUEUR; // E  Birthdate
+  const iEquipe = COL_EQUIPE_JOUEUR - COL_JOUEUR;
+  const i = valeurs.findIndex(l => l[0].trim() === nom && l[iEquipe].trim().toUpperCase() === STATUT_UFA
+    && (!naissance || l[iNaissance].trim() === naissance));
+  if (i < 0) return null;
+  const l = valeurs[i];
+  return { rangee: i + 2, nom: l[0].trim(), naissance: l[iNaissance].trim(), position: l[8 - COL_JOUEUR].trim(), ov: l[3 - COL_JOUEUR].trim() };
+}
+
+function codeDuMembre(membre) {
+  return CODES_EQUIPES[membre.equipe] || '';
+}
+
+function lancerEnchere(d, membre) {
+  const code = codeDuMembre(membre);
+  if (!code) return { ok: false, erreur: 'equipe' };
+  const montant = Math.floor(Number(d.montant));
+  if (!(montant >= MISE_MINIMALE)) return { ok: false, erreur: 'minimum', minimum: MISE_MINIMALE };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const joueur = trouverAgentLibre(String(d.joueur || '').trim(), String(d.naissance || '').trim());
+    if (!joueur) return { ok: false, erreur: 'joueur' };
+    const encheres = lireEncheres();
+    if (encheres.some(e => e.statut === EN_COURS && e.joueur === joueur.nom && e.naissance === joueur.naissance)) {
+      return { ok: false, erreur: 'deja' };
+    }
+    const config = lireJetons();
+    const j = jetonsEquipe(code, encheres, config);
+    if (j.disponibles < montant) return { ok: false, erreur: 'jetons', disponibles: j.disponibles };
+
+    const maintenant = new Date();
+    const e = {
+      id: Utilities.getUuid().slice(0, 8), joueur: joueur.nom, naissance: joueur.naissance,
+      position: joueur.position, ov: joueur.ov, equipe: code, mise: montant, nb: 1,
+      debut: maintenant.toISOString(), fin: new Date(maintenant.getTime() + HEURES_LANCEMENT * 3600000).toISOString(),
+      statut: EN_COURS, saison: config.saison,
+    };
+    ongletEncheres('ENCHERES').appendRow([e.id, e.joueur, e.naissance, e.position, e.ov, e.equipe, e.mise, e.nb,
+      e.debut, e.fin, e.statut, e.saison, code]);
+    ongletEncheres('MISES').appendRow([e.debut, e.id, e.joueur, code, montant]);
+    return { ok: true, id: e.id, discord: { flux: 'AGENTS', message: messageEnchere('nouvelle', e) } };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+function miserEnchere(d, membre) {
+  const code = codeDuMembre(membre);
+  if (!code) return { ok: false, erreur: 'equipe' };
+  const montant = Math.floor(Number(d.montant));
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const encheres = lireEncheres();
+    const e = encheres.find(x => x.id === String(d.id || ''));
+    const maintenant = new Date();
+    if (!e || e.statut !== EN_COURS || new Date(e.fin) <= maintenant) return { ok: false, erreur: 'terminee' };
+    if (e.equipe === code) return { ok: false, erreur: 'en_tete' };
+    // Vérifié ici, sous verrou : une mise envoyée juste avant la nôtre a pu changer le minimum.
+    const minimum = e.mise + SURENCHERE_MINIMALE;
+    if (!(montant >= minimum)) return { ok: false, erreur: 'minimum', minimum: minimum };
+    const j = jetonsEquipe(code, encheres, lireJetons());
+    if (j.disponibles < montant) return { ok: false, erreur: 'jetons', disponibles: j.disponibles };
+
+    const precedente = e.equipe;
+    // Le chrono repart à 12 h, sauf s'il restait déjà plus que ça.
+    const relance = new Date(maintenant.getTime() + HEURES_RELANCE * 3600000);
+    e.fin = (new Date(e.fin) > relance ? new Date(e.fin) : relance).toISOString();
+    e.equipe = code;
+    e.mise = montant;
+    e.nb += 1;
+    ongletEncheres('ENCHERES').getRange(e.rangee, 6, 1, 5).setValues([[e.equipe, e.mise, e.nb, e.debut, e.fin]]);
+    ongletEncheres('MISES').appendRow([maintenant.toISOString(), e.id, e.joueur, code, montant]);
+    return { ok: true, id: e.id, discord: { flux: 'AGENTS', message: messageEnchere('surenchere', e, precedente) } };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// Ferme les enchères dont le chrono est écoulé : le joueur passe à l'équipe gagnante
+// (colonne Z de PLAYERSDATABASE). Renvoie les messages Discord à publier.
+function cloturerEncheres() {
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const maintenant = new Date();
+    const aFermer = lireEncheres().filter(e => e.statut === EN_COURS && new Date(e.fin) <= maintenant);
+    const messages = [];
+    aFermer.forEach(e => {
+      const joueur = trouverAgentLibre(e.joueur, e.naissance);
+      if (joueur) ongletEncheres(ONGLET_JOUEURS).getRange(joueur.rangee, COL_EQUIPE_JOUEUR).setValue(e.equipe);
+      else console.warn('Joueur introuvable (plus UFA ?) : ' + e.joueur);
+      e.statut = 'Terminée';
+      ongletEncheres('ENCHERES').getRange(e.rangee, 11).setValue(e.statut);
+      messages.push({ flux: 'AGENTS', message: messageEnchere('fin', e, '', !joueur) });
+    });
+    return { ok: true, fermees: aFermer.length, messages: messages };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+function nomEquipe(code) {
+  return Object.keys(CODES_EQUIPES).find(nom => CODES_EQUIPES[nom] === code) || code;
+}
+
+function messageEnchere(type, e, precedente, joueurIntrouvable) {
+  const fin = Math.floor(new Date(e.fin).getTime() / 1000);
+  const joueur = e.joueur + (e.position || e.ov ? ' (' + [e.position, e.ov ? e.ov + ' OV' : ''].filter(String).join(', ') + ')' : '');
+  const lignes = {
+    nouvelle: [
+      '**' + nomEquipe(e.equipe) + '** lance une enchère sur **' + joueur + '**.',
+      'Mise de départ : **' + e.mise + ' jetons**',
+      'Prochaine mise minimale : ' + (e.mise + SURENCHERE_MINIMALE) + ' jetons',
+      'Fin : <t:' + fin + ':f> (<t:' + fin + ':R>)',
+    ],
+    surenchere: [
+      '**' + nomEquipe(e.equipe) + '** mise **' + e.mise + ' jetons** sur **' + joueur + '**'
+        + (precedente ? ' et devance ' + nomEquipe(precedente) : '') + '.',
+      'Prochaine mise minimale : ' + (e.mise + SURENCHERE_MINIMALE) + ' jetons',
+      'Fin : <t:' + fin + ':f> (<t:' + fin + ':R>)',
+    ],
+    fin: [
+      '**' + nomEquipe(e.equipe) + '** remporte **' + joueur + '** pour **' + e.mise + ' jetons**'
+        + ' (' + e.nb + ' mise' + (e.nb > 1 ? 's' : '') + ').',
+    ].concat(joueurIntrouvable ? ['⚠️ Joueur introuvable en UFA dans PLAYERSDATABASE : à inscrire à la main.'] : []),
+  }[type];
+  const titre = { nouvelle: '🆕 Nouvelle enchère', surenchere: '⬆️ Surenchère', fin: '🏁 Enchère terminée' }[type];
+  return {
+    username: 'Agents libres · LNHQ',
+    avatar_url: 'https://lnhq.ca/logo-lnhq.png',
+    embeds: [{
+      title: titre + ' : ' + e.joueur,
+      url: 'https://lnhq.ca/encheres.html#e-' + e.id,
+      description: lignes.join('\n'),
+      color: type === 'fin' ? 0x2F9E44 : 0xE8590C,
+      thumbnail: { url: 'https://lnhq.ca/Logos/' + e.equipe + '.png' },
+    }],
+    allowed_mentions: { parse: [] },
+  };
 }

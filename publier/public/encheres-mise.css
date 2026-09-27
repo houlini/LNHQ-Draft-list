@@ -1,0 +1,27 @@
+/* LNHQ — page de mise (publier.lnhq.ca/encheres.html). Le reste vient de lnhq.ca/encheres.css. */
+.ench-page{ max-width:1100px; margin:0 auto; width:100%; box-sizing:border-box; }
+#contenu{ display:flex; flex-direction:column; gap:26px; }
+.meta-row #jetonsMoi{ font-weight:700; }
+
+.mise-lancer{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
+.mise-form{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
+.mise-champ{ display:flex; flex-direction:column; gap:6px; flex:0 1 160px; min-width:0; }
+.mise-champ.mise-joueur{ flex:1 1 280px; }
+.mise-champ > span{ font-weight:700; font-size:12.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted); }
+.mise-champ input, .mise-carte input{
+  height:44px; padding:0 12px; font-size:16px; width:100%; box-sizing:border-box;
+  border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink);
+}
+.mise-champ input:focus, .mise-carte input:focus{ border-color:var(--accent); outline:none; }
+.mise-form .ench-bouton{ min-height:44px; }
+.mise-aide{ margin:10px 0 0; font-size:13.5px; color:var(--ink-muted); }
+
+/* Zone de mise sous chaque carte */
+.mise-carte{ display:flex; gap:8px; align-items:center; }
+.mise-carte input{ flex:1; min-width:0; }
+.mise-carte .ench-bouton{ min-height:44px; }
+.mise-note{ font-size:13px; font-weight:700; color:var(--accent); }
+
+.pub-message{ margin:0; padding:12px 14px; border-radius:8px; font-size:15px; }
+.pub-message.is-erreur{ background:var(--danger-soft); color:var(--danger); }
+.pub-message.is-succes{ background:var(--accent-soft); color:var(--ink); }

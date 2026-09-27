@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enchères des agents libres</title>
+<link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="encheres.css">
+<script src="site-nav.js"></script>
+<script src="encheres-donnees.js"></script>
+</head>
+<body>
+
+<div class="app">
+  <site-header class="app-header" current-page="encheres"></site-header>
+
+  <div class="filter-band ench-band">
+    <span class="ench-regles">Départ min. 50 jetons · surenchère +20 · 24 h, relancé à 12 h à chaque mise</span>
+    <a class="publish-btn ench-lancer" href="https://publier.lnhq.ca/encheres.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Lancer une enchère
+    </a>
+  </div>
+
+  <main id="content">
+    <div id="loader" class="ench-page">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+    </div>
+
+    <div id="errorBox" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <div>Impossible de charger les enchères.</div>
+        <button class="retry" id="retryBtn">Réessayer</button>
+      </div>
+    </div>
+
+    <div class="ench-page" id="page" hidden>
+      <section>
+        <h2 class="ench-titre">Enchères en cours <span class="ench-compte" id="compteEnCours"></span></h2>
+        <div class="ench-grille" id="enCours"></div>
+        <p class="ench-vide" id="aucuneEnCours" hidden>Aucune enchère en cours. Lance la première !</p>
+      </section>
+
+      <section>
+        <h2 class="ench-titre">Jetons des équipes <span class="ench-compte" id="saison"></span></h2>
+        <div class="table-wrap ench-jetons">
+          <table>
+            <thead><tr><th>Équipe</th><th class="is-numeric">Dispo.</th><th class="is-numeric">Engagés</th><th class="is-numeric">Dépensés</th></tr></thead>
+            <tbody id="jetons"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="blocTerminees" hidden>
+        <h2 class="ench-titre">Enchères terminées</h2>
+        <div class="ench-liste" id="terminees"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+/* LNHQ — enchères des agents libres (lecture seule). On mise sur publier.lnhq.ca. */
+const E = window.LNHQ_ENCHERES;
+const MISER = 'https://publier.lnhq.ca/encheres.html';
+const els = {
+  title: document.getElementById('sheetTitle'),
+  rowCount: document.getElementById('rowCount'),
+  lastUpdated: document.getElementById('lastUpdated'),
+  loader: document.getElementById('loader'),
+  errorBox: document.getElementById('errorBox'),
+  retryBtn: document.getElementById('retryBtn'),
+  page: document.getElementById('page'),
+  enCours: document.getElementById('enCours'),
+  compteEnCours: document.getElementById('compteEnCours'),
+  aucuneEnCours: document.getElementById('aucuneEnCours'),
+  jetons: document.getElementById('jetons'),
+  saison: document.getElementById('saison'),
+  blocTerminees: document.getElementById('blocTerminees'),
+  terminees: document.getElementById('terminees'),
+};
+els.title.textContent = 'LNHQ';
+let donnees = null;
+let ancreSuivie = false;
+const noms = new Map();
+const quand = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text != null) e.textContent = text;
+  return e;
+}
+function logo(code){
+  const img = el('img', 'ench-logo');
+  img.src = 'Logos/' + code + '.png';
+  img.alt = '';
+  img.onerror = () => { img.style.visibility = 'hidden'; };
+  return img;
+}
+const nomEquipe = code => noms.get(code) || code;
+
+function carteEnCours(e){
+  const carte = el('article', 'ench-carte');
+  carte.id = 'e-' + e.id;
+  const tete = el('div', 'ench-joueur');
+  tete.append(el('strong', null, e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
+
+  const meneur = el('div', 'ench-meneur');
+  const qui = el('div', 'ench-qui');
+  qui.append(el('span', 'ench-etiquette', 'En tête'), el('strong', null, nomEquipe(e.equipe)));
+  const montant = el('div', 'ench-montant');
+  montant.append(el('strong', null, e.mise), el('span', null, 'jetons'));
+  meneur.append(logo(e.equipe), qui, montant);
+
+  const chrono = el('div', 'ench-chrono');
+  const reste = el('strong', 'ench-reste');
+  reste.dataset.fin = e.fin;
+  reste.textContent = E.tempsRestant(e.fin);
+  chrono.append(el('span', null, 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
+
+  const pied = el('div', 'ench-pied');
+  pied.append(el('span', null, `${e.nb} mise${e.nb > 1 ? 's' : ''} · prochaine : ${e.mise + E.REGLES.surenchere} jetons min.`));
+  const bouton = el('a', 'ench-bouton', 'Surenchérir');
+  bouton.href = MISER + '?id=' + encodeURIComponent(e.id);
+  pied.append(bouton);
+
+  // Dernières mises de cette enchère.
+  const hist = donnees.mises.filter(m => m.id === e.id).slice(-4).reverse();
+  const liste = el('ol', 'ench-historique');
+  hist.forEach(m => {
+    const li = el('li');
+    li.append(el('span', null, nomEquipe(m.equipe)), el('span', null, m.mise + ' jetons'), el('time', null, quand.format(new Date(m.date))));
+    liste.append(li);
+  });
+
+  carte.append(tete, meneur, chrono, liste, pied);
+  return carte;
+}
+
+function render(){
+  noms.clear();
+  donnees.equipes.forEach(eq => noms.set(eq.code, eq.nom));
+  const enCours = donnees.encheres.filter(e => e.statut === 'En cours').sort((a, b) => new Date(a.fin) - new Date(b.fin));
+  els.enCours.replaceChildren(...enCours.map(carteEnCours));
+  els.aucuneEnCours.hidden = !!enCours.length;
+  els.compteEnCours.textContent = enCours.length ? '(' + enCours.length + ')' : '';
+
+  els.saison.textContent = donnees.saison ? 'Saison ' + donnees.saison : '';
+  els.jetons.replaceChildren(...donnees.equipes.slice().sort((a, b) => b.disponibles - a.disponibles || a.nom.localeCompare(b.nom, 'fr')).map(eq => {
+    const tr = el('tr');
+    const td = el('td');
+    const cell = el('span', 'ench-equipe');
+    cell.append(logo(eq.code), el('span', null, eq.nom));
+    td.append(cell);
+    const dispo = el('td', 'is-numeric ench-dispo', eq.disponibles);
+    tr.append(td, dispo, el('td', 'is-numeric', eq.engages || '—'), el('td', 'is-numeric', eq.depenses || '—'));
+    return tr;
+  }));
+
+  const fermees = donnees.encheres.filter(e => e.statut !== 'En cours').sort((a, b) => new Date(b.fin) - new Date(a.fin)).slice(0, 30);
+  els.blocTerminees.hidden = !fermees.length;
+  els.terminees.replaceChildren(...fermees.map(e => {
+    const ligne = el('div', 'ench-ligne' + (e.statut === 'Annulée' ? ' is-annulee' : ''));
+    ligne.id = 'e-' + e.id;
+    const texte = el('div', 'ench-ligne-texte');
+    texte.append(el('strong', null, e.joueur),
+      el('span', null, e.statut === 'Annulée' ? 'Annulée' : `${nomEquipe(e.equipe)} · ${e.mise} jetons · ${quand.format(new Date(e.fin))}`));
+    ligne.append(logo(e.equipe), texte);
+    return ligne;
+  }));
+
+  els.rowCount.textContent = `${enCours.length} enchère${enCours.length > 1 ? 's' : ''} en cours`;
+  if(!ancreSuivie && location.hash){
+    const cible = document.getElementById(location.hash.slice(1));
+    if(cible){ cible.scrollIntoView({ block: 'start' }); cible.classList.add('is-ciblee'); ancreSuivie = true; }
+  }
+}
+
+function show(etat){
+  els.loader.hidden = etat !== 'loading';
+  els.errorBox.hidden = etat !== 'error';
+  els.page.hidden = etat !== 'data';
+}
+
+async function load({ background = false } = {}){
+  if(!background) show('loading');
+  try{
+    donnees = await E.charger();
+    show('data');
+    render();
+    els.lastUpdated.textContent = 'Mis à jour à ' + new Intl.DateTimeFormat('fr-CA', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+  }catch(err){
+    console.error(err);
+    if(!background) show('error');
+  }
+}
+
+els.retryBtn.addEventListener('click', () => load());
+load();
+// Comptes à rebours chaque seconde ; données fraîches chaque minute.
+setInterval(() => document.querySelectorAll('.ench-reste').forEach(s => { s.textContent = E.tempsRestant(s.dataset.fin); }), 1000);
+setInterval(() => { if(!document.hidden) load({ background: true }); }, 60 * 1000);
+</script>
+</body>
+</html>
