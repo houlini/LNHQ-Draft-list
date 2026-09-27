@@ -124,9 +124,7 @@
               </button>
               <div class="nav-dropdown" hidden>
                 <a href="./?fil=annonces">Annonces</a>
-                <a href="./?fil=nouvelles">Nouvelles</a>
-                <a href="https://sites.lnhq.ca/nouvelles/2026-27">Archives 2026-27</a>
-              </div>
+                <a href="./?fil=nouvelles">Nouvelles</a>              </div>
             </div>
           </nav>
         </div>
