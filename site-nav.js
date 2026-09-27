@@ -7,7 +7,7 @@
 
    Attributs :
    - current-page : "joueurs" | "ordre" | "calendrier" | "masse" | "dgs" | "reglements" | "tv" (marque
-     l'élément courant dans les menus Ligue/Repêchage). Absent pour les
+     l'élément courant dans les menus Ligue/Agent libre). Absent pour les
      pages d'équipe.
    - current-team : slug de l'équipe active (ex: "boston"), pour marquer
      l'équipe courante dans le menu Équipes. Peut être posé après coup
@@ -101,12 +101,12 @@
 
             <div class="nav-item">
               <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-                <span>Repêchage</span>
+                <span>Agent libre</span>
                 <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <div class="nav-dropdown" hidden>
                 ${menuItem('Joueurs', 'joueurs.html', currentPage === 'joueurs')}
-                ${menuItem('Ordre', 'ordre.html', currentPage === 'ordre')}
+                ${menuItem('Draft 2026', 'ordre.html', currentPage === 'ordre')}
               </div>
             </div>
 

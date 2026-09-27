@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ordre de repêchage</title>
+<title>Draft 2026</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css">
 <script src="site-nav.js"></script>
@@ -23,7 +23,8 @@
 
   /* ---------- Rondes de repêchage, en grille (2 côte à côte si l'écran le permet) ---------- */
   #roundsWrap{
-    display:grid; grid-template-columns:repeat(auto-fit, minmax(440px, 1fr));
+    /* min(440px, 100%) : sur téléphone, une ronde prend la largeur de l'écran au lieu d'en déborder. */
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(min(440px, 100%), 1fr));
     gap:20px; align-items:start;
     padding:0 clamp(16px,3vw,40px) 30px;
   }
@@ -44,6 +45,15 @@
   .section-block th:nth-child(2), .section-block td:nth-child(2){ width:84px; }
   .section-block th:nth-child(4), .section-block td:nth-child(4){ width:52px; }
   .section-block th:nth-child(5), .section-block td:nth-child(5){ width:52px; }
+  /* Téléphone : colonnes étroites resserrées pour laisser de la place au nom du joueur. */
+  @media (max-width:600px){
+    .section-block th, .section-block td{ padding-left:6px; padding-right:6px; }
+    .section-block th:nth-child(1), .section-block td:nth-child(1){ width:36px; }
+    .section-block th:nth-child(2), .section-block td:nth-child(2){ width:72px; }
+    .section-block th:nth-child(4), .section-block td:nth-child(4){ width:40px; }
+    .section-block th:nth-child(5), .section-block td:nth-child(5){ width:44px; }
+    .pick-num{ min-width:0; }
+  }
   tr.total-row td{ background:var(--stripe) !important; font-weight:700; border-top:2px solid var(--accent); }
   .section-empty{
     border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius);
@@ -201,7 +211,7 @@ const els = {
 };
 
 els.title.textContent = 'LNHQ';
-document.title = 'Ordre de repêchage';
+document.title = 'Draft 2026';
 
 // Code d'équipe (colonne de la feuille DRAFT, ex: "BOS") → slug de la page équipe.
 const CODE_TO_SLUG = {
