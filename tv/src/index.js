@@ -38,18 +38,31 @@ export default {
     finale.headers.set('Cache-Control', 'no-store');
     return finale;
   },
+
+  // Chaque minute (wrangler.toml → crons) : annonce les nouveaux directs sur Discord.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(annoncerDirects(env));
+  },
 };
 
 async function construire(env) {
+  const e = await etat(env);
+  if (e.erreur === 'classeur') return json({ ok: false, erreur: 'classeur' }, 502);
+  if (!e.ok) return json({ ok: false, erreur: e.erreur, chaines: e.chaines }, 200, 0);
+  return json({ ok: true, maj: new Date().toISOString(), chaines: e.chaines });
+}
+
+// Chaînes du classeur et, pour chacune, l'état de son direct sur Twitch.
+async function etat(env) {
   let chaines;
   try {
     chaines = await lireChaines();
   } catch (err) {
     console.error('Classeur illisible :', err.message);
-    return json({ ok: false, erreur: 'classeur' }, 502);
+    return { ok: false, erreur: 'classeur' };
   }
   if (!env.TWITCH_CLIENT_ID || !env.TWITCH_CLIENT_SECRET) {
-    return json({ ok: false, erreur: 'config', chaines }, 200, 0);
+    return { ok: false, erreur: 'config', chaines };
   }
   try {
     const enDirect = await streams(env, chaines.map(c => c.chaine));
@@ -66,12 +79,78 @@ async function construire(env) {
       c.spectateurs = s.viewer_count;
       c.debut = s.started_at;
       c.vignette = (s.thumbnail_url || '').replace('{width}', '640').replace('{height}', '360');
+      c.stream = s.id;
     });
   } catch (err) {
     console.error('Twitch :', err.message);
-    return json({ ok: false, erreur: 'twitch', chaines }, 200, 0);
+    return { ok: false, erreur: 'twitch', chaines };
   }
-  return json({ ok: true, maj: new Date().toISOString(), chaines });
+  return { ok: true, chaines };
+}
+
+/* ---------- Annonces Discord des nouveaux directs (canal LNHQ TV) ---------- */
+// Mémoire (KV « annonces ») : { chaine: { stream, t, fin } }. Un direct est annoncé
+// une seule fois ; un direct relancé moins de 30 min après la fin du précédent
+// (coupure, jeu qui plante) n'est pas réannoncé. On n'écrit en mémoire qu'aux
+// changements (début, fin), pour rester loin de la limite gratuite d'écritures.
+const DELAI_REANNONCE = 30 * 60 * 1000;
+
+async function annoncerDirects(env) {
+  if (!env.WEBHOOK_TV) return;
+  const e = await etat(env);
+  if (!e.ok) return;
+  const maintenant = Date.now();
+  const live = e.chaines.filter(x => x.live && x.lnhq);
+  const enDirect = new Set(live.map(c => c.chaine));
+  const avant = (await env.TV_ETAT.get('annonces', 'json')) || {};
+  const apres = {};
+  // Directs terminés : on note l'heure de fin, puis on les oublie après 30 min.
+  Object.entries(avant).forEach(([chaine, a]) => {
+    if (enDirect.has(chaine)) return;
+    if (!a.fin) apres[chaine] = { ...a, fin: maintenant };
+    else if (maintenant - a.fin < DELAI_REANNONCE) apres[chaine] = a;
+  });
+
+  for (const c of live) {
+    const deja = avant[c.chaine];
+    if (deja && (deja.stream === c.stream || (deja.fin && maintenant - deja.fin < DELAI_REANNONCE))) {
+      apres[c.chaine] = { stream: c.stream, t: deja.t };
+      continue;
+    }
+    // Échec d'envoi : rien n'est noté, on réessaie à la minute suivante.
+    if (await annoncer(env, c)) apres[c.chaine] = { stream: c.stream, t: maintenant };
+  }
+  if (JSON.stringify(apres) !== JSON.stringify(avant)) await env.TV_ETAT.put('annonces', JSON.stringify(apres));
+}
+
+async function annoncer(env, c) {
+  const page = 'https://lnhq.ca/tv.html?chaine=' + encodeURIComponent(c.chaine);
+  const logo = c.code ? 'https://lnhq.ca/Logos/' + c.code + '.png' : 'https://lnhq.ca/logo-lnhq.png';
+  const nom = c.nom || c.chaine;
+  const message = {
+    username: 'LNHQ TV',
+    avatar_url: 'https://lnhq.ca/logo-lnhq.png',
+    embeds: [{
+      title: '🔴 ' + (c.titre || nom + ' est en direct'),
+      url: page,
+      description: `**${nom}**${c.equipe ? ' (' + c.equipe + ')' : ''} est en direct sur Twitch${c.jeu ? ' — ' + c.jeu : ''}.\n`
+        + `[Regarder sur LNHQ TV](${page}) · [Ouvrir sur Twitch](https://www.twitch.tv/${c.chaine})`,
+      color: 0x9146FF,
+      thumbnail: { url: logo },
+      // Paramètre ajouté : Discord garderait sinon une ancienne image de la chaîne.
+      image: c.vignette ? { url: c.vignette + '?t=' + Date.now() } : undefined,
+      timestamp: c.debut,
+    }],
+    allowed_mentions: { parse: [] },
+  };
+  try {
+    const rep = await fetch(env.WEBHOOK_TV, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
+    if (!rep.ok) console.error('Discord (LNHQ TV) :', rep.status, (await rep.text()).slice(0, 300));
+    return rep.ok;
+  } catch (err) {
+    console.error('Discord (LNHQ TV) :', err.message);
+    return false;
+  }
 }
 
 // Onglet DGs : B Équipe, C Code, E DG, et la colonne dont l'en-tête est « TWITCH ».

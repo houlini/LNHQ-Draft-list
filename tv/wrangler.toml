@@ -7,6 +7,17 @@ workers_dev = false
 preview_urls = false
 routes = [{ pattern = "api.lnhq.ca", custom_domain = true }]
 
+# Chaque minute : annonce dans le canal Discord LNHQ TV les directs qui commencent.
+[triggers]
+crons = ["* * * * *"]
+
+# Mémoire des directs déjà annoncés (pour ne pas les annoncer deux fois).
+[[kv_namespaces]]
+binding = "TV_ETAT"
+id = "ddf71223d9364208a969bff9395278f3"
+
 # Secrets (jamais dans ce fichier), valeurs de dev.twitch.tv → Console → Applications :
 #   npx wrangler secret put TWITCH_CLIENT_ID
 #   npx wrangler secret put TWITCH_CLIENT_SECRET
+# Webhook du canal Discord LNHQ TV (sans lui, aucune annonce n'est envoyée) :
+#   npx wrangler secret put WEBHOOK_TV
