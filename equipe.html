@@ -82,6 +82,9 @@
   }
   .picks-list li{ padding:10px 16px; border-bottom:1px solid var(--line); font-size:14.5px; }
   .picks-list li:last-child{ border-bottom:none; }
+  .picks-list .pick-item{ display:flex; align-items:center; gap:10px; }
+  .pick-item img{ width:24px; height:24px; object-fit:contain; flex-shrink:0; }
+  .pick-via{ margin-left:auto; font-size:12.5px; color:var(--ink-muted); }
 
   /* ---------- Sélecteur d'équipe (bannière orange) ---------- */
   .team-switch-btn{
@@ -827,9 +830,29 @@ function renderSections(){
 function renderPicks(){
   const picks = state.picks;
   els.picksList.innerHTML = '';
+  // « 1re ronde 2027 (MTL) » : logo de l'équipe d'origine, et « obtenu de … »
+  // quand le choix vient d'une autre équipe (échange).
   picks.forEach(p => {
     const li = document.createElement('li');
-    li.textContent = p;
+    li.className = 'pick-item';
+    const m = /^(.*?)\s*\(([A-Z]{3})\)\s*$/.exec(p);
+    if(m){
+      const img = document.createElement('img');
+      img.src = teamLogoPath(m[2]);
+      img.alt = '';
+      img.onerror = () => { img.style.visibility = 'hidden'; };
+      const texte = document.createElement('span');
+      texte.textContent = m[1];
+      li.append(img, texte);
+      if(currentTeam && m[2] !== currentTeam.code){
+        const via = document.createElement('span');
+        via.className = 'pick-via';
+        via.textContent = 'obtenu de ' + m[2];
+        li.append(via);
+      }
+    }else{
+      li.textContent = p;
+    }
     els.picksList.appendChild(li);
   });
   els.picksBlock.hidden = picks.length === 0;

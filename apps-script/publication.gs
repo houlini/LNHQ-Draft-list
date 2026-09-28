@@ -401,6 +401,62 @@ const JETONS_PAR_SAISON = 1000;
 const SAISON_DEPART = '2026-27';
 const EN_COURS = 'En cours';
 
+/* =========================================================================
+   CHOIX DE REPÊCHAGE : une ligne par choix dans PLAYERSDATABASE, comme un joueur.
+     B (et A)  « 1re ronde 2027 (MTL) » : ronde, année, équipe d'ORIGINE
+     H et I    « CHOIX » : exclu des sections Attaquants/Défenseurs/Gardiens
+     Z         équipe PROPRIÉTAIRE (valeur, pas la formule du DRAFT) : un échange
+               = changer ce code.
+   Chaque onglet d'équipe liste ses choix sous l'en-tête CHOIX (formule FILTER).
+   À lancer à la main (Exécuter) ; relançable sans créer de doublons.
+   ========================================================================= */
+const ANNEE_CHOIX = '2027';
+const RONDES_CHOIX = ['1re', '2e'];
+
+function installerChoix() {
+  const classeur = SpreadsheetApp.openById(SHEET_ID);
+  const pdb = classeur.getSheetByName(ONGLET_JOUEURS);
+  const existants = new Set(pdb.getRange(3, COL_JOUEUR, pdb.getLastRow() - 2, 1).getValues().map(l => String(l[0]).trim()));
+  const lignes = [];
+  EQUIPES.forEach(nom => {
+    const code = CODES_EQUIPES[nom];
+    RONDES_CHOIX.forEach(ronde => {
+      const libelle = ronde + ' ronde ' + ANNEE_CHOIX + ' (' + code + ')';
+      if (existants.has(libelle)) return;
+      const l = new Array(COL_EQUIPE_JOUEUR).fill('');
+      l[0] = libelle;                  // A
+      l[COL_JOUEUR - 1] = libelle;     // B
+      l[7] = 'CHOIX';                  // H  PO
+      l[8] = 'CHOIX';                  // I  PO2
+      l[COL_EQUIPE_JOUEUR - 1] = code; // Z  propriétaire
+      lignes.push(l);
+    });
+  });
+  if (lignes.length) {
+    const debut = pdb.getLastRow() + 1;
+    const manque = debut + lignes.length - 1 - pdb.getMaxRows();
+    if (manque > 0) pdb.insertRowsAfter(pdb.getMaxRows(), manque);
+    pdb.getRange(debut, 1, lignes.length, COL_EQUIPE_JOUEUR).setValues(lignes);
+  }
+  console.log(lignes.length + ' choix ajoutés à ' + ONGLET_JOUEURS + '.');
+
+  const formule = '=IFERROR(SORT(FILTER(PLAYERSDATABASE!$B$3:$B$2686, PLAYERSDATABASE!$Z$3:$Z$2686=$A$1, '
+    + 'PLAYERSDATABASE!$H$3:$H$2686="CHOIX")), "")';
+  Object.values(CODES_EQUIPES).forEach(code => {
+    const o = classeur.getSheetByName(code);
+    if (!o) { console.warn('Onglet ' + code + ' introuvable'); return; }
+    const b = o.getRange(1, 2, o.getMaxRows(), 1).getValues();
+    const i = b.findIndex(l => String(l[0]).trim() === 'CHOIX');
+    if (i < 0) { console.warn(code + ' : en-tête CHOIX introuvable'); return; }
+    const cible = o.getRange(i + 2, 2);
+    // On n'écrase pas une liste tapée à la main sous CHOIX.
+    const dessous = o.getRange(i + 2, 2, Math.min(10, o.getMaxRows() - i - 1), 1).getValues().flat().filter(String);
+    if (dessous.length && !cible.getFormula()) { console.warn(code + ' : cases sous CHOIX déjà remplies, formule non posée'); return; }
+    cible.setFormula(formule);
+  });
+  console.log('Formule CHOIX posée dans les onglets d\'équipe.');
+}
+
 function installerEncheres() {
   const classeur = SpreadsheetApp.openById(SHEET_ID);
   [['ENCHERES', ENCHERES_ENTETES], ['MISES', MISES_ENTETES]].forEach(([nom, entetes]) => {
