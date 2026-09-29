@@ -39,27 +39,26 @@
       </div>
     </div>
 
-    <div class="ench-page" id="page" hidden>
-      <section>
-        <h2 class="ench-titre">Enchères en cours <span class="ench-compte" id="compteEnCours"></span></h2>
-        <div class="ench-grille" id="enCours"></div>
-        <p class="ench-vide" id="aucuneEnCours" hidden>Aucune enchère en cours. Lance la première !</p>
-      </section>
+    <div class="ench-page ench-disposition" id="page" hidden>
+      <!-- Colonne de gauche sur ordinateur ; sous le reste sur téléphone. -->
+      <aside class="ench-histo">
+        <h2 class="ench-titre">Historique</h2>
+        <ol class="ench-fil" id="historique"></ol>
+        <p class="ench-vide" id="aucunHistorique" hidden>Aucune mise pour l'instant.</p>
+      </aside>
 
-      <section>
-        <h2 class="ench-titre">Jetons des équipes <span class="ench-compte" id="saison"></span></h2>
-        <div class="table-wrap ench-jetons">
-          <table>
-            <thead><tr><th>Équipe</th><th class="is-numeric">Dispo.</th><th class="is-numeric">Engagés</th><th class="is-numeric">Dépensés</th></tr></thead>
-            <tbody id="jetons"></tbody>
-          </table>
-        </div>
-      </section>
+      <div class="ench-principal">
+        <section>
+          <h2 class="ench-titre">Enchères en cours <span class="ench-compte" id="compteEnCours"></span></h2>
+          <div class="ench-grille" id="enCours"></div>
+          <p class="ench-vide" id="aucuneEnCours" hidden>Aucune enchère en cours. Lance la première !</p>
+        </section>
 
-      <section id="blocTerminees" hidden>
-        <h2 class="ench-titre">Enchères terminées</h2>
-        <div class="ench-liste" id="terminees"></div>
-      </section>
+        <section>
+          <h2 class="ench-titre">Jetons des équipes <span class="ench-compte" id="saison"></span></h2>
+          <div class="ench-jetons" id="jetons"></div>
+        </section>
+      </div>
     </div>
   </main>
 </div>
@@ -81,9 +80,10 @@ const els = {
   aucuneEnCours: document.getElementById('aucuneEnCours'),
   jetons: document.getElementById('jetons'),
   saison: document.getElementById('saison'),
-  blocTerminees: document.getElementById('blocTerminees'),
-  terminees: document.getElementById('terminees'),
+  historique: document.getElementById('historique'),
+  aucunHistorique: document.getElementById('aucunHistorique'),
 };
+const HISTORIQUE_MAX = 60;
 els.title.textContent = 'LNHQ';
 let donnees = null;
 let ancreSuivie = false;
@@ -151,35 +151,71 @@ function render(){
   els.aucuneEnCours.hidden = !!enCours.length;
   els.compteEnCours.textContent = enCours.length ? '(' + enCours.length + ')' : '';
 
+  // Jetons : une petite tuile par équipe, dans l'ordre alphabétique (chacun retrouve
+  // la sienne au même endroit). Engagés et dépensés seulement s'il y en a.
   els.saison.textContent = donnees.saison ? 'Saison ' + donnees.saison : '';
-  els.jetons.replaceChildren(...donnees.equipes.slice().sort((a, b) => b.disponibles - a.disponibles || a.nom.localeCompare(b.nom, 'fr')).map(eq => {
-    const tr = el('tr');
-    const td = el('td');
-    const cell = el('span', 'ench-equipe');
-    cell.append(logo(eq.code), el('span', null, eq.nom));
-    td.append(cell);
-    const dispo = el('td', 'is-numeric ench-dispo', eq.disponibles);
-    tr.append(td, dispo, el('td', 'is-numeric', eq.engages || '—'), el('td', 'is-numeric', eq.depenses || '—'));
-    return tr;
+  els.jetons.replaceChildren(...donnees.equipes.slice().sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map(eq => {
+    const tuile = el('div', 'ench-tuile' + (eq.disponibles < eq.depart ? ' is-active' : ''));
+    tuile.title = `${eq.nom} : ${eq.disponibles} disponibles · ${eq.engages} engagés · ${eq.depenses} dépensés`;
+    const texte = el('div', 'ench-tuile-texte');
+    texte.append(el('span', 'ench-tuile-nom', eq.nom), el('strong', 'ench-dispo', eq.disponibles));
+    const detail = [eq.engages && eq.engages + ' engagés', eq.depenses && eq.depenses + ' dépensés'].filter(Boolean).join(' · ');
+    if(detail) texte.append(el('span', 'ench-tuile-detail', detail));
+    tuile.append(logo(eq.code), texte);
+    return tuile;
   }));
 
-  const fermees = donnees.encheres.filter(e => e.statut !== 'En cours').sort((a, b) => new Date(b.fin) - new Date(a.fin)).slice(0, 30);
-  els.blocTerminees.hidden = !fermees.length;
-  els.terminees.replaceChildren(...fermees.map(e => {
-    const ligne = el('div', 'ench-ligne' + (e.statut === 'Annulée' ? ' is-annulee' : ''));
-    ligne.id = 'e-' + e.id;
-    const texte = el('div', 'ench-ligne-texte');
-    texte.append(el('strong', null, e.joueur),
-      el('span', null, e.statut === 'Annulée' ? 'Annulée' : `${nomEquipe(e.equipe)} · ${e.mise} jetons · ${quand.format(new Date(e.fin))}`));
-    ligne.append(logo(e.equipe), texte);
-    return ligne;
-  }));
+  renderHistorique();
 
   els.rowCount.textContent = `${enCours.length} enchère${enCours.length > 1 ? 's' : ''} en cours`;
   if(!ancreSuivie && location.hash){
     const cible = document.getElementById(location.hash.slice(1));
     if(cible){ cible.scrollIntoView({ block: 'start' }); cible.classList.add('is-ciblee'); ancreSuivie = true; }
   }
+}
+
+// Historique : chaque mise (la première = lancement) et chaque fin d'enchère, du plus récent au plus ancien.
+function renderHistorique(){
+  const premieres = new Map();
+  donnees.mises.forEach(m => {
+    const p = premieres.get(m.id);
+    if(!p || new Date(m.date) < new Date(p.date)) premieres.set(m.id, m);
+  });
+  const joueurs = new Map(donnees.encheres.map(e => [e.id, e]));
+  const evenements = donnees.mises.map(m => ({
+    date: m.date, id: m.id, equipe: m.equipe, type: premieres.get(m.id) === m ? 'lance' : 'mise',
+    texte: premieres.get(m.id) === m ? `lance l'enchère sur ${m.joueur}` : `mise sur ${m.joueur}`, montant: m.mise,
+  }));
+  donnees.encheres.filter(e => e.statut === 'Terminée' || e.statut === 'Annulée').forEach(e => {
+    evenements.push(e.statut === 'Annulée'
+      ? { date: e.fin, id: e.id, equipe: e.equipe, type: 'annulee', texte: `Enchère sur ${e.joueur} annulée`, montant: null }
+      : { date: e.fin, id: e.id, equipe: e.equipe, type: 'fin', texte: `remporte ${e.joueur}`, montant: e.mise });
+  });
+  evenements.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  els.historique.replaceChildren(...evenements.slice(0, HISTORIQUE_MAX).map(ev => {
+    const li = el('li', 'ench-evt is-' + ev.type);
+    // Cible des liens Discord « Enchère terminée » (#e-id).
+    if(ev.type === 'fin' || ev.type === 'annulee') li.id = 'e-' + ev.id;
+    const corps = el('div', 'ench-evt-corps');
+    const phrase = el('span', 'ench-evt-texte');
+    if(ev.type !== 'annulee') phrase.append(el('strong', null, nomEquipe(ev.equipe) + ' '));
+    phrase.append(ev.type === 'fin' ? '🏁 ' + ev.texte : ev.texte);
+    corps.append(phrase, el('time', null, quand.format(new Date(ev.date))));
+    li.append(logo(ev.equipe), corps);
+    if(ev.montant != null) li.append(el('span', 'ench-evt-montant', ev.montant));
+    // Un clic sur une mise d'une enchère encore ouverte mène à sa carte.
+    const e = joueurs.get(ev.id);
+    if(e && e.statut === 'En cours'){
+      li.classList.add('is-lien');
+      li.addEventListener('click', () => {
+        const carte = document.getElementById('e-' + ev.id);
+        if(carte){ carte.scrollIntoView({ behavior: 'smooth', block: 'center' }); carte.classList.add('is-ciblee'); setTimeout(() => carte.classList.remove('is-ciblee'), 1500); }
+      });
+    }
+    return li;
+  }));
+  els.aucunHistorique.hidden = !!evenements.length;
 }
 
 function show(etat){
