@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inscription des DG</title>
+<link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css">
+<script src="site-nav.js"></script>
+<style>
+  .ins-page{
+    display:grid; grid-template-columns:1fr; gap:22px; align-items:start;
+    padding:16px clamp(12px,3vw,40px) 40px; max-width:1200px; margin:0 auto; box-sizing:border-box; width:100%;
+  }
+  @media (min-width:960px){ .ins-page{ grid-template-columns:minmax(0, 1fr) minmax(0, 1.2fr); } }
+  .ins-carte{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px; }
+  .ins-carte + .ins-carte{ margin-top:22px; }
+  .ins-titre{
+    margin:0 0 6px; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
+    font-size:20px; text-transform:uppercase; letter-spacing:0.02em; color:var(--accent);
+  }
+  .ins-aide{ margin:0 0 14px; font-size:14px; color:var(--ink-muted); line-height:1.5; }
+  .ins-form{ display:flex; flex-direction:column; gap:12px; }
+  .ins-champ{ display:flex; flex-direction:column; gap:5px; }
+  .ins-champ > span{ font-weight:700; font-size:12.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted); }
+  .ins-champ small{ font-weight:400; text-transform:none; letter-spacing:0; }
+  .ins-champ input, .ins-champ select{
+    height:44px; padding:0 12px; font-size:16px; width:100%; box-sizing:border-box;
+    border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink);
+  }
+  .ins-champ input:focus, .ins-champ select:focus{ border-color:var(--accent); outline:none; }
+  .ins-piege{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+  .ins-bouton{
+    align-self:flex-start; min-height:44px; padding:0 20px; border:none; border-radius:9px; cursor:pointer;
+    background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:15px;
+  }
+  .ins-bouton:disabled{ opacity:0.6; cursor:progress; }
+  .ins-ligne{ display:flex; gap:8px; }
+  .ins-ligne input{ flex:1; min-width:0; }
+  .ins-message{ margin:0; padding:12px 14px; border-radius:8px; font-size:14.5px; line-height:1.45; }
+  .ins-message.is-ok{ background:var(--accent-soft); color:var(--ink); }
+  .ins-message.is-erreur{ background:var(--danger-soft); color:var(--danger); }
+
+  .ins-equipes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; }
+  .ins-equipe{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); }
+  .ins-equipe img{ width:28px; height:28px; object-fit:contain; flex-shrink:0; }
+  .ins-equipe div{ min-width:0; line-height:1.25; }
+  .ins-equipe strong{ display:block; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ins-equipe span{ font-size:12px; color:var(--ink-muted); }
+  .ins-equipe.is-ok{ border-color:#2F9E44; }
+  .ins-equipe.is-ok span{ color:#2F9E44; font-weight:700; }
+  .ins-equipe.is-attente{ border-color:var(--accent); }
+  .ins-equipe.is-attente span{ color:var(--accent); font-weight:700; }
+  .ins-legende{ margin:12px 0 0; font-size:12.5px; color:var(--ink-muted); }
+  @media (max-width:600px){ .ins-equipes{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <site-header class="app-header" current-page="inscription"></site-header>
+
+  <main class="ins-page">
+    <div>
+      <section class="ins-carte">
+        <h2 class="ins-titre">Demander l'accès</h2>
+        <p class="ins-aide">
+          Pour publier des nouvelles et miser aux enchères, chaque DG doit être inscrit.
+          Ta demande est envoyée à un dirigeant de la ligue, qui l'approuve. Ensuite, tu te
+          connectes à <strong>publier.lnhq.ca</strong> avec ce courriel : un code t'y est envoyé.
+          Ton courriel n'est jamais affiché sur le site.
+        </p>
+        <form class="ins-form" id="formInscription" novalidate>
+          <label class="ins-champ"><span>Nom</span><input id="nom" autocomplete="name" maxlength="60" required></label>
+          <label class="ins-champ"><span>Équipe</span><select id="equipe" required><option value="">Choisis ton équipe…</option></select></label>
+          <label class="ins-champ"><span>Courriel</span><input id="courriel" type="email" autocomplete="email" inputmode="email" maxlength="120" required></label>
+          <label class="ins-champ"><span>Discord <small>facultatif</small></span><input id="discord" maxlength="60" placeholder="@toncompte"></label>
+          <!-- Piège à robots : invisible, un humain ne le remplit jamais. -->
+          <label class="ins-piege" aria-hidden="true">Site web<input id="site" tabindex="-1" autocomplete="off"></label>
+          <button type="submit" class="ins-bouton" id="btnInscription">Envoyer ma demande</button>
+          <p class="ins-message" id="msgInscription" role="status" hidden></p>
+        </form>
+      </section>
+
+      <section class="ins-carte">
+        <h2 class="ins-titre">Vérifier mon inscription</h2>
+        <p class="ins-aide">Entre ton courriel pour savoir si ta demande est approuvée.</p>
+        <form class="ins-form" id="formStatut" novalidate>
+          <div class="ins-ligne ins-champ">
+            <input id="courrielStatut" type="email" autocomplete="email" inputmode="email" aria-label="Courriel" placeholder="ton@courriel.com">
+            <button type="submit" class="ins-bouton" id="btnStatut">Vérifier</button>
+          </div>
+          <p class="ins-message" id="msgStatut" role="status" hidden></p>
+        </form>
+      </section>
+    </div>
+
+    <section class="ins-carte">
+      <h2 class="ins-titre">Équipes inscrites</h2>
+      <p class="ins-aide">Vérifie si ton équipe a déjà un DG inscrit.</p>
+      <div class="ins-equipes" id="equipes"></div>
+      <p class="ins-legende">✅ DG approuvé · ⏳ demande en attente d'approbation</p>
+    </section>
+  </main>
+</div>
+
+<script>
+/* LNHQ — inscription des DG (temporaire). Les demandes vont dans l'onglet privé ACCES
+   avec le statut « À approuver » ; un dirigeant approuve et ajoute le courriel à Cloudflare. */
+const API = 'https://api.lnhq.ca/inscription';
+const $ = id => document.getElementById(id);
+document.getElementById('sheetTitle').textContent = 'LNHQ';
+document.getElementById('rowCount').textContent = 'Inscription des DG';
+
+const ERREURS = {
+  courriel: 'Ce courriel ne semble pas valide.',
+  equipe: 'Choisis ton équipe dans la liste.',
+  nom: 'Entre ton nom.',
+  plein: "Trop de demandes en attente pour l'instant. Réessaie plus tard ou contacte un dirigeant.",
+  config: "Les inscriptions ne sont pas encore ouvertes. Réessaie plus tard.",
+};
+
+(window.LNHQ_TEAMS || []).forEach(t => $('equipe').append(new Option(t.name, t.name)));
+
+function afficher(id, texte, erreur){
+  const m = $(id);
+  m.className = 'ins-message ' + (erreur ? 'is-erreur' : 'is-ok');
+  m.textContent = texte;
+  m.hidden = false;
+}
+
+async function appeler(chemin, corps){
+  try{
+    const rep = await fetch(API + chemin, corps
+      ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps), cache: 'no-store' }
+      : { cache: 'no-store' });
+    return await rep.json();
+  }catch(err){
+    return { ok: false, erreur: 'reseau' };
+  }
+}
+
+const TEXTES_STATUT = {
+  approuve: equipe => `✅ Ton accès est approuvé${equipe ? ' (' + equipe + ')' : ''}. Connecte-toi à publier.lnhq.ca avec ce courriel : un code t'y sera envoyé.`,
+  attente: equipe => `⏳ Ta demande${equipe ? ' pour ' + equipe : ''} est bien reçue et attend l'approbation d'un dirigeant.`,
+  refuse: () => "Ta demande n'a pas été approuvée. Contacte un dirigeant de la ligue.",
+  inconnu: () => "Aucune demande avec ce courriel. Remplis le formulaire « Demander l'accès ».",
+};
+
+$('formInscription').addEventListener('submit', async e => {
+  e.preventDefault();
+  const d = { nom: $('nom').value.trim(), equipe: $('equipe').value, courriel: $('courriel').value.trim(), discord: $('discord').value.trim(), site: $('site').value };
+  if(d.nom.length < 2) return afficher('msgInscription', ERREURS.nom, true);
+  if(!d.equipe) return afficher('msgInscription', ERREURS.equipe, true);
+  if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(d.courriel)) return afficher('msgInscription', ERREURS.courriel, true);
+  $('btnInscription').disabled = true;
+  const r = await appeler('', d);
+  $('btnInscription').disabled = false;
+  if(!r.ok) return afficher('msgInscription', ERREURS[r.erreur] || "L'envoi a échoué. Réessaie dans un instant.", true);
+  if(r.deja) afficher('msgInscription', 'Ce courriel est déjà inscrit. ' + TEXTES_STATUT[r.statut](''), false);
+  else afficher('msgInscription', `Merci ${d.nom} ! ` + TEXTES_STATUT.attente(d.equipe), false);
+  $('formInscription').reset();
+  chargerEquipes();
+});
+
+$('formStatut').addEventListener('submit', async e => {
+  e.preventDefault();
+  const courriel = $('courrielStatut').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(courriel)) return afficher('msgStatut', ERREURS.courriel, true);
+  $('btnStatut').disabled = true;
+  const r = await appeler('/statut', { courriel });
+  $('btnStatut').disabled = false;
+  if(!r.ok) return afficher('msgStatut', ERREURS[r.erreur] || 'Vérification impossible pour le moment.', true);
+  afficher('msgStatut', (TEXTES_STATUT[r.statut] || TEXTES_STATUT.inconnu)(r.equipe), r.statut === 'refuse' || r.statut === 'inconnu');
+});
+
+async function chargerEquipes(){
+  const r = await appeler('/equipes');
+  if(!r.ok) return;
+  const codes = new Map((window.LNHQ_TEAMS || []).map(t => [t.name, t.code]));
+  $('equipes').replaceChildren(...r.equipes.map(eq => {
+    const tuile = document.createElement('div');
+    tuile.className = 'ins-equipe' + (eq.approuves ? ' is-ok' : eq.attente ? ' is-attente' : '');
+    const img = document.createElement('img');
+    img.src = 'Logos/' + (eq.code || codes.get(eq.equipe)) + '.png';
+    img.alt = '';
+    const texte = document.createElement('div');
+    const nom = document.createElement('strong');
+    nom.textContent = eq.equipe;
+    const etat = document.createElement('span');
+    etat.textContent = eq.approuves ? '✅ Inscrit' : eq.attente ? '⏳ En attente' : 'Aucun DG inscrit';
+    texte.append(nom, etat);
+    tuile.append(img, texte);
+    return tuile;
+  }));
+  const ok = r.equipes.filter(e => e.approuves).length;
+  $('lastUpdated').textContent = `${ok} équipe${ok > 1 ? 's' : ''} sur 32 inscrites`;
+}
+chargerEquipes();
+</script>
+</body>
+</html>

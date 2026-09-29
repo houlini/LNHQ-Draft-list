@@ -6,7 +6,7 @@
    exactement comme avant.
 
    Attributs :
-   - current-page : "joueurs" | "ordre" | "calendrier" | "masse" | "dgs" | "reglements" | "tv" | "encheres" (marque
+   - current-page : "joueurs" | "ordre" | "calendrier" | "masse" | "dgs" | "reglements" | "tv" | "encheres" | "inscription" (marque
      l'élément courant dans les menus Ligue/Agent libre). Absent pour les
      pages d'équipe.
    - current-team : slug de l'équipe active (ex: "boston"), pour marquer
@@ -97,6 +97,7 @@
                 ${menuItem('Règlements', 'reglements.html', currentPage === 'reglements')}
                 ${menuItem('Masse salariale', 'masse.html', currentPage === 'masse')}
                 ${menuItem('Draft 2026', 'ordre.html', currentPage === 'ordre')}
+                ${menuItem('Inscription des DG', 'inscription.html', currentPage === 'inscription')}
               </div>
             </div>
 

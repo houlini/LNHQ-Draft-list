@@ -21,3 +21,6 @@ id = "ddf71223d9364208a969bff9395278f3"
 #   npx wrangler secret put TWITCH_CLIENT_SECRET
 # Webhook du canal Discord LNHQ TV (sans lui, aucune annonce n'est envoyée) :
 #   npx wrangler secret put WEBHOOK_TV
+# Page d'inscription : mêmes valeurs que pour publier.lnhq.ca (adresse /exec du script, code SECRET) :
+#   npx wrangler secret put SCRIPT_URL
+#   npx wrangler secret put SCRIPT_SECRET

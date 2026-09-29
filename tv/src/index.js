@@ -1,4 +1,5 @@
-// LNHQ TV — Worker de api.lnhq.ca. GET /twitch : les chaînes Twitch des DG (colonne
+// Worker de api.lnhq.ca (API publique du site) : LNHQ TV (/twitch) et inscriptions (/inscription).
+// LNHQ TV — GET /twitch : les chaînes Twitch des DG (colonne
 // TWITCH de l'onglet DGs du classeur) et, pour chacune, si elle est en direct avec le
 // tag LNHQ. Les clés Twitch restent ici (secrets) ; la réponse est gardée 30 s en cache
 // pour ne pas interroger Twitch à chaque visiteur.
@@ -18,6 +19,9 @@ export default {
       'Access-Control-Allow-Origin': ORIGINES.includes(origine) || /^http:\/\/localhost(:\d+)?$/.test(origine) ? origine : ORIGINES[0],
       'Vary': 'Origin',
     };
+    if (url.pathname.startsWith('/inscription')) {
+      return inscription(request, env, url, cors);
+    }
     if (url.pathname !== '/twitch' || request.method !== 'GET') {
       return new Response('Introuvable', { status: 404, headers: cors });
     }
@@ -44,6 +48,49 @@ export default {
     ctx.waitUntil(annoncerDirects(env));
   },
 };
+
+/* ---------- Inscriptions (lnhq.ca/inscription.html) ---------- */
+// Page publique : le Worker transmet au script (adresse et clé gardées en secrets,
+// mêmes valeurs que pour publier.lnhq.ca). Le script n'accepte ici que ces 3 actions.
+const ROUTES_INSCRIPTION = {
+  'POST /inscription': 'inscrire',
+  'POST /inscription/statut': 'statutInscription',
+  'GET /inscription/equipes': 'equipesInscrites',
+};
+
+async function inscription(request, env, url, cors) {
+  const entetes = { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: { ...cors, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' } });
+  }
+  const action = ROUTES_INSCRIPTION[request.method + ' ' + url.pathname];
+  if (!action) return new Response(JSON.stringify({ ok: false, erreur: 'introuvable' }), { status: 404, headers: entetes });
+  if (!env.SCRIPT_URL || !env.SCRIPT_SECRET) return new Response(JSON.stringify({ ok: false, erreur: 'config' }), { status: 503, headers: entetes });
+
+  let corps = '{}';
+  if (request.method === 'POST') {
+    const texte = await request.text();
+    if (texte.length > 2000) return new Response(JSON.stringify({ ok: false, erreur: 'taille' }), { status: 413, headers: entetes });
+    let d;
+    try { d = JSON.parse(texte); } catch { d = {}; }
+    // Piège à robots : champ invisible que seul un robot remplit. On répond « reçu » sans rien enregistrer.
+    if (d.site) return new Response(JSON.stringify({ ok: true, statut: 'attente' }), { headers: entetes });
+    corps = JSON.stringify({ courriel: d.courriel, equipe: d.equipe, nom: d.nom, discord: d.discord });
+  }
+  const cible = new URL(env.SCRIPT_URL);
+  cible.searchParams.set('action', action);
+  cible.searchParams.set('courriel', 'inscription');
+  cible.searchParams.set('secret', env.SCRIPT_SECRET);
+  try {
+    let rep = await fetch(cible, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: corps, redirect: 'manual' });
+    if (rep.status >= 300 && rep.status < 400) rep = await fetch(rep.headers.get('Location'));
+    const r = JSON.parse(await rep.text());
+    return new Response(JSON.stringify(r), { status: r.ok ? 200 : 400, headers: entetes });
+  } catch (err) {
+    console.error('Inscription :', err.message);
+    return new Response(JSON.stringify({ ok: false, erreur: 'script' }), { status: 502, headers: entetes });
+  }
+}
 
 async function construire(env) {
   const e = await etat(env);
