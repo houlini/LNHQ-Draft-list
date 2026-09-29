@@ -174,50 +174,75 @@ function render(){
   }
 }
 
-// Historique : chaque mise (la première = lancement) et chaque fin d'enchère, du plus récent au plus ancien.
-function renderHistorique(){
-  const premieres = new Map();
-  donnees.mises.forEach(m => {
-    const p = premieres.get(m.id);
-    if(!p || new Date(m.date) < new Date(p.date)) premieres.set(m.id, m);
-  });
-  const joueurs = new Map(donnees.encheres.map(e => [e.id, e]));
-  const evenements = donnees.mises.map(m => ({
-    date: m.date, id: m.id, equipe: m.equipe, type: premieres.get(m.id) === m ? 'lance' : 'mise',
-    texte: premieres.get(m.id) === m ? `lance l'enchère sur ${m.joueur}` : `mise sur ${m.joueur}`, montant: m.mise,
-  }));
-  donnees.encheres.filter(e => e.statut === 'Terminée' || e.statut === 'Annulée').forEach(e => {
-    evenements.push(e.statut === 'Annulée'
-      ? { date: e.fin, id: e.id, equipe: e.equipe, type: 'annulee', texte: `Enchère sur ${e.joueur} annulée`, montant: null }
-      : { date: e.fin, id: e.id, equipe: e.equipe, type: 'fin', texte: `remporte ${e.joueur}`, montant: e.mise });
-  });
-  evenements.sort((a, b) => new Date(b.date) - new Date(a.date));
+// Historique groupé par enchère (donc par joueur) : un bloc par enchère, avec ses
+// mises de la plus récente à la plus ancienne. Blocs triés par dernière activité ;
+// enchères en cours ouvertes, terminées repliées (le choix du lecteur est gardé
+// d'une mise à jour à l'autre).
+const blocsOuverts = new Map();
 
-  els.historique.replaceChildren(...evenements.slice(0, HISTORIQUE_MAX).map(ev => {
-    const li = el('li', 'ench-evt is-' + ev.type);
-    // Cible des liens Discord « Enchère terminée » (#e-id).
-    if(ev.type === 'fin' || ev.type === 'annulee') li.id = 'e-' + ev.id;
-    const corps = el('div', 'ench-evt-corps');
-    const phrase = el('span', 'ench-evt-texte');
-    if(ev.type !== 'annulee') phrase.append(el('strong', null, nomEquipe(ev.equipe) + ' '));
-    phrase.append(ev.type === 'fin' ? '🏁 ' + ev.texte : ev.texte);
-    corps.append(phrase, el('time', null, quand.format(new Date(ev.date))));
-    li.append(logo(ev.equipe), corps);
-    if(ev.montant != null) li.append(el('span', 'ench-evt-montant', ev.montant));
-    // Un clic sur une mise d'une enchère encore ouverte mène à sa carte.
-    const e = joueurs.get(ev.id);
-    if(e && e.statut === 'En cours'){
-      li.classList.add('is-lien');
-      li.addEventListener('click', () => {
-        const carte = document.getElementById('e-' + ev.id);
+function renderHistorique(){
+  const encheres = new Map(donnees.encheres.map(e => [e.id, e]));
+  const parEnchere = new Map();
+  donnees.mises.forEach(m => {
+    if(!parEnchere.has(m.id)) parEnchere.set(m.id, []);
+    parEnchere.get(m.id).push(m);
+  });
+  // Une enchère terminée sans mise enregistrée (ligne ajoutée à la main) a aussi son bloc.
+  encheres.forEach((e, id) => { if(!parEnchere.has(id)) parEnchere.set(id, []); });
+
+  const blocs = [...parEnchere.entries()].map(([id, mises]) => {
+    mises.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const e = encheres.get(id) || { id, joueur: (mises[0] || {}).joueur || '?', statut: '', equipe: (mises[0] || {}).equipe, mise: (mises[0] || {}).mise };
+    const derniere = Math.max(...mises.map(m => new Date(m.date).getTime()), e.statut === 'En cours' ? 0 : new Date(e.fin || 0).getTime() || 0);
+    return { id, e, mises, derniere };
+  }).sort((a, b) => b.derniere - a.derniere).slice(0, HISTORIQUE_MAX);
+
+  els.historique.replaceChildren(...blocs.map(({ id, e, mises }) => {
+    const enCours = e.statut === 'En cours';
+    const bloc = el('li', 'ench-groupe' + (enCours ? ' is-en-cours' : e.statut === 'Annulée' ? ' is-annulee' : ' is-terminee'));
+    bloc.id = 'h-' + id;
+    // Cible des liens Discord « Enchère terminée » (#e-id) quand la carte n'existe plus.
+    if(!enCours) bloc.id = 'e-' + id;
+    const details = el('details');
+    details.open = blocsOuverts.has(id) ? blocsOuverts.get(id) : enCours;
+    details.addEventListener('toggle', () => blocsOuverts.set(id, details.open));
+
+    const resume = el('summary', 'ench-groupe-tete');
+    const titre = el('div', 'ench-groupe-titre');
+    const etat = enCours ? `En tête : ${nomEquipe(e.equipe)}`
+      : e.statut === 'Annulée' ? 'Annulée'
+      : `🏁 ${nomEquipe(e.equipe)}`;
+    titre.append(el('strong', null, e.joueur), el('span', null, `${etat} · ${mises.length} mise${mises.length > 1 ? 's' : ''}`));
+    resume.append(logo(e.equipe), titre);
+    if(e.statut !== 'Annulée') resume.append(el('span', 'ench-evt-montant', e.mise));
+    details.append(resume);
+
+    const liste = el('ol', 'ench-fil-mises');
+    mises.forEach((m, i) => {
+      const li = el('li', 'ench-evt');
+      const corps = el('div', 'ench-evt-corps');
+      const phrase = el('span', 'ench-evt-texte');
+      phrase.append(el('strong', null, nomEquipe(m.equipe)), i === mises.length - 1 ? ' lance l’enchère' : ' surenchérit');
+      corps.append(phrase, el('time', null, quand.format(new Date(m.date))));
+      li.append(logo(m.equipe), corps, el('span', 'ench-evt-montant', m.mise));
+      liste.append(li);
+    });
+    details.append(liste);
+
+    if(enCours){
+      const aller = el('button', 'ench-groupe-lien', 'Voir l’enchère');
+      aller.type = 'button';
+      aller.addEventListener('click', () => {
+        const carte = document.getElementById('e-' + id);
         if(carte){ carte.scrollIntoView({ behavior: 'smooth', block: 'center' }); carte.classList.add('is-ciblee'); setTimeout(() => carte.classList.remove('is-ciblee'), 1500); }
       });
+      details.append(aller);
     }
-    return li;
+    bloc.append(details);
+    return bloc;
   }));
-  els.aucunHistorique.hidden = !!evenements.length;
+  els.aucunHistorique.hidden = !!blocs.length;
 }
-
 function show(etat){
   els.loader.hidden = etat !== 'loading';
   els.errorBox.hidden = etat !== 'error';
