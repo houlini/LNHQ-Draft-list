@@ -75,7 +75,7 @@ async function inscription(request, env, url, cors) {
     try { d = JSON.parse(texte); } catch { d = {}; }
     // Piège à robots : champ invisible que seul un robot remplit. On répond « reçu » sans rien enregistrer.
     if (d.site) return new Response(JSON.stringify({ ok: true, statut: 'attente' }), { headers: entetes });
-    corps = JSON.stringify({ courriel: d.courriel, equipe: d.equipe, nom: d.nom, discord: d.discord });
+    corps = JSON.stringify({ courriel: d.courriel, equipe: d.equipe });
   }
   const cible = new URL(env.SCRIPT_URL);
   cible.searchParams.set('action', action);

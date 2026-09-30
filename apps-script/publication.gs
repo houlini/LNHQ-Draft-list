@@ -132,7 +132,7 @@ function trouverMembre(courriel) {
    Pour approuver : vider la colonne Statut (ou écrire « Approuvé »), puis
    ajouter le courriel dans Cloudflare Access. Aucun courriel n'est renvoyé au site.
    ========================================================================= */
-const ACCES_ENTETES = ['Courriel', 'Équipe', 'Annonces', 'Statut', 'Nom', 'Discord', 'Demandé le'];
+const ACCES_ENTETES = ['Courriel', 'Équipe', 'Annonces', 'Statut', 'Demandé le'];
 const A_APPROUVER = 'À approuver';
 const MAX_EN_ATTENTE = 100;
 
@@ -152,11 +152,8 @@ function ongletAcces() {
 function inscrire(d) {
   const courriel = String(d.courriel || '').trim().toLowerCase();
   const equipe = String(d.equipe || '').trim();
-  const nom = String(d.nom || '').trim().slice(0, 60);
-  const discord = String(d.discord || '').trim().slice(0, 60);
   if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(courriel) || courriel.length > 120) return { ok: false, erreur: 'courriel' };
   if (!EQUIPES.includes(equipe)) return { ok: false, erreur: 'equipe' };
-  if (nom.length < 2) return { ok: false, erreur: 'nom' };
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
@@ -164,8 +161,10 @@ function inscrire(d) {
     const lignes = o.getDataRange().getValues().slice(1);
     const existante = lignes.find(l => String(l[0]).trim().toLowerCase() === courriel);
     if (existante) return { ok: true, statut: statutDe(existante), deja: true };
+    // Une équipe déjà inscrite (approuvée ou en attente) ne peut pas être redemandée.
+    if (lignes.some(l => String(l[1]).trim() === equipe && String(l[0]).trim() && statutDe(l) !== 'refuse')) return { ok: false, erreur: 'equipe_prise' };
     if (lignes.filter(l => String(l[3]).trim() === A_APPROUVER).length >= MAX_EN_ATTENTE) return { ok: false, erreur: 'plein' };
-    o.appendRow([courriel, equipe, false, A_APPROUVER, nom, discord, new Date()]);
+    o.appendRow([courriel, equipe, false, A_APPROUVER, new Date()]);
     o.getRange(o.getLastRow(), 3).insertCheckboxes();
     return { ok: true, statut: 'attente' };
   } finally {

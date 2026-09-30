@@ -71,10 +71,8 @@
           Ton courriel n'est jamais affiché sur le site.
         </p>
         <form class="ins-form" id="formInscription" novalidate>
-          <label class="ins-champ"><span>Nom</span><input id="nom" autocomplete="name" maxlength="60" required></label>
-          <label class="ins-champ"><span>Équipe</span><select id="equipe" required><option value="">Choisis ton équipe…</option></select></label>
+          <label class="ins-champ"><span>Équipe <small>seules les équipes pas encore inscrites</small></span><select id="equipe" required disabled><option value="">Chargement des équipes…</option></select></label>
           <label class="ins-champ"><span>Courriel</span><input id="courriel" type="email" autocomplete="email" inputmode="email" maxlength="120" required></label>
-          <label class="ins-champ"><span>Discord <small>facultatif</small></span><input id="discord" maxlength="60" placeholder="@toncompte"></label>
           <!-- Piège à robots : invisible, un humain ne le remplit jamais. -->
           <label class="ins-piege" aria-hidden="true">Site web<input id="site" tabindex="-1" autocomplete="off"></label>
           <button type="submit" class="ins-bouton" id="btnInscription">Envoyer ma demande</button>
@@ -115,12 +113,11 @@ document.getElementById('rowCount').textContent = 'Inscription des DG';
 const ERREURS = {
   courriel: 'Ce courriel ne semble pas valide.',
   equipe: 'Choisis ton équipe dans la liste.',
-  nom: 'Entre ton nom.',
+  equipe_prise: 'Cette équipe est déjà inscrite (ou en attente d’approbation).',
   plein: "Trop de demandes en attente pour l'instant. Réessaie plus tard ou contacte un dirigeant.",
   config: "Les inscriptions ne sont pas encore ouvertes. Réessaie plus tard.",
 };
 
-(window.LNHQ_TEAMS || []).forEach(t => $('equipe').append(new Option(t.name, t.name)));
 
 function afficher(id, texte, erreur){
   const m = $(id);
@@ -149,8 +146,7 @@ const TEXTES_STATUT = {
 
 $('formInscription').addEventListener('submit', async e => {
   e.preventDefault();
-  const d = { nom: $('nom').value.trim(), equipe: $('equipe').value, courriel: $('courriel').value.trim(), discord: $('discord').value.trim(), site: $('site').value };
-  if(d.nom.length < 2) return afficher('msgInscription', ERREURS.nom, true);
+  const d = { equipe: $('equipe').value, courriel: $('courriel').value.trim(), site: $('site').value };
   if(!d.equipe) return afficher('msgInscription', ERREURS.equipe, true);
   if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(d.courriel)) return afficher('msgInscription', ERREURS.courriel, true);
   $('btnInscription').disabled = true;
@@ -158,7 +154,7 @@ $('formInscription').addEventListener('submit', async e => {
   $('btnInscription').disabled = false;
   if(!r.ok) return afficher('msgInscription', ERREURS[r.erreur] || "L'envoi a échoué. Réessaie dans un instant.", true);
   if(r.deja) afficher('msgInscription', 'Ce courriel est déjà inscrit. ' + TEXTES_STATUT[r.statut](''), false);
-  else afficher('msgInscription', `Merci ${d.nom} ! ` + TEXTES_STATUT.attente(d.equipe), false);
+  else afficher('msgInscription', 'Merci ! ' + TEXTES_STATUT.attente(d.equipe), false);
   $('formInscription').reset();
   chargerEquipes();
 });
@@ -176,7 +172,11 @@ $('formStatut').addEventListener('submit', async e => {
 
 async function chargerEquipes(){
   const r = await appeler('/equipes');
-  if(!r.ok) return;
+  if(!r.ok){
+    $('equipe').replaceChildren(new Option('Inscriptions indisponibles pour le moment', ''));
+    $('btnInscription').disabled = true;
+    return;
+  }
   const codes = new Map((window.LNHQ_TEAMS || []).map(t => [t.name, t.code]));
   $('equipes').replaceChildren(...r.equipes.map(eq => {
     const tuile = document.createElement('div');
@@ -195,6 +195,16 @@ async function chargerEquipes(){
   }));
   const ok = r.equipes.filter(e => e.approuves).length;
   $('lastUpdated').textContent = `${ok} équipe${ok > 1 ? 's' : ''} sur 32 inscrites`;
+
+  // Liste de choix : seulement les équipes sans DG approuvé ni demande en attente.
+  const libres = r.equipes.filter(e => !e.approuves && !e.attente);
+  const choix = $('equipe');
+  const avant = choix.value;
+  choix.replaceChildren(new Option(libres.length ? 'Choisis ton équipe…' : 'Toutes les équipes sont inscrites', ''),
+    ...libres.map(e => new Option(e.equipe, e.equipe)));
+  choix.value = libres.some(e => e.equipe === avant) ? avant : '';
+  choix.disabled = !libres.length;
+  $('btnInscription').disabled = !libres.length;
 }
 chargerEquipes();
 </script>
