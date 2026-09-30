@@ -164,8 +164,15 @@ function inscrire(d) {
     // Une équipe déjà inscrite (approuvée ou en attente) ne peut pas être redemandée.
     if (lignes.some(l => String(l[1]).trim() === equipe && String(l[0]).trim() && statutDe(l) !== 'refuse')) return { ok: false, erreur: 'equipe_prise' };
     if (lignes.filter(l => String(l[3]).trim() === A_APPROUVER).length >= MAX_EN_ATTENTE) return { ok: false, erreur: 'plein' };
-    o.appendRow([courriel, equipe, false, A_APPROUVER, new Date()]);
-    o.getRange(o.getLastRow(), 3).insertCheckboxes();
+    // Première ligne sans courriel sous la liste : les cases à cocher de la colonne C
+    // (jusqu'à la ligne 200) font croire au classeur que ces lignes sont remplies, et
+    // appendRow écrirait sous la ligne 200, loin de la liste.
+    const libre = lignes.findIndex(l => !String(l[0]).trim());
+    const rangee = libre >= 0 ? libre + 2 : o.getLastRow() + 1;
+    o.getRange(rangee, 1, 1, 2).setValues([[courriel, equipe]]);
+    o.getRange(rangee, 4, 1, 2).setValues([[A_APPROUVER, new Date()]]);
+    const caseAnnonces = o.getRange(rangee, 3);
+    if (caseAnnonces.getDataValidation() === null) caseAnnonces.insertCheckboxes();
     return { ok: true, statut: 'attente' };
   } finally {
     verrou.releaseLock();
