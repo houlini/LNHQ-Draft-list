@@ -91,6 +91,23 @@ button, input{font-family:inherit;}
 }
 
 .site-nav{ display:flex; align-items:center; gap:2px; flex-shrink:0; flex-wrap:wrap; }
+
+/* Bouton d'alerte « Accès DGs » (temporaire, voir ALERTE_ACCES_DG dans site-nav.js) :
+   à côté du logo sur téléphone, juste avant le menu sur ordinateur. */
+.alerte-dg{
+  display:inline-flex; align-items:center; gap:8px; margin-left:auto;
+  padding:7px 14px; border-radius:999px; background:#E03131; color:#fff;
+  font-family:'Roboto', 'IBM Plex Sans', sans-serif; font-weight:700; font-size:12.5px;
+  letter-spacing:0.03em; text-transform:uppercase; text-decoration:none; white-space:nowrap;
+}
+.alerte-dg:hover{ background:#C92A2A; }
+.alerte-dg[aria-current="page"]{ box-shadow:0 0 0 2px #fff; }
+.alerte-dg-point{
+  width:8px; height:8px; border-radius:50%; background:#fff; flex-shrink:0;
+  animation:alerte-pouls 1.6s ease-out infinite;
+}
+@keyframes alerte-pouls{ 0%{ box-shadow:0 0 0 0 rgba(255,255,255,0.7); } 100%{ box-shadow:0 0 0 7px rgba(255,255,255,0); } }
+@media (prefers-reduced-motion: reduce){ .alerte-dg-point{ animation:none; } }
 .nav-item{ position:relative; }
 
 .nav-btn{
