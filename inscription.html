@@ -41,18 +41,28 @@
   .ins-message.is-ok{ background:var(--accent-soft); color:var(--ink); }
   .ins-message.is-erreur{ background:var(--danger-soft); color:var(--danger); }
 
-  .ins-equipes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; }
-  .ins-equipe{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); }
-  .ins-equipe img{ width:28px; height:28px; object-fit:contain; flex-shrink:0; }
-  .ins-equipe div{ min-width:0; line-height:1.25; }
-  .ins-equipe strong{ display:block; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .ins-equipe span{ font-size:12px; color:var(--ink-muted); }
-  .ins-equipe.is-ok{ border-color:#2F9E44; }
-  .ins-equipe.is-ok span{ color:#2F9E44; font-weight:700; }
-  .ins-equipe.is-attente{ border-color:var(--accent); }
-  .ins-equipe.is-attente span{ color:var(--accent); font-weight:700; }
-  .ins-legende{ margin:12px 0 0; font-size:12.5px; color:var(--ink-muted); }
-  @media (max-width:600px){ .ins-equipes{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  /* Grille compacte : 32 petites cases (logo, code, pastille de statut) qui tiennent sans défiler. */
+  .ins-equipes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(58px, 1fr)); gap:6px; }
+  .ins-equipe{
+    position:relative; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:6px 2px 4px; border:1px solid var(--line); border-radius:8px; background:var(--bg);
+  }
+  .ins-equipe img{ width:26px; height:26px; object-fit:contain; }
+  .ins-equipe .ins-code{ font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:700; color:var(--ink-muted); }
+  .ins-equipe .ins-etat{ position:absolute; top:-5px; right:-4px; font-size:12px; line-height:1; }
+  .ins-equipe.is-ok{ border-color:#2F9E44; background:rgba(47,158,68,0.12); }
+  .ins-equipe.is-ok .ins-code{ color:#2F9E44; }
+  .ins-equipe.is-attente{ border-color:var(--accent); background:var(--accent-soft); }
+  .ins-equipe.is-attente .ins-code{ color:var(--accent); }
+  .ins-equipe:not(.is-ok):not(.is-attente) img{ opacity:0.45; }
+  .ins-legende{ margin:10px 0 0; font-size:12.5px; color:var(--ink-muted); }
+  @media (max-width:600px){
+    .ins-equipes{ grid-template-columns:repeat(auto-fill, minmax(40px, 1fr)); gap:4px; }
+    .ins-equipe{ padding:4px 0 3px; }
+    .ins-equipe img{ width:22px; height:22px; }
+    .ins-equipe .ins-code{ font-size:10px; }
+    .ins-equipe .ins-etat{ font-size:10px; top:-4px; right:-3px; }
+  }
 </style>
 </head>
 <body>
@@ -97,7 +107,7 @@
       <h2 class="ins-titre">Équipes inscrites</h2>
       <p class="ins-aide">Vérifie si ton équipe a déjà un DG inscrit.</p>
       <div class="ins-equipes" id="equipes"></div>
-      <p class="ins-legende">✅ DG approuvé · ⏳ demande en attente d'approbation</p>
+      <p class="ins-legende">✅ DG approuvé · ⏳ demande en attente · logo pâle : aucun DG inscrit</p>
     </section>
   </main>
 </div>
@@ -179,18 +189,25 @@ async function chargerEquipes(){
   }
   const codes = new Map((window.LNHQ_TEAMS || []).map(t => [t.name, t.code]));
   $('equipes').replaceChildren(...r.equipes.map(eq => {
+    const code = eq.code || codes.get(eq.equipe) || '';
+    const statut = eq.approuves ? 'inscrit' : eq.attente ? 'en attente' : 'aucun DG inscrit';
     const tuile = document.createElement('div');
     tuile.className = 'ins-equipe' + (eq.approuves ? ' is-ok' : eq.attente ? ' is-attente' : '');
+    tuile.title = eq.equipe + ' : ' + statut;
+    tuile.setAttribute('aria-label', eq.equipe + ', ' + statut);
     const img = document.createElement('img');
-    img.src = 'Logos/' + (eq.code || codes.get(eq.equipe)) + '.png';
+    img.src = 'Logos/' + code + '.png';
     img.alt = '';
-    const texte = document.createElement('div');
-    const nom = document.createElement('strong');
-    nom.textContent = eq.equipe;
-    const etat = document.createElement('span');
-    etat.textContent = eq.approuves ? '✅ Inscrit' : eq.attente ? '⏳ En attente' : 'Aucun DG inscrit';
-    texte.append(nom, etat);
-    tuile.append(img, texte);
+    const abr = document.createElement('span');
+    abr.className = 'ins-code';
+    abr.textContent = code;
+    tuile.append(img, abr);
+    if(eq.approuves || eq.attente){
+      const etat = document.createElement('span');
+      etat.className = 'ins-etat';
+      etat.textContent = eq.approuves ? '✅' : '⏳';
+      tuile.append(etat);
+    }
     return tuile;
   }));
   const ok = r.equipes.filter(e => e.approuves).length;
