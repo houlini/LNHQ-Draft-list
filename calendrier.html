@@ -185,8 +185,9 @@
   .gar-titre{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin:0 0 8px; }
   .gar-titre strong{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:17px; text-transform:uppercase; letter-spacing:0.02em; }
   .gar-titre span{ font-size:13px; color:var(--ink-muted); }
-  .gar-titre a{ margin-left:auto; font-size:13px; font-weight:700; color:var(--accent); text-decoration:none; }
-  .gar-titre a:hover{ text-decoration:underline; }
+  .gar-declarer{ display:inline-block; margin:2px 0 10px; padding:9px 16px; border-radius:8px; background:var(--accent); color:#fff; font-size:14px; font-weight:700; text-decoration:none; }
+  .gar-declarer:hover{ filter:brightness(1.1); }
+  @media (max-width:600px){ .gar-declarer{ display:block; text-align:center; } }
   .gar-ligne{ display:flex; align-items:flex-start; gap:8px; margin-top:6px; }
   .gar-ligne > b{ flex-shrink:0; width:84px; font-size:12.5px; padding-top:5px; }
   .gar-ligne.is-fait > b{ color:#2F9E44; }
@@ -463,13 +464,12 @@ function renderGardiens(){
       : reste === 0 ? 'se termine aujourd’hui' : `se termine dans ${reste} jour${reste > 1 ? 's' : ''}`;
     titre.append(el('strong', null, '2e gardien · Période ' + courante.num),
       el('span', null, `${etiquetteSemaine(courante.debut).split(' au ')[0]} au ${court.format(parseDate(courante.fin))} · ${quand}`));
-    const lien = el('a', null, 'Déclarer mon match →');
+    const lien = el('a', 'gar-declarer', 'Déclarer mon match →');
     lien.href = 'https://publier.lnhq.ca/gardien.html';
-    titre.append(lien);
     const faits = codes.filter(c => decl[c + '|' + courante.num]);
     const details = {};
     faits.forEach(c => { const d = decl[c + '|' + courante.num]; details[c] = court.format(parseDate(d.date)) + ' vs ' + d.adversaire; });
-    bloc.append(titre,
+    bloc.append(titre, lien,
       ligneGardien('is-fait', '✅ Fait', faits, details, 'Aucune équipe pour l’instant.'),
       ligneGardien('is-a-faire', '⏳ À faire', codes.filter(c => !decl[c + '|' + courante.num]), null, 'Toutes les équipes ont déclaré leur match.'));
     box.append(bloc);
