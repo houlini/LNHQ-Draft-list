@@ -5,6 +5,8 @@
   display:flex; flex-direction:column; align-items:center; gap:2px; padding:14px 16px;
   background:var(--surface); border:2px solid var(--accent); border-radius:var(--radius); text-align:center;
 }
+.mise-jetons-ligne{ display:flex; align-items:center; justify-content:center; gap:12px; }
+.mise-jetons-ligne img{ width:46px; height:46px; object-fit:contain; }
 .mise-jetons strong{ font-family:'IBM Plex Mono', monospace; font-size:40px; line-height:1.1; color:var(--accent); }
 .mise-jetons span{ font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
 

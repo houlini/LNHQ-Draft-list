@@ -124,6 +124,7 @@
     const dispo = mesJetons();
     $('jetonsMoi').textContent = dispo != null ? dispo : '';
     $('blocJetons').hidden = dispo == null;
+    if(!$('logoMoi').src) $('logoMoi').src = 'https://lnhq.ca/Logos/' + moi.code + '.png';
     const enCours = donnees.encheres.filter(e => e.statut === 'En cours').sort((a, b) => new Date(a.fin) - new Date(b.fin));
     $('enCours').replaceChildren(...enCours.map(carte));
     $('aucuneEnCours').hidden = !!enCours.length;
