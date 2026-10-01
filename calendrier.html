@@ -120,24 +120,62 @@
   .team-cell img{ width:20px; height:20px; object-fit:contain; flex-shrink:0; }
   .team-cell a{ color:inherit; text-decoration:none; font-weight:600; }
   .team-cell a:hover{ text-decoration:underline; color:var(--accent); }
-  /* ---------- Calendrier ---------- */
-  /* 4 colonnes : Visiteur | but | Domicile | but. Le tableau remplit son bloc, et les
-     blocs sont limités en largeur puis centrés pour que la bande de titre ne soit plus
-     démesurée par rapport au contenu sur grand écran. */
-  #groupsWrap{ grid-template-columns:repeat(auto-fit, minmax(340px, 460px)); justify-content:center; }
-  .cal-block table{ table-layout:auto; width:100%; }
-  .cal-block th, .cal-block td{ white-space:nowrap; vertical-align:middle; line-height:1.3; }
-  .cal-block th:nth-child(2), .cal-block td:nth-child(2),
-  .cal-block th:nth-child(4), .cal-block td:nth-child(4){ text-align:center; width:34px; }
-  .cal-block .team-cell img{ width:18px; height:18px; }
-  .cal-score{ font-family:'IBM Plex Mono', monospace; font-weight:700; }
-  .cal-final{ color:var(--ink-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.03em; }
-  .date-row td{
-    background:var(--stripe) !important; font-weight:700; text-transform:uppercase;
-    font-size:11.5px; letter-spacing:0.03em; color:var(--ink-muted); text-align:left !important;
+  /* ---------- Calendrier par semaine ---------- */
+  .sem-nav{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex:1 1 360px; max-width:560px; }
+  .sem-nav select{ flex:1 1 0; min-width:0;
+    height:42px; padding:0 10px; border-radius:9px; border:none; font-size:15px; font-weight:700;
+    background:var(--surface); color:var(--ink); max-width:100%;
   }
-  .cal-note{ color:var(--ink-muted); font-size:11.5px; font-style:italic; white-space:normal; }
-</style>
+  .sem-fleche{
+    width:42px; height:42px; border-radius:9px; border:none; cursor:pointer;
+    background:var(--surface); color:var(--ink); font-size:18px; font-weight:700;
+  }
+  .sem-fleche:disabled{ opacity:0.4; cursor:default; }
+  .sem-fleche, .sem-aujourdhui{ flex-shrink:0; }
+  @media (max-width:600px){ .sem-aujourdhui{ flex:1 1 100%; } }
+  .sem-aujourdhui{
+    height:42px; padding:0 14px; border-radius:9px; border:1px solid rgba(255,255,255,0.5); cursor:pointer;
+    background:transparent; color:inherit; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
+  }
+
+  #groupsWrap{ display:flex; flex-direction:column; align-items:stretch; gap:26px; padding:16px clamp(12px,3vw,40px) 30px; }
+  .sem-titre{
+    margin:0 0 10px; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
+    font-size:19px; text-transform:uppercase; letter-spacing:0.02em;
+  }
+  .sem-titre span{ font-family:'IBM Plex Sans', sans-serif; font-size:14px; font-weight:400; color:var(--ink-muted); text-transform:none; margin-left:6px; }
+  .sem-jours{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap:14px; align-items:start; }
+  .jour{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .jour.is-aujourdhui{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+  .jour-tete{
+    display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+    padding:8px 12px; background:var(--accent); color:var(--accent-ink);
+    font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .jour-tete span{ font-weight:500; text-transform:none; letter-spacing:0; opacity:0.85; }
+  .match{
+    display:grid; grid-template-columns:54px minmax(0, 1fr) 22px 12px 22px minmax(0, 1fr);
+    align-items:center; gap:4px; padding:7px 10px; border-top:1px solid var(--line); font-size:14px;
+  }
+  .match:first-of-type{ border-top:none; }
+  .match-heure{ font-size:12px; color:var(--ink-muted); white-space:nowrap; }
+  .match-equipe{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .match-equipe.domicile{ justify-content:flex-start; }
+  .match-equipe img{ width:20px; height:20px; object-fit:contain; flex-shrink:0; }
+  .match-equipe a, .match-equipe span{ color:inherit; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .match-equipe a:hover{ color:var(--accent); text-decoration:underline; }
+  .match-equipe.is-gagnant{ font-weight:700; }
+  .match-equipe.is-choisie a{ color:var(--accent); font-weight:700; }
+  .match-score{ font-family:'IBM Plex Mono', monospace; font-weight:700; text-align:center; }
+  .match-at{ text-align:center; color:var(--ink-muted); font-size:12px; }
+  .match-note{ grid-column:2 / -1; font-size:12px; font-style:italic; color:var(--ink-muted); }
+  /* Nom complet sur grand écran, code (TOR) sur téléphone. */
+  .nom-court{ display:none; }
+  @media (max-width:600px){
+    .match{ grid-template-columns:50px minmax(0, 1fr) 24px 10px 24px minmax(0, 1fr); padding:7px 8px; font-size:13.5px; }
+    .nom-long{ display:none; }
+    .nom-court{ display:inline; }
+  }</style>
 </head>
 <body>
 
@@ -150,11 +188,11 @@
       <span id="teamSwitchLabel">Toutes les équipes</span>
       <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
-    <div class="filter-bar" id="filterBar">
-      <div class="filter-control">
-        <label for="filterPeriod">Période</label>
-        <select id="filterPeriod"><option value="">Toutes</option></select>
-      </div>
+    <div class="sem-nav">
+      <button type="button" class="sem-fleche" id="semPrec" aria-label="Semaine précédente">‹</button>
+      <select id="filterWeek" aria-label="Semaine"></select>
+      <button type="button" class="sem-fleche" id="semSuiv" aria-label="Semaine suivante">›</button>
+      <button type="button" class="sem-aujourdhui" id="semAujourdhui">Cette semaine</button>
     </div>
   </div>
 
@@ -212,7 +250,10 @@ const els = {
   teamModalBackdrop: document.getElementById('teamModalBackdrop'),
   teamModalClose: document.getElementById('teamModalClose'),
   teamModalGrid: document.getElementById('teamModalGrid'),
-  filterPeriod: document.getElementById('filterPeriod'),
+  filterWeek: document.getElementById('filterWeek'),
+  semPrec: document.getElementById('semPrec'),
+  semSuiv: document.getElementById('semSuiv'),
+  semAujourdhui: document.getElementById('semAujourdhui'),
   rowCount: document.getElementById('rowCount'),
   lastUpdated: document.getElementById('lastUpdated'),
   loader: document.getElementById('loader'),
@@ -252,6 +293,15 @@ const SLUG_TO_CODE = {
   vegas:'VGK',
 };
 function teamLogoPath(code){ return 'Logos/' + code + '.png'; }
+// Surnom affiché dans les matchs (le nom complet ne tient pas à côté de l'adversaire).
+const SURNOMS = {
+  anaheim:'Ducks', boston:'Bruins', buffalo:'Sabres', calgary:'Flames', carolina:'Hurricanes', chicago:'Blackhawks',
+  colorado:'Avalanche', columbus:'Blue Jackets', dallas:'Stars', detroit:'Red Wings', edmonton:'Oilers', florida:'Panthers',
+  'los-angeles':'Kings', minnesota:'Wild', montreal:'Canadiens', nashville:'Predators', 'new-jersey':'Devils',
+  'ny-islanders':'Islanders', 'ny-rangers':'Rangers', ottawa:'Senators', philadelphia:'Flyers', pittsburgh:'Penguins',
+  'san-jose':'Sharks', seattle:'Kraken', 'st-louis':'Blues', 'tampa-bay':'Lightning', toronto:'Maple Leafs', utah:'Mammoth',
+  vancouver:'Canucks', vegas:'Golden Knights', washington:'Capitals', winnipeg:'Jets',
+};
 
 function teamCell(fullName){
   const wrap = document.createElement('span');
@@ -288,13 +338,11 @@ function cellsToRows(table){
 
 function parseSchedule(rows){
   const games = [];
-  let period = 0;
   rows.forEach(r => {
-    const date = (r[1] || '').trim();
+    const date = (r[1] || '').trim().slice(0, 10);
     const away = (r[3] || '').trim();
-    // Une ligne d'en-tête ("Time" en colonne C) marque le début d'une nouvelle période.
-    if((r[2] || '').trim().toLowerCase() === 'time'){ period++; return; }
-    if(!/^\d{4}-\d{2}-\d{2}/.test(date) || away === '') return;
+    // Les lignes d'en-tête (« Time » en colonne C) n'ont pas de date : ignorées.
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || away === '') return;
     games.push({
       num: (r[0] || '').trim(),
       date,
@@ -304,13 +352,13 @@ function parseSchedule(rows){
       homeScore: (r[9] || '').trim(),
       home: (r[8] || '').trim(),
       note: (r[13] || '').trim(),
-      period: Math.max(1, period),
+      semaine: lundi(date),
     });
   });
   return games;
 }
 
-const state = { games: [], team: '', period: '' };
+const state = { games: [], team: '', semaine: '' };
 
 function buildUrl(){
   return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.GID}&headers=0&t=${Date.now()}`;
@@ -416,153 +464,162 @@ els.teamModalClose.addEventListener('click', () => { els.teamModalBackdrop.hidde
 els.teamModalBackdrop.addEventListener('click', e => { if(e.target === els.teamModalBackdrop) els.teamModalBackdrop.hidden = true; });
 document.addEventListener('keydown', e => { if(e.key === 'Escape') els.teamModalBackdrop.hidden = true; });
 
-let filtersBuilt = false;
-function buildFilters(){
-  if(filtersBuilt) return;
-  filtersBuilt = true;
-
-  buildTeamModal();
-
-  const periods = Array.from(new Set(state.games.map(g => g.period))).sort((a, b) => a - b);
-  periods.forEach(p => {
-    const inPeriod = state.games.filter(g => g.period === p);
-    const first = inPeriod[0], last = inPeriod[inPeriod.length - 1];
-    const opt = document.createElement('option');
-    opt.value = String(p);
-    opt.textContent = `Période ${p} (${formatShortDate(first.date)} – ${formatShortDate(last.date)})`;
-    els.filterPeriod.appendChild(opt);
-  });
-
-  els.filterPeriod.addEventListener('change', () => { state.period = els.filterPeriod.value; render(); });
-}
-
-/* ---------- Formatage des dates ---------- */
+/* ---------- Semaines (lundi au dimanche) ---------- */
 const MONTHS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const DAYS = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+const court = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short' });
 function parseDate(str){
   const [y, m, d] = str.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
-function formatShortDate(str){
-  const d = parseDate(str);
-  return `${d.getDate()} ${MONTHS[d.getMonth()].substr(0,4)}`;
+function iso(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-function formatLongDate(str){
+// Lundi de la semaine d'une date (AAAA-MM-JJ).
+function lundi(str){
   const d = parseDate(str);
-  return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  d.setDate(d.getDate() - (d.getDay() + 6) % 7);
+  return iso(d);
+}
+function etiquetteSemaine(lun){
+  const fin = parseDate(lun);
+  fin.setDate(fin.getDate() + 6);
+  return court.format(parseDate(lun)) + ' au ' + court.format(fin);
+}
+function formatJour(str){
+  const d = parseDate(str);
+  return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+// « 8:00 PM » → minutes, pour classer les matchs d'une journée par heure.
+function minutes(heure){
+  const m = /(\d{1,2}):(\d{2})\s*(AM|PM)?/i.exec(heure || '');
+  if(!m) return 9999;
+  let h = Number(m[1]) % 12;
+  if(/pm/i.test(m[3] || '')) h += 12;
+  else if(!m[3]) h = Number(m[1]);
+  return h * 60 + Number(m[2]);
+}
+
+let semaines = [];       // lundis ayant au moins un match, dans l'ordre
+let filtersBuilt = false;
+const aujourdhui = iso(new Date());
+
+// Semaine affichée par défaut : celle d'aujourd'hui, sinon la prochaine qui a des
+// matchs (avant la saison : la première ; après : la dernière).
+function semaineCourante(){
+  const lun = lundi(aujourdhui);
+  return semaines.find(s => s >= lun) || semaines[semaines.length - 1] || '';
+}
+
+function buildFilters(){
+  semaines = Array.from(new Set(state.games.map(g => g.semaine))).sort();
+  els.filterWeek.replaceChildren(
+    ...semaines.map((s, i) => new Option(`Semaine ${i + 1} · ${etiquetteSemaine(s)}`, s)),
+    new Option('Toute la saison', 'tout'));
+  if(state.semaine !== 'tout' && !semaines.includes(state.semaine)) state.semaine = semaineCourante();
+  if(filtersBuilt) return;
+  filtersBuilt = true;
+  buildTeamModal();
+  els.filterWeek.addEventListener('change', () => { state.semaine = els.filterWeek.value; render(); });
+  els.semPrec.addEventListener('click', () => deplacer(-1));
+  els.semSuiv.addEventListener('click', () => deplacer(1));
+  els.semAujourdhui.addEventListener('click', () => { state.semaine = semaineCourante(); render(); });
+}
+
+function deplacer(sens){
+  const i = state.semaine === 'tout' ? semaines.indexOf(semaineCourante()) : semaines.indexOf(state.semaine) + sens;
+  state.semaine = semaines[Math.max(0, Math.min(semaines.length - 1, i))];
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ---------- Rendu ---------- */
-function filteredGames(){
-  return state.games.filter(g => {
-    if(state.team && g.away !== state.team && g.home !== state.team) return false;
-    if(state.period && String(g.period) !== state.period) return false;
-    return true;
-  });
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text != null) e.textContent = text;
+  return e;
 }
 
-function groupGames(games){
-  const map = new Map();
-  games.forEach(g => {
-    const key = 'p' + g.period;
-    if(!map.has(key)){
-      const inPeriod = state.games.filter(x => x.period === g.period);
-      const label = `Période ${g.period} — ${formatShortDate(inPeriod[0].date)} au ${formatShortDate(inPeriod[inPeriod.length-1].date)}`;
-      map.set(key, { label, games: [] });
-    }
-    map.get(key).games.push(g);
-  });
-  return Array.from(map.values());
+function equipe(fullName, cote, gagnant){
+  const slug = TEAM_NAME_TO_SLUG[(fullName || '').trim().toLowerCase()];
+  const code = slug ? SLUG_TO_CODE[slug] : '';
+  const wrap = el('span', 'match-equipe ' + cote + (gagnant ? ' is-gagnant' : '') + (state.team && fullName === state.team ? ' is-choisie' : ''));
+  if(code){
+    const img = el('img');
+    img.src = teamLogoPath(code);
+    img.alt = '';
+    img.loading = 'lazy';
+    img.onerror = () => { img.style.visibility = 'hidden'; };
+    wrap.append(img);
+  }
+  const lien = el(slug ? 'a' : 'span');
+  if(slug) lien.href = 'equipe.html?team=' + slug;
+  lien.title = fullName;
+  lien.append(el('span', 'nom-long', (slug && SURNOMS[slug]) || fullName), el('span', 'nom-court', code || fullName));
+  wrap.append(lien);
+  return wrap;
+}
+
+function ligneMatch(g){
+  const a = Number(g.awayScore), h = Number(g.homeScore);
+  const joue = g.awayScore !== '' && g.homeScore !== '' && !isNaN(a) && !isNaN(h);
+  const ligne = el('div', 'match');
+  ligne.append(
+    el('span', 'match-heure', joue ? 'Final' : g.time),
+    equipe(g.away, 'visiteur', joue && a > h),
+    el('span', 'match-score', joue ? g.awayScore : ''),
+    el('span', 'match-at', '@'),
+    el('span', 'match-score', joue ? g.homeScore : ''),
+    equipe(g.home, 'domicile', joue && h > a));
+  if(g.note) ligne.append(el('span', 'match-note', g.note));
+  return ligne;
 }
 
 function render(){
-  const games = filteredGames();
-  const groups = groupGames(games);
-  els.groupsWrap.innerHTML = '';
+  els.filterWeek.value = state.semaine;
+  const i = semaines.indexOf(state.semaine);
+  els.semPrec.disabled = state.semaine !== 'tout' && i <= 0;
+  els.semSuiv.disabled = state.semaine !== 'tout' && i >= semaines.length - 1;
 
-  groups.forEach(group => {
-    const block = document.createElement('div');
-    block.className = 'section-block cal-block';
+  const tout = state.semaine === 'tout';
+  const games = state.games.filter(g =>
+    (!state.team || g.away === state.team || g.home === state.team) && (tout || g.semaine === state.semaine));
 
-    const title = document.createElement('div');
-    title.className = 'section-title';
-    const name = document.createElement('span');
-    name.textContent = group.label;
-    const count = document.createElement('span');
-    count.className = 'section-count';
-    count.textContent = group.games.length + (group.games.length > 1 ? ' matchs' : ' match');
-    title.appendChild(name);
-    title.appendChild(count);
-    block.appendChild(title);
-
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'table-wrap';
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const headRow = document.createElement('tr');
-    ['Visiteur', '', 'Domicile', ''].forEach(h => {
-      const th = document.createElement('th');
-      th.textContent = h;
-      headRow.appendChild(th);
-    });
-    thead.appendChild(headRow);
-    const tbody = document.createElement('tbody');
-
-    // À l'intérieur d'un groupe, on sépare visuellement chaque journée (sauf en vue "jour",
-    // où le titre du groupe est déjà la date).
-    let lastDate = null;
-    group.games.forEach((g, idx) => {
-      if(g.date !== lastDate){
-        lastDate = g.date;
-        const dateTr = document.createElement('tr');
-        dateTr.className = 'date-row';
-        const td = document.createElement('td');
-        td.colSpan = 4;
-        td.textContent = formatLongDate(g.date);
-        dateTr.appendChild(td);
-        tbody.appendChild(dateTr);
-      }
-      const tr = document.createElement('tr');
-      if(idx < 20) tr.classList.add('row-in');
-
-      const tdAway = document.createElement('td');
-      tdAway.appendChild(teamCell(g.away));
-      const tdAwayScore = document.createElement('td');
-      tdAwayScore.className = 'cal-score';
-      tdAwayScore.textContent = g.awayScore;
-      const tdHome = document.createElement('td');
-      tdHome.appendChild(teamCell(g.home));
-      if(g.note){
-        const note = document.createElement('div');
-        note.className = 'cal-note';
-        note.textContent = g.note;
-        tdHome.appendChild(note);
-      }
-      const tdHomeScore = document.createElement('td');
-      tdHomeScore.className = 'cal-score';
-      tdHomeScore.textContent = g.homeScore;
-
-      tr.append(tdAway, tdAwayScore, tdHome, tdHomeScore);
-      tbody.appendChild(tr);
-    });
-
-    table.appendChild(thead);
-    table.appendChild(tbody);
-    tableWrap.appendChild(table);
-    block.appendChild(tableWrap);
-    els.groupsWrap.appendChild(block);
+  // Semaine → journée → matchs (classés par heure).
+  const parSemaine = new Map();
+  games.forEach(g => {
+    if(!parSemaine.has(g.semaine)) parSemaine.set(g.semaine, new Map());
+    const jours = parSemaine.get(g.semaine);
+    if(!jours.has(g.date)) jours.set(g.date, []);
+    jours.get(g.date).push(g);
   });
 
+  els.groupsWrap.replaceChildren(...[...parSemaine.entries()].sort().map(([sem, jours]) => {
+    const bloc = el('section', 'sem');
+    const nb = [...jours.values()].reduce((t, l) => t + l.length, 0);
+    const titre = el('h2', 'sem-titre', 'Semaine ' + (semaines.indexOf(sem) + 1));
+    titre.append(el('span', null, `${etiquetteSemaine(sem)} · ${nb} match${nb > 1 ? 's' : ''}`));
+    const grille = el('div', 'sem-jours');
+    [...jours.entries()].sort().forEach(([date, liste]) => {
+      const jour = el('div', 'jour' + (date === aujourdhui ? ' is-aujourdhui' : ''));
+      const tete = el('div', 'jour-tete', formatJour(date) + (date === aujourdhui ? ' · aujourd’hui' : ''));
+      tete.append(el('span', null, liste.length + ' match' + (liste.length > 1 ? 's' : '')));
+      jour.append(tete);
+      liste.sort((x, y) => minutes(x.time) - minutes(y.time)).forEach(g => jour.append(ligneMatch(g)));
+      grille.append(jour);
+    });
+    bloc.append(titre, grille);
+    return bloc;
+  }));
+
   const total = state.games.length;
-  const shown = games.length;
-  els.rowCount.textContent = (state.team || state.period)
-    ? `${shown} match${shown > 1 ? 's' : ''} sur ${total}`
-    : `${total} match${total > 1 ? 's' : ''}`;
-
-  els.emptyState.hidden = shown !== 0;
-  if(shown === 0) els.emptyState.textContent = 'Aucun match pour cette sélection.';
+  els.rowCount.textContent = state.team
+    ? `${games.length} match${games.length > 1 ? 's' : ''} affiché${games.length > 1 ? 's' : ''}`
+    : `${total} matchs dans la saison`;
+  els.emptyState.hidden = games.length !== 0;
+  if(!games.length) els.emptyState.textContent = state.team ? 'Aucun match de cette équipe cette semaine.' : 'Aucun match cette semaine.';
 }
-
 els.retryBtn.addEventListener('click', () => loadData());
 
 const cached = loadFromCache();
