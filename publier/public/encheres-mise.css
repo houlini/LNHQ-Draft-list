@@ -1,7 +1,12 @@
 /* LNHQ — page de mise (publier.lnhq.ca/encheres.html). Le reste vient de lnhq.ca/encheres.css. */
 .ench-page{ max-width:1100px; margin:0 auto; width:100%; box-sizing:border-box; }
 #contenu{ display:flex; flex-direction:column; gap:26px; }
-.meta-row #jetonsMoi{ font-weight:700; }
+.mise-jetons{
+  display:flex; flex-direction:column; align-items:center; gap:2px; padding:14px 16px;
+  background:var(--surface); border:2px solid var(--accent); border-radius:var(--radius); text-align:center;
+}
+.mise-jetons strong{ font-family:'IBM Plex Mono', monospace; font-size:40px; line-height:1.1; color:var(--accent); }
+.mise-jetons span{ font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
 
 .mise-lancer{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
 .mise-form{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }

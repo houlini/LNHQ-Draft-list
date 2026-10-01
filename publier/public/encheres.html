@@ -18,14 +18,13 @@
     <div class="header-row">
       <a class="brand" href="https://lnhq.ca/">
         <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
-        <h1 class="app-title">Enchères</h1>
+        <h1 class="app-title">LNHQ</h1>
       </a>
       <nav class="site-nav">
         <a class="nav-btn" href="https://lnhq.ca/encheres.html">Voir les enchères</a>
-        <a class="nav-btn" href="/">Publier</a>
       </nav>
     </div>
-    <div class="meta-row"><span id="qui">Vérification de ton accès…</span><span id="jetonsMoi"></span></div>
+    <div class="meta-row"><span id="qui">Vérification de ton accès…</span></div>
   </header>
 
   <main class="ench-page">
@@ -39,6 +38,8 @@
     <p id="message" class="pub-message" role="status" hidden></p>
 
     <div id="contenu" hidden>
+      <div class="mise-jetons" id="blocJetons" hidden><strong id="jetonsMoi"></strong><span>jetons disponibles</span></div>
+
       <section class="mise-lancer" id="blocLancer">
         <h2 class="ench-titre">Lancer une enchère</h2>
         <form id="formLancer" class="mise-form" novalidate>
