@@ -200,7 +200,18 @@
   .gar-ligne.is-illegal .gar-logos span{ border-color:#E03131; color:#E03131; }
   .gar-vide{ font-size:13px; color:var(--ink-muted); padding-top:4px; }
   .gar-prec{ border-top:1px solid var(--line); padding-top:12px; }
-  @media (min-width:900px){ .gar-boite.a-deux .gar-prec{ border-top:none; padding-top:0; border-left:1px solid var(--line); padding-left:14px; } }
+  @media (min-width:900px) and (max-width:1099px){ .gar-boite.a-deux .gar-prec{ border-top:none; padding-top:0; border-left:1px solid var(--line); padding-left:14px; } }
+  /* Grand écran : gestion du 2e gardien à gauche, calendrier à droite. */
+  @media (min-width:1100px){
+    #dataWrap:not([hidden]):has(#gardiens:not([hidden])){
+      display:grid; grid-template-columns:minmax(320px, 380px) minmax(0, 1fr); align-items:start;
+      padding-left:clamp(12px,3vw,40px);
+    }
+    #dataWrap .gar-boite{
+      margin:16px 0 0; position:sticky; top:16px; max-height:calc(100vh - 240px); overflow-y:auto;
+    }
+    .gar-boite.a-deux{ grid-template-columns:1fr; }
+  }
 
   /* Nom complet sur grand écran, code (TOR) sur téléphone. */
   .nom-court{ display:none; }
