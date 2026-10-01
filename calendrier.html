@@ -176,31 +176,38 @@
   }
 
   /* ---------- Encadré du 2e gardien ---------- */
-  .gar-boite{
-    margin:16px clamp(12px,3vw,40px) 0; padding:14px 16px;
-    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
-    display:grid; grid-template-columns:1fr; gap:14px;
+  .gar-boite{ margin:16px clamp(12px,3vw,40px) 0; }
+  .gar-cartes{ display:grid; grid-template-columns:1fr; gap:14px; }
+  @media (min-width:900px){ .gar-boite.a-deux .gar-cartes{ grid-template-columns:minmax(0, 2fr) minmax(0, 1fr); } }
+  .gar-carte{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .gar-tete{
+    display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+    padding:8px 12px; background:var(--accent); color:var(--accent-ink);
+    font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
   }
-  @media (min-width:900px){ .gar-boite.a-deux{ grid-template-columns:minmax(0, 2fr) minmax(0, 1fr); } }
-  .gar-titre{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin:0 0 8px; }
-  .gar-titre strong{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:17px; text-transform:uppercase; letter-spacing:0.02em; }
-  .gar-titre span{ font-size:13px; color:var(--ink-muted); }
-  .gar-declarer{ display:inline-block; margin:2px 0 10px; padding:9px 16px; border-radius:8px; background:var(--accent); color:#fff; font-size:14px; font-weight:700; text-decoration:none; }
+  .gar-tete span{ font-weight:500; text-transform:none; letter-spacing:0; opacity:0.85; }
+  .gar-prec .gar-tete{ background:#E03131; color:#fff; }
+  .gar-corps{ padding:12px; }
+  .gar-declarer{ display:block; margin:0 0 14px; padding:10px 16px; border-radius:8px; background:var(--accent); color:var(--accent-ink); font-size:14px; font-weight:700; text-align:center; text-decoration:none; }
   .gar-declarer:hover{ filter:brightness(1.1); }
-  @media (max-width:600px){ .gar-declarer{ display:block; text-align:center; } }
-  .gar-ligne{ display:flex; align-items:flex-start; gap:8px; margin-top:6px; }
-  .gar-ligne > b{ flex-shrink:0; width:84px; font-size:12.5px; padding-top:5px; }
+  .gar-ligne + .gar-ligne{ margin-top:14px; }
+  .gar-ligne > b{ display:block; margin-bottom:8px; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }
   .gar-ligne.is-fait > b{ color:#2F9E44; }
   .gar-ligne.is-a-faire > b{ color:var(--accent); }
   .gar-ligne.is-illegal > b{ color:#E03131; }
-  .gar-logos{ display:flex; flex-wrap:wrap; gap:4px; }
-  .gar-logos span{ display:inline-flex; align-items:center; gap:3px; padding:2px 6px 2px 3px; border:1px solid var(--line); border-radius:999px; font-size:11px; font-weight:700; font-family:'IBM Plex Mono', monospace; }
-  .gar-logos img{ width:18px; height:18px; object-fit:contain; }
-  .gar-ligne.is-fait .gar-logos span{ border-color:rgba(47,158,68,0.5); }
-  .gar-ligne.is-illegal .gar-logos span{ border-color:#E03131; color:#E03131; }
-  .gar-vide{ font-size:13px; color:var(--ink-muted); padding-top:4px; }
-  .gar-prec{ border-top:1px solid var(--line); padding-top:12px; }
-  @media (min-width:900px) and (max-width:1099px){ .gar-boite.a-deux .gar-prec{ border-top:none; padding-top:0; border-left:1px solid var(--line); padding-left:14px; } }
+  .gar-logos{ display:grid; grid-template-columns:repeat(auto-fill, minmax(44px, 1fr)); gap:6px; }
+  .gar-logos span{
+    display:flex; align-items:center; justify-content:center; aspect-ratio:1; border-radius:10px;
+    border:1px solid var(--line); background:rgba(255,255,255,0.03);
+  }
+  .gar-logos img{ width:30px; height:30px; object-fit:contain; }
+  @media (max-width:600px){
+    .gar-logos{ grid-template-columns:repeat(7, minmax(0, 1fr)); gap:5px; }
+    .gar-logos img{ width:26px; height:26px; }
+  }
+  .gar-ligne.is-fait .gar-logos span{ border-color:rgba(47,158,68,0.7); background:rgba(47,158,68,0.12); }
+  .gar-ligne.is-illegal .gar-logos span{ border-color:#E03131; background:rgba(224,49,49,0.12); }
+  .gar-vide{ font-size:13px; color:var(--ink-muted); }
   /* Grand écran : gestion du 2e gardien à gauche, calendrier à droite. */
   @media (min-width:1100px){
     #dataWrap:not([hidden]):has(#gardiens:not([hidden])){
@@ -208,9 +215,9 @@
       padding-left:clamp(12px,3vw,40px);
     }
     #dataWrap .gar-boite{
-      margin:16px 0 0; position:sticky; top:16px; max-height:calc(100vh - 240px); overflow-y:auto;
+      margin:16px 0 0;
     }
-    .gar-boite.a-deux{ grid-template-columns:1fr; }
+    .gar-boite.a-deux .gar-cartes{ grid-template-columns:1fr; }
   }
 
   /* Nom complet sur grand écran, code (TOR) sur téléphone. */
@@ -441,7 +448,7 @@ function logosEquipes(codes, details){
     const img = el('img');
     img.src = teamLogoPath(c);
     img.alt = '';
-    puce.append(img, c);
+    puce.append(img);
     box.append(puce);
   });
   return box;
@@ -465,37 +472,46 @@ function renderGardiens(){
   const codes = (window.LNHQ_TEAMS || []).map(t => t.code);
   const decl = state.decl || {};
   const jours = (a, b) => Math.round((parseDate(b) - parseDate(a)) / 86400000);
-  box.replaceChildren();
+  const cartes = el('div', 'gar-cartes');
+  // Même structure que le calendrier : titre de section, puis cartes à bandeau.
+  const carte = (classe, gauche, droite) => {
+    const c = el('div', 'gar-carte ' + classe);
+    const tete = el('div', 'gar-tete');
+    tete.append(el('div', null, gauche), el('span', null, droite));
+    const corps = el('div', 'gar-corps');
+    c.append(tete, corps);
+    cartes.append(c);
+    return corps;
+  };
+  let sousTitre = '';
 
   if(courante){
-    const bloc = el('div');
-    const titre = el('div', 'gar-titre');
     const reste = jours(auj, courante.fin);
     const quand = courante.debut > auj ? 'commence le ' + court.format(parseDate(courante.debut))
       : reste === 0 ? 'se termine aujourd’hui' : `se termine dans ${reste} jour${reste > 1 ? 's' : ''}`;
-    titre.append(el('strong', null, '2e gardien · Période ' + courante.num),
-      el('span', null, `${etiquetteSemaine(courante.debut).split(' au ')[0]} au ${court.format(parseDate(courante.fin))} · ${quand}`));
+    sousTitre = 'Période ' + courante.num + ' · ' + quand;
+    const corps = carte('', 'Période ' + courante.num,
+      `${court.format(parseDate(courante.debut))} au ${court.format(parseDate(courante.fin))}`);
     const lien = el('a', 'gar-declarer', 'Déclarer mon match →');
     lien.href = 'https://publier.lnhq.ca/gardien.html';
     const faits = codes.filter(c => decl[c + '|' + courante.num]);
     const details = {};
     faits.forEach(c => { const d = decl[c + '|' + courante.num]; details[c] = court.format(parseDate(d.date)) + ' vs ' + d.adversaire; });
-    bloc.append(titre, lien,
+    corps.append(lien,
       ligneGardien('is-fait', '✅ Fait', faits, details, 'Aucune équipe pour l’instant.'),
       ligneGardien('is-a-faire', '⏳ À faire', codes.filter(c => !decl[c + '|' + courante.num]), null, 'Toutes les équipes ont déclaré leur match.'));
-    box.append(bloc);
   }
   if(precedente){
-    const bloc = el('div', 'gar-prec');
-    const titre = el('div', 'gar-titre');
-    titre.append(el('strong', null, 'Période ' + precedente.num + ' terminée'),
-      el('span', null, `${court.format(parseDate(precedente.debut))} au ${court.format(parseDate(precedente.fin))}`));
+    const corps = carte('gar-prec', 'Période ' + precedente.num + ' terminée',
+      `${court.format(parseDate(precedente.debut))} au ${court.format(parseDate(precedente.fin))}`);
     const illegales = codes.filter(c => !decl[c + '|' + precedente.num]);
-    bloc.append(titre, ligneGardien('is-illegal', '❌ Illégales', illegales, null, '✅ Toutes les équipes ont fait jouer leur 2e gardien.'));
-    box.append(bloc);
+    corps.append(ligneGardien('is-illegal', '❌ Illégales', illegales, null, '✅ Toutes les équipes ont fait jouer leur 2e gardien.'));
   }
+  const titre = el('h2', 'sem-titre', '2e gardien');
+  if(sousTitre) titre.append(el('span', null, sousTitre));
+  box.replaceChildren(titre, cartes);
   box.classList.toggle('a-deux', !!(courante && precedente));
-  box.hidden = !box.children.length;
+  box.hidden = !cartes.children.length;
 }
 
 async function loadData({ background=false } = {}){
