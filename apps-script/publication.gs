@@ -63,6 +63,7 @@ function installer() {
   // à créer ici plutôt qu'à la main (sinon un ID Discord devient un nombre arrondi).
   ['NOUVELLES', 'ANNONCES'].forEach(ouvrirOnglet);
   installerEncheres();
+  ongletGardiens();
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
@@ -88,6 +89,8 @@ function traiter(p, corps) {
   if (!secret || p.secret !== secret) return { ok: false, erreur: 'secret' };
   // Appelée chaque minute par le Worker (tâche planifiée), sans membre connecté.
   if (p.action === 'cloturerEncheres') return cloturerEncheres();
+  // Chaque jour (tâche planifiée du Worker) : rappels et fins de période du 2e gardien.
+  if (p.action === 'rappelsGardiens') return rappelsGardiens();
   // Page d'inscription publique (par le Worker api.lnhq.ca), sans membre connecté.
   if (p.action === 'inscrire') return inscrire(JSON.parse(corps || '{}'));
   if (p.action === 'statutInscription') return statutInscription(JSON.parse(corps || '{}'));
@@ -102,6 +105,8 @@ function traiter(p, corps) {
   if (p.action === 'photo') return photoSeule(JSON.parse(corps || '{}'));
   if (p.action === 'discord') return noterDiscord(JSON.parse(corps || '{}'), membre);
   if (p.action === 'enAttente') return enAttente(membre);
+  if (p.action === 'declarerGardien') return declarerGardien(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'retirerGardien') return retirerGardien(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lancerEnchere') return lancerEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'miserEnchere') return miserEnchere(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
@@ -484,6 +489,155 @@ const HEURES_RELANCE = 12;
 const JETONS_PAR_SAISON = 1000;
 const SAISON_DEPART = '2026-27';
 const EN_COURS = 'En cours';
+
+/* =========================================================================
+   2e GARDIEN : chaque équipe le fait jouer au moins une fois par période de
+   2 semaines (périodes de l'onglet SCHEDULE, séparées par une ligne « Time »).
+   Le DG déclare le match (publier.lnhq.ca/gardien.html), d'avance s'il veut ;
+   il peut changer ou retirer son choix jusqu'à la fin de la période, ensuite
+   elle est verrouillée. Onglet public GARDIENS : une ligne par équipe et période.
+   Rappel Discord 3 jours avant la fin d'une période, et liste des équipes
+   illégales le lendemain de la fin (WEBHOOK_GARDIENS du Worker).
+   ========================================================================= */
+const ONGLET_CALENDRIER = 'SCHEDULE';
+const ONGLET_GARDIENS = 'GARDIENS';
+const GARDIENS_ENTETES = ['Équipe', 'Période', 'Match', 'Date', 'Adversaire', 'Déclaré le'];
+const JOURS_RAPPEL = 3;
+// Nom complet du calendrier → code d'équipe.
+const CODES_NOMS_COMPLETS = {
+  'anaheim ducks': 'ANA', 'boston bruins': 'BOS', 'buffalo sabres': 'BUF', 'calgary flames': 'CGY',
+  'carolina hurricanes': 'CAR', 'chicago blackhawks': 'CHI', 'colorado avalanche': 'COL', 'columbus blue jackets': 'CBJ',
+  'dallas stars': 'DAL', 'detroit red wings': 'DET', 'edmonton oilers': 'EDM', 'florida panthers': 'FLA',
+  'los angeles kings': 'LAK', 'minnesota wild': 'MIN', 'montréal canadiens': 'MTL', 'montreal canadiens': 'MTL',
+  'nashville predators': 'NSH', 'new jersey devils': 'NJD', 'new york islanders': 'NYI', 'new york rangers': 'NYR',
+  'ottawa senators': 'OTT', 'philadelphia flyers': 'PHI', 'pittsburgh penguins': 'PIT', 'san jose sharks': 'SJS',
+  'seattle kraken': 'SEA', 'st. louis blues': 'STL', 'st louis blues': 'STL', 'tampa bay lightning': 'TBL',
+  'toronto maple leafs': 'TOR', 'utah mammoth': 'UTA', 'utah hockey club': 'UTA', 'vancouver canucks': 'VAN',
+  'vegas golden knights': 'VGK', 'washington capitals': 'WSH', 'winnipeg jets': 'WPG',
+};
+
+function ongletGardiens() {
+  const classeur = SpreadsheetApp.openById(SHEET_ID);
+  let o = classeur.getSheetByName(ONGLET_GARDIENS);
+  if (!o) {
+    o = classeur.insertSheet(ONGLET_GARDIENS);
+    o.appendRow(GARDIENS_ENTETES);
+    o.setFrozenRows(1);
+    o.getRange(1, 1, o.getMaxRows(), GARDIENS_ENTETES.length).setNumberFormat('@');
+  }
+  return o;
+}
+
+function lireCalendrierGardiens() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_CALENDRIER);
+  const lignes = o.getRange(1, 1, o.getLastRow(), 9).getDisplayValues();
+  const matchs = [];
+  let periode = 0;
+  lignes.forEach(r => {
+    if (String(r[2]).trim().toLowerCase() === 'time') { periode++; return; }
+    const date = String(r[1]).trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !String(r[3]).trim()) return;
+    matchs.push({
+      num: String(r[0]).trim(), date: date, periode: Math.max(1, periode),
+      visiteur: CODES_NOMS_COMPLETS[String(r[3]).trim().toLowerCase()] || '',
+      domicile: CODES_NOMS_COMPLETS[String(r[8]).trim().toLowerCase()] || '',
+    });
+  });
+  return matchs;
+}
+
+function finsDePeriode(matchs) {
+  const fins = {};
+  matchs.forEach(m => { if (!fins[m.periode] || m.date > fins[m.periode]) fins[m.periode] = m.date; });
+  return fins;
+}
+
+function aujourdhuiLigue() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+
+function declarerGardien(d, membre) {
+  const code = codeDuMembre(membre);
+  if (!code) return { ok: false, erreur: 'equipe' };
+  const matchs = lireCalendrierGardiens();
+  const m = matchs.find(x => x.num === String(d.match || '').trim());
+  if (!m || (m.visiteur !== code && m.domicile !== code)) return { ok: false, erreur: 'match' };
+  if (finsDePeriode(matchs)[m.periode] < aujourdhuiLigue()) return { ok: false, erreur: 'periode_terminee' };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletGardiens();
+    const valeurs = [code, String(m.periode), m.num, m.date, m.visiteur === code ? m.domicile : m.visiteur, new Date().toISOString()];
+    const lignes = o.getLastRow() > 1 ? o.getRange(2, 1, o.getLastRow() - 1, 2).getDisplayValues() : [];
+    const i = lignes.findIndex(l => l[0] === code && Number(l[1]) === m.periode);
+    if (i >= 0) o.getRange(i + 2, 1, 1, valeurs.length).setValues([valeurs]);
+    else o.appendRow(valeurs);
+    return { ok: true, periode: m.periode, match: m.num };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+function retirerGardien(d, membre) {
+  const code = codeDuMembre(membre);
+  if (!code) return { ok: false, erreur: 'equipe' };
+  const periode = Number(d.periode);
+  if (finsDePeriode(lireCalendrierGardiens())[periode] < aujourdhuiLigue()) return { ok: false, erreur: 'periode_terminee' };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletGardiens();
+    if (o.getLastRow() < 2) return { ok: true };
+    const lignes = o.getRange(2, 1, o.getLastRow() - 1, 2).getDisplayValues();
+    const i = lignes.findIndex(l => l[0] === code && Number(l[1]) === periode);
+    if (i >= 0) o.deleteRow(i + 2);
+    return { ok: true };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// Messages du jour : rappel 3 jours avant la fin d'une période (équipes sans
+// déclaration) et, le lendemain de la fin, la liste des équipes illégales.
+function rappelsGardiens() {
+  const matchs = lireCalendrierGardiens();
+  const fins = finsDePeriode(matchs);
+  const jour = aujourdhuiLigue();
+  const o = ongletGardiens();
+  const faites = new Set((o.getLastRow() > 1 ? o.getRange(2, 1, o.getLastRow() - 1, 2).getDisplayValues() : [])
+    .map(l => l[0] + '|' + Number(l[1])));
+  const codes = Object.keys(CODES_EQUIPES).map(nom => CODES_EQUIPES[nom]);
+  const ecart = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
+  const messages = [];
+  Object.keys(fins).forEach(p => {
+    const manquantes = codes.filter(c => !faites.has(c + '|' + Number(p))).map(nomEquipe);
+    const fin = fins[p];
+    if (ecart(jour, fin) === JOURS_RAPPEL && manquantes.length) {
+      messages.push(messageGardiens('⏳ Rappel 2e gardien — période ' + p,
+        'La période ' + p + ' se termine le **' + fin + '** (dans ' + JOURS_RAPPEL + ' jours).\n'
+        + 'Équipes qui n\'ont pas encore déclaré de match pour leur 2e gardien :\n' + manquantes.join(', '), 0xE0A800));
+    }
+    if (ecart(fin, jour) === 1) {
+      messages.push(manquantes.length
+        ? messageGardiens('🚨 Fin de la période ' + p + ' — équipes illégales',
+          'Aucun départ du 2e gardien déclaré pendant la période ' + p + ' :\n' + manquantes.join(', '), 0xE03131)
+        : messageGardiens('✅ Fin de la période ' + p, 'Toutes les équipes ont fait jouer leur 2e gardien.', 0x2F9E44));
+    }
+  });
+  return { ok: true, messages: messages };
+}
+
+function messageGardiens(titre, texte, couleur) {
+  return {
+    flux: 'GARDIENS',
+    message: {
+      username: '2e gardien · LNHQ',
+      avatar_url: 'https://lnhq.ca/logo-lnhq.png',
+      embeds: [{ title: titre, url: 'https://lnhq.ca/calendrier.html', description: texte, color: couleur }],
+      allowed_mentions: { parse: [] },
+    },
+  };
+}
 
 /* =========================================================================
    CHOIX DE REPÊCHAGE : une ligne par choix dans PLAYERSDATABASE, comme un joueur.

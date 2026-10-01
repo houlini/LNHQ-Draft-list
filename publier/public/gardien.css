@@ -1,0 +1,39 @@
+/* LNHQ — déclaration du 2e gardien (publier.lnhq.ca/gardien.html). */
+.gar-page{ max-width:900px; margin:0 auto; width:100%; box-sizing:border-box; padding:16px clamp(12px,3vw,32px) 40px; display:flex; flex-direction:column; gap:14px; }
+.gar-intro{ margin:0; font-size:14.5px; line-height:1.5; color:var(--ink-muted); }
+.gar-message{ margin:0; padding:12px 14px; border-radius:8px; font-size:15px; }
+.gar-message.is-ok{ background:var(--accent-soft); color:var(--ink); }
+.gar-message.is-erreur{ background:var(--danger-soft); color:var(--danger); }
+#periodes{ display:flex; flex-direction:column; gap:10px; }
+
+.gar-periode{ background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:var(--radius); scroll-margin-top:12px; }
+.gar-periode.is-fait{ border-left-color:#2F9E44; }
+.gar-periode.is-a-faire{ border-left-color:var(--accent); }
+.gar-periode.is-illegal{ border-left-color:#E03131; }
+.gar-periode.is-courante{ box-shadow:0 0 0 1px var(--accent); }
+.gar-tete{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; padding:12px 14px; cursor:pointer; list-style:none; }
+.gar-tete::-webkit-details-marker{ display:none; }
+.gar-tete strong{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:17px; text-transform:uppercase; letter-spacing:0.02em; }
+.gar-dates{ color:var(--ink-muted); font-size:13.5px; }
+.gar-etat{ margin-left:auto; font-size:13.5px; font-weight:700; }
+.is-fait .gar-etat{ color:#2F9E44; }
+.is-a-faire .gar-etat{ color:var(--accent); }
+.is-illegal .gar-etat{ color:#E03131; }
+
+.gar-matchs{ list-style:none; margin:0; padding:0 8px 8px; }
+.gar-match{ display:flex; align-items:center; gap:10px; padding:8px 6px; border-top:1px solid var(--line); }
+.gar-match.is-choisi{ background:rgba(47,158,68,0.12); border-radius:6px; }
+.gar-quand{ width:92px; flex-shrink:0; font-size:13px; color:var(--ink-muted); }
+.gar-adv{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; font-size:14.5px; }
+.gar-adv img{ width:22px; height:22px; object-fit:contain; flex-shrink:0; }
+.gar-adv span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gar-bouton{
+  flex-shrink:0; min-height:38px; padding:0 12px; border-radius:8px; cursor:pointer; font-weight:700; font-size:13px;
+  border:1px solid var(--accent); background:transparent; color:var(--accent);
+}
+.gar-bouton.is-choisi{ background:#2F9E44; border-color:#2F9E44; color:#fff; }
+.gar-bouton:disabled{ opacity:0.5; cursor:progress; }
+@media (max-width:600px){
+  .gar-quand{ width:70px; font-size:12px; }
+  .gar-bouton{ padding:0 9px; font-size:12px; }
+}

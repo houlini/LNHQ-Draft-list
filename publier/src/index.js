@@ -33,6 +33,10 @@ export default {
     if (url.pathname === '/api/reessayer' && request.method === 'POST') {
       return reessayerDiscord(env, courriel);
     }
+    const gardien = { '/api/gardien/declarer': 'declarerGardien', '/api/gardien/retirer': 'retirerGardien' }[url.pathname];
+    if (gardien && request.method === 'POST') {
+      return appelerScript(env, gardien, courriel, await request.text());
+    }
     const enchere = { '/api/encheres/lancer': 'lancerEnchere', '/api/encheres/miser': 'miserEnchere' }[url.pathname];
     if (enchere && request.method === 'POST') {
       return actionEnchere(env, enchere, courriel, await request.text());
@@ -48,10 +52,31 @@ export default {
   },
 
   // Chaque minute (wrangler.toml → crons) : ferme les enchères dont le chrono est écoulé.
+  // Chaque minute : fermeture des enchères. Une fois par jour (16 h UTC = midi à
+  // Montréal l'été, 11 h l'hiver) : rappels du 2e gardien.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(cloturerEncheres(env));
+    if (event.cron === CRON_GARDIENS) ctx.waitUntil(rappelsGardiens(env));
+    else ctx.waitUntil(cloturerEncheres(env));
   },
 };
+
+/* ---------- 2e gardien : rappels et fins de période (canal WEBHOOK_GARDIENS) ---------- */
+const CRON_GARDIENS = '0 16 * * *';
+
+async function rappelsGardiens(env) {
+  // Canal des annonces tant qu'il n'y a pas de webhook propre au 2e gardien.
+  const flux = env.WEBHOOK_GARDIENS ? 'GARDIENS' : 'ANNONCES';
+  if (!env['WEBHOOK_' + flux]) return;
+  try {
+    const r = await scriptJson(env, 'rappelsGardiens', 'systeme');
+    for (const msg of r.messages || []) {
+      const envoi = await envoyerDiscord(env, flux, msg.message);
+      if (envoi.erreur) console.error('Discord (2e gardien) :', envoi.erreur);
+    }
+  } catch (err) {
+    console.error('Rappels 2e gardien :', err.message);
+  }
+}
 
 /* ---------- Enchères des agents libres ---------- */
 // Le script vérifie tout (équipe, jetons, minimum, chrono) sous verrou ; le Worker

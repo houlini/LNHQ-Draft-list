@@ -10,7 +10,7 @@ routes = [{ pattern = "publier.lnhq.ca", custom_domain = true }]
 
 # Chaque minute : fermeture des enchères dont le chrono est écoulé (voir scheduled()).
 [triggers]
-crons = ["* * * * *"]
+crons = ["* * * * *", "0 16 * * *"]  # 2e : rappels du 2e gardien, une fois par jour
 
 [assets]
 directory = "./public"
@@ -24,3 +24,5 @@ ACCESS_AUD = "ba5688f1486b883058a48ba547af4531e1e6e957f61f481f162a161fdaff1766"
 # Secrets (jamais dans ce fichier) : npx wrangler secret put SCRIPT_URL
 #                                    npx wrangler secret put SCRIPT_SECRET
 #                                    npx wrangler secret put WEBHOOK_AGENTS   (canal agents libres)
+#                                    npx wrangler secret put WEBHOOK_GARDIENS (rappels du 2e gardien ;
+#                                    sans lui, ils vont dans le canal des annonces)

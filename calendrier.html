@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css">
 <script src="site-nav.js"></script>
+<script src="gardiens-donnees.js"></script>
 <style>
   /* ---------- Résumé (Masse salariale / Espace / stats) ---------- */
   .summary-stats{
@@ -169,6 +170,37 @@
   .match-score{ font-family:'IBM Plex Mono', monospace; font-weight:700; text-align:center; }
   .match-at{ text-align:center; color:var(--ink-muted); font-size:12px; }
   .match-note{ grid-column:2 / -1; font-size:12px; font-style:italic; color:var(--ink-muted); }
+  .match-2eg{
+    flex-shrink:0; font-size:10px; font-weight:800; letter-spacing:0.03em; padding:1px 5px; border-radius:999px;
+    background:#2F9E44; color:#fff;
+  }
+
+  /* ---------- Encadré du 2e gardien ---------- */
+  .gar-boite{
+    margin:16px clamp(12px,3vw,40px) 0; padding:14px 16px;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    display:grid; grid-template-columns:1fr; gap:14px;
+  }
+  @media (min-width:900px){ .gar-boite.a-deux{ grid-template-columns:minmax(0, 2fr) minmax(0, 1fr); } }
+  .gar-titre{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin:0 0 8px; }
+  .gar-titre strong{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:17px; text-transform:uppercase; letter-spacing:0.02em; }
+  .gar-titre span{ font-size:13px; color:var(--ink-muted); }
+  .gar-titre a{ margin-left:auto; font-size:13px; font-weight:700; color:var(--accent); text-decoration:none; }
+  .gar-titre a:hover{ text-decoration:underline; }
+  .gar-ligne{ display:flex; align-items:flex-start; gap:8px; margin-top:6px; }
+  .gar-ligne > b{ flex-shrink:0; width:84px; font-size:12.5px; padding-top:5px; }
+  .gar-ligne.is-fait > b{ color:#2F9E44; }
+  .gar-ligne.is-a-faire > b{ color:var(--accent); }
+  .gar-ligne.is-illegal > b{ color:#E03131; }
+  .gar-logos{ display:flex; flex-wrap:wrap; gap:4px; }
+  .gar-logos span{ display:inline-flex; align-items:center; gap:3px; padding:2px 6px 2px 3px; border:1px solid var(--line); border-radius:999px; font-size:11px; font-weight:700; font-family:'IBM Plex Mono', monospace; }
+  .gar-logos img{ width:18px; height:18px; object-fit:contain; }
+  .gar-ligne.is-fait .gar-logos span{ border-color:rgba(47,158,68,0.5); }
+  .gar-ligne.is-illegal .gar-logos span{ border-color:#E03131; color:#E03131; }
+  .gar-vide{ font-size:13px; color:var(--ink-muted); padding-top:4px; }
+  .gar-prec{ border-top:1px solid var(--line); padding-top:12px; }
+  @media (min-width:900px){ .gar-boite.a-deux .gar-prec{ border-top:none; padding-top:0; border-left:1px solid var(--line); padding-left:14px; } }
+
   /* Nom complet sur grand écran, code (TOR) sur téléphone. */
   .nom-court{ display:none; }
   @media (max-width:600px){
@@ -225,6 +257,7 @@
     </div>
 
     <div id="dataWrap" hidden>
+      <section class="gar-boite" id="gardiens" hidden></section>
       <div id="groupsWrap"></div>
     </div>
 
@@ -374,6 +407,84 @@ function saveToCache(rows){
 function applyData(rows){
   state.games = parseSchedule(rows);
   buildFilters();
+  // 2e gardien : périodes (lignes « Time » du calendrier) et déclarations des DG.
+  state.matchsG = window.LNHQ_GARDIENS ? LNHQ_GARDIENS.lireCalendrier(rows) : [];
+  chargerGardiens();
+}
+
+/* ---------- 2e gardien (déclarations sur publier.lnhq.ca/gardien.html) ---------- */
+async function chargerGardiens(){
+  if(!window.LNHQ_GARDIENS) return;
+  state.decl = await LNHQ_GARDIENS.chargerDeclarations();
+  state.declMatch = new Set(Object.values(state.decl).map(d => d.match + '|' + d.equipe));
+  renderGardiens();
+  if(!els.dataWrap.hidden) render();
+}
+
+function logosEquipes(codes, details){
+  const box = el('div', 'gar-logos');
+  codes.forEach(c => {
+    const puce = el('span');
+    puce.title = (window.LNHQ_TEAMS || []).find(t => t.code === c)?.name + (details && details[c] ? ' : ' + details[c] : '');
+    const img = el('img');
+    img.src = teamLogoPath(c);
+    img.alt = '';
+    puce.append(img, c);
+    box.append(puce);
+  });
+  return box;
+}
+
+function ligneGardien(classe, libelle, codes, details, vide){
+  const ligne = el('div', 'gar-ligne ' + classe);
+  ligne.append(el('b', null, `${libelle} (${codes.length})`));
+  ligne.append(codes.length ? logosEquipes(codes, details) : el('span', 'gar-vide', vide));
+  return ligne;
+}
+
+function renderGardiens(){
+  const box = document.getElementById('gardiens');
+  const G = window.LNHQ_GARDIENS;
+  if(!G || !state.matchsG || !state.matchsG.length){ box.hidden = true; return; }
+  const auj = G.aujourdhui();
+  const periodes = G.periodes(state.matchsG);
+  const courante = periodes.find(p => p.fin >= auj);
+  const precedente = periodes.filter(p => p.fin < auj).pop();
+  const codes = (window.LNHQ_TEAMS || []).map(t => t.code);
+  const decl = state.decl || {};
+  const jours = (a, b) => Math.round((parseDate(b) - parseDate(a)) / 86400000);
+  box.replaceChildren();
+
+  if(courante){
+    const bloc = el('div');
+    const titre = el('div', 'gar-titre');
+    const reste = jours(auj, courante.fin);
+    const quand = courante.debut > auj ? 'commence le ' + court.format(parseDate(courante.debut))
+      : reste === 0 ? 'se termine aujourd’hui' : `se termine dans ${reste} jour${reste > 1 ? 's' : ''}`;
+    titre.append(el('strong', null, '2e gardien · Période ' + courante.num),
+      el('span', null, `${etiquetteSemaine(courante.debut).split(' au ')[0]} au ${court.format(parseDate(courante.fin))} · ${quand}`));
+    const lien = el('a', null, 'Déclarer mon match →');
+    lien.href = 'https://publier.lnhq.ca/gardien.html';
+    titre.append(lien);
+    const faits = codes.filter(c => decl[c + '|' + courante.num]);
+    const details = {};
+    faits.forEach(c => { const d = decl[c + '|' + courante.num]; details[c] = court.format(parseDate(d.date)) + ' vs ' + d.adversaire; });
+    bloc.append(titre,
+      ligneGardien('is-fait', '✅ Fait', faits, details, 'Aucune équipe pour l’instant.'),
+      ligneGardien('is-a-faire', '⏳ À faire', codes.filter(c => !decl[c + '|' + courante.num]), null, 'Toutes les équipes ont déclaré leur match.'));
+    box.append(bloc);
+  }
+  if(precedente){
+    const bloc = el('div', 'gar-prec');
+    const titre = el('div', 'gar-titre');
+    titre.append(el('strong', null, 'Période ' + precedente.num + ' terminée'),
+      el('span', null, `${court.format(parseDate(precedente.debut))} au ${court.format(parseDate(precedente.fin))}`));
+    const illegales = codes.filter(c => !decl[c + '|' + precedente.num]);
+    bloc.append(titre, ligneGardien('is-illegal', '❌ Illégales', illegales, null, '✅ Toutes les équipes ont fait jouer leur 2e gardien.'));
+    box.append(bloc);
+  }
+  box.classList.toggle('a-deux', !!(courante && precedente));
+  box.hidden = !box.children.length;
 }
 
 async function loadData({ background=false } = {}){
@@ -541,7 +652,7 @@ function el(tag, cls, text){
   return e;
 }
 
-function equipe(fullName, cote, gagnant){
+function equipe(fullName, cote, gagnant, num){
   const slug = TEAM_NAME_TO_SLUG[(fullName || '').trim().toLowerCase()];
   const code = slug ? SLUG_TO_CODE[slug] : '';
   const wrap = el('span', 'match-equipe ' + cote + (gagnant ? ' is-gagnant' : '') + (state.team && fullName === state.team ? ' is-choisie' : ''));
@@ -558,6 +669,12 @@ function equipe(fullName, cote, gagnant){
   lien.title = fullName;
   lien.append(el('span', 'nom-long', (slug && SURNOMS[slug]) || fullName), el('span', 'nom-court', code || fullName));
   wrap.append(lien);
+  // Match déclaré pour le 2e gardien de cette équipe.
+  if(code && state.declMatch && state.declMatch.has(num + '|' + code)){
+    const b = el('span', 'match-2eg', '2e G');
+    b.title = '2e gardien';
+    wrap.append(b);
+  }
   return wrap;
 }
 
@@ -567,11 +684,11 @@ function ligneMatch(g){
   const ligne = el('div', 'match');
   ligne.append(
     el('span', 'match-heure', joue ? 'Final' : g.time),
-    equipe(g.away, 'visiteur', joue && a > h),
+    equipe(g.away, 'visiteur', joue && a > h, g.num),
     el('span', 'match-score', joue ? g.awayScore : ''),
     el('span', 'match-at', '@'),
     el('span', 'match-score', joue ? g.homeScore : ''),
-    equipe(g.home, 'domicile', joue && h > a));
+    equipe(g.home, 'domicile', joue && h > a, g.num));
   if(g.note) ligne.append(el('span', 'match-note', g.note));
   return ligne;
 }
