@@ -188,8 +188,12 @@
   .gar-tete span{ font-weight:500; text-transform:none; letter-spacing:0; opacity:0.85; }
   .gar-prec .gar-tete{ background:#E03131; color:#fff; }
   .gar-corps{ padding:12px; }
-  .gar-declarer{ display:block; margin:0 0 14px; padding:10px 16px; border-radius:8px; background:var(--accent); color:var(--accent-ink); font-size:14px; font-weight:700; text-align:center; text-decoration:none; }
-  .gar-declarer:hover{ filter:brightness(1.1); }
+  .gar-declarer{
+    display:block; margin:0 0 14px; padding:9px 16px; border-radius:999px; border:2px solid var(--accent);
+    background:transparent; color:var(--accent); font-size:14px; font-weight:700; text-align:center; text-decoration:none;
+    transition:background .15s, color .15s;
+  }
+  .gar-declarer:hover{ background:var(--accent); color:var(--accent-ink); }
   .gar-ligne + .gar-ligne{ margin-top:14px; }
   .gar-ligne > b{ display:block; margin-bottom:8px; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }
   .gar-ligne.is-fait > b{ color:#2F9E44; }
