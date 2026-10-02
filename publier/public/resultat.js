@@ -19,7 +19,7 @@
     inconnu: "Ton courriel n'est pas dans la liste d'accès de la ligue.",
     equipe: "Ton courriel n'est lié à aucune équipe.",
     match: "Ce match n'est pas un match de ton équipe.",
-    pas_joue: "Ce match n'a pas encore eu lieu.",
+    pas_joue: "Ce match est prévu après la semaine en cours : il ne peut pas encore être soumis.",
     score: 'Le score est invalide (pas de match nul).',
     fin: 'Une prolongation ou des tirs de barrage se terminent par un seul but d’écart.',
     photo: 'La photo est obligatoire (JPEG, PNG ou WebP).',
@@ -65,10 +65,17 @@
   // Par défaut : ses matchs déjà joués et sans résultat. Mode admin (case à cocher) :
   // tous les matchs joués, y compris ceux déjà soumis (correction).
   const modeAdmin = () => moi.admin && $('modeAdmin').checked;
+  // Dernier jour soumettable : le dimanche de la semaine en cours (semaines du calendrier,
+  // du lundi au dimanche). Les matchs de la semaine peuvent être joués d'avance.
+  function finSemaine(){
+    const d = date(G.aujourdhui());
+    d.setDate(d.getDate() + (7 - d.getDay()) % 7);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
   function remplirMatchs(){
-    const auj = G.aujourdhui();
+    const limite = finSemaine();
     const tous = modeAdmin();
-    const liste = matchs.filter(m => m.date <= auj
+    const liste = matchs.filter(m => m.date <= limite
       && (tous || ((m.codeVisiteur === moi.code || m.codeDomicile === moi.code) && !resultats[m.num])))
       .sort((a, b) => b.date.localeCompare(a.date) || Number(b.num) - Number(a.num));
     const choix = [el('option', null, liste.length ? 'Choisis le match…' : 'Aucun match à soumettre pour l’instant')];

@@ -559,6 +559,15 @@ function aujourdhuiLigue() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
 }
 
+// Dimanche de la semaine en cours (semaines du lundi au dimanche, comme le calendrier) :
+// les matchs de la semaine peuvent être joués et soumis d'avance.
+function finSemaineLigue() {
+  const [a, m, j] = aujourdhuiLigue().split('-').map(Number);
+  const d = new Date(Date.UTC(a, m - 1, j));
+  d.setUTCDate(d.getUTCDate() + (7 - d.getUTCDay()) % 7);
+  return d.toISOString().slice(0, 10);
+}
+
 function declarerGardien(d, membre) {
   const code = codeDuMembre(membre);
   if (!code) return { ok: false, erreur: 'equipe' };
@@ -700,7 +709,7 @@ function soumettreResultat(d, membre) {
   const m = lireCalendrierGardiens().find(x => x.num === String(d.match || '').trim());
   if (!m) return { ok: false, erreur: 'match' };
   if (!admin && m.visiteur !== code && m.domicile !== code) return { ok: false, erreur: 'match' };
-  if (m.date > aujourdhuiLigue()) return { ok: false, erreur: 'pas_joue' };
+  if (m.date > finSemaineLigue()) return { ok: false, erreur: 'pas_joue' };
 
   const butsV = Number(d.butsV), butsD = Number(d.butsD), fin = String(d.fin || '');
   const entier = n => Number.isInteger(n) && n >= 0 && n <= 30;
