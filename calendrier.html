@@ -135,6 +135,13 @@
   .sem-fleche:disabled{ opacity:0.4; cursor:default; }
   .sem-fleche, .sem-aujourdhui{ flex-shrink:0; }
   @media (max-width:600px){ .sem-aujourdhui{ flex:1 1 100%; } }
+  /* Lien vers la soumission des résultats (publier.lnhq.ca, réservé aux DGs). */
+  .cal-resultat{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px; height:42px; padding:0 16px; margin-left:auto;
+    border-radius:9px; background:var(--surface); color:var(--accent); font-weight:700; font-size:14px; text-decoration:none; white-space:nowrap;
+  }
+  .cal-resultat:hover{ filter:brightness(1.08); }
+  @media (max-width:600px){ .cal-resultat{ flex:1 1 100%; margin-left:0; } }
   .sem-aujourdhui{
     height:42px; padding:0 14px; border-radius:9px; border:1px solid rgba(255,255,255,0.5); cursor:pointer;
     background:transparent; color:inherit; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
@@ -280,6 +287,7 @@
       <button type="button" class="sem-fleche" id="semSuiv" aria-label="Semaine suivante">›</button>
       <button type="button" class="sem-aujourdhui" id="semAujourdhui">Cette semaine</button>
     </div>
+    <a class="cal-resultat" href="https://publier.lnhq.ca/resultat.html">📷 Soumettre un résultat</a>
   </div>
 
   <div class="team-modal-backdrop" id="teamModalBackdrop" hidden>
