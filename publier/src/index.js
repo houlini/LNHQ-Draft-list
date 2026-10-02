@@ -103,7 +103,8 @@ async function lirePhotoResultat(env, photo) {
       Object.fromEntries(Object.keys(STATS_RESULTAT).map(k => [k, { type: 'STRING' }]))),
     required: ['code', 'buts'],
   };
-  const consigne = 'This is a photo of the end-of-game summary screen of EA Sports NHL. '
+  const consigne = 'This image shows the end-of-game summary screen of EA Sports NHL. It may be a phone photo of a TV, '
+    + 'or a screenshot of a stream or browser window with other things around it (chat, menus): only use the game screen. '
     + 'Read the team abbreviations and final score from the scoreboard (left team and right team), '
     + 'then each stat row for the left and right team, exactly as displayed '
     + '(keep formats like "10:59", "80.3%", "0 / 4"). Rows: '

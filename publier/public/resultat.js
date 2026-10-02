@@ -62,11 +62,14 @@
 
   const matchChoisi = () => matchs.find(m => m.num === $('match').value);
 
-  // DG : ses matchs déjà joués et sans résultat. Admin : tous les matchs joués (correction possible).
+  // Par défaut : ses matchs déjà joués et sans résultat. Mode admin (case à cocher) :
+  // tous les matchs joués, y compris ceux déjà soumis (correction).
+  const modeAdmin = () => moi.admin && $('modeAdmin').checked;
   function remplirMatchs(){
     const auj = G.aujourdhui();
+    const tous = modeAdmin();
     const liste = matchs.filter(m => m.date <= auj
-      && (moi.admin || ((m.codeVisiteur === moi.code || m.codeDomicile === moi.code) && !resultats[m.num])))
+      && (tous || ((m.codeVisiteur === moi.code || m.codeDomicile === moi.code) && !resultats[m.num])))
       .sort((a, b) => b.date.localeCompare(a.date) || Number(b.num) - Number(a.num));
     const choix = [el('option', null, liste.length ? 'Choisis le match…' : 'Aucun match à soumettre pour l’instant')];
     choix[0].value = '';
@@ -124,7 +127,7 @@
 
   function majBouton(){
     const m = matchChoisi();
-    $('envoyer').disabled = envoi || !m || (!photo && !(moi.admin && resultats[m.num])) || $('butsV').value === '' || $('butsD').value === '';
+    $('envoyer').disabled = envoi || !m || (!photo && !(modeAdmin() && resultats[m.num])) || $('butsV').value === '' || $('butsD').value === '';
   }
 
   // Photo réduite à 1600 px (plus légère à envoyer et assez nette pour la lecture).
@@ -239,6 +242,11 @@
       return;
     }
     construireStats();
+    // Admin sans équipe (compte « Ligue ») : seulement le mode admin.
+    $('blocAdmin').hidden = !moi.admin;
+    $('modeAdmin').checked = moi.admin && !code;
+    $('modeAdmin').disabled = moi.admin && !code;
+    $('modeAdmin').addEventListener('change', () => { remplirMatchs(); choisirMatch(); });
     remplirMatchs();
     $('formulaire').hidden = false;
     $('match').addEventListener('change', choisirMatch);
