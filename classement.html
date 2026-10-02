@@ -9,23 +9,46 @@
 <script src="site-nav.js"></script>
 <script src="resultats-donnees.js"></script>
 <style>
-  .cl-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:980px; margin:0 auto; width:100%; box-sizing:border-box; }
+  .cl-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:1240px; margin:0 auto; width:100%; box-sizing:border-box; }
+  .cl-haut{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px; margin-bottom:16px; }
   .cl-titre{
-    margin:0 0 10px; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
-    font-size:19px; text-transform:uppercase; letter-spacing:0.02em;
+    margin:0; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
+    font-size:22px; text-transform:uppercase; letter-spacing:0.02em;
   }
   .cl-titre span{ font-family:'IBM Plex Sans', sans-serif; font-size:14px; font-weight:400; color:var(--ink-muted); text-transform:none; margin-left:6px; }
-  .cl-carte{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
-  .cl-table{ width:100%; border-collapse:collapse; font-size:14px; }
-  .cl-table th, .cl-table td{ padding:8px 6px; text-align:center; white-space:nowrap; }
-  .cl-table thead th{
-    background:var(--accent); color:var(--accent-ink); font-size:12px; font-weight:700;
-    text-transform:uppercase; letter-spacing:0.04em;
+
+  /* Choix de la vue : Division / Conférence / Ligue */
+  .cl-vues{ display:inline-flex; padding:3px; gap:3px; border-radius:999px; background:var(--surface); border:1px solid var(--line); }
+  .cl-vues button{
+    min-height:36px; padding:0 16px; border:none; border-radius:999px; cursor:pointer;
+    background:transparent; color:var(--ink-muted); font-weight:700; font-size:13.5px;
   }
-  .cl-table tbody tr{ border-top:1px solid var(--line); }
+  .cl-vues button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
+
+  /* Deux colonnes (Est | Ouest) sur grand écran. */
+  .cl-grille{ display:grid; grid-template-columns:1fr; gap:22px; align-items:start; }
+  @media (min-width:1000px){ .cl-grille.a-deux{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  .cl-colonne{ display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .cl-conf{
+    margin:0; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:18px;
+    text-transform:uppercase; letter-spacing:0.02em;
+  }
+
+  .cl-carte{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .cl-carte-titre{
+    padding:8px 12px; background:var(--accent); color:var(--accent-ink);
+    font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .cl-table{ width:100%; border-collapse:collapse; font-size:14px; }
+  .cl-table th, .cl-table td{ padding:7px 6px; text-align:center; white-space:nowrap; }
+  .cl-table thead th{
+    font-size:11.5px; font-weight:700; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:0.04em; border-bottom:1px solid var(--line);
+  }
+  .cl-table tbody tr + tr{ border-top:1px solid var(--line); }
   .cl-table tbody tr:nth-child(even){ background:var(--stripe); }
   .cl-table td{ font-family:'IBM Plex Mono', monospace; }
-  .cl-table .cl-rang{ width:32px; color:var(--ink-muted); }
+  .cl-table .cl-rang{ width:28px; color:var(--ink-muted); }
   .cl-table .cl-equipe{ text-align:left; font-family:inherit; width:100%; }
   .cl-table .cl-pts{ font-weight:700; color:var(--accent); }
   .cl-equipe a{ display:flex; align-items:center; gap:8px; color:inherit; text-decoration:none; min-width:0; }
@@ -34,9 +57,11 @@
   .cl-diff.is-pos{ color:var(--positive); }
   .cl-diff.is-neg{ color:var(--negative); }
   .nom-court{ display:none; }
-  .cl-note{ margin:12px 2px 0; font-size:13px; color:var(--ink-muted); line-height:1.5; }
+  .cl-note{ margin:16px 2px 0; font-size:13px; color:var(--ink-muted); line-height:1.5; }
   .cl-etat{ padding:24px; text-align:center; color:var(--ink-muted); }
   @media (max-width:600px){
+    .cl-vues{ width:100%; }
+    .cl-vues button{ flex:1; padding:0 8px; }
     .cl-table{ font-size:13px; }
     .cl-table th, .cl-table td{ padding:7px 3px; }
     .cl-cache-mobile{ display:none; }
@@ -52,28 +77,18 @@
 
   <main id="content">
     <div class="cl-page">
-      <h2 class="cl-titre">Classement <span id="sousTitre"></span></h2>
-      <div class="cl-carte">
-        <table class="cl-table">
-          <thead>
-            <tr>
-              <th class="cl-rang" title="Rang">#</th>
-              <th class="cl-equipe">Équipe</th>
-              <th title="Parties jouées">PJ</th>
-              <th title="Victoires">V</th>
-              <th title="Défaites">D</th>
-              <th title="Défaites en prolongation ou en tirs de barrage">DP</th>
-              <th title="Points">PTS</th>
-              <th class="cl-cache-mobile" title="Buts pour">BP</th>
-              <th class="cl-cache-mobile" title="Buts contre">BC</th>
-              <th title="Différentiel">DIFF</th>
-            </tr>
-          </thead>
-          <tbody id="lignes"><tr><td colspan="10" class="cl-etat">Chargement…</td></tr></tbody>
-        </table>
+      <div class="cl-haut">
+        <h2 class="cl-titre">Classement <span id="sousTitre"></span></h2>
+        <div class="cl-vues" role="group" aria-label="Vue du classement">
+          <button type="button" data-vue="division">Division</button>
+          <button type="button" data-vue="conference">Conférence</button>
+          <button type="button" data-vue="ligue">Ligue</button>
+        </div>
       </div>
+      <div id="classement" class="cl-grille"><p class="cl-etat">Chargement…</p></div>
       <p class="cl-note">
-        Victoire = 2 points · défaite en prolongation ou en tirs de barrage (DP) = 1 point.
+        PJ parties jouées · V victoires · D défaites · DP défaites en prolongation ou en tirs de barrage ·
+        PTS points · BP buts pour · BC buts contre. Victoire = 2 points, DP = 1 point.
         Égalité : victoires, puis différentiel, puis buts pour. Les résultats viennent des photos
         de fin de match soumises par les DGs.
       </p>
@@ -84,34 +99,94 @@
 <script>
 document.getElementById('sheetTitle').textContent = 'LNHQ';
 (function(){
-  const tbody = document.getElementById('lignes');
+  const R = window.LNHQ_RESULTATS;
+  const boite = document.getElementById('classement');
   const el = (tag, cls, text) => { const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; };
+  const VUES = ['division', 'conference', 'ligue'];
+  let resultats = null;
 
-  async function charger(){
-    const equipes = window.LNHQ_TEAMS || [];
-    let resultats;
-    try{ resultats = await LNHQ_RESULTATS.chargerResultats(); }
-    catch(e){ tbody.replaceChildren(etat('Impossible de charger le classement pour le moment.')); return; }
-    const nb = Object.keys(resultats).length;
-    document.getElementById('sousTitre').textContent = nb ? `${nb} match${nb > 1 ? 's' : ''} joué${nb > 1 ? 's' : ''}` : 'aucun match joué pour l’instant';
-    const parCode = Object.fromEntries(equipes.map(t => [t.code, t]));
-    tbody.replaceChildren(...LNHQ_RESULTATS.classement(resultats, equipes.map(t => t.code)).map((e, i) => {
-      const t = parCode[e.code] || { name: e.code, slug: '' };
+  // Vue choisie : dans l'adresse (?vue=…) pour un lien partagé, sinon la dernière utilisée.
+  function vueInitiale(){
+    const p = new URLSearchParams(location.search).get('vue');
+    if(VUES.includes(p)) return p;
+    try{ const v = localStorage.getItem('lnhqClassementVue'); if(VUES.includes(v)) return v; }catch(e){}
+    return 'division';
+  }
+  let vue = vueInitiale();
+
+  function table(titre, lignes, parCode){
+    const carte = el('section', 'cl-carte');
+    if(titre) carte.append(el('div', 'cl-carte-titre', titre));
+    const t = el('table', 'cl-table');
+    const tete = el('tr');
+    [['#', 'cl-rang', 'Rang'], ['Équipe', 'cl-equipe'], ['PJ', '', 'Parties jouées'], ['V', '', 'Victoires'], ['D', '', 'Défaites'],
+     ['DP', '', 'Défaites en prolongation ou en tirs de barrage'], ['PTS', '', 'Points'], ['BP', 'cl-cache-mobile', 'Buts pour'],
+     ['BC', 'cl-cache-mobile', 'Buts contre'], ['DIFF', '', 'Différentiel']].forEach(([txt, cls, titreCol]) => {
+      const th = el('th', cls || null, txt);
+      if(titreCol) th.title = titreCol;
+      tete.append(th);
+    });
+    const thead = el('thead'); thead.append(tete);
+    const tbody = el('tbody');
+    lignes.forEach((e, i) => {
+      const eq = parCode[e.code] || { name: e.code, slug: '' };
       const tr = el('tr');
       const lien = el('a');
-      if(t.slug) lien.href = 'equipe.html?team=' + t.slug;
+      if(eq.slug) lien.href = 'equipe.html?team=' + eq.slug;
+      lien.title = eq.name;
       const img = el('img'); img.src = 'Logos/' + e.code + '.png'; img.alt = ''; img.loading = 'lazy';
-      lien.append(img, el('span', 'nom-long', t.name), el('span', 'nom-court', e.code));
+      lien.append(img, el('span', 'nom-long', eq.name), el('span', 'nom-court', e.code));
       const tdEquipe = el('td', 'cl-equipe'); tdEquipe.append(lien);
       const diff = el('td', 'cl-diff' + (e.diff > 0 ? ' is-pos' : e.diff < 0 ? ' is-neg' : ''), (e.diff > 0 ? '+' : '') + e.diff);
       tr.append(el('td', 'cl-rang', String(i + 1)), tdEquipe,
         el('td', null, e.pj), el('td', null, e.v), el('td', null, e.d), el('td', null, e.dp),
         el('td', 'cl-pts', e.pts), el('td', 'cl-cache-mobile', e.bp), el('td', 'cl-cache-mobile', e.bc), diff);
-      return tr;
+      tbody.append(tr);
+    });
+    t.append(thead, tbody);
+    carte.append(t);
+    return carte;
+  }
+
+  function afficher(){
+    document.querySelectorAll('.cl-vues button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vue === vue)));
+    if(!resultats) return;
+    const equipes = window.LNHQ_TEAMS || [];
+    const parCode = Object.fromEntries(equipes.map(t => [t.code, t]));
+    const classer = codes => R.classement(resultats, codes);
+    boite.classList.toggle('a-deux', vue !== 'ligue');
+    if(vue === 'ligue'){
+      boite.replaceChildren(table('', classer(equipes.map(t => t.code)), parCode));
+      return;
+    }
+    // Est à gauche, Ouest à droite ; par division, chaque conférence a ses deux tableaux.
+    boite.replaceChildren(...R.CONFERENCES.map(conf => {
+      const col = el('div', 'cl-colonne');
+      if(vue === 'conference'){
+        col.append(table(conf.nom, classer(conf.divisions.flatMap(d => d.equipes)), parCode));
+      }else{
+        col.append(el('h3', 'cl-conf', conf.nom), ...conf.divisions.map(d => table(d.nom, classer(d.equipes), parCode)));
+      }
+      return col;
     }));
   }
-  function etat(texte){
-    const tr = el('tr'); const td = el('td', 'cl-etat', texte); td.colSpan = 10; tr.append(td); return tr;
+
+  document.querySelectorAll('.cl-vues button').forEach(b => b.addEventListener('click', () => {
+    vue = b.dataset.vue;
+    try{ localStorage.setItem('lnhqClassementVue', vue); }catch(e){}
+    const url = new URL(location.href);
+    url.searchParams.set('vue', vue);
+    history.replaceState(null, '', url);
+    afficher();
+  }));
+
+  async function charger(){
+    afficher();
+    try{ resultats = await R.chargerResultats(); }
+    catch(e){ boite.replaceChildren(el('p', 'cl-etat', 'Impossible de charger le classement pour le moment.')); return; }
+    const nb = Object.keys(resultats).length;
+    document.getElementById('sousTitre').textContent = nb ? `${nb} match${nb > 1 ? 's' : ''} joué${nb > 1 ? 's' : ''}` : 'aucun match joué pour l’instant';
+    afficher();
   }
   charger();
 })();

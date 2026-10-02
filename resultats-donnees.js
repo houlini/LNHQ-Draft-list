@@ -21,6 +21,18 @@
   ];
   const FINS = { '': '', PROL: 'Prol.', TB: 'T.B.' };
 
+  // Alignement de la LNH : 2 conférences de 2 divisions de 8 équipes.
+  const CONFERENCES = [
+    { nom: 'Conférence de l’Est', divisions: [
+      { nom: 'Division Atlantique', equipes: ['BOS', 'BUF', 'DET', 'FLA', 'MTL', 'OTT', 'TBL', 'TOR'] },
+      { nom: 'Division Métropolitaine', equipes: ['CAR', 'CBJ', 'NJD', 'NYI', 'NYR', 'PHI', 'PIT', 'WSH'] },
+    ] },
+    { nom: 'Conférence de l’Ouest', divisions: [
+      { nom: 'Division Centrale', equipes: ['CHI', 'COL', 'DAL', 'MIN', 'NSH', 'STL', 'UTA', 'WPG'] },
+      { nom: 'Division Pacifique', equipes: ['ANA', 'CGY', 'EDM', 'LAK', 'SJS', 'SEA', 'VAN', 'VGK'] },
+    ] },
+  ];
+
   async function gviz(params){
     const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&${params}&t=${Date.now()}`, { cache: 'no-store' });
     if(!res.ok) throw new Error('http_' + res.status);
@@ -58,7 +70,8 @@
     (codes || []).forEach(c => { t[c] = { code: c, pj: 0, v: 0, d: 0, dp: 0, pts: 0, bp: 0, bc: 0 }; });
     Object.values(resultats).forEach(r => {
       [[r.visiteur, r.butsV, r.butsD], [r.domicile, r.butsD, r.butsV]].forEach(([c, pour, contre]) => {
-        if(!c) return;
+        // Liste d'équipes donnée (une division, une conférence) : les autres sont ignorées.
+        if(!c || (codes && !t[c])) return;
         const e = t[c] || (t[c] = { code: c, pj: 0, v: 0, d: 0, dp: 0, pts: 0, bp: 0, bc: 0 });
         e.pj++; e.bp += pour; e.bc += contre;
         if(pour > contre){ e.v++; e.pts += 2; }
@@ -70,5 +83,5 @@
       .sort((a, b) => b.pts - a.pts || b.v - a.v || b.diff - a.diff || b.bp - a.bp || a.code.localeCompare(b.code));
   }
 
-  window.LNHQ_RESULTATS = Object.freeze({ STATS, FINS, chargerResultats, classement });
+  window.LNHQ_RESULTATS = Object.freeze({ STATS, FINS, CONFERENCES, chargerResultats, classement });
 })();
