@@ -97,17 +97,21 @@ const STATS_RESULTAT = {
 async function lirePhotoResultat(env, photo) {
   if (!env.GEMINI_KEY) return json({ ok: false, erreur: 'lecture_indisponible' });
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.mime) || !photo.data) return json({ ok: false, erreur: 'photo' });
-  const cote = {
+  const cote = (quel) => ({
     type: 'OBJECT',
-    properties: Object.assign({ code: { type: 'STRING' }, buts: { type: 'INTEGER' } },
-      Object.fromEntries(Object.keys(STATS_RESULTAT).map(k => [k, { type: 'STRING' }]))),
-    required: ['code', 'buts'],
-  };
+    properties: Object.assign({
+      code: { type: 'STRING', description: `3-letter abbreviation of the ${quel} team on the scoreboard (e.g. NYR)` },
+      buts: { type: 'INTEGER', description: `final score of the ${quel} team (big number on the scoreboard)` },
+    }, Object.fromEntries(Object.entries(STATS_RESULTAT).map(([k, v]) =>
+      [k, { type: 'STRING', description: `${quel} column value of the row labelled "${v}"` }]))),
+    required: ['code', 'buts', ...Object.keys(STATS_RESULTAT)],
+  });
   const consigne = 'This image shows the end-of-game summary screen of EA Sports NHL. It may be a phone photo of a TV, '
     + 'or a screenshot of a stream or browser window with other things around it (chat, menus): only use the game screen. '
-    + 'Read the team abbreviations and final score from the scoreboard (left team and right team), '
-    + 'then each stat row for the left and right team, exactly as displayed '
-    + '(keep formats like "10:59", "80.3%", "0 / 4"). Rows: '
+    + 'Read the team abbreviations and final score from the scoreboard (left team and right team). '
+    + 'Below the scoreboard, each stat row has a small label in the middle, the left team value at the far left '
+    + 'and the right team value at the far right. Copy each value exactly as displayed, digits and symbols only '
+    + '(formats like "37", "10:59", "80.3%", "0 / 4"). Rows from top to bottom: '
     + Object.entries(STATS_RESULTAT).map(([k, v]) => `${k} = "${v}"`).join(', ') + '. '
     + 'For "fin", answer PROL if the screen shows the game ended in overtime (OT), TB if it ended in a shootout (SO), otherwise REG. '
     + 'Set "lisible" to false if this is not such a screen or it cannot be read; leave unreadable values empty.';
@@ -115,33 +119,59 @@ async function lirePhotoResultat(env, photo) {
     contents: [{ parts: [{ inline_data: { mime_type: photo.mime, data: photo.data } }, { text: consigne }] }],
     generationConfig: {
       temperature: 0,
+      mediaResolution: 'MEDIA_RESOLUTION_HIGH',
       responseMimeType: 'application/json',
       responseSchema: {
         type: 'OBJECT',
-        properties: { lisible: { type: 'BOOLEAN' }, gauche: cote, droite: cote, fin: { type: 'STRING', enum: ['REG', 'PROL', 'TB'] } },
+        properties: { lisible: { type: 'BOOLEAN' }, gauche: cote('left'), droite: cote('right'), fin: { type: 'STRING', enum: ['REG', 'PROL', 'TB'] } },
         required: ['lisible', 'gauche', 'droite', 'fin'],
       },
     },
   };
-  const modele = env.GEMINI_MODEL || 'gemini-flash-latest';
-  try {
-    const rep = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY },
-      body: JSON.stringify(corps),
-    });
-    if (!rep.ok) {
-      console.error('Gemini', rep.status, (await rep.text()).slice(0, 500));
-      return json({ ok: false, erreur: rep.status === 429 ? 'quota' : 'lecture' });
+  // Modèle gratuit parfois surchargé (503) : un nouvel essai, puis le modèle de secours.
+  const modeles = [env.GEMINI_MODEL || 'gemini-flash-latest', env.GEMINI_MODEL_SECOURS || 'gemini-flash-lite-latest'];
+  let derniere = 'lecture';
+  for (const modele of modeles) {
+    for (let essai = 0; essai < 2; essai++) {
+      try {
+        const rep = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY },
+          body: JSON.stringify(corps),
+        });
+        if (!rep.ok) {
+          console.error('Gemini', modele, rep.status, (await rep.text()).slice(0, 300));
+          derniere = rep.status === 429 ? 'quota' : 'lecture';
+          // Réglage de haute définition refusé par ce modèle : on réessaie sans.
+          if (rep.status === 400 && corps.generationConfig.mediaResolution) { delete corps.generationConfig.mediaResolution; essai--; continue; }
+          if (rep.status === 503 && essai === 0) { await new Promise(r => setTimeout(r, 1500)); continue; }
+          break;   // autre erreur ou 2e échec : modèle suivant
+        }
+        const donnees = await rep.json();
+        const texte = (donnees.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+        console.log('Gemini', modele, texte.slice(0, 1500));
+        return json({ ok: true, lecture: nettoyerLecture(JSON.parse(texte)), modele });
+      } catch (err) {
+        console.error('Gemini', modele, err.message);
+        break;
+      }
     }
-    const donnees = await rep.json();
-    const texte = (donnees.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
-    const lecture = JSON.parse(texte);
-    return json({ ok: true, lecture });
-  } catch (err) {
-    console.error('Gemini :', err.message);
-    return json({ ok: false, erreur: 'lecture' });
   }
+  return json({ ok: false, erreur: derniere });
+}
+
+// Une stat ne contient que des chiffres et « : . % / » : le reste (ex. « 37 Lucas ») est vidé
+// pour que le DG le remplisse lui-même plutôt que d'envoyer une valeur inventée.
+function nettoyerLecture(l) {
+  ['gauche', 'droite'].forEach(c => {
+    const cote = l[c] || (l[c] = {});
+    cote.code = String(cote.code || '').trim().toUpperCase().slice(0, 3);
+    Object.keys(STATS_RESULTAT).forEach(k => {
+      const v = String(cote[k] == null ? '' : cote[k]).trim();
+      cote[k] = /^[\d\s:.,%/]{1,12}$/.test(v) ? v.replace(/\s+/g, ' ') : '';
+    });
+  });
+  return l;
 }
 
 /* ---------- Enchères des agents libres ---------- */
