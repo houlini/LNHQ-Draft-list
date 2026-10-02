@@ -724,8 +724,9 @@ function soumettreResultat(d, membre) {
         return [valeurStat(paire[0]), valeurStat(paire[1])];
       }))
       .concat([photo, code || 'Ligue', new Date().toISOString()]);
-    if (i >= 0) o.getRange(i + 2, 1, 1, valeurs.length).setValues([valeurs]);
-    else o.appendRow(valeurs);
+    // Format texte forcé sur la ligne avant d'écrire : appendRow convertirait « 74.5% » en nombre.
+    const rang = o.getRange(i >= 0 ? i + 2 : o.getLastRow() + 1, 1, 1, valeurs.length);
+    rang.setNumberFormat('@').setValues([valeurs]);
     // Score lisible directement dans le calendrier de la feuille.
     SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_CALENDRIER).getRange(m.ligne, 6, 1, 2).setValues([[butsV, butsD]]);
     return { ok: true, match: m.num, photo: photo, correction: i >= 0 };
