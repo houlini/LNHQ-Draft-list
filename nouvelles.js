@@ -171,6 +171,7 @@
     suite.hidden = true;
     suite.addEventListener('click', () => {
       const replie = texte.classList.toggle('is-collapsed');
+      texte.style.maxHeight = replie ? (texte.dataset.repli || '') : '';
       card.classList.toggle('is-deplie', !replie);
       suite.textContent = replie ? 'Lire la suite' : 'Réduire';
       if(replie) card.scrollIntoView({ block: 'nearest' });
@@ -193,20 +194,45 @@
     const suite = card.querySelector('.news-more');
     if(!texte || !suite || suite.dataset.ouvert) return;
     const cible = location.hash === '#' + card.id;
-    const long = texte.scrollHeight > HAUTEUR_REPLI + 120;
+    const max = hauteurRepli(card, texte);
+    const long = texte.scrollHeight > max + 60;
+    texte.dataset.repli = long ? max + 'px' : '';
+    texte.style.maxHeight = long && !cible ? texte.dataset.repli : '';
     texte.classList.toggle('is-collapsed', long && !cible);
     card.classList.toggle('is-deplie', long && cible);
     suite.hidden = !long;
     suite.textContent = long && !cible ? 'Lire la suite' : 'Réduire';
   }
 
+  // Grand écran avec photo à gauche : le texte replié s'arrête pour que le bouton
+  // « Lire la suite » tombe au bas de la photo (carte sans vide sous la photo).
+  const BOUTON_SUITE = 46;     // .news-more : 40px + marge de 6px
+  function hauteurRepli(card, texte){
+    const couverture = card.querySelector(':scope > .news-cover');
+    if(!couverture || !window.matchMedia('(min-width:900px)').matches) return HAUTEUR_REPLI;
+    const haut = card.getBoundingClientRect().top;
+    const basPhoto = couverture.getBoundingClientRect().bottom - haut;
+    const debutTexte = texte.getBoundingClientRect().top - haut;
+    return Math.max(120, Math.round(basPhoto - BOUTON_SUITE - debutTexte));
+  }
+
   function preparerReplis(){
     els.list.querySelectorAll('.news-card').forEach(card => {
       replier(card);
       card.querySelector('.news-more').addEventListener('click', e => { e.currentTarget.dataset.ouvert = '1'; });
-      card.querySelectorAll('.news-text img').forEach(img => img.addEventListener('load', () => replier(card)));
+      // Une photo introuvable est retirée (photoLink) : on recalcule aussi dans ce cas.
+      card.querySelectorAll('.news-text img, :scope > .news-cover img').forEach(img => {
+        img.addEventListener('load', () => replier(card));
+        img.addEventListener('error', () => replier(card));
+      });
     });
   }
+  // La hauteur de la photo change avec la largeur de la fenêtre.
+  let attenteResize = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(attenteResize);
+    attenteResize = setTimeout(() => els.list.querySelectorAll('.news-card').forEach(replier), 150);
+  });
 
   function show(state){
     els.loader.hidden = state !== 'loading';
