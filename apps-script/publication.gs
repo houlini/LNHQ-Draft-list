@@ -673,6 +673,17 @@ function ongletResultats() {
   return o;
 }
 
+// À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par
+// le site ignore les valeurs d'une colonne qui mélange nombres et texte.
+function reparerResultats() {
+  const o = ongletResultats();
+  if (o.getLastRow() < 2) return;
+  const rang = o.getRange(2, 1, o.getLastRow() - 1, RESULTATS_ENTETES.length);
+  const valeurs = rang.getDisplayValues().map(l => l.map(v => /^\d+\.\d0%$/.test(v) ? v.replace(/0%$/, '%') : v));
+  rang.setNumberFormat('@').setValues(valeurs);
+  console.log(valeurs.length + ' ligne(s) remises en texte.');
+}
+
 function dossierResultats() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty('DOSSIER_RESULTATS');
