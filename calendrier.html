@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="site.css">
 <script src="site-nav.js"></script>
 <script src="gardiens-donnees.js"></script>
+<script src="resultats-donnees.js"></script>
 <style>
   /* ---------- Résumé (Masse salariale / Espace / stats) ---------- */
   .summary-stats{
@@ -175,6 +176,36 @@
     background:#2F9E44; color:#fff;
   }
 
+  .match-heure small{ display:block; font-size:10.5px; font-weight:700; color:var(--accent); }
+  .match.a-fiche{ cursor:pointer; }
+  .match.a-fiche:hover, .match.a-fiche:focus-visible{ background:var(--accent-soft); outline:none; }
+
+  /* ---------- Fiche d'un match (stats et photo) ---------- */
+  .fiche{
+    width:min(560px, calc(100vw - 24px)); max-height:calc(100vh - 32px); box-sizing:border-box; padding:18px 16px 16px;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); color:var(--ink);
+  }
+  .fiche::backdrop{ background:rgba(0,0,0,0.6); }
+  .fiche-fermer{
+    position:absolute; top:6px; right:8px; width:34px; height:34px; border:none; border-radius:50%;
+    background:transparent; color:var(--ink-muted); font-size:24px; line-height:1; cursor:pointer;
+  }
+  .fiche-fermer:hover{ background:var(--accent-soft); color:var(--ink); }
+  .fiche-tete{ display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; gap:10px; margin:6px 0 14px; }
+  .fiche-equipe{ display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; min-width:0; }
+  .fiche-equipe img{ width:52px; height:52px; object-fit:contain; }
+  .fiche-nom{ font-size:13px; color:var(--ink-muted); }
+  .fiche-buts{ font-family:'IBM Plex Mono', monospace; font-size:34px; line-height:1; color:var(--ink-muted); }
+  .fiche-equipe.is-gagnant .fiche-buts{ color:var(--ink); }
+  .fiche-milieu{ text-align:center; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.04em; color:var(--accent); }
+  .fiche-milieu small{ display:block; margin-top:2px; font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-muted); }
+  .fiche-stats{ width:100%; border-collapse:collapse; margin-bottom:14px; }
+  .fiche-stats td, .fiche-stats th{ padding:7px 4px; border-top:1px solid var(--line); }
+  .fiche-stats td{ width:28%; text-align:center; font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:15px; }
+  .fiche-stats th{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:var(--ink-muted); }
+  .fiche-photo{ display:block; }
+  .fiche-photo img{ display:block; width:100%; border-radius:8px; }
+
   /* ---------- Encadré du 2e gardien ---------- */
   .gar-boite{ margin:16px clamp(12px,3vw,40px) 0; }
   .gar-cartes{ display:grid; grid-template-columns:1fr; gap:14px; }
@@ -286,6 +317,7 @@
 
     <p class="empty-state" id="emptyState" hidden></p>
   </main>
+  <dialog id="fiche" class="fiche" aria-label="Fiche du match"></dialog>
 </div>
 
 <script>
@@ -405,7 +437,7 @@ function parseSchedule(rows){
       time: (r[2] || '').trim(),
       away,
       awayScore: (r[5] || '').trim(),
-      homeScore: (r[9] || '').trim(),
+      homeScore: (r[6] || '').trim(),
       home: (r[8] || '').trim(),
       note: (r[13] || '').trim(),
       semaine: lundi(date),
@@ -433,6 +465,14 @@ function applyData(rows){
   // 2e gardien : périodes (lignes « Time » du calendrier) et déclarations des DG.
   state.matchsG = window.LNHQ_GARDIENS ? LNHQ_GARDIENS.lireCalendrier(rows) : [];
   chargerGardiens();
+  chargerResultats();
+}
+
+/* ---------- Résultats (soumis par photo sur publier.lnhq.ca/resultat.html) ---------- */
+async function chargerResultats(){
+  if(!window.LNHQ_RESULTATS) return;
+  state.resultats = await LNHQ_RESULTATS.chargerResultats();
+  if(!els.dataWrap.hidden) render();
 }
 
 /* ---------- 2e gardien (déclarations sur publier.lnhq.ca/gardien.html) ---------- */
@@ -710,18 +750,70 @@ function equipe(fullName, cote, gagnant, num){
 }
 
 function ligneMatch(g){
-  const a = Number(g.awayScore), h = Number(g.homeScore);
-  const joue = g.awayScore !== '' && g.homeScore !== '' && !isNaN(a) && !isNaN(h);
-  const ligne = el('div', 'match');
+  // Résultat soumis par photo en priorité, sinon le score écrit dans SCHEDULE.
+  const r = state.resultats && state.resultats[g.num];
+  const sv = r ? String(r.butsV) : g.awayScore, sd = r ? String(r.butsD) : g.homeScore;
+  const a = Number(sv), h = Number(sd);
+  const joue = sv !== '' && sd !== '' && !isNaN(a) && !isNaN(h);
+  const ligne = el('div', 'match' + (r ? ' a-fiche' : ''));
+  const heure = el('span', 'match-heure', joue ? 'Final' : g.time);
+  if(r && r.fin) heure.append(el('small', null, LNHQ_RESULTATS.FINS[r.fin]));
   ligne.append(
-    el('span', 'match-heure', joue ? 'Final' : g.time),
+    heure,
     equipe(g.away, 'visiteur', joue && a > h, g.num),
-    el('span', 'match-score', joue ? g.awayScore : ''),
+    el('span', 'match-score', joue ? sv : ''),
     el('span', 'match-at', '@'),
-    el('span', 'match-score', joue ? g.homeScore : ''),
+    el('span', 'match-score', joue ? sd : ''),
     equipe(g.home, 'domicile', joue && h > a, g.num));
   if(g.note) ligne.append(el('span', 'match-note', g.note));
+  if(r){
+    ligne.tabIndex = 0;
+    ligne.setAttribute('role', 'button');
+    ligne.title = 'Voir les stats du match';
+    ligne.addEventListener('click', ev => { if(!ev.target.closest('a')) ouvrirFiche(g, r); });
+    ligne.addEventListener('keydown', ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); ouvrirFiche(g, r); } });
+  }
   return ligne;
+}
+
+// Fiche du match : score, les 9 stats de l'écran de fin et la photo soumise.
+function ouvrirFiche(g, r){
+  const fiche = document.getElementById('fiche');
+  const cote = (nom, code, buts, gagnant) => {
+    const d = el('div', 'fiche-equipe' + (gagnant ? ' is-gagnant' : ''));
+    const img = el('img'); img.src = teamLogoPath(code); img.alt = '';
+    d.append(img, el('span', 'fiche-nom', nom), el('b', 'fiche-buts', String(buts)));
+    return d;
+  };
+  const tete = el('div', 'fiche-tete');
+  const milieu = el('div', 'fiche-milieu', 'Final' + (r.fin ? ' · ' + LNHQ_RESULTATS.FINS[r.fin] : ''));
+  milieu.append(el('small', null, court.format(parseDate(g.date))));
+  tete.append(cote(g.away, r.visiteur, r.butsV, r.butsV > r.butsD), milieu, cote(g.home, r.domicile, r.butsD, r.butsD > r.butsV));
+  const table = el('table', 'fiche-stats');
+  const corps = el('tbody');
+  LNHQ_RESULTATS.STATS.forEach(s => {
+    const [v, d] = r.stats[s.cle];
+    if(v === '' && d === '') return;
+    const tr = el('tr');
+    tr.append(el('td', null, v), el('th', null, s.nom), el('td', null, d));
+    corps.append(tr);
+  });
+  table.append(corps);
+  const contenu = [tete];
+  if(corps.children.length) contenu.push(table);
+  if(r.photo){
+    const lien = el('a', 'fiche-photo');
+    lien.href = r.photo; lien.target = '_blank'; lien.rel = 'noopener';
+    const img = el('img'); img.src = r.photo; img.alt = 'Photo de l’écran de fin de match'; img.loading = 'lazy';
+    lien.append(img);
+    contenu.push(lien);
+  }
+  const fermer = el('button', 'fiche-fermer', '×');
+  fermer.type = 'button';
+  fermer.setAttribute('aria-label', 'Fermer');
+  fermer.addEventListener('click', () => fiche.close());
+  fiche.replaceChildren(fermer, ...contenu);
+  fiche.showModal();
 }
 
 function render(){
@@ -769,6 +861,11 @@ function render(){
   if(!games.length) els.emptyState.textContent = state.team ? 'Aucun match de cette équipe cette semaine.' : 'Aucun match cette semaine.';
 }
 els.retryBtn.addEventListener('click', () => loadData());
+// Clic sur le fond (hors de la fiche) : fermeture.
+document.getElementById('fiche').addEventListener('click', ev => {
+  const b = ev.currentTarget.getBoundingClientRect();
+  if(ev.clientX < b.left || ev.clientX > b.right || ev.clientY < b.top || ev.clientY > b.bottom) ev.currentTarget.close();
+});
 
 const cached = loadFromCache();
 if(cached && cached.rows){

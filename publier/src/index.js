@@ -37,6 +37,13 @@ export default {
     if (gardien && request.method === 'POST') {
       return appelerScript(env, gardien, courriel, await request.text());
     }
+    const resultat = { '/api/resultat/lire': 'lire', '/api/resultat/soumettre': 'soumettreResultat' }[url.pathname];
+    if (resultat && request.method === 'POST') {
+      const taille = Number(request.headers.get('Content-Length') || 0);
+      if (!taille || taille > MAX_OCTETS_ENVOI) return json({ ok: false, erreur: 'taille' }, 413);
+      if (resultat === 'lire') return lirePhotoResultat(env, await request.json().catch(() => ({})));
+      return appelerScript(env, resultat, courriel, await request.text());
+    }
     const enchere = { '/api/encheres/lancer': 'lancerEnchere', '/api/encheres/miser': 'miserEnchere' }[url.pathname];
     if (enchere && request.method === 'POST') {
       return actionEnchere(env, enchere, courriel, await request.text());
@@ -75,6 +82,64 @@ async function rappelsGardiens(env) {
     }
   } catch (err) {
     console.error('Rappels 2e gardien :', err.message);
+  }
+}
+
+/* ---------- Résultats : lecture de la photo de fin de match (Gemini) ---------- */
+// Le DG vérifie toujours les valeurs avant d'envoyer : la lecture ne fait que
+// préremplir le formulaire. Secret GEMINI_KEY (clé de Google AI Studio).
+const STATS_RESULTAT = {
+  tirs: 'TOTAL SHOTS', mises: 'HITS', attaque: 'TIME ON ATTACK', passes: 'PASSING',
+  engagements: 'FACEOFFS WON', penalites: 'PENALTY MINUTES', avantages: 'POWERPLAYS',
+  minAvantage: 'POWERPLAY MINUTES', inferiorite: 'SHORTHANDED GOALS',
+};
+
+async function lirePhotoResultat(env, photo) {
+  if (!env.GEMINI_KEY) return json({ ok: false, erreur: 'lecture_indisponible' });
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.mime) || !photo.data) return json({ ok: false, erreur: 'photo' });
+  const cote = {
+    type: 'OBJECT',
+    properties: Object.assign({ code: { type: 'STRING' }, buts: { type: 'INTEGER' } },
+      Object.fromEntries(Object.keys(STATS_RESULTAT).map(k => [k, { type: 'STRING' }]))),
+    required: ['code', 'buts'],
+  };
+  const consigne = 'This is a photo of the end-of-game summary screen of EA Sports NHL. '
+    + 'Read the team abbreviations and final score from the scoreboard (left team and right team), '
+    + 'then each stat row for the left and right team, exactly as displayed '
+    + '(keep formats like "10:59", "80.3%", "0 / 4"). Rows: '
+    + Object.entries(STATS_RESULTAT).map(([k, v]) => `${k} = "${v}"`).join(', ') + '. '
+    + 'For "fin", answer PROL if the screen shows the game ended in overtime (OT), TB if it ended in a shootout (SO), otherwise REG. '
+    + 'Set "lisible" to false if this is not such a screen or it cannot be read; leave unreadable values empty.';
+  const corps = {
+    contents: [{ parts: [{ inline_data: { mime_type: photo.mime, data: photo.data } }, { text: consigne }] }],
+    generationConfig: {
+      temperature: 0,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        properties: { lisible: { type: 'BOOLEAN' }, gauche: cote, droite: cote, fin: { type: 'STRING', enum: ['REG', 'PROL', 'TB'] } },
+        required: ['lisible', 'gauche', 'droite', 'fin'],
+      },
+    },
+  };
+  const modele = env.GEMINI_MODEL || 'gemini-flash-latest';
+  try {
+    const rep = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY },
+      body: JSON.stringify(corps),
+    });
+    if (!rep.ok) {
+      console.error('Gemini', rep.status, (await rep.text()).slice(0, 500));
+      return json({ ok: false, erreur: rep.status === 429 ? 'quota' : 'lecture' });
+    }
+    const donnees = await rep.json();
+    const texte = (donnees.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+    const lecture = JSON.parse(texte);
+    return json({ ok: true, lecture });
+  } catch (err) {
+    console.error('Gemini :', err.message);
+    return json({ ok: false, erreur: 'lecture' });
   }
 }
 

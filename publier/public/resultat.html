@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Résultat d'un match — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css">
+<link rel="stylesheet" href="resultat.css">
+<script src="https://lnhq.ca/gardiens-donnees.js" defer></script>
+<script src="https://lnhq.ca/resultats-donnees.js" defer></script>
+<script src="resultat.js" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">LNHQ</h1>
+      </a>
+      <nav class="site-nav">
+        <a class="nav-btn" href="https://lnhq.ca/calendrier.html">Calendrier</a>
+        <a class="nav-btn" href="https://lnhq.ca/classement.html">Classement</a>
+      </nav>
+    </div>
+    <div class="meta-row"><span id="qui">Vérification de ton accès…</span></div>
+  </header>
+
+  <main class="res-page">
+    <div id="refus" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div id="refusTexte"></div>
+    </div>
+
+    <p id="message" class="res-message" role="status" hidden></p>
+
+    <form id="formulaire" class="res-carte" novalidate hidden>
+      <h2 class="res-titre">Résultat d'un match</h2>
+
+      <label class="res-champ">
+        <span>1. Match</span>
+        <select id="match" required></select>
+      </label>
+
+      <div class="res-champ">
+        <span>2. Photo de l'écran de fin de match</span>
+        <label class="res-photo" id="zonePhoto">
+          <input type="file" id="photo" accept="image/*">
+          <img id="apercu" alt="" hidden>
+          <span id="photoTexte">Prendre ou choisir une photo</span>
+        </label>
+        <p class="res-aide" id="lecture" hidden></p>
+      </div>
+
+      <div class="res-champ" id="blocValeurs" hidden>
+        <span>3. Vérifie les valeurs (corrige au besoin)</span>
+        <div class="res-score">
+          <div class="res-equipe"><img id="logoV" alt=""><b id="codeV"></b></div>
+          <input id="butsV" type="number" inputmode="numeric" min="0" max="30" aria-label="Buts visiteur">
+          <span class="res-tiret">–</span>
+          <input id="butsD" type="number" inputmode="numeric" min="0" max="30" aria-label="Buts domicile">
+          <div class="res-equipe"><b id="codeD"></b><img id="logoD" alt=""></div>
+        </div>
+        <select id="fin" aria-label="Fin du match">
+          <option value="">Temps réglementaire</option>
+          <option value="PROL">Prolongation</option>
+          <option value="TB">Tirs de barrage</option>
+        </select>
+        <table class="res-stats">
+          <thead><tr><th id="teteV"></th><th></th><th id="teteD"></th></tr></thead>
+          <tbody id="stats"></tbody>
+        </table>
+      </div>
+
+      <button type="submit" class="res-envoyer" id="envoyer" disabled>Envoyer le résultat</button>
+    </form>
+  </main>
+</div>
+
+</body>
+</html>

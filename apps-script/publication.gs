@@ -64,6 +64,8 @@ function installer() {
   ['NOUVELLES', 'ANNONCES'].forEach(ouvrirOnglet);
   installerEncheres();
   ongletGardiens();
+  ongletResultats();
+  dossierResultats();
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
@@ -107,6 +109,7 @@ function traiter(p, corps) {
   if (p.action === 'enAttente') return enAttente(membre);
   if (p.action === 'declarerGardien') return declarerGardien(JSON.parse(corps || '{}'), membre);
   if (p.action === 'retirerGardien') return retirerGardien(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'soumettreResultat') return soumettreResultat(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lancerEnchere') return lancerEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'miserEnchere') return miserEnchere(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
@@ -533,12 +536,12 @@ function lireCalendrierGardiens() {
   const lignes = o.getRange(1, 1, o.getLastRow(), 9).getDisplayValues();
   const matchs = [];
   let periode = 0;
-  lignes.forEach(r => {
+  lignes.forEach((r, i) => {
     if (String(r[2]).trim().toLowerCase() === 'time') { periode++; return; }
     const date = String(r[1]).trim().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !String(r[3]).trim()) return;
     matchs.push({
-      num: String(r[0]).trim(), date: date, periode: Math.max(1, periode),
+      num: String(r[0]).trim(), date: date, periode: Math.max(1, periode), ligne: i + 1,
       visiteur: CODES_NOMS_COMPLETS[String(r[3]).trim().toLowerCase()] || '',
       domicile: CODES_NOMS_COMPLETS[String(r[8]).trim().toLowerCase()] || '',
     });
@@ -637,6 +640,98 @@ function messageGardiens(titre, texte, couleur) {
       allowed_mentions: { parse: [] },
     },
   };
+}
+
+/* =========================================================================
+   RÉSULTATS DES MATCHS (publier.lnhq.ca/resultat.html)
+   Un des deux DGs soumet la photo de l'écran de fin de match ; le Worker la fait
+   lire par Gemini, le DG vérifie les valeurs, puis ce script enregistre :
+     - la photo dans le dossier Drive « LNHQ — Résultats des matchs » ;
+     - une ligne par match dans l'onglet public RESULTATS ;
+     - le score dans SCHEDULE (F = visiteur, G = domicile).
+   Une fois soumis, seul un dirigeant (case « Annonces ») peut corriger un résultat.
+   ========================================================================= */
+const ONGLET_RESULTATS = 'RESULTATS';
+// Même ordre que STATS dans resultats-donnees.js (2 colonnes chacune : visiteur, domicile).
+const RESULTATS_STATS = ['tirs', 'mises', 'attaque', 'passes', 'engagements', 'penalites', 'avantages', 'minAvantage', 'inferiorite'];
+const RESULTATS_NOMS = ['Tirs', 'Mises en échec', "Temps d'attaque", 'Passes', 'Mises au jeu', 'Min. pénalité', 'Avantages num.', 'Min. avantage', 'Buts inf.'];
+const RESULTATS_ENTETES = ['Match', 'Date', 'Visiteur', 'Domicile', 'Buts V', 'Buts D', 'Fin']
+  .concat(...RESULTATS_NOMS.map(n => [n + ' V', n + ' D']))
+  .concat(['Photo', 'Soumis par', 'Soumis le']);
+const FINS_MATCH = ['', 'PROL', 'TB'];
+
+function ongletResultats() {
+  const classeur = SpreadsheetApp.openById(SHEET_ID);
+  let o = classeur.getSheetByName(ONGLET_RESULTATS);
+  if (!o) {
+    o = classeur.insertSheet(ONGLET_RESULTATS);
+    o.appendRow(RESULTATS_ENTETES);
+    o.setFrozenRows(1);
+    // Texte forcé : « 02:00 » ou « 80.3% » ne doivent pas devenir une heure ou un nombre.
+    o.getRange(1, 1, o.getMaxRows(), RESULTATS_ENTETES.length).setNumberFormat('@');
+  }
+  return o;
+}
+
+function dossierResultats() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('DOSSIER_RESULTATS');
+  if (id) return DriveApp.getFolderById(id);
+  const dossier = DriveApp.createFolder('LNHQ — Résultats des matchs');
+  props.setProperty('DOSSIER_RESULTATS', dossier.getId());
+  return dossier;
+}
+
+function soumettreResultat(d, membre) {
+  const admin = peutModifier(membre);
+  const code = codeDuMembre(membre);
+  if (!code && !admin) return { ok: false, erreur: 'equipe' };
+  const m = lireCalendrierGardiens().find(x => x.num === String(d.match || '').trim());
+  if (!m) return { ok: false, erreur: 'match' };
+  if (!admin && m.visiteur !== code && m.domicile !== code) return { ok: false, erreur: 'match' };
+  if (m.date > aujourdhuiLigue()) return { ok: false, erreur: 'pas_joue' };
+
+  const butsV = Number(d.butsV), butsD = Number(d.butsD), fin = String(d.fin || '');
+  const entier = n => Number.isInteger(n) && n >= 0 && n <= 30;
+  if (!entier(butsV) || !entier(butsD) || butsV === butsD) return { ok: false, erreur: 'score' };
+  if (!FINS_MATCH.includes(fin) || (fin && Math.abs(butsV - butsD) !== 1)) return { ok: false, erreur: 'fin' };
+  const stats = d.stats || {};
+  const valeurStat = v => String(v == null ? '' : v).trim().slice(0, 12);
+
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletResultats();
+    const lignes = o.getLastRow() > 1 ? o.getRange(2, 1, o.getLastRow() - 1, RESULTATS_ENTETES.length).getDisplayValues() : [];
+    const i = lignes.findIndex(l => l[0] === m.num);
+    if (i >= 0 && !admin) return { ok: false, erreur: 'deja_soumis' };
+    // Photo obligatoire pour un DG ; un dirigeant qui corrige peut garder l'ancienne.
+    let photo = i >= 0 ? lignes[i][RESULTATS_ENTETES.indexOf('Photo')] : '';
+    if (d.photo && d.photo.data) {
+      if (!TYPES_PHOTO.includes(d.photo.mime)) return { ok: false, erreur: 'photo' };
+      const octets = Utilities.base64Decode(String(d.photo.data));
+      if (!octets.length || octets.length > MAX_OCTETS_PHOTO) return { ok: false, erreur: 'photo' };
+      const nom = 'match-' + m.num + '-' + m.visiteur + '-' + m.domicile + '-' + m.date + '.jpg';
+      const fichier = dossierResultats().createFile(Utilities.newBlob(octets, d.photo.mime, nom));
+      fichier.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      photo = urlPhoto(fichier.getId());
+    }
+    if (!photo) return { ok: false, erreur: 'photo' };
+
+    const valeurs = [m.num, m.date, m.visiteur, m.domicile, String(butsV), String(butsD), fin]
+      .concat(...RESULTATS_STATS.map(c => {
+        const paire = Array.isArray(stats[c]) ? stats[c] : [];
+        return [valeurStat(paire[0]), valeurStat(paire[1])];
+      }))
+      .concat([photo, code || 'Ligue', new Date().toISOString()]);
+    if (i >= 0) o.getRange(i + 2, 1, 1, valeurs.length).setValues([valeurs]);
+    else o.appendRow(valeurs);
+    // Score lisible directement dans le calendrier de la feuille.
+    SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_CALENDRIER).getRange(m.ligne, 6, 1, 2).setValues([[butsV, butsD]]);
+    return { ok: true, match: m.num, photo: photo, correction: i >= 0 };
+  } finally {
+    verrou.releaseLock();
+  }
 }
 
 /* =========================================================================
