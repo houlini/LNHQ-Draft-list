@@ -22,7 +22,7 @@
     pas_joue: "Ce match est prévu après la semaine en cours : il ne peut pas encore être soumis.",
     score: 'Le score est invalide (pas de match nul).',
     fin: 'Une prolongation ou des tirs de barrage se terminent par un seul but d’écart.',
-    photo: 'La photo est obligatoire (JPEG, PNG ou WebP).',
+    photo: 'La photo n’est pas valide (JPEG, PNG ou WebP, 5 Mo maximum).',
     deja_soumis: 'Le résultat de ce match a déjà été soumis. Pour une correction, contacte un admin.',
     taille: 'La photo est trop lourde.',
   };
@@ -154,7 +154,8 @@
 
   function majBouton(){
     const m = matchChoisi();
-    $('envoyer').disabled = envoi || !m || (!photo && !(modeAdmin() && resultats[m.num])) || $('butsV').value === '' || $('butsD').value === '';
+    // Photo facultative : un résultat peut être entré à la main (score obligatoire).
+    $('envoyer').disabled = envoi || !m || $('butsV').value === '' || $('butsD').value === '';
   }
 
   // Photo réduite à 1600 px (plus légère à envoyer et assez nette pour la lecture).

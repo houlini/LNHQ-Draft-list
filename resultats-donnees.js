@@ -88,44 +88,49 @@
   const secondes = v => { const m = /^(\d+):(\d{2})$/.exec(String(v || '').trim()); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
   const fraction = v => { const m = /^(\d+)\s*\/\s*(\d+)$/.exec(String(v || '').trim()); return m ? [Number(m[1]), Number(m[2])] : null; };
 
+  // Une stat laissée vide (résultat entré à la main, sans photo) n'est pas comptée : chaque
+  // moyenne se calcule seulement sur les matchs où la valeur a été entrée.
   function statsEquipes(resultats, codes){
     const t = {};
-    const vide = c => ({ code: c, pj: 0, bp: 0, bc: 0, tirs: 0, tirsContre: 0, mises: 0, attaque: 0, nbAttaque: 0,
-      passes: 0, nbPasses: 0, mjPour: 0, mjContre: 0, penalites: 0, anButs: 0, anOcc: 0, dnButs: 0, dnOcc: 0,
-      minAvantage: 0, inferiorite: 0 });
+    const vide = c => ({ code: c, pj: 0, bp: 0, bc: 0, somme: {}, nb: {}, mjPour: 0, mjContre: 0,
+      anButs: 0, anOcc: 0, dnButs: 0, dnOcc: 0 });
+    const ajouter = (e, cle, v) => { if(v == null) return; e.somme[cle] = (e.somme[cle] || 0) + v; e.nb[cle] = (e.nb[cle] || 0) + 1; };
     (codes || []).forEach(c => { t[c] = vide(c); });
     Object.values(resultats).forEach(r => {
       [[r.visiteur, 0, r.butsV, r.butsD], [r.domicile, 1, r.butsD, r.butsV]].forEach(([c, i, pour, contre]) => {
         if(!c || (codes && !t[c])) return;
         const e = t[c] || (t[c] = vide(c));
-        const s = k => (r.stats[k] || [])[i], adv = k => (r.stats[k] || [])[1 - i];
+        const s = k => ((r.stats || {})[k] || [])[i], adv = k => ((r.stats || {})[k] || [])[1 - i];
         e.pj++; e.bp += pour; e.bc += contre;
-        e.tirs += nombre(s('tirs')) || 0; e.tirsContre += nombre(adv('tirs')) || 0;
-        e.mises += nombre(s('mises')) || 0;
-        const att = secondes(s('attaque')); if(att != null){ e.attaque += att; e.nbAttaque++; }
-        const pas = nombre(s('passes')); if(pas != null){ e.passes += pas; e.nbPasses++; }
-        e.mjPour += nombre(s('engagements')) || 0; e.mjContre += nombre(adv('engagements')) || 0;
-        e.penalites += secondes(s('penalites')) || 0;
+        ajouter(e, 'tirs', nombre(s('tirs')));
+        ajouter(e, 'tirsContre', nombre(adv('tirs')));
+        ajouter(e, 'mises', nombre(s('mises')));
+        ajouter(e, 'attaque', secondes(s('attaque')));
+        ajouter(e, 'passes', nombre(s('passes')));
+        ajouter(e, 'penalites', secondes(s('penalites')));
+        ajouter(e, 'minAvantage', secondes(s('minAvantage')));
+        ajouter(e, 'inferiorite', nombre(s('inferiorite')));
+        // Mises au jeu : seulement si les deux équipes ont une valeur.
+        const mjP = nombre(s('engagements')), mjC = nombre(adv('engagements'));
+        if(mjP != null && mjC != null){ e.mjPour += mjP; e.mjContre += mjC; }
         const an = fraction(s('avantages')); if(an){ e.anButs += an[0]; e.anOcc += an[1]; }
         const dn = fraction(adv('avantages')); if(dn){ e.dnButs += dn[0]; e.dnOcc += dn[1]; }
-        e.minAvantage += secondes(s('minAvantage')) || 0;
-        e.inferiorite += nombre(s('inferiorite')) || 0;
       });
     });
-    const parMatch = (v, e) => e.pj ? v / e.pj : null;
+    const moy = (e, cle) => e.nb[cle] ? e.somme[cle] / e.nb[cle] : null;
     return Object.values(t).map(e => ({
       code: e.code, pj: e.pj,
-      bpMoy: parMatch(e.bp, e), bcMoy: parMatch(e.bc, e),
-      tirsMoy: parMatch(e.tirs, e), tirsContreMoy: parMatch(e.tirsContre, e),
-      misesMoy: parMatch(e.mises, e),
-      attaqueMoy: e.nbAttaque ? e.attaque / e.nbAttaque : null,          // secondes
-      passesMoy: e.nbPasses ? e.passes / e.nbPasses : null,               // %
+      bpMoy: e.pj ? e.bp / e.pj : null, bcMoy: e.pj ? e.bc / e.pj : null,
+      tirsMoy: moy(e, 'tirs'), tirsContreMoy: moy(e, 'tirsContre'),
+      misesMoy: moy(e, 'mises'),
+      attaqueMoy: moy(e, 'attaque'),                                       // secondes
+      passesMoy: moy(e, 'passes'),                                         // %
       mjPct: e.mjPour + e.mjContre ? 100 * e.mjPour / (e.mjPour + e.mjContre) : null,
-      penalitesMoy: e.pj ? e.penalites / 60 / e.pj : null,                // minutes
+      penalitesMoy: e.nb.penalites ? e.somme.penalites / 60 / e.nb.penalites : null,   // minutes
       anButs: e.anButs, anOcc: e.anOcc, anPct: e.anOcc ? 100 * e.anButs / e.anOcc : null,
       dnPct: e.dnOcc ? 100 * (1 - e.dnButs / e.dnOcc) : null,
-      minAvantage: e.minAvantage,                                          // secondes (total)
-      inferiorite: e.inferiorite,
+      minAvantage: e.nb.minAvantage ? e.somme.minAvantage : null,          // secondes (total)
+      inferiorite: e.nb.inferiorite ? e.somme.inferiorite : null,          // total
     }));
   }
 

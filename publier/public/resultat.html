@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://lnhq.ca/site.css?v=4">
 <link rel="stylesheet" href="resultat.css">
 <script src="https://lnhq.ca/gardiens-donnees.js" defer></script>
-<script src="https://lnhq.ca/resultats-donnees.js" defer></script>
+<script src="https://lnhq.ca/resultats-donnees.js?v=2" defer></script>
 <script src="resultat.js" defer></script>
 </head>
 <body>
@@ -52,7 +52,7 @@
       </label>
 
       <div class="res-champ">
-        <span>2. Photo de l'écran de fin de match</span>
+        <span>2. Photo de l'écran de fin de match (facultative)</span>
         <label class="res-photo" id="zonePhoto">
           <input type="file" id="photo" accept="image/*">
           <img id="apercu" alt="" hidden>
@@ -62,7 +62,7 @@
       </div>
 
       <div class="res-champ" id="blocValeurs" hidden>
-        <span>3. Vérifie les valeurs (corrige au besoin)</span>
+        <span>3. Score et stats (vérifie, ou remplis à la main sans photo)</span>
         <div class="res-score">
           <div class="res-equipe"><img id="logoV" alt=""><b id="codeV"></b></div>
           <input id="butsV" type="number" inputmode="numeric" min="0" max="30" aria-label="Buts visiteur">

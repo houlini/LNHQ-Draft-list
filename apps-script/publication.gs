@@ -939,7 +939,7 @@ function soumettreResultat(d, membre) {
     const lignes = o.getLastRow() > 1 ? o.getRange(2, 1, o.getLastRow() - 1, RESULTATS_ENTETES.length).getDisplayValues() : [];
     const i = lignes.findIndex(l => l[0] === m.num);
     if (i >= 0 && !admin) return { ok: false, erreur: 'deja_soumis' };
-    // Photo obligatoire pour un DG ; un dirigeant qui corrige peut garder l'ancienne.
+    // Photo facultative (résultat entré à la main) ; une correction sans nouvelle photo garde l'ancienne.
     let photo = i >= 0 ? lignes[i][RESULTATS_ENTETES.indexOf('Photo')] : '';
     if (d.photo && d.photo.data) {
       if (!TYPES_PHOTO.includes(d.photo.mime)) return { ok: false, erreur: 'photo' };
@@ -950,7 +950,6 @@ function soumettreResultat(d, membre) {
       fichier.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
       photo = urlPhoto(fichier.getId());
     }
-    if (!photo) return { ok: false, erreur: 'photo' };
 
     const valeurs = [m.num, m.date, m.visiteur, m.domicile, String(butsV), String(butsD), fin]
       .concat(...RESULTATS_STATS.map(c => {
