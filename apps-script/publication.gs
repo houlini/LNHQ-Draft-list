@@ -761,6 +761,121 @@ function sauverAlignement(d, membre) {
   }
 }
 
+/* =========================================================================
+   NUMÉROS LNH DES JOUEURS (photos des cartes d'alignement)
+   Onglet IDS_LNH : Joueur (« Nom, Prénom » de PLAYERSDATABASE) | NHL ID | Statut | Candidats.
+   À lancer à la main (Exécuter → remplirIdsLnh), autant de fois que nécessaire : chaque
+   exécution reprend où la précédente s'est arrêtée (limite de temps d'Apps Script) et ne
+   touche jamais une ligne qui a déjà un numéro (correction manuelle respectée).
+   Recherche : search.d3.nhle.com (nom exact, puis pays de naissance et position pour
+   départager les homonymes). Statut : « auto », « à vérifier » (plusieurs candidats,
+   listés), « introuvable ». Pour corriger : écrire le bon numéro et le statut « manuel ».
+   Photo : https://assets.nhle.com/mugs/nhl/latest/<NHL ID>.png
+   ========================================================================= */
+const ONGLET_IDS_LNH = 'IDS_LNH';
+const IDS_LNH_ENTETES = ['Joueur', 'NHL ID', 'Statut', 'Candidats'];
+// Pays : code du classeur (CIO) → code de la LNH (ISO), quand ils diffèrent.
+const PAYS_CIO_ISO = { GER: 'DEU', SUI: 'CHE', DEN: 'DNK', LAT: 'LVA', NED: 'NLD', SLO: 'SVN', CRO: 'HRV', RSA: 'ZAF', POR: 'PRT', GRE: 'GRC', BUL: 'BGR', MGL: 'MNG' };
+
+function ongletIdsLnh() {
+  const classeur = SpreadsheetApp.openById(SHEET_ID);
+  let o = classeur.getSheetByName(ONGLET_IDS_LNH);
+  if (!o) {
+    o = classeur.insertSheet(ONGLET_IDS_LNH);
+    o.appendRow(IDS_LNH_ENTETES);
+    o.setFrozenRows(1);
+    o.getRange(1, 1, o.getMaxRows(), IDS_LNH_ENTETES.length).setNumberFormat('@');
+  }
+  return o;
+}
+
+function normaliserNom(nom) {
+  return String(nom || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function remplirIdsLnh() {
+  const debut = Date.now();
+  const o = ongletIdsLnh();
+  const pdb = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const lignes = pdb.getRange(2, 1, pdb.getLastRow() - 1, 11).getDisplayValues();   // A à K
+  // Joueurs à traiter : nom en B, pas un choix de repêchage, pas déjà dans IDS_LNH.
+  const deja = new Set((o.getLastRow() > 1 ? o.getRange(2, 1, o.getLastRow() - 1, 1).getDisplayValues() : []).map(l => l[0]));
+  const vus = new Set();
+  const aFaire = [];
+  lignes.forEach(l => {
+    const nom = String(l[1]).trim();
+    if (!nom || String(l[7]).trim().toUpperCase() === 'CHOIX' || deja.has(nom) || vus.has(nom)) return;
+    vus.add(nom);
+    const v = nom.indexOf(',');
+    const famille = v > 0 ? nom.slice(0, v).trim() : nom;
+    const prenom = v > 0 ? nom.slice(v + 1).trim() : '';
+    aFaire.push({ nom: nom, complet: (prenom + ' ' + famille).trim(), famille: famille, prenom: prenom,
+      pays: String(l[6]).trim().toUpperCase(), po: String(l[7]).trim().toUpperCase(), ht: String(l[10]).trim() });
+  });
+
+  const groupe = po => (po === 'G' ? 'G' : po === 'D' ? 'D' : 'A');
+  const chercher = textes => UrlFetchApp.fetchAll(textes.map(t => ({
+    url: 'https://search.d3.nhle.com/api/v1/search/player?culture=en-us&limit=40&q=' + encodeURIComponent(normaliserNom(t)),
+    muteHttpExceptions: true,
+  }))).map(r => { try { return JSON.parse(r.getContentText()) || []; } catch (e) { return []; } });
+  // Homonymes : pays de naissance, puis position, puis joueur actif, puis grandeur.
+  const departager = (cands, j) => {
+    const pays = PAYS_CIO_ISO[j.pays] || j.pays;
+    const etapes = [
+      r => String(r.birthCountry || '').toUpperCase() === pays,
+      r => groupe(String(r.positionCode || '').toUpperCase()) === groupe(j.po),
+      r => r.active === true,
+      r => normaliserNom(r.height) === normaliserNom(j.ht),
+    ];
+    for (const f of etapes) {
+      if (cands.length <= 1) break;
+      const garde = cands.filter(f);
+      if (garde.length) cands = garde;
+    }
+    return cands;
+  };
+  let traites = 0;
+  for (let i = 0; i < aFaire.length; i += 40) {
+    if (Date.now() - debut > 4.5 * 60 * 1000) break;   // on s'arrête avant la limite de 6 minutes
+    const lot = aFaire.slice(i, i + 40);
+    const reponses = chercher(lot.map(j => j.complet));
+    const candidats = lot.map((j, k) => departager(reponses[k].filter(r => normaliserNom(r.name) === normaliserNom(j.complet)), j));
+    // Prénom différent (surnom : Sam/Samuel, Jake/Jacob) : recherche par nom de famille, avec
+    // la même initiale, le même pays de naissance et la même position.
+    const sansNom = lot.map((j, k) => k).filter(k => !candidats[k].length);
+    if (sansNom.length) {
+      const parFamille = chercher(sansNom.map(k => lot[k].famille));
+      sansNom.forEach((k, n) => {
+        const j = lot[k];
+        const pays = PAYS_CIO_ISO[j.pays] || j.pays;
+        candidats[k] = departager(parFamille[n].filter(r => {
+          const nr = normaliserNom(r.name);
+          return nr.endsWith(' ' + normaliserNom(j.famille)) && nr[0] === normaliserNom(j.prenom)[0]
+            && String(r.birthCountry || '').toUpperCase() === pays
+            && groupe(String(r.positionCode || '').toUpperCase()) === groupe(j.po);
+        }), j);
+      });
+    }
+    const nouvelles = lot.map((j, k) => {
+      const res = reponses[k];
+      let cands = candidats[k];
+      if (cands.length > 1) {
+        // Encore plusieurs : on garde le plus récent comme proposition, à vérifier.
+        cands.sort((a, b) => String(b.lastSeasonId || '').localeCompare(String(a.lastSeasonId || '')));
+        return [j.nom, String(cands[0].playerId), 'à vérifier',
+          cands.map(r => r.playerId + ' ' + (r.positionCode || '') + ' ' + (r.birthCountry || '') + ' ' + (r.lastTeamAbbrev || '')).join(' | ')];
+      }
+      if (cands.length === 1) return [j.nom, String(cands[0].playerId), 'auto', ''];
+      return [j.nom, '', 'introuvable', res.slice(0, 3).map(r => r.playerId + ' ' + r.name).join(' | ')];
+    });
+    const rang = o.getRange(o.getLastRow() + 1, 1, nouvelles.length, IDS_LNH_ENTETES.length);
+    rang.setNumberFormat('@').setValues(nouvelles);
+    traites += nouvelles.length;
+  }
+  const reste = aFaire.length - traites;
+  console.log(traites + ' joueur(s) traité(s). ' + (reste > 0 ? reste + ' restant(s) : relance remplirIdsLnh.' : 'Terminé.'));
+}
+
 // À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par
 // le site ignore les valeurs d'une colonne qui mélange nombres et texte.
 function reparerResultats() {

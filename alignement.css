@@ -39,6 +39,19 @@
   content:''; position:absolute; inset:0; pointer-events:none;
   background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%);
 }
+/* Photo officielle : à droite, jusqu'au bas de la carte ; le texte passe devant
+   (dégradé sombre en bas pour qu'il reste lisible). */
+.al-photo{
+  position:absolute; right:-6%; bottom:0; height:84%; width:auto; max-width:72%; object-fit:contain; object-position:bottom right;
+  pointer-events:none; filter:drop-shadow(0 4px 8px rgba(0,0,0,0.35));
+}
+.al-carte.a-photo{ min-height:150px; }
+.al-carte.a-photo::before{
+  content:''; position:absolute; left:0; right:0; bottom:0; height:58%; pointer-events:none; z-index:1;
+  background:linear-gradient(to top, color-mix(in srgb, var(--al-sombre) 92%, transparent), transparent);
+}
+.al-carte > :not(.al-photo){ position:relative; z-index:2; }
+.al-carte .al-badge{ position:absolute; }
 .al-haut{ display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
 .al-ov{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:30px; line-height:0.95; font-weight:600; }
 .al-place{
@@ -79,6 +92,8 @@
   .al-rangee-nom{ font-size:11px; }
   .al-cartes{ gap:6px; }
   .al-carte{ min-height:112px; padding:7px 7px 8px; gap:4px; border-radius:8px; }
+  .al-carte.a-photo{ min-height:132px; }
+  .al-photo{ height:74%; right:-10%; }
   .al-ov{ font-size:23px; }
   .al-place{ font-size:9px; padding:1px 5px; }
   .al-prenom{ font-size:10.5px; }

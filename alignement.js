@@ -32,9 +32,18 @@
 
   const FORMATS = { C: 'C', L: 'AG', R: 'AD', D: 'D', G: 'G' };
 
+  // Numéros LNH (onglet IDS_LNH, rempli par remplirIdsLnh du script) → photo officielle.
+  async function chargerIds(){
+    try{
+      const lignes = await gviz('sheet=IDS_LNH&headers=1');
+      if(lignes.entetes[0] !== 'Joueur' || lignes.entetes[1] !== 'NHL ID') return new Map();
+      return new Map(lignes.filter(l => l[0] && /^\d{6,8}$/.test(l[1])).map(l => [l[0], l[1]]));
+    }catch(e){ return new Map(); }
+  }
+
   async function chargerJoueurs(code){
     const q = encodeURIComponent(`select A, B, C, H, J, K, L, AB, G where Z = '${code}' and H <> 'CHOIX'`);
-    const lignes = await gviz('sheet=PLAYERSDATABASE&headers=1&tq=' + q);
+    const [lignes, ids] = await Promise.all([gviz('sheet=PLAYERSDATABASE&headers=1&tq=' + q), chargerIds()]);
     return lignes.filter(l => l[1]).map(l => {
       const v = l[1].indexOf(',');
       const famille = v > 0 ? l[1].slice(0, v).trim() : l[1];
@@ -43,6 +52,7 @@
         id: l[1], prenom, famille, nom: l[0] || (prenom + ' ' + famille).trim(),
         ov: Number(l[2]) || 0, po: (l[3] || '').toUpperCase(), sh: (l[4] || '').toUpperCase(),
         ht: l[5] || '', wt: l[6] || '', espoir: /^(true|vrai|x|oui)$/i.test(l[7] || ''), pays: (l[8] || '').toUpperCase(),
+        idLnh: ids.get(l[1]) || '',
       };
     });
   }
@@ -157,6 +167,16 @@
     if(!joueur){
       c.append(el('div', 'al-vide', 'Place libre'));
       return c;
+    }
+    // Photo officielle LNH (si le numéro est connu), à droite, derrière le nom.
+    if(joueur.idLnh){
+      const photo = el('img', 'al-photo');
+      photo.src = `https://assets.nhle.com/mugs/nhl/latest/${joueur.idLnh}.png`;
+      photo.alt = '';
+      photo.loading = 'lazy';
+      photo.onerror = () => photo.remove();
+      c.append(photo);
+      c.classList.add('a-photo');
     }
     const nom = el('div', 'al-nom');
     nom.append(el('span', 'al-prenom', joueur.prenom), el('span', 'al-famille', joueur.famille));
