@@ -896,6 +896,34 @@ function appliquerCorrectionsIdsLnh() {
   console.log(n + ' correction(s) appliquée(s).');
 }
 
+// Agents libres ajoutés par la ligue (liste du 2026-10-03), noms exacts de la colonne B.
+// À lancer à la main : met « UFA » dans la colonne Z (LNHQ TM) de ces joueurs, seulement si
+// la case est vide ou déjà UFA (un joueur dans une équipe n'est jamais retiré).
+const NOUVEAUX_UFA = [
+  'Reaves, Ryan', 'Petry, Jeff', 'van Riemsdyk, James', 'Dadonov, Evgenii', 'Glendening, Luke', 'Smith, Brendan', 'Hamonic, Travis', 'Dowling, Justin', 'Henrique, Adam', 'Palat, Ondrej', 'Belzile, Alex', 'Pitlick, Tyler', 'Bjugstad, Nick', 'Gustafsson, Erik', 'Janmark, Mattias', 'Gravel, Kevin', 'Saad, Brandon', 'Sheary, Conor', 'Pearson, Tanner', 'Gudbranson, Erik', 'Petrovic, Alexander', 'McIlrath, Dylan', 'Hutton, Ben', 'Rooney, Kevin', 'Brodzinski, Jonny', 'Schmelzer, Ryan', 'Brown, Josh', 'Pouliot, Derrick', 'Rosen, Calle', 'Johnston, Ross', 'Girgensons, Zemgus', 'Dumba, Matt', 'Toninato, Dominic', 'O\'Brien, Liam', 'Mermis, Dakota', 'DeSimone, Nick', 'Jankowski, Mark', 'Bayreuther, Gavin', 'Aston-Reese, Zach', 'Lazar, Curtis', 'Burroughs, Kyle', 'Hayden, John', 'Lettieri, Vinni', 'Schueneman, Corey', 'Erne, Adam', 'Lagesson, William', 'Appleton, Mason', 'Joshua, Dakota', 'Hughes, Cameron', 'Blais, Sammy', 'Fabbri, Robby', 'Kirkland, Justin', 'Mangiapane, Andrew', 'Ahcan, Jack', 'Carlsson, Lucas', 'Fitzgerald, Casey', 'Juulsen, Noah', 'Capobianco, Kyle', 'Bear, Ethan', 'Duehr, Walker', 'Condotta, Lucas', 'White, Colin', 'Pederson, Lane', 'Viel, Jeffrey', 'Jones, Caleb', 'Kiersted, Matt', 'Dunne, Joshua', 'Jaaska, Juha', 'Frederic, Trent', 'Huntington, Jimmy', 'Bean, Jake', 'Meyers, Ben', 'Matinpalo, Nikolas', 'Valimaki, Juuso', 'Timmins, Conor', 'Tsyplakov, Maxim', 'Coghlan, Dylan', 'Nylander, Alex', 'Jones, Max', 'Dube, Dillon', 'Cholowski, Dennis', 'Tufte, Riley', 'Gregor, Noah', 'Jost, Tyson', 'Middleton, Keaton', 'Metsa, Zach', 'Ward, Taylor', 'Leonard, John', 'Shaw, Mason', 'Chaffee, Mitchell', 'Jones, Ben', 'MacLean, Kyle', 'Studnicka, Jack', 'Crotty, Cameron', 'Entwistle, Mackenzie', 'Vaakanainen, Urho', 'Harvey-Pinard, Rafael', 'Hamblin, James', 'Rathbone, Jack', 'Crookshank, Angus', 'Steeves, Alex', 'McLaughlin, Marc', 'Regenda, Pavol', 'Del Gaizo, Marc', 'Lee, Andre', 'Stastney, Spencer', 'Solovyov, Ilya', 'Reinhardt, Cole', 'Foote, Nolan', 'Douglas, Curtis', 'Foudy, Liam', 'Thomas, Akil', 'Bolduc, Samuel', 'Gustafsson, David', 'Hallander, Filip', 'Abruzzese, Nicholas', 'Attard, Ronald', 'Halonen, Brian', 'Morton, Sam', 'Callahan, Michael', 'St. Ivany, Jack', 'Leason, Brett', 'Guttman, Cole', 'Formenton, Alex',
+];
+function marquerNouveauxUfa() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const n = o.getLastRow() - 1;
+  const noms = o.getRange(2, COL_JOUEUR, n, 1).getDisplayValues();
+  const equipes = o.getRange(2, COL_EQUIPE_JOUEUR, n, 1).getDisplayValues();
+  const voulus = new Set(NOUVEAUX_UFA);
+  const trouves = new Set();
+  const gardes = [];
+  let changes = 0;
+  noms.forEach((l, i) => {
+    const nom = String(l[0]).trim();
+    if (!voulus.has(nom)) return;
+    trouves.add(nom);
+    const actuelle = String(equipes[i][0]).trim().toUpperCase();
+    if (actuelle && actuelle !== STATUT_UFA) { gardes.push(nom + ' (' + actuelle + ')'); return; }
+    if (actuelle !== STATUT_UFA) { o.getRange(i + 2, COL_EQUIPE_JOUEUR).setValue(STATUT_UFA); changes++; }
+  });
+  const absents = NOUVEAUX_UFA.filter(x => !trouves.has(x));
+  console.log(changes + ' joueur(s) mis UFA. Gardés dans leur équipe : ' + (gardes.join(', ') || 'aucun')
+    + '. Introuvables : ' + (absents.join(', ') || 'aucun') + '.');
+}
+
 // À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par
 // le site ignore les valeurs d'une colonne qui mélange nombres et texte.
 function reparerResultats() {
