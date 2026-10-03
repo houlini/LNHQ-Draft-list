@@ -177,28 +177,47 @@
     moi = { code: sienne, admin: r.annonces === true };
     $('qui').textContent = 'Alignement' + (sienne ? ' de ' + r.equipe : '') + (moi.admin ? ' · admin' : '');
     $('barre').hidden = false;
+    // Par défaut : son équipe seulement. Admin : la case « Mode admin » débloque le choix
+    // d'une autre équipe (cochée d'office pour un admin sans équipe, ou si le lien de la page
+    // Équipe demande une autre équipe : ?equipe=MTL).
     let depart = sienne;
     if(moi.admin){
-      // Admin : choix de l'équipe (?equipe=MTL dans l'adresse, sinon la sienne).
       const demande = (new URLSearchParams(location.search).get('equipe') || '').toUpperCase();
-      if(EQUIPES[demande]) depart = demande;
-      if(!depart) depart = 'ANA';
-      const sel = $('equipe');
+      const sel = $('equipe'), caseAdmin = $('modeAdmin');
       sel.replaceChildren(...Object.keys(EQUIPES).sort((a, b) => EQUIPES[a][0].localeCompare(EQUIPES[b][0], 'fr')).map(c => {
         const o = document.createElement('option'); o.value = c; o.textContent = EQUIPES[c][0]; return o;
       }));
+      if(EQUIPES[demande] && demande !== sienne) depart = demande;
+      if(!depart) depart = 'ANA';
+      caseAdmin.checked = !sienne || depart !== sienne;
+      caseAdmin.disabled = !sienne;
       sel.value = depart;
-      sel.hidden = false;
-      sel.addEventListener('change', () => {
-        if(modifie() && !confirm('Tes changements non enregistrés seront perdus. Continuer ?')){ sel.value = code; return; }
-        chargerEquipe(sel.value);
+      sel.hidden = !caseAdmin.checked;
+      $('blocAdmin').hidden = false;
+      const aller = c => {
+        if(c === code) return true;
+        if(modifie() && !confirm('Tes changements non enregistrés seront perdus. Continuer ?')) return false;
+        chargerEquipe(c);
+        return true;
+      };
+      sel.addEventListener('change', () => { if(!aller(sel.value)) sel.value = code; });
+      caseAdmin.addEventListener('change', () => {
+        // Mode admin retiré : retour à sa propre équipe.
+        if(!caseAdmin.checked && !aller(sienne)){ caseAdmin.checked = true; return; }
+        sel.hidden = !caseAdmin.checked;
+        sel.value = code;
       });
     }
+    const demandee = (new URLSearchParams(location.search).get('equipe') || '').toUpperCase();
     $('enregistrer').addEventListener('click', enregistrer);
     $('annuler').addEventListener('click', () => chargerEquipe(code));
     $('auto').addEventListener('click', automatique);
     window.addEventListener('beforeunload', ev => { if(modifie()){ ev.preventDefault(); ev.returnValue = ''; } });
-    chargerEquipe(depart);
+    await chargerEquipe(depart);
+    // Arrivé par le lien d'une autre équipe sans être admin : on le dit.
+    if(!moi.admin && EQUIPES[demandee] && demandee !== sienne){
+      afficher(`Tu peux seulement modifier l’alignement de ton équipe (${r.equipe}).`, true);
+    }
   }
 
   demarrer();
