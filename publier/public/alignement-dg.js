@@ -15,6 +15,37 @@
     STL: ['St. Louis', 'st-louis'], TBL: ['Tampa Bay', 'tampa-bay'], TOR: ['Toronto', 'toronto'], UTA: ['Utah', 'utah'],
     VAN: ['Vancouver', 'vancouver'], VGK: ['Vegas', 'vegas'], WSH: ['Washington', 'washington'], WPG: ['Winnipeg', 'winnipeg'],
   };
+  // Couleurs d'équipe (mêmes valeurs que TEAM_COLORS de lnhq.ca/equipe.html) : [primaire, foncée].
+  const COULEURS = {
+    ANA: ['#F47A38', '#0D0D0D'], BOS: ['#FFB81C', '#000000'], BUF: ['#FCB514', '#002654'], CGY: ['#C8102E', '#4B0009'],
+    CAR: ['#CC0000', '#000000'], CHI: ['#CF0A2C', '#000000'], COL: ['#6F263D', '#041E42'], CBJ: ['#CE1126', '#002654'],
+    DAL: ['#006847', '#111111'], DET: ['#CE1126', '#000000'], EDM: ['#FF4C00', '#041E42'], FLA: ['#C8102E', '#041E42'],
+    LAK: ['#8C9396', '#000000'], MIN: ['#A6192E', '#154734'], MTL: ['#AF1E2D', '#192168'], NSH: ['#FFB81C', '#041E42'],
+    NJD: ['#CE1126', '#000000'], NYI: ['#F47D30', '#00539B'], NYR: ['#CE1126', '#001E60'], OTT: ['#C52032', '#000000'],
+    PHI: ['#F74902', '#000000'], PIT: ['#FCB514', '#000000'], SJS: ['#006D75', '#000000'], SEA: ['#99D9D9', '#001628'],
+    STL: ['#FCB514', '#002F87'], TBL: ['#0057B8', '#000000'], TOR: ['#003E7E', '#000000'], UTA: ['#69B3E7', '#000000'],
+    VAN: ['#00843D', '#041C2C'], VGK: ['#B4975A', '#101820'], WSH: ['#C8102E', '#041E42'], WPG: ['#004C97', '#041E42'],
+  };
+  const canaux = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const versHex = rgb => '#' + rgb.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const assombrir = (hex, t) => versHex(canaux(hex).map(v => v * (1 - t)));
+  const eclaircir = (hex, t) => versHex(canaux(hex).map(v => v + (255 - v) * t));
+  const texteSur = hex => { const [r, g, b] = canaux(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#12181F' : '#FFFFFF'; };
+  // Comme la page Équipe : bande, en-tête et cartes aux couleurs de l'équipe affichée.
+  function appliquerCouleurs(c){
+    const [primaire, foncee] = COULEURS[c] || [];
+    if(!primaire) return;
+    const racine = document.documentElement.style;
+    const sombre = matchMedia('(prefers-color-scheme: dark)').matches;
+    racine.setProperty('--accent', primaire);
+    racine.setProperty('--accent-ink', texteSur(primaire));
+    racine.setProperty('--accent-soft', sombre ? assombrir(primaire, 0.75) : eclaircir(primaire, 0.85));
+    racine.setProperty('--nav-dark', foncee);
+    racine.setProperty('--nav-ink', texteSur(foncee));
+    const zone = $('zone');
+    zone.style.setProperty('--al-couleur', primaire);
+    zone.style.setProperty('--al-sombre', assombrir(foncee, 0.35));
+  }
   const codeDe = nom => Object.keys(EQUIPES).find(c => EQUIPES[c][0] === nom) || '';
   const ERREURS = {
     acces: 'Accès refusé : ta session de connexion n’est plus valide. Recharge la page.',
@@ -110,6 +141,7 @@
 
   async function chargerEquipe(c){
     code = c;
+    appliquerCouleurs(c);
     choisie = '';
     afficher('', false);
     $('lienEquipe').href = 'https://lnhq.ca/equipe.html?team=' + EQUIPES[c][1] + '&vue=alignement';
