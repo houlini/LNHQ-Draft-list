@@ -924,6 +924,37 @@ function marquerNouveauxUfa() {
     + '. Introuvables : ' + (absents.join(', ') || 'aucun') + '.');
 }
 
+// Correction avec la vraie liste de la ligue (2026-10-03) : ajouts manquants et retraits
+// des joueurs mis UFA par erreur (liste précédente erronée). Un ajout ne touche qu'une case
+// vide ou déjà UFA ; un retrait ne vide qu'une case qui contient « UFA ».
+const UFA_A_AJOUTER = ['Hanley, Joel', 'Cizikas, Casey', 'Sabourin, Scott', 'MacDonald, Jacob', 'Shine, Dominik',
+  'Goodrow, Barclay', 'Cousins, Nick', 'Gaunce, Brendan', 'Lucchini, Jake', 'Schuldt, Jimmy', 'Malott, Jeff',
+  'Hicketts, Joe', 'Englund, Andreas', 'Laczynski, Tanner', 'Harkins, Jansen', 'Sillinger, Owen', 'Gatcomb, Marc',
+  'Carlile, Declan', 'Regula, Alec', 'Kuntar, Trevor', 'Johnson, Ryan', 'Megna, Jaycob', 'Mackey, Connor'];
+const UFA_A_RETIRER = ['Hughes, Cameron', 'Carlsson, Lucas', 'Coghlan, Dylan'];
+function corrigerUfaListe() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const n = o.getLastRow() - 1;
+  const noms = o.getRange(2, COL_JOUEUR, n, 1).getDisplayValues();
+  const equipes = o.getRange(2, COL_EQUIPE_JOUEUR, n, 1).getDisplayValues();
+  const ajouts = new Set(UFA_A_AJOUTER), retraits = new Set(UFA_A_RETIRER);
+  let ajoutes = 0, retires = 0;
+  const gardes = [], trouves = new Set();
+  noms.forEach((l, i) => {
+    const nom = String(l[0]).trim();
+    const actuelle = String(equipes[i][0]).trim().toUpperCase();
+    if (ajouts.has(nom)) {
+      trouves.add(nom);
+      if (actuelle && actuelle !== STATUT_UFA) gardes.push(nom + ' (' + actuelle + ')');
+      else if (actuelle !== STATUT_UFA) { o.getRange(i + 2, COL_EQUIPE_JOUEUR).setValue(STATUT_UFA); ajoutes++; }
+    } else if (retraits.has(nom) && actuelle === STATUT_UFA) {
+      o.getRange(i + 2, COL_EQUIPE_JOUEUR).setValue(''); retires++;
+    }
+  });
+  console.log(ajoutes + ' ajouté(s) UFA, ' + retires + ' retiré(s). Gardés dans leur équipe : ' + (gardes.join(', ') || 'aucun')
+    + '. Introuvables : ' + (UFA_A_AJOUTER.filter(x => !trouves.has(x)).join(', ') || 'aucun') + '.');
+}
+
 // À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par
 // le site ignore les valeurs d'une colonne qui mélange nombres et texte.
 function reparerResultats() {
