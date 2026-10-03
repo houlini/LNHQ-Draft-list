@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LNHQ TV</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=4">
+<link rel="stylesheet" href="site.css?v=5">
 <script src="site-nav.js?v=2"></script>
 <style>
   .tv-page{ padding:16px clamp(16px,3vw,40px) 40px; display:flex; flex-direction:column; gap:22px; }
@@ -95,8 +95,11 @@
   }
   @media (min-width:1100px){ .tv-scene.avec-chat .tv-chat{ min-height:420px; } }
   @media (max-width:600px){
-    .tv-modes{ width:100%; }
-    .tv-modes button{ flex:1; justify-content:center; padding:0 8px; }
+    /* Bande plus mince : modes et résumé sur la même ligne. */
+    .tv-band{ flex-wrap:nowrap; gap:8px; }
+    .tv-modes{ flex:1 1 auto; min-width:0; padding:3px; gap:3px; }
+    .tv-modes button{ flex:1; justify-content:center; padding:0 6px; min-height:32px; gap:5px; }
+    #resume{ flex-shrink:0; font-size:13px; white-space:nowrap; }
   }
 </style>
 </head>

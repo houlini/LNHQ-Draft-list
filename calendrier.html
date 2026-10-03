@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calendrier</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=4">
+<link rel="stylesheet" href="site.css?v=5">
 <script src="site-nav.js?v=2"></script>
 <script src="gardiens-donnees.js"></script>
 <script src="resultats-donnees.js?v=2"></script>
@@ -134,7 +134,17 @@
   }
   .sem-fleche:disabled{ opacity:0.4; cursor:default; }
   .sem-fleche, .sem-aujourdhui{ flex-shrink:0; }
-  @media (max-width:600px){ .sem-aujourdhui{ flex:1 1 100%; } }
+  /* Téléphone : bande plus mince. Ligne 1 : équipe + « Cette semaine » ; ligne 2 : ‹ semaine ›. */
+  @media (max-width:600px){
+    .sem-nav{ display:contents; }
+    #teamSwitchBtn{ order:1; flex:1 1 calc(100% - 156px); min-width:0; padding:7px 12px; font-size:14px; }
+    #teamSwitchBtn #teamSwitchLabel{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sem-aujourdhui{ order:2; flex:0 0 auto; height:38px; padding:0 10px; font-size:12px; }
+    #semPrec{ order:3; }
+    #filterWeek{ order:4; flex:1 1 calc(100% - 100px); height:38px; font-size:14px; }
+    #semSuiv{ order:5; }
+    .sem-fleche{ width:38px; height:38px; }
+  }
   /* Lien vers la soumission des résultats (publier.lnhq.ca, réservé aux DGs). */
   .cal-gauche{ margin:16px clamp(12px,3vw,40px) 0; display:flex; flex-direction:column; gap:16px; }
   .cal-resultat{

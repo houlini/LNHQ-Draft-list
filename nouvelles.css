@@ -37,6 +37,15 @@
 .publish-btn:hover{ opacity:0.9; }
 .publish-btn svg{ width:16px; height:16px; }
 
+/* Téléphone : onglets et « Publier » sur une même ligne, la pastille « En direct » dessous. */
+@media (max-width:600px){
+  .feed-band{ gap:8px; }
+  .feed-tabs{ order:1; padding:3px; gap:3px; }
+  .feed-tabs button{ min-height:34px; padding:0 12px; font-size:13px; }
+  .publish-btn{ order:2; margin-left:auto; padding:8px 12px; font-size:13px; }
+  .live-pill{ order:3; padding:5px 12px; font-size:12.5px; }
+}
+
 /* Toute la largeur de la page, comme les tableaux des autres pages. */
 .news-skeleton, .news-status, .news-list{ margin-left:auto; margin-right:auto; }
 .news-skeleton .skeleton-row{ height:190px; border-radius:var(--radius); margin-bottom:18px; }

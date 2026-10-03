@@ -334,4 +334,11 @@ tbody tr:hover td:first-child{ background:var(--accent-soft); }
   .site-nav .nav-caret{ display:none; }
   .site-nav .nav-dropdown{ left:0; right:0; min-width:0; }
   .site-nav .nav-dropdown.teams-grid{ min-width:0; }
+
+  /* Bande orange plus mince : moins d'espace autour et entre les contrôles. */
+  .filter-band{ padding:8px 16px; gap:6px 8px; }
+  .search-field{ max-width:none; }
+  .search-field input{ height:36px; }
+  .filter-bar{ gap:6px 10px; }
+  .filter-control select{ height:32px; font-size:13px; }
 }
