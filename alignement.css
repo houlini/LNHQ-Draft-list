@@ -48,13 +48,14 @@
 .al-carte.a-photo{ min-height:150px; }
 .al-reservistes .al-carte.a-photo{ min-height:0; }
 .al-carte.a-photo > :not(.al-photo):not(.al-badge){ max-width:50%; }
-/* Carte étroite (réservistes, téléphone) : petite photo dans le coin en haut à droite,
-   le texte en dessous sur toute la largeur. Selon la largeur de la carte elle-même. */
+/* Carte étroite (réservistes, téléphone) : la photo reste en bas à droite, et le texte
+   prend toute la largeur (il peut empiéter un peu sur la photo ; ombre pour la lisibilité).
+   Selon la largeur de la carte elle-même. */
 .al-carte{ container-type:inline-size; }
 @container (max-width:150px){
-  .a-photo > :not(.al-photo):not(.al-badge){ max-width:none; }
-  .a-photo > .al-haut{ max-width:52%; min-height:44px; align-items:flex-start; flex-direction:column; gap:3px; }
-  .a-photo > .al-photo{ top:4px; right:2px; bottom:auto; height:48px; max-width:50%; }
+  .al-carte.a-photo > :not(.al-photo):not(.al-badge){ max-width:none; }
+  .al-carte.a-photo > .al-nom, .al-carte.a-photo > .al-infos{ text-shadow:0 1px 3px rgba(0,0,0,0.85); }
+  .al-carte.a-photo > .al-photo{ height:80%; max-width:62%; right:-8%; }
 }
 .al-carte > :not(.al-photo){ position:relative; z-index:2; }
 .al-carte .al-badge{ position:absolute; }
