@@ -7,6 +7,13 @@
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=5">
 <script src="site-nav.js?v=2"></script>
+<style>
+  /* Le tableau occupe toute la largeur du cadre ; il défile horizontalement sur mobile */
+  #tableWrap table{ width:100%; }
+  #tableWrap th, #tableWrap td{ white-space:nowrap; }
+  #tableWrap th:not(:first-child), #tableWrap td:not(:first-child){ text-align:center; }
+  #tableWrap td.is-numeric{ font-variant-numeric:tabular-nums; }
+</style>
 </head>
 <body>
 
@@ -62,10 +69,13 @@ const CONFIG = {
 
   // Agents libres disponibles aux enchères : joueurs de PLAYERSDATABASE dont LNHQ TM (colonne Z) = UFA.
   SHEET: 'PLAYERSDATABASE',
-  QUERY: "select B, C, D, G, H, J, K, L, N where Z = 'UFA' order by C desc",
+  QUERY: "select B, C, D, G, H, J, K, L, M, N, O, P, Q, R, S, T, U, V, W where Z = 'UFA' order by C desc",
 
   // Libellés des colonnes de la requête (gviz ne renvoie pas d'en-têtes avec un filtre where).
-  LABELS: ['JOUEUR', 'OV', 'Âge', 'NAT', 'PO', 'SH', 'Taille', 'Poids', 'Salaire'],
+  // M = années de contrat, N–W = salaire par saison (les saisons vides pour tous sont masquées).
+  LABELS: ['JOUEUR', 'OV', 'Âge', 'NAT', 'PO', 'SH', 'Taille', 'Poids', 'Ans',
+    '2026-27', '2027-28', '2028-29', '2029-30', '2030-31', '2031-32', '2032-33', '2033-34', '2034-35', '2035-36'],
+  PREMIERE_SAISON: 9,
 
   // Titre affiché en haut du widget.
   TITLE: 'LNHQ',
@@ -100,7 +110,7 @@ const CONFIG = {
 
   // Colonnes filtrées par curseur "maximum" plutôt que par liste de valeurs (ex: un plafond salarial).
   MAX_FILTER_COLUMNS: [
-    { column: 'Salaire', label: 'Salaire maximum' },
+    { column: '2026-27', label: 'Salaire maximum' },
   ],
 };
 /* ========================================================================= */
@@ -455,7 +465,7 @@ function buildUrl(){
 }
 
 /* ---------- Cache local : affichage instantané au chargement suivant ---------- */
-const CACHE_KEY = 'sheetCache_' + CONFIG.SHEET_ID + '_ufa2';
+const CACHE_KEY = 'sheetCache_' + CONFIG.SHEET_ID + '_ufa3';
 
 function loadFromCache(){
   try{
@@ -504,7 +514,29 @@ function parseTable(table){
   if(table.cols.length !== CONFIG.LABELS.length) throw new Error('colonnes_inattendues');
   const rawLabels = CONFIG.LABELS.slice();
   state.rawLabels = rawLabels;
-  const isHidden = makeColumnMatcher(CONFIG.HIDDEN_COLUMNS, rawLabels);
+  const estSaison = i => i >= CONFIG.PREMIERE_SAISON;
+
+  const lignes = table.rows.map(r => {
+    const raw = CONFIG.LABELS.map((_, i) => {
+      const cell = (r.c || [])[i];
+      if(!cell) return '';
+      // Salaires : on reformate la valeur brute (format de la feuille parfois incohérent)
+      if(estSaison(i) && typeof cell.v === 'number') return cell.v > 0 ? formatSalaire(cell.v) : '';
+      return String(cell.f != null ? cell.f : (cell.v != null ? cell.v : '')).trim();
+    });
+    // "Nom, Prénom" → "Prénom Nom" ; âge décimal → années complètes
+    const v = raw[0].indexOf(',');
+    if(v > 0) raw[0] = raw[0].slice(v + 1).trim() + ' ' + raw[0].slice(0, v).trim();
+    const age = parseFloat(raw[2]);
+    raw[2] = Number.isNaN(age) ? '' : String(Math.floor(age));
+    return raw;
+  }).filter(raw => raw[0] && raw[0].toUpperCase() !== 'JOUEUR');
+
+  // Saisons sans aucun contrat : colonne masquée
+  const saisonsVides = new Set(rawLabels.map((_, i) => i)
+    .filter(i => estSaison(i) && lignes.every(raw => !raw[i])));
+  const masquee = makeColumnMatcher(CONFIG.HIDDEN_COLUMNS, rawLabels);
+  const isHidden = i => masquee(i) || saisonsVides.has(i);
   const isFlag = makeColumnMatcher(CONFIG.FLAG_COLUMNS, rawLabels);
   const isHighlight = makeColumnMatcher(CONFIG.HIGHLIGHT_COLUMNS, rawLabels);
 
@@ -518,19 +550,7 @@ function parseTable(table){
     }))
     .filter((_, i) => !isHidden(i));
 
-  state.rows = table.rows.map(r => {
-    const raw = CONFIG.LABELS.map((_, i) => {
-      const cell = (r.c || [])[i];
-      return cell ? String(cell.f != null ? cell.f : (cell.v != null ? cell.v : '')).trim() : '';
-    });
-    // "Nom, Prénom" → "Prénom Nom" ; âge décimal → années complètes
-    const v = raw[0].indexOf(',');
-    if(v > 0) raw[0] = raw[0].slice(v + 1).trim() + ' ' + raw[0].slice(0, v).trim();
-    const age = parseFloat(raw[2]);
-    raw[2] = Number.isNaN(age) ? '' : String(Math.floor(age));
-    const display = raw.filter((_, i) => !isHidden(i));
-    return { display, raw };
-  }).filter(r => r.raw[0] && r.raw[0].toUpperCase() !== 'JOUEUR');
+  state.rows = lignes.map(raw => ({ raw, display: raw.filter((_, i) => !isHidden(i)) }));
 
   renderFilterBar();
   applyFilterAndSort();
@@ -538,12 +558,21 @@ function parseTable(table){
 
 function parseNumericCell(raw){
   if(raw === '' || raw == null) return null;
-  const n = parseFloat(String(raw).replace(/[^\d.-]/g, ''));
+  const s = String(raw);
+  const echelle = /M\$$/.test(s) ? 1e6 : /k\$$/.test(s) ? 1e3 : 1; // format de formatSalaire
+  const n = parseFloat((echelle === 1 ? s : s.replace(',', '.')).replace(/[^\d.-]/g, '')) * echelle;
   return Number.isNaN(n) ? null : n;
 }
 
 function formatMoney(n){
   return new Intl.NumberFormat('fr-CA').format(Math.round(n)) + ' $';
+}
+
+// Format court pour les colonnes de salaire : 8 500 000 → « 8,50 M$ », 850 000 → « 850 k$ »
+function formatSalaire(n){
+  return n >= 1e6
+    ? new Intl.NumberFormat('fr-CA', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(n / 1e6) + ' M$'
+    : new Intl.NumberFormat('fr-CA').format(Math.round(n / 1e3)) + ' k$';
 }
 
 function renderFilterBar(){
@@ -715,8 +744,8 @@ function applyFilterAndSort(){
       const av = a.display[col] || '';
       const bv = b.display[col] || '';
       if(numeric){
-        const an = parseFloat(av.replace(/[^\d.-]/g,'')), bn = parseFloat(bv.replace(/[^\d.-]/g,''));
-        if(Number.isNaN(an) || Number.isNaN(bn)) return Number.isNaN(an) - Number.isNaN(bn); // vides à la fin
+        const an = parseNumericCell(av), bn = parseNumericCell(bv);
+        if(an === null || bn === null) return (an === null) - (bn === null); // vides à la fin
         return (an - bn) * state.sortDir;
       }
       return av.localeCompare(bv, 'fr-FR') * state.sortDir;
