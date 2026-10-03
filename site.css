@@ -92,13 +92,12 @@ button, input{font-family:inherit;}
 
 .site-nav{ display:flex; align-items:center; gap:2px; flex-shrink:0; flex-wrap:wrap; }
 
-/* Bandeau de la saison, tiré de la bannière 2026-2027 en trois morceaux pour s'adapter
-   à toutes les largeurs : la texture métallique en fond, les flammes de droite sous le
-   menu, et les bâtons + le ruban (.entete-saison) dans l'espace libre entre le logo et
-   le menu. Le logo et le titre de l'image d'origine ne sont pas repris (le site a les siens). */
+/* Bandeau de la saison, tiré de la bannière 2026-2027 : la texture métallique en fond,
+   et les bâtons + le ruban + les flammes du milieu (.entete-saison) dans l'espace libre
+   entre le logo et le menu. Le logo et le titre de l'image d'origine ne sont pas repris
+   (le site a les siens). */
 .app-header{
-  background:url('bandeau-flammes.png') right bottom / auto 100% no-repeat,
-    #22262b url('bandeau-texture.jpg') center / 100% 100% no-repeat;
+  background:#22262b url('bandeau-texture.jpg') center / 100% 100% no-repeat;
 }
 /* Prend seulement l'espace libre (jamais assez large pour faire passer le menu à la
    ligne) ; recadrée autour des bâtons et du ruban si l'espace est plus étroit. */
@@ -112,13 +111,6 @@ button, input{font-family:inherit;}
 @media (max-width:1359px){
   .entete-saison{ display:none; }
   .entete-saison ~ .alerte-dg{ margin-left:auto; }
-}
-@media (max-width:1099px){
-  /* Menu sur deux lignes : les flammes de droite sont estompées pour qu'il reste lisible. */
-  .app-header{
-    background:linear-gradient(rgba(24,27,32,0.45), rgba(24,27,32,0.45)), url('bandeau-flammes.png') right bottom / auto 100% no-repeat,
-      #22262b url('bandeau-texture.jpg') center / 100% 100% no-repeat;
-  }
 }
 
 /* Bouton d'alerte « Accès DGs » (temporaire, voir ALERTE_ACCES_DG dans site-nav.js) :
