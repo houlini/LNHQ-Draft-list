@@ -961,6 +961,88 @@ function corrigerUfaListe() {
     + '. Introuvables : ' + (UFA_A_AJOUTER.filter(x => !trouves.has(x)).join(', ') || 'aucun') + '.');
 }
 
+// Joueurs des listes UFA absents de PLAYERSDATABASE (LAH / Europe) : ajoutés en nouvelles
+// lignes, statut UFA. Infos tirées de l'API LNH (api-web.nhle.com) ; OV connu seulement pour
+// les 4 de la liste avec OV (les autres restent vides, à remplir à la main).
+// [prénom, nom, OV, naissance, pays, PO, PO2, SH, HT, WT, YRS, salaire 2026-27]
+// À lancer à la main : ajouterJoueursUfa (relançable : un nom déjà présent en B est ignoré).
+const NOUVEAUX_JOUEURS_UFA = [
+  ['Logan', 'Shaw', '', '1992-10-05', 'CAN', 'R', 'A', 'R', '6\'3"', 208, '', ''],
+  ['Seth', 'Griffith', '', '1993-01-04', 'CAN', 'C', 'A', 'R', '5\'9"', 190, '', ''],
+  ['Brett', 'Seney', '', '1996-02-28', 'CAN', 'L', 'A', 'L', '5\'9"', 156, '', ''],
+  ['Austin', 'Watson', '', '1992-01-13', 'USA', 'R', 'A', 'R', '6\'4"', 203, '', ''],
+  ['Gustav', 'Olofsson', '', '1994-12-01', 'SWE', 'D', 'D', 'L', '6\'2"', 199, '', ''],
+  ['Austin', 'Poganski', '', '1996-02-16', 'USA', 'R', 'A', 'R', '6\'1"', 206, '', ''],
+  ['Roland', 'McKeown', '', '1996-01-20', 'CAN', 'D', 'D', 'R', '6\'1"', 195, '', ''],
+  ['Tobie', 'Paquette-Bisson', '', '1997-02-01', 'CAN', 'D', 'D', 'L', '6\'3"', 207, '', ''],
+  ['Travis', 'Dermott', '', '1996-12-22', 'CAN', 'D', 'D', 'L', '6\'0"', 200, '', ''],
+  ['Brian', 'Pinho', '', '1995-05-11', 'USA', 'C', 'A', 'R', '6\'2"', 188, '', ''],
+  ['Travis', 'Boyd', '', '1993-09-14', 'USA', 'C', 'A', 'R', '6\'0"', 190, '', ''],
+  ['Michael', 'Sgarbossa', '', '1992-07-25', 'CAN', 'C', 'A', 'L', '6\'0"', 179, '', ''],
+  ['Matthew', 'Peca', '', '1993-04-27', 'CAN', 'L', 'A', 'L', '5\'10"', 181, '', ''],
+  ['T.J.', 'Tynan', '', '1992-02-25', 'USA', 'C', 'A', 'R', '5\'8"', 160, '', ''],
+  ['Jani', 'Hakanpaa', '', '1992-03-31', 'FIN', 'D', 'D', 'R', '6\'7"', 225, '', ''],
+  ['Connor', 'Carrick', '', '1994-04-13', 'USA', 'D', 'D', 'R', '5\'10"', 198, '', ''],
+  ['Hudson', 'Fasching', '', '1995-07-28', 'USA', 'C', 'A', 'R', '6\'3"', 214, '', ''],
+  ['Justin', 'Bailey', '', '1995-07-01', 'USA', 'R', 'A', 'R', '6\'4"', 214, '', ''],
+  ['David', 'Quenneville', '', '1998-03-13', 'CAN', 'D', 'D', 'R', '5\'8"', 189, '', ''],
+  ['Brett', 'Ritchie', '', '1993-07-01', 'CAN', 'R', 'A', 'R', '6\'4"', 215, '', ''],
+  ['Pierrick', 'Dube', 71, '2001-01-07', 'FRA', 'R', 'A', 'R', '5\'9"', 172, 1, 850000],
+  ['Collin', 'Delia', 76, '1994-06-20', 'USA', 'G', 'G', 'L', '6\'2"', 208, 1, 850000],
+  ['Kevin', 'Mandolese', 74, '2000-08-22', 'CAN', 'G', 'G', 'L', '6\'4"', 180, 1, 850000],
+  ['Vadim', 'Zherenko', 73, '2001-03-15', 'RUS', 'G', 'G', 'L', '6\'4"', 210, 1, 850000],
+  ['Oliver', 'Wahlstrom', '', '2000-06-13', 'USA', 'R', 'A', 'R', '6\'2"', 205, '', ''],
+];
+const LIGNE_MODELE_UFA = 'Demko, Thatcher';   // ligne complète servant de modèle (formules, formats)
+function ajouterJoueursUfa() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const largeur = 28;   // A à AB
+  const noms = o.getRange(1, COL_JOUEUR, o.getLastRow(), 1).getDisplayValues().map(l => String(l[0]).trim());
+  const iModele = noms.indexOf(LIGNE_MODELE_UFA);
+  if (iModele < 0) throw new Error('Ligne modèle introuvable : ' + LIGNE_MODELE_UFA);
+  const modele = o.getRange(iModele + 1, 1, 1, largeur);
+  const formules = modele.getFormulasR1C1()[0];
+  const existants = new Set(noms);
+  const nouveaux = NOUVEAUX_JOUEURS_UFA.filter(j => !existants.has(j[1] + ', ' + j[0]));
+  if (!nouveaux.length) { console.log('Rien à ajouter : tous déjà présents.'); return; }
+
+  // Dernière ligne réellement remplie en B (getLastRow peut compter des lignes vides formatées).
+  let derniere = noms.length;
+  while (derniere > 1 && !noms[derniere - 1]) derniere--;
+  const debut = derniere + 1;
+  const manque = debut + nouveaux.length - 1 - o.getMaxRows();
+  if (manque > 0) o.insertRowsAfter(o.getMaxRows(), manque);
+
+  const lignes = nouveaux.map(([prenom, nom, ov, naissance, pays, po, po2, sh, ht, wt, ans, salaire]) => {
+    const l = new Array(largeur).fill('');
+    const [a, m, j] = naissance.split('-').map(Number);
+    l[0] = prenom + ' ' + nom;        // A
+    l[1] = nom + ', ' + prenom;       // B
+    l[2] = ov;                        // C  OV
+    l[4] = new Date(a, m - 1, j);     // E  naissance
+    l[3] = Math.round((Date.now() - l[4]) / (365.25 * 864e5) * 100) / 100;   // D  âge (si pas de formule)
+    l[6] = pays;                      // G  CNT
+    l[7] = po; l[8] = po2; l[9] = sh; // H, I, J
+    l[10] = ht; l[11] = wt;           // K, L
+    l[12] = ans; l[13] = salaire;     // M, N
+    l[COL_EQUIPE_JOUEUR - 1] = STATUT_UFA;   // Z
+    // Colonne calculée dans la ligne modèle (âge, nom, rang…) : posée en formule plus bas.
+    return l.map((v, c) => formules[c] ? '' : v);
+  });
+  const cible = o.getRange(debut, 1, lignes.length, largeur);
+  modele.copyTo(cible, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+  cible.setValues(lignes);
+  const colonnesFormule = [];
+  formules.forEach((f, c) => {
+    if (!f) return;
+    o.getRange(debut, c + 1, lignes.length, 1).setFormulasR1C1(lignes.map(() => [f]));
+    colonnesFormule.push((c >= 26 ? 'A' : '') + String.fromCharCode(65 + c % 26));
+  });
+  console.log(nouveaux.length + ' joueur(s) ajouté(s) UFA, lignes ' + debut + ' à ' + (debut + nouveaux.length - 1)
+    + '. Colonnes copiées en formule : ' + (colonnesFormule.join(', ') || 'aucune')
+    + (debut + nouveaux.length - 1 > 2686 ? ' ATTENTION : au-delà de la ligne 2686 (plage des formules CHOIX).' : ''));
+}
+
 // À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par
 // le site ignore les valeurs d'une colonne qui mélange nombres et texte.
 function reparerResultats() {
