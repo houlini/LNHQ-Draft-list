@@ -924,14 +924,20 @@ function marquerNouveauxUfa() {
     + '. Introuvables : ' + (absents.join(', ') || 'aucun') + '.');
 }
 
-// Correction avec la vraie liste de la ligue (2026-10-03) : ajouts manquants et retraits
-// des joueurs mis UFA par erreur (liste précédente erronée). Un ajout ne touche qu'une case
-// vide ou déjà UFA ; un retrait ne vide qu'une case qui contient « UFA ».
-const UFA_A_AJOUTER = ['Hanley, Joel', 'Cizikas, Casey', 'Sabourin, Scott', 'MacDonald, Jacob', 'Shine, Dominik',
-  'Goodrow, Barclay', 'Cousins, Nick', 'Gaunce, Brendan', 'Lucchini, Jake', 'Schuldt, Jimmy', 'Malott, Jeff',
-  'Hicketts, Joe', 'Englund, Andreas', 'Laczynski, Tanner', 'Harkins, Jansen', 'Sillinger, Owen', 'Gatcomb, Marc',
-  'Carlile, Declan', 'Regula, Alec', 'Kuntar, Trevor', 'Johnson, Ryan', 'Megna, Jaycob', 'Mackey, Connor'];
-const UFA_A_RETIRER = ['Hughes, Cameron', 'Carlsson, Lucas', 'Coghlan, Dylan'];
+// Ajouts et retraits d'agents libres (à lancer à la main : corrigerUfaListe). Un ajout ne
+// touche qu'une case vide ou déjà UFA ; un retrait ne vide qu'une case qui contient « UFA ».
+// Dernière liste (2026-10-03) : 24 joueurs de 22 à 24 ans et 25 gardiens.
+// (Précédente, déjà appliquée : 23 ajouts dont Hanley, Cizikas… et 3 retraits : C. Hughes, L. Carlsson, D. Coghlan.)
+const UFA_A_AJOUTER = ['Thrun, Henry', 'Nesterenko, Nikita', 'Robertson, Matthew', 'Parent, Xavier', 'Pelletier, Jakob',
+  'Poulin, Samuel', 'Suzuki, Ryan', 'Kaliyev, Arthur', 'Tomasino, Philip', 'Bains, Arshdeep', 'Hyry, Arttu',
+  'Kolyachonok, Vladislav', 'Phillips, Isaak', 'Gaucher, Jacob', 'Heinola, Ville', 'Bjornfot, Tobias', 'Bordeleau, Thomas',
+  'Hunt, Daemon', 'Wiesblatt, Ozzy', 'Slaggert, Landon', 'Mazur, Carter', 'Stranges, Antonio', 'Dorwart, Karsen',
+  'Ostapchuk, Zack', 'Reimer, James', 'Grubauer, Philipp', 'Pickard, Calvin', 'Houser, Michael', 'Rittich, David',
+  'Copley, Pheonix', 'Brossoit, Laurent', 'Murray, Matt', 'Merzlikins, Elvis', 'Tomkins, Matt', 'Jarry, Tristan',
+  'Husso, Ville', 'Johansson, Jonas', 'Demko, Thatcher', 'Hill, Adin', 'Kahkonen, Kaapo', 'Halverson, Brandon',
+  'Vanecek, Vitek', 'Samsonov, Ilya', 'Primeau, Cayden', 'Tarasov, Daniil', 'Stevenson, Clay', 'Daws, Nico',
+  'Tolopilo, Nikita', 'Black, Cooper'];
+const UFA_A_RETIRER = [];
 function corrigerUfaListe() {
   const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
   const n = o.getLastRow() - 1;
