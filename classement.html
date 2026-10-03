@@ -57,6 +57,22 @@
   .cl-diff.is-pos{ color:var(--positive); }
   .cl-diff.is-neg{ color:var(--negative); }
   .nom-court{ display:none; }
+
+  /* Vue Stats : tableau large, défilement horizontal dans la carte, colonne Équipe fixe. */
+  .cl-defile{ overflow-x:auto; }
+  .cl-stats th, .cl-stats td{ padding:7px 8px; }
+  .cl-stats th[data-tri]{ cursor:pointer; user-select:none; }
+  .cl-stats th[data-tri]:hover{ color:var(--accent); }
+  .cl-stats th.is-trie{ color:var(--accent); }
+  .cl-stats th.is-trie::after{ content:' ▼'; font-size:9px; }
+  .cl-stats th.is-trie.is-asc::after{ content:' ▲'; }
+  .cl-stats .cl-equipe{ width:auto; min-width:150px; position:sticky; left:0; background:var(--surface); z-index:1; }
+  .cl-stats tbody tr:nth-child(even) .cl-equipe{ background:var(--stripe); }
+  .cl-stats td.is-trie{ font-weight:700; color:var(--accent); }
+  .cl-stats .is-vide{ color:var(--ink-muted); }
+  .cl-legende{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:4px 16px; margin:12px 2px 0; font-size:12.5px; color:var(--ink-muted); }
+  .cl-legende b{ color:var(--ink); font-family:'IBM Plex Mono', monospace; }
+  @media (max-width:600px){ .cl-stats .cl-equipe{ min-width:0; } }
   .cl-note{ margin:16px 2px 0; font-size:13px; color:var(--ink-muted); line-height:1.5; }
   .cl-etat{ padding:24px; text-align:center; color:var(--ink-muted); }
   @media (max-width:600px){
@@ -83,6 +99,7 @@
           <button type="button" data-vue="division">Division</button>
           <button type="button" data-vue="conference">Conférence</button>
           <button type="button" data-vue="ligue">Ligue</button>
+          <button type="button" data-vue="stats">Stats</button>
         </div>
       </div>
       <div id="classement" class="cl-grille"><p class="cl-etat">Chargement…</p></div>
@@ -102,7 +119,28 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
   const R = window.LNHQ_RESULTATS;
   const boite = document.getElementById('classement');
   const el = (tag, cls, text) => { const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; };
-  const VUES = ['division', 'conference', 'ligue'];
+  const VUES = ['division', 'conference', 'ligue', 'stats'];
+  // Colonnes de la vue Stats : [clé, en-tête, description, format, plus bas = mieux]
+  const un = v => v.toFixed(1);
+  const pct = v => v.toFixed(1) + ' %';
+  const mmss = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+  const COLONNES_STATS = [
+    ['pj', 'PJ', 'Parties jouées', String],
+    ['bpMoy', 'BP/M', 'Buts pour par match', un],
+    ['bcMoy', 'BC/M', 'Buts contre par match', un, true],
+    ['tirsMoy', 'Tirs/M', 'Tirs par match', un],
+    ['tirsContreMoy', 'TC/M', 'Tirs contre par match', un, true],
+    ['anPct', 'AN %', 'Avantage numérique : buts / occasions', pct],
+    ['dnPct', 'DN %', 'Désavantage numérique : pénalités écoulées sans but', pct],
+    ['mjPct', 'MAJ %', 'Mises au jeu gagnées', pct],
+    ['passesMoy', 'Passes %', 'Passes réussies (moyenne)', pct],
+    ['attaqueMoy', 'Attaque', "Temps d'attaque moyen par match", mmss],
+    ['misesMoy', 'MEE/M', 'Mises en échec par match', un],
+    ['penalitesMoy', 'PUN/M', 'Minutes de pénalité par match', un, true],
+    ['minAvantage', 'Min AN', 'Minutes en avantage numérique (total)', mmss],
+    ['inferiorite', 'BI', 'Buts en infériorité (total)', String],
+  ];
+  let tri = { cle: null, asc: false };
   let resultats = null;
 
   // Vue choisie : dans l'adresse (?vue=…) pour un lien partagé, sinon la dernière utilisée.
@@ -148,13 +186,81 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
     return carte;
   }
 
+  // Vue Stats : les 32 équipes, dans l'ordre du classement ; un clic sur une colonne la trie.
+  function tableStats(equipes, parCode){
+    const ordre = R.classement(resultats, equipes.map(t => t.code)).map(e => e.code);
+    const parStats = Object.fromEntries(R.statsEquipes(resultats, equipes.map(t => t.code)).map(s => [s.code, s]));
+    let lignes = ordre.map(c => parStats[c]);
+    if(tri.cle){
+      // Équipes sans match toujours en bas, quel que soit le sens.
+      lignes = lignes.slice().sort((a, b) => {
+        const va = a.pj ? a[tri.cle] : null, vb = b.pj ? b[tri.cle] : null;
+        if(va == null || vb == null) return (va == null) - (vb == null);
+        return tri.asc ? va - vb : vb - va;
+      });
+    }
+    const conteneur = el('div');
+    const carte = el('section', 'cl-carte');
+    const defile = el('div', 'cl-defile');
+    const t = el('table', 'cl-table cl-stats');
+    const tete = el('tr');
+    tete.append(el('th', 'cl-rang', '#'), el('th', 'cl-equipe', 'Équipe'));
+    COLONNES_STATS.forEach(([cle, titre, desc, , basMieux]) => {
+      const th = el('th', tri.cle === cle ? 'is-trie' + (tri.asc ? ' is-asc' : '') : null, titre);
+      th.title = desc + ' — cliquer pour trier';
+      th.dataset.tri = cle;
+      th.addEventListener('click', () => {
+        // 1er clic : le meilleur en haut ; 2e clic : l'inverse ; 3e clic : retour au classement.
+        const meilleur = !!basMieux;
+        if(tri.cle !== cle) tri = { cle, asc: meilleur };
+        else if(tri.asc === meilleur) tri = { cle, asc: !meilleur };
+        else tri = { cle: null, asc: false };
+        afficher();
+      });
+      tete.append(th);
+    });
+    const thead = el('thead'); thead.append(tete);
+    const tbody = el('tbody');
+    lignes.forEach((s, i) => {
+      const eq = parCode[s.code] || { name: s.code, slug: '' };
+      const tr = el('tr');
+      const lien = el('a');
+      if(eq.slug) lien.href = 'equipe.html?team=' + eq.slug;
+      lien.title = eq.name;
+      const img = el('img'); img.src = 'Logos/' + s.code + '.png'; img.alt = ''; img.loading = 'lazy';
+      lien.append(img, el('span', 'nom-long', eq.name), el('span', 'nom-court', s.code));
+      const tdEquipe = el('td', 'cl-equipe'); tdEquipe.append(lien);
+      tr.append(el('td', 'cl-rang', String(i + 1)), tdEquipe);
+      COLONNES_STATS.forEach(([cle, , , format]) => {
+        const v = s[cle];
+        const vide = !s.pj || v == null;
+        const td = el('td', (vide ? 'is-vide' : '') + (tri.cle === cle ? ' is-trie' : '') || null, vide ? '—' : format(v));
+        if(cle === 'anPct' && !vide) td.title = `${s.anButs} but${s.anButs > 1 ? 's' : ''} en ${s.anOcc} occasion${s.anOcc > 1 ? 's' : ''}`;
+        tr.append(td);
+      });
+      tbody.append(tr);
+    });
+    t.append(thead, tbody);
+    defile.append(t);
+    carte.append(defile);
+    const legende = el('div', 'cl-legende');
+    COLONNES_STATS.forEach(([, titre, desc]) => { const p = el('div'); p.append(el('b', null, titre), ' ' + desc); legende.append(p); });
+    conteneur.append(carte, legende);
+    return conteneur;
+  }
+
   function afficher(){
     document.querySelectorAll('.cl-vues button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vue === vue)));
     if(!resultats) return;
     const equipes = window.LNHQ_TEAMS || [];
     const parCode = Object.fromEntries(equipes.map(t => [t.code, t]));
     const classer = codes => R.classement(resultats, codes);
-    boite.classList.toggle('a-deux', vue !== 'ligue');
+    boite.classList.toggle('a-deux', vue === 'division' || vue === 'conference');
+    document.querySelector('.cl-note').hidden = vue === 'stats';
+    if(vue === 'stats'){
+      boite.replaceChildren(tableStats(equipes, parCode));
+      return;
+    }
     if(vue === 'ligue'){
       boite.replaceChildren(table('', classer(equipes.map(t => t.code)), parCode));
       return;

@@ -123,13 +123,33 @@
       // Correction par un admin : on part du résultat déjà enregistré.
       const r = resultats[m.num];
       if(r){
-        $('butsV').value = r.butsV; $('butsD').value = r.butsD; $('fin').value = r.fin;
-        R.STATS.forEach(s => { $('sv-' + s.cle).value = r.stats[s.cle][0]; $('sd-' + s.cle).value = r.stats[s.cle][1]; });
+        $('butsV').value = r.butsV; $('butsD').value = r.butsD; $('fin').value = r.fin || '';
+        R.STATS.forEach(s => { const p = (r.stats && r.stats[s.cle]) || ['', '']; $('sv-' + s.cle).value = p[0]; $('sd-' + s.cle).value = p[1]; });
+        $('lecture').className = 'res-aide';
         $('lecture').textContent = 'Résultat déjà enregistré : modifie les valeurs ou ajoute une nouvelle photo.';
         $('lecture').hidden = false;
+      }else if(!modeAdmin()){
+        verifierDejaSoumis(m);
       }
     }
     majBouton();
+  }
+
+  // Le résultat a peut-être été soumis par l'autre DG depuis l'ouverture de la page :
+  // on relit les résultats dès le choix du match pour avertir avant la photo.
+  async function verifierDejaSoumis(m){
+    let frais;
+    try{ frais = await R.chargerResultats(); }catch(e){ return; }
+    if(!frais[m.num]) return;
+    resultats = Object.assign(resultats, frais);
+    if(matchChoisi() !== m) return;
+    dejaSoumis(m);
+  }
+
+  function dejaSoumis(m){
+    afficher(`Le résultat de ${m.codeVisiteur} @ ${m.codeDomicile} (${jourCourt.format(date(m.date))}) vient d’être soumis par l’autre DG. Pour une correction, contacte un admin.`, true);
+    remplirMatchs();
+    choisirMatch();
   }
 
   function majBouton(){
@@ -225,6 +245,11 @@
       resultats[m.num] = { butsV: corps.butsV, butsD: corps.butsD, fin: corps.fin, stats };
       remplirMatchs();
       choisirMatch();
+    }else if(r.erreur === 'deja_soumis'){
+      // Soumis entre-temps par l'autre DG : le match sort de la liste.
+      try{ resultats = Object.assign(resultats, await R.chargerResultats()); }catch(e){}
+      if(!resultats[m.num]) resultats[m.num] = { butsV: '', butsD: '', fin: '', stats: null };
+      dejaSoumis(m);
     }else{
       afficher(ERREURS[r.erreur] || "L'enregistrement a échoué. Réessaie dans un instant.", true);
       majBouton();

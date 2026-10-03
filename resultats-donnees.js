@@ -83,5 +83,51 @@
       .sort((a, b) => b.pts - a.pts || b.v - a.v || b.diff - a.diff || b.bp - a.bp || a.code.localeCompare(b.code));
   }
 
-  window.LNHQ_RESULTATS = Object.freeze({ STATS, FINS, CONFERENCES, chargerResultats, classement });
+  // Stats d'équipe tirées des écrans de fin de match : totaux, puis moyennes et pourcentages.
+  const nombre = v => { const n = parseFloat(String(v || '').replace(',', '.')); return isNaN(n) ? null : n; };
+  const secondes = v => { const m = /^(\d+):(\d{2})$/.exec(String(v || '').trim()); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+  const fraction = v => { const m = /^(\d+)\s*\/\s*(\d+)$/.exec(String(v || '').trim()); return m ? [Number(m[1]), Number(m[2])] : null; };
+
+  function statsEquipes(resultats, codes){
+    const t = {};
+    const vide = c => ({ code: c, pj: 0, bp: 0, bc: 0, tirs: 0, tirsContre: 0, mises: 0, attaque: 0, nbAttaque: 0,
+      passes: 0, nbPasses: 0, mjPour: 0, mjContre: 0, penalites: 0, anButs: 0, anOcc: 0, dnButs: 0, dnOcc: 0,
+      minAvantage: 0, inferiorite: 0 });
+    (codes || []).forEach(c => { t[c] = vide(c); });
+    Object.values(resultats).forEach(r => {
+      [[r.visiteur, 0, r.butsV, r.butsD], [r.domicile, 1, r.butsD, r.butsV]].forEach(([c, i, pour, contre]) => {
+        if(!c || (codes && !t[c])) return;
+        const e = t[c] || (t[c] = vide(c));
+        const s = k => (r.stats[k] || [])[i], adv = k => (r.stats[k] || [])[1 - i];
+        e.pj++; e.bp += pour; e.bc += contre;
+        e.tirs += nombre(s('tirs')) || 0; e.tirsContre += nombre(adv('tirs')) || 0;
+        e.mises += nombre(s('mises')) || 0;
+        const att = secondes(s('attaque')); if(att != null){ e.attaque += att; e.nbAttaque++; }
+        const pas = nombre(s('passes')); if(pas != null){ e.passes += pas; e.nbPasses++; }
+        e.mjPour += nombre(s('engagements')) || 0; e.mjContre += nombre(adv('engagements')) || 0;
+        e.penalites += secondes(s('penalites')) || 0;
+        const an = fraction(s('avantages')); if(an){ e.anButs += an[0]; e.anOcc += an[1]; }
+        const dn = fraction(adv('avantages')); if(dn){ e.dnButs += dn[0]; e.dnOcc += dn[1]; }
+        e.minAvantage += secondes(s('minAvantage')) || 0;
+        e.inferiorite += nombre(s('inferiorite')) || 0;
+      });
+    });
+    const parMatch = (v, e) => e.pj ? v / e.pj : null;
+    return Object.values(t).map(e => ({
+      code: e.code, pj: e.pj,
+      bpMoy: parMatch(e.bp, e), bcMoy: parMatch(e.bc, e),
+      tirsMoy: parMatch(e.tirs, e), tirsContreMoy: parMatch(e.tirsContre, e),
+      misesMoy: parMatch(e.mises, e),
+      attaqueMoy: e.nbAttaque ? e.attaque / e.nbAttaque : null,          // secondes
+      passesMoy: e.nbPasses ? e.passes / e.nbPasses : null,               // %
+      mjPct: e.mjPour + e.mjContre ? 100 * e.mjPour / (e.mjPour + e.mjContre) : null,
+      penalitesMoy: e.pj ? e.penalites / 60 / e.pj : null,                // minutes
+      anButs: e.anButs, anOcc: e.anOcc, anPct: e.anOcc ? 100 * e.anButs / e.anOcc : null,
+      dnPct: e.dnOcc ? 100 * (1 - e.dnButs / e.dnOcc) : null,
+      minAvantage: e.minAvantage,                                          // secondes (total)
+      inferiorite: e.inferiorite,
+    }));
+  }
+
+  window.LNHQ_RESULTATS = Object.freeze({ STATS, FINS, CONFERENCES, chargerResultats, classement, statsEquipes });
 })();
