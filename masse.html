@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Masse Salariale</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=3">
+<link rel="stylesheet" href="site.css?v=4">
 <script src="site-nav.js?v=2"></script>
 <script src="sans-contrat.js"></script>
 </head>
@@ -518,7 +518,7 @@ function renderTableBody(){
       if(col && col.isHighlight) td.classList.add('col-highlight');
       if(col && col.textColor) td.classList.add('td-' + col.textColor);
       if(noms.length && col && col.rawLabel.trim().toUpperCase() === 'MASSE'){
-        td.textContent += '*';
+        td.textContent = '*' + td.textContent;
         td.style.cursor = 'help';
         td.title = `Comprend ${noms.length} joueur${noms.length > 1 ? 's' : ''} sans contrat LNH (contrat fictif LNHQ) : ${noms.join(', ')}`;
       }

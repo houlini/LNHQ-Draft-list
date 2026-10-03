@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Équipe</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=3">
+<link rel="stylesheet" href="site.css?v=4">
 <script src="site-nav.js?v=2"></script>
 <script src="sans-contrat.js"></script>
 <style>
@@ -738,7 +738,7 @@ function renderSummary(){
     // La masse comprend des contrats fictifs (joueurs sans contrat LNH) : « * ».
     const sc = joueursSansContrat();
     if(st.label === 'Masse' && sc.length){
-      value.textContent += '*';
+      value.textContent = '*' + value.textContent;
       value.style.cursor = 'help';
       value.title = `Comprend ${sc.length} joueur${sc.length > 1 ? 's' : ''} sans contrat LNH (contrat fictif LNHQ) : ${sc.join(', ')}`;
     }
