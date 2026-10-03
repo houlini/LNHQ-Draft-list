@@ -108,6 +108,11 @@ button, input{font-family:inherit;}
   mask-image:linear-gradient(to right, transparent, #000 10%, #000 92%, transparent);
 }
 .entete-saison ~ .alerte-dg{ margin-left:0; }
+/* Le bandeau garde toujours la hauteur de l'image, même quand la ligne du compteur
+   (.meta-row) est vide sur une page. */
+@media (min-width:1360px){
+  .app-header:has(.entete-saison){ min-height:118px; box-sizing:border-box; }
+}
 @media (max-width:1359px){
   .entete-saison{ display:none; }
   .entete-saison ~ .alerte-dg{ margin-left:auto; }

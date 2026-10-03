@@ -18,12 +18,13 @@
   .cl-titre span{ font-family:'IBM Plex Sans', sans-serif; font-size:14px; font-weight:400; color:var(--ink-muted); text-transform:none; margin-left:6px; }
 
   /* Choix de la vue : Division / Conférence / Ligue */
-  .cl-vues{ display:inline-flex; padding:3px; gap:3px; border-radius:999px; background:var(--surface); border:1px solid var(--line); }
+  .cl-vues{ display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:rgba(0,0,0,0.12); }
   .cl-vues button{
-    min-height:36px; padding:0 16px; border:none; border-radius:999px; cursor:pointer;
-    background:transparent; color:var(--ink-muted); font-weight:700; font-size:13.5px;
+    min-height:38px; padding:0 18px; border:none; border-radius:9px; cursor:pointer;
+    background:transparent; color:#fff; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
   }
-  .cl-vues button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
+  .cl-vues button:hover{ background:rgba(255,255,255,0.15); }
+  .cl-vues button[aria-pressed="true"]{ background:var(--nav-dark); color:#fff; }
 
   /* Deux colonnes (Est | Ouest) sur grand écran. */
   .cl-grille{ display:grid; grid-template-columns:1fr; gap:22px; align-items:start; }
@@ -91,16 +92,19 @@
 <div class="app">
   <site-header class="app-header" current-page="classement"></site-header>
 
+  <div class="filter-band">
+    <div class="cl-vues" role="group" aria-label="Vue du classement">
+      <button type="button" data-vue="division">Division</button>
+      <button type="button" data-vue="conference">Conférence</button>
+      <button type="button" data-vue="ligue">Ligue</button>
+      <button type="button" data-vue="stats">Stats</button>
+    </div>
+  </div>
+
   <main id="content">
     <div class="cl-page">
       <div class="cl-haut">
         <h2 class="cl-titre">Classement <span id="sousTitre"></span></h2>
-        <div class="cl-vues" role="group" aria-label="Vue du classement">
-          <button type="button" data-vue="division">Division</button>
-          <button type="button" data-vue="conference">Conférence</button>
-          <button type="button" data-vue="ligue">Ligue</button>
-          <button type="button" data-vue="stats">Stats</button>
-        </div>
       </div>
       <div id="classement" class="cl-grille"><p class="cl-etat">Chargement…</p></div>
       <p class="cl-note">
