@@ -937,6 +937,14 @@ function initVues(){
   }
   document.getElementById('alModifier').href = 'https://publier.lnhq.ca/alignement.html?equipe=' + currentTeam.code;
   changerVue(vueDemandee, true);
+  // Changer d'équipe (menu Équipes ou « Choisir une équipe ») garde la vue Alignement.
+  document.addEventListener('click', ev => {
+    const lien = ev.target.closest && ev.target.closest('a[href*="equipe.html?team="]');
+    if(!lien || !els.app.classList.contains('vue-alignement')) return;
+    const url = new URL(lien.href, location.href);
+    url.searchParams.set('vue', 'alignement');
+    lien.href = url.toString();
+  }, true);
 }
 function changerVue(vue, initiale){
   els.app.classList.toggle('vue-alignement', vue === 'alignement');
