@@ -92,6 +92,24 @@ button, input{font-family:inherit;}
 
 .site-nav{ display:flex; align-items:center; gap:2px; flex-shrink:0; flex-wrap:wrap; }
 
+/* Bannière de la saison (bâtons et ruban), à droite du logo. Bords fondus dans le gris
+   du bandeau. Cachée quand le bandeau manque de place (téléphone, tablette). */
+.entete-saison{
+  display:block; height:84px; width:auto; margin:-12px auto -14px; flex-shrink:1; min-width:0; object-fit:contain;
+  -webkit-mask-image:linear-gradient(to right, transparent, #000 14%, #000 86%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right, transparent, #000 14%, #000 86%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  mask-composite:intersect;
+}
+/* Centrée entre le logo et le menu : le bouton « Accès DGs » ne pousse plus vers la droite. */
+.entete-saison ~ .alerte-dg{ margin-left:0; }
+@media (max-width:1099px){
+  .entete-saison{ display:none; }
+  .entete-saison ~ .alerte-dg{ margin-left:auto; }
+}
+
 /* Bouton d'alerte « Accès DGs » (temporaire, voir ALERTE_ACCES_DG dans site-nav.js) :
    à côté du logo sur téléphone, juste avant le menu sur ordinateur. */
 .alerte-dg{

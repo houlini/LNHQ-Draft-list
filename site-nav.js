@@ -85,6 +85,7 @@
             <img class="brand-logo" src="logo-lnhq.png" alt="LNHQ">
             <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
           </a>
+          <img class="entete-saison" src="saison-2026-27.jpg" alt="LNHQ — Saison 2026-2027">
           ${ALERTE_ACCES_DG ? `<a class="alerte-dg" href="inscription.html"${currentPage === 'inscription' ? ' aria-current="page"' : ''}><span class="alerte-dg-point"></span>Accès DGs</a>` : ''}
           <nav class="site-nav" id="siteNav">
             <a class="nav-btn" href="./"><span>Accueil</span></a>
