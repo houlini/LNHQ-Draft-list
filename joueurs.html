@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Repêchage</title>
+<title>Agents libres</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=5">
 <script src="site-nav.js?v=2"></script>
@@ -60,24 +60,27 @@ const CONFIG = {
   // https://docs.google.com/spreadsheets/d/CET_ID_ICI/edit#gid=0
   SHEET_ID: '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A',
 
-  // Le gid correspond à l'onglet (visible après "#gid=" dans l'URL). 0 = premier onglet.
-  GID: '1424606319',
+  // Agents libres disponibles aux enchères : joueurs de PLAYERSDATABASE dont LNHQ TM (colonne Z) = UFA.
+  SHEET: 'PLAYERSDATABASE',
+  QUERY: "select B, C, D, G, H, J, K, L where Z = 'UFA' order by C desc",
+
+  // Libellés des colonnes de la requête (gviz ne renvoie pas d'en-têtes avec un filtre where).
+  LABELS: ['JOUEUR', 'OV', 'Âge', 'NAT', 'PO', 'SH', 'Taille', 'Poids'],
 
   // Titre affiché en haut du widget.
   TITLE: 'LNHQ',
 
-  // Colonnes à ne jamais afficher : un nombre = position (0 = colonne A, 1 = colonne B, ...),
+  // Colonnes à ne jamais afficher : un nombre = position (0 = première colonne de la requête),
   // un texte = nom exact de l'en-tête (insensible à la casse).
-  // Ici : A, C, F, G, J, N, O, Q, R, S, T, U, V, W, X
-  HIDDEN_COLUMNS: [0, 2, 5, 6, 9, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23],
+  HIDDEN_COLUMNS: [],
 
   // Colonnes à afficher comme un petit drapeau plutôt que du texte.
   // La cellule doit contenir un code pays à 2 lettres (ex: CA, US, SE, FI, CZ, RU).
   FLAG_COLUMNS: ['NAT'],
 
   // Colonnes à mettre en évidence (fond orange, texte blanc). Même syntaxe que HIDDEN_COLUMNS.
-  // Ici : D, Y
-  HIGHLIGHT_COLUMNS: [3, 24],
+  // Ici : OV
+  HIGHLIGHT_COLUMNS: ['OV'],
 
   // Colonnes pour lesquelles afficher un menu déroulant de filtre (nom exact de l'en-tête).
   // Les valeurs proposées sont détectées automatiquement dans les données.
@@ -96,9 +99,7 @@ const CONFIG = {
   },
 
   // Colonnes filtrées par curseur "maximum" plutôt que par liste de valeurs (ex: un plafond salarial).
-  MAX_FILTER_COLUMNS: [
-    { column: '2026-27', label: 'Salaire maximum' },
-  ],
+  MAX_FILTER_COLUMNS: [],
 };
 /* ========================================================================= */
 
@@ -428,15 +429,9 @@ const EA_PLAYERS = {
 };
 
 function eaLinkFor(row){
-  // Colonne B ("JOUEUR"), au format "Nom, Prénom" — on la convertit en "Prénom Nom"
-  // pour chercher dans la base EA_PLAYERS (colonne A n'est plus utilisée, désormais vide).
-  const raw = (row.raw[1] || '').trim();
-  if(!raw) return null;
-  const parts = raw.split(',');
-  const key = (parts.length >= 2
-    ? (parts[1].trim() + ' ' + parts[0].trim())
-    : raw
-  ).toLowerCase();
+  // Nom déjà converti en "Prénom Nom" par parseTable.
+  const key = (row.raw[0] || '').trim().toLowerCase();
+  if(!key) return null;
   const value = EA_PLAYERS[key];
   return value ? 'https://www.ea.com/games/nhl/ratings/player-ratings/' + value : null;
 }
@@ -453,11 +448,12 @@ const state = {
 };
 
 function buildUrl(){
-  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&gid=${CONFIG.GID}&t=${Date.now()}`;
+  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json`
+    + `&sheet=${encodeURIComponent(CONFIG.SHEET)}&headers=1&tq=${encodeURIComponent(CONFIG.QUERY)}&t=${Date.now()}`;
 }
 
 /* ---------- Cache local : affichage instantané au chargement suivant ---------- */
-const CACHE_KEY = 'sheetCache_' + CONFIG.SHEET_ID + '_' + CONFIG.GID;
+const CACHE_KEY = 'sheetCache_' + CONFIG.SHEET_ID + '_ufa';
 
 function loadFromCache(){
   try{
@@ -503,7 +499,8 @@ function makeColumnMatcher(list, rawLabels){
 }
 
 function parseTable(table){
-  const rawLabels = table.cols.map((c, i) => c.label || c.id || ('Colonne ' + (i + 1)));
+  if(table.cols.length !== CONFIG.LABELS.length) throw new Error('colonnes_inattendues');
+  const rawLabels = CONFIG.LABELS.slice();
   state.rawLabels = rawLabels;
   const isHidden = makeColumnMatcher(CONFIG.HIDDEN_COLUMNS, rawLabels);
   const isFlag = makeColumnMatcher(CONFIG.FLAG_COLUMNS, rawLabels);
@@ -520,12 +517,18 @@ function parseTable(table){
     .filter((_, i) => !isHidden(i));
 
   state.rows = table.rows.map(r => {
-    const raw = (r.c || []).map(cell =>
-      cell ? (cell.f != null ? cell.f : (cell.v != null ? String(cell.v) : '')) : ''
-    );
+    const raw = CONFIG.LABELS.map((_, i) => {
+      const cell = (r.c || [])[i];
+      return cell ? String(cell.f != null ? cell.f : (cell.v != null ? cell.v : '')).trim() : '';
+    });
+    // "Nom, Prénom" → "Prénom Nom" ; âge décimal → années complètes
+    const v = raw[0].indexOf(',');
+    if(v > 0) raw[0] = raw[0].slice(v + 1).trim() + ' ' + raw[0].slice(0, v).trim();
+    const age = parseFloat(raw[2]);
+    raw[2] = Number.isNaN(age) ? '' : String(Math.floor(age));
     const display = raw.filter((_, i) => !isHidden(i));
     return { display, raw };
-  });
+  }).filter(r => r.raw[0] && r.raw[0].toUpperCase() !== 'JOUEUR');
 
   renderFilterBar();
   applyFilterAndSort();
@@ -710,7 +713,9 @@ function applyFilterAndSort(){
       const av = a.display[col] || '';
       const bv = b.display[col] || '';
       if(numeric){
-        return (parseFloat(av.replace(/[^\d.-]/g,'')) - parseFloat(bv.replace(/[^\d.-]/g,''))) * state.sortDir;
+        const an = parseFloat(av.replace(/[^\d.-]/g,'')), bn = parseFloat(bv.replace(/[^\d.-]/g,''));
+        if(Number.isNaN(an) || Number.isNaN(bn)) return Number.isNaN(an) - Number.isNaN(bn); // vides à la fin
+        return (an - bn) * state.sortDir;
       }
       return av.localeCompare(bv, 'fr-FR') * state.sortDir;
     });
@@ -735,7 +740,7 @@ function render(){
   const shown = state.filtered.length;
   els.rowCount.textContent = state.query
     ? `${shown} résultat${shown > 1 ? 's' : ''} sur ${total}`
-    : `${total} ligne${total > 1 ? 's' : ''}`;
+    : `${total} agent${total > 1 ? 's' : ''} libre${total > 1 ? 's' : ''}`;
 
   els.emptyState.hidden = shown !== 0;
   if(shown === 0){
