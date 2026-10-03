@@ -62,10 +62,10 @@ const CONFIG = {
 
   // Agents libres disponibles aux enchères : joueurs de PLAYERSDATABASE dont LNHQ TM (colonne Z) = UFA.
   SHEET: 'PLAYERSDATABASE',
-  QUERY: "select B, C, D, G, H, J, K, L where Z = 'UFA' order by C desc",
+  QUERY: "select B, C, D, G, H, J, K, L, N where Z = 'UFA' order by C desc",
 
   // Libellés des colonnes de la requête (gviz ne renvoie pas d'en-têtes avec un filtre where).
-  LABELS: ['JOUEUR', 'OV', 'Âge', 'NAT', 'PO', 'SH', 'Taille', 'Poids'],
+  LABELS: ['JOUEUR', 'OV', 'Âge', 'NAT', 'PO', 'SH', 'Taille', 'Poids', 'Salaire'],
 
   // Titre affiché en haut du widget.
   TITLE: 'LNHQ',
@@ -99,7 +99,9 @@ const CONFIG = {
   },
 
   // Colonnes filtrées par curseur "maximum" plutôt que par liste de valeurs (ex: un plafond salarial).
-  MAX_FILTER_COLUMNS: [],
+  MAX_FILTER_COLUMNS: [
+    { column: 'Salaire', label: 'Salaire maximum' },
+  ],
 };
 /* ========================================================================= */
 
@@ -453,7 +455,7 @@ function buildUrl(){
 }
 
 /* ---------- Cache local : affichage instantané au chargement suivant ---------- */
-const CACHE_KEY = 'sheetCache_' + CONFIG.SHEET_ID + '_ufa';
+const CACHE_KEY = 'sheetCache_' + CONFIG.SHEET_ID + '_ufa2';
 
 function loadFromCache(){
   try{
