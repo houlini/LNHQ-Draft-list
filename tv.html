@@ -59,6 +59,45 @@
   .tv-badge.is-autre{ background:var(--stripe); color:var(--ink-muted); }
   .tv-point{ width:10px; height:10px; border-radius:50%; background:#E03131; box-shadow:0 0 0 3px rgba(224,49,49,0.25); }
   .tv-compte{ font-weight:400; color:var(--ink-muted); font-family:'IBM Plex Sans', sans-serif; font-size:14px; text-transform:none; }
+
+  /* ---------- Choix de l'affichage : 1, 2 ou 4 streams ---------- */
+  .tv-band{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px; width:100%; }
+  .tv-modes{ display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:rgba(0,0,0,0.12); }
+  .tv-modes button{
+    display:inline-flex; align-items:center; gap:8px; min-height:38px; padding:0 14px; border:none; border-radius:9px; cursor:pointer;
+    background:transparent; color:#fff; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .tv-modes button:hover{ background:rgba(255,255,255,0.15); }
+  .tv-modes button[aria-pressed="true"]{ background:var(--nav-dark); }
+  .tv-modes svg{ width:18px; height:14px; }
+
+  /* ---------- Plusieurs streams ---------- */
+  .tv-multi{ display:grid; grid-template-columns:1fr; gap:10px; align-content:start; }
+  @media (min-width:900px){ .tv-multi.mode-2, .tv-multi.mode-4{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  .tv-case{ display:flex; flex-direction:column; min-width:0; border-radius:var(--radius); overflow:hidden; background:var(--surface); border:1px solid var(--line); }
+  .tv-case.is-chat{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+  .tv-case-tete{
+    display:flex; align-items:center; gap:8px; min-height:36px; padding:4px 6px 4px 10px; cursor:pointer;
+    font-size:13.5px; font-weight:700; border-bottom:1px solid var(--line);
+  }
+  .tv-case-tete img{ width:22px; height:22px; object-fit:contain; flex-shrink:0; }
+  .tv-case-tete .tv-case-nom{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tv-case-tete .tv-case-detail{ font-weight:400; color:var(--ink-muted); font-size:12.5px; white-space:nowrap; }
+  .tv-case-fermer{
+    all:unset; cursor:pointer; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:6px; color:var(--ink-muted); font-size:18px; flex-shrink:0;
+  }
+  .tv-case-fermer:hover{ background:var(--accent-soft); color:var(--ink); }
+  .tv-case .tv-lecteur{ border-radius:0; }
+  .tv-case-vide{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-align:center;
+    aspect-ratio:16 / 9; padding:16px; color:var(--ink-muted); font-size:14px; border:1px dashed var(--line); border-radius:var(--radius);
+  }
+  @media (min-width:1100px){ .tv-scene.avec-chat .tv-chat{ min-height:420px; } }
+  @media (max-width:600px){
+    .tv-modes{ width:100%; }
+    .tv-modes button{ flex:1; justify-content:center; padding:0 8px; }
+  }
 </style>
 </head>
 <body>
@@ -67,7 +106,14 @@
   <site-header class="app-header" current-page="tv"></site-header>
 
   <div class="filter-band">
-    <span id="resume" style="font-weight:700">LNHQ TV</span>
+    <div class="tv-band">
+      <div class="tv-modes" role="group" aria-label="Nombre de streams affichés">
+        <button type="button" data-mode="1" title="1 stream"><svg viewBox="0 0 18 14" fill="currentColor"><rect x="0" y="0" width="18" height="14" rx="2"/></svg>1</button>
+        <button type="button" data-mode="2" title="2 streams"><svg viewBox="0 0 18 14" fill="currentColor"><rect x="0" y="0" width="8" height="14" rx="2"/><rect x="10" y="0" width="8" height="14" rx="2"/></svg>2</button>
+        <button type="button" data-mode="4" title="4 streams"><svg viewBox="0 0 18 14" fill="currentColor"><rect x="0" y="0" width="8" height="6" rx="1.5"/><rect x="10" y="0" width="8" height="6" rx="1.5"/><rect x="0" y="8" width="8" height="6" rx="1.5"/><rect x="10" y="8" width="8" height="6" rx="1.5"/></svg>4</button>
+      </div>
+      <span id="resume" style="font-weight:700">LNHQ TV</span>
+    </div>
   </div>
 
   <main id="content">
@@ -132,12 +178,26 @@ const els = {
 };
 els.title.textContent = 'LNHQ';
 
+const params = new URLSearchParams(location.search);
+const MODES = [1, 2, 4];
+function modeInitial(){
+  const p = Number(params.get('vue'));
+  if(MODES.includes(p)) return p;
+  try{ const m = Number(localStorage.getItem('lnhqTvMode')); if(MODES.includes(m)) return m; }catch(e){}
+  return 1;
+}
 const state = {
   chaines: [],
-  choisie: (new URLSearchParams(location.search).get('chaine') || '').toLowerCase(),
+  choisie: (params.get('chaine') || '').toLowerCase(),
   // Le son n'est activé qu'après un clic : les navigateurs bloquent la lecture auto avec son.
   sonActif: false,
   lecteurDe: '',
+  // Mode 2 ou 4 : une chaîne par case ('' = case libre), toujours en sourdine.
+  mode: modeInitial(),
+  cases: (params.get('chaines') || '').toLowerCase().split(',').filter(Boolean),
+  fermees: new Set(),   // retirées par le lecteur : pas remises automatiquement
+  chat: '',             // case dont le clavardage est affiché
+  multi: null,          // éléments de la grille déjà construits (pour ne pas recharger les vidéos)
 };
 const nombre = new Intl.NumberFormat('fr-CA');
 
@@ -170,6 +230,128 @@ function iframe(src, titre){
   f.allowFullscreen = true;
   f.setAttribute('allow', 'autoplay; fullscreen');
   return f;
+}
+
+const hote = location.hostname;
+const lecteurSrc = (chaine, muet) => `https://player.twitch.tv/?channel=${chaine}&parent=${hote}&autoplay=true&muted=${muet}`;
+const chatSrc = chaine => `https://www.twitch.tv/embed/${chaine}/chat?parent=${hote}` + (matchMedia('(prefers-color-scheme: dark)').matches ? '&darkpopout' : '');
+const trouver = chaine => state.chaines.find(x => x.chaine === chaine);
+
+/* ---------- Mode 2 ou 4 streams ----------
+   Les cases vides se remplissent avec les directs #LNHQ les plus regardés. Chaque case
+   garde sa place : seule une case qui change est reconstruite (les autres vidéos
+   continuent sans redémarrer). */
+function remplirCases(live){
+  const cases = state.cases.slice(0, state.mode).map(c => (trouver(c) ? c : ''));
+  while(cases.length < state.mode) cases.push('');
+  const libres = live.map(c => c.chaine).filter(c => !cases.includes(c) && !state.fermees.has(c));
+  for(let i = 0; i < cases.length && libres.length; i++) if(!cases[i]) cases[i] = libres.shift();
+  state.cases = cases;
+  if(!cases.includes(state.chat)) state.chat = cases.find(Boolean) || '';
+}
+
+function caseVide(){
+  const v = el('div', 'tv-case-vide');
+  v.append(el('strong', null, 'Case libre'), el('span', null, 'Choisis une chaîne plus bas pour l’afficher ici.'));
+  return v;
+}
+
+function caseStream(chaine){
+  const boite = el('div', 'tv-case');
+  boite.dataset.chaine = chaine;
+  const tete = el('div', 'tv-case-tete');
+  tete.title = 'Afficher le clavardage de cette chaîne';
+  tete.addEventListener('click', () => { state.chat = chaine; render(); });
+  const fermer = el('button', 'tv-case-fermer', '✕');
+  fermer.type = 'button';
+  fermer.title = 'Retirer cette chaîne';
+  fermer.addEventListener('click', ev => { ev.stopPropagation(); basculer(chaine); });
+  tete.append(el('img'), el('span', 'tv-case-nom'), el('span', 'tv-case-detail'), fermer);
+  const lecteur = el('div', 'tv-lecteur');
+  lecteur.append(iframe(lecteurSrc(chaine, true), 'Lecteur Twitch de ' + chaine));
+  boite.append(tete, lecteur);
+  return boite;
+}
+
+function renderMulti(live){
+  remplirCases(live);
+  if(!state.multi || state.multi.mode !== state.mode){
+    const scene = el('div', 'tv-scene avec-chat');
+    const grille = el('div', 'tv-multi mode-' + state.mode);
+    const chat = el('div', 'tv-chat');
+    scene.append(grille, chat);
+    els.scene.replaceChildren(scene);
+    state.multi = { mode: state.mode, grille, chat, chatDe: '', places: [] };
+    for(let i = 0; i < state.mode; i++){ const v = caseVide(); grille.append(v); state.multi.places.push({ chaine: '', el: v }); }
+  }
+  const m = state.multi;
+  state.cases.forEach((chaine, i) => {
+    const place = m.places[i];
+    if(place.chaine !== chaine){
+      const nouvel = chaine ? caseStream(chaine) : caseVide();
+      place.el.replaceWith(nouvel);
+      m.places[i] = { chaine, el: nouvel };
+    }
+    if(!chaine) return;
+    // En-tête mis à jour à chaque rafraîchissement (spectateurs, en direct ou non).
+    const c = trouver(chaine);
+    const tete = m.places[i].el.querySelector('.tv-case-tete');
+    const img = tete.querySelector('img');
+    const src = c.code ? 'Logos/' + c.code + '.png' : 'logo-lnhq.png';
+    if(img.getAttribute('src') !== src){ img.src = src; img.alt = ''; }
+    tete.querySelector('.tv-case-nom').textContent = (c.nom || c.chaine) + (c.equipe ? ' · ' + c.equipe : '');
+    tete.querySelector('.tv-case-detail').textContent = enDirect(c) ? '🔴 ' + nombre.format(c.spectateurs || 0) : 'Hors ligne';
+    m.places[i].el.classList.toggle('is-chat', chaine === state.chat);
+  });
+  if(m.chatDe !== state.chat){
+    m.chatDe = state.chat;
+    m.chat.replaceChildren(...(state.chat ? [iframe(chatSrc(state.chat), 'Clavardage Twitch de ' + state.chat)] : []));
+  }
+  m.chat.style.visibility = state.chat ? '' : 'hidden';
+  majAdresse();
+}
+
+// Mode multi : un clic sur une chaîne l'ajoute (case libre, sinon la dernière) ou la retire.
+function basculer(chaine){
+  const i = state.cases.indexOf(chaine);
+  if(i >= 0){
+    state.cases[i] = '';
+    state.fermees.add(chaine);
+  }else{
+    state.fermees.delete(chaine);
+    const libre = state.cases.indexOf('');
+    state.cases[libre >= 0 ? libre : state.mode - 1] = chaine;
+    state.chat = chaine;
+  }
+  render();
+}
+
+function changerMode(mode){
+  if(mode === state.mode) return;
+  // On garde la chaîne regardée : elle devient la 1re case (ou la chaîne du mode 1).
+  if(mode === 1) state.choisie = state.chat || state.cases.find(Boolean) || state.choisie;
+  else if(state.mode === 1 && state.choisie) state.cases = [state.choisie];
+  state.mode = mode;
+  state.multi = null;
+  state.lecteurDe = '';
+  try{ localStorage.setItem('lnhqTvMode', String(mode)); }catch(e){}
+  render();
+}
+
+function majAdresse(){
+  const url = new URL(location.href);
+  if(state.mode === 1){
+    url.searchParams.delete('vue'); url.searchParams.delete('chaines');
+    if(state.choisie) url.searchParams.set('chaine', state.choisie);
+  }
+  else{
+    url.searchParams.set('vue', String(state.mode));
+    url.searchParams.delete('chaine');
+    const liste = state.cases.filter(Boolean);
+    if(liste.length) url.searchParams.set('chaines', liste.join(','));
+    else url.searchParams.delete('chaines');
+  }
+  history.replaceState(null, '', url);
 }
 
 // Lecteur et clavardage : reconstruits seulement si la chaîne change (sinon la
@@ -211,9 +393,10 @@ function renderScene(){
 }
 
 function carte(c){
-  const b = el('button', 'tv-carte' + (enDirect(c) ? '' : ' is-hors-ligne') + (c.chaine === state.choisie ? ' is-choisie' : ''));
+  const choisie = state.mode === 1 ? c.chaine === state.choisie : state.cases.includes(c.chaine);
+  const b = el('button', 'tv-carte' + (enDirect(c) ? '' : ' is-hors-ligne') + (choisie ? ' is-choisie' : ''));
   b.type = 'button';
-  b.setAttribute('aria-pressed', String(c.chaine === state.choisie));
+  b.setAttribute('aria-pressed', String(choisie));
   const corps = el('div', 'tv-carte-corps');
   const nom = el('div', 'tv-carte-nom');
   nom.append(el('span', null, c.nom || c.chaine));
@@ -225,7 +408,10 @@ function carte(c){
   corps.append(nom, el('div', 'tv-carte-detail', detail));
   b.title = enDirect(c) && c.titre ? c.titre : (c.nom || c.chaine);
   b.append(logo(c.code, ''), corps);
-  b.addEventListener('click', () => choisir(c.chaine));
+  b.addEventListener('click', () => {
+    if(state.mode === 1) choisir(c.chaine);
+    else{ basculer(c.chaine); els.scene.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
   return b;
 }
 
@@ -246,7 +432,9 @@ function render(){
   // Par défaut : le direct le plus regardé.
   if(!state.choisie && live.length) state.choisie = live[0].chaine;
 
-  renderScene();
+  document.querySelectorAll('.tv-modes button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.mode) === state.mode)));
+  if(state.mode === 1){ state.multi = null; renderScene(); majAdresse(); }
+  else renderMulti(live);
   els.grilleLive.replaceChildren(...live.map(carte));
   els.grilleHors.replaceChildren(...hors.map(carte));
   els.groupeLive.hidden = !live.length;
@@ -284,6 +472,7 @@ async function load({ background = false } = {}){
 }
 
 els.retryBtn.addEventListener('click', () => load());
+document.querySelectorAll('.tv-modes button').forEach(b => b.addEventListener('click', () => changerMode(Number(b.dataset.mode))));
 load();
 setInterval(() => { if(!document.hidden) load({ background: true }); }, RAFRAICHIR_MS);
 document.addEventListener('visibilitychange', () => { if(!document.hidden) load({ background: true }); });
