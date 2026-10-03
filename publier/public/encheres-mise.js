@@ -78,7 +78,7 @@
     const c = el('article', 'ench-carte');
     c.id = 'e-' + e.id;
     const tete = el('div', 'ench-joueur');
-    tete.append(el('strong', null, e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
+    tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
 
     const meneur = el('div', 'ench-meneur');
     const qui = el('div', 'ench-qui');
@@ -120,6 +120,16 @@
     return c;
   }
 
+  // Joueurs sans contrat LNH (contrat fictif LNHQ) : nom en rouge avec « * ».
+  let sansContrat = { cles: new Set() };
+  if(window.LNHQ_SANS_CONTRAT) LNHQ_SANS_CONTRAT.charger().then(sc => { sansContrat = sc; if(donnees) render(); });
+  const estSansContrat = nom => !!window.LNHQ_SANS_CONTRAT && sansContrat.cles.has(LNHQ_SANS_CONTRAT.cle(nom));
+  function nomJoueur(nom){
+    const s = el('strong', null, nom);
+    if(estSansContrat(nom)) LNHQ_SANS_CONTRAT.marquer(s);
+    return s;
+  }
+
   function render(){
     const dispo = mesJetons();
     $('jetonsMoi').textContent = dispo != null ? dispo : '';
@@ -135,7 +145,7 @@
     $('listeJoueurs').replaceChildren(...agents.filter(j => !occupes.has(j.nom + '|' + j.naissance)).map(j => {
       const o = el('option');
       o.value = j.nom;
-      o.label = [j.position, j.ov && j.ov + ' OV', j.age && j.age + ' ans'].filter(Boolean).join(' · ');
+      o.label = [j.position, j.ov && j.ov + ' OV', j.age && j.age + ' ans', estSansContrat(j.nom) && '* sans contrat LNH'].filter(Boolean).join(' · ');
       return o;
     }));
     $('montantLancer').max = String(Math.max(E.REGLES.miseMinimale, dispo || 0));

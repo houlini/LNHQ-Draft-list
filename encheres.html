@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Enchères des agents libres</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=2">
+<link rel="stylesheet" href="site.css?v=3">
 <link rel="stylesheet" href="encheres.css">
 <script src="site-nav.js?v=2"></script>
+<script src="sans-contrat.js"></script>
 <script src="encheres-donnees.js"></script>
 </head>
 <body>
@@ -104,12 +105,20 @@ function logo(code){
   return img;
 }
 const nomEquipe = code => noms.get(code) || code;
+// Nom du joueur, en rouge avec « * » s'il est sans contrat LNH (contrat fictif LNHQ).
+let sansContrat = { cles: new Set() };
+LNHQ_SANS_CONTRAT.charger().then(sc => { sansContrat = sc; if(donnees) render(); });
+function nomJoueur(nom){
+  const s = el('strong', null, nom);
+  if(sansContrat.cles.has(LNHQ_SANS_CONTRAT.cle(nom))) LNHQ_SANS_CONTRAT.marquer(s);
+  return s;
+}
 
 function carteEnCours(e){
   const carte = el('article', 'ench-carte');
   carte.id = 'e-' + e.id;
   const tete = el('div', 'ench-joueur');
-  tete.append(el('strong', null, e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
+  tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
 
   const meneur = el('div', 'ench-meneur');
   const qui = el('div', 'ench-qui');
@@ -212,7 +221,7 @@ function renderHistorique(){
     const etat = enCours ? `En tête : ${nomEquipe(e.equipe)}`
       : e.statut === 'Annulée' ? 'Annulée'
       : `🏁 ${nomEquipe(e.equipe)}`;
-    titre.append(el('strong', null, e.joueur), el('span', null, `${etat} · ${mises.length} mise${mises.length > 1 ? 's' : ''}`));
+    titre.append(nomJoueur(e.joueur), el('span', null, `${etat} · ${mises.length} mise${mises.length > 1 ? 's' : ''}`));
     resume.append(logo(e.equipe), titre);
     if(e.statut !== 'Annulée') resume.append(el('span', 'ench-evt-montant', e.mise));
     details.append(resume);

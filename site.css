@@ -118,6 +118,13 @@ button, input{font-family:inherit;}
   .entete-saison ~ .alerte-dg{ margin-left:auto; }
 }
 
+/* Joueur « Sans contrat LNH » (contrat fictif LNHQ, voir sans-contrat.js) :
+   salaire (ou nom) en rouge suivi d'un « * », explication au survol. */
+.sans-contrat{ color:#E03131 !important; cursor:help; }
+.sans-contrat::after{ content:'*'; margin-left:1px; font-weight:700; }
+.sans-contrat-note{ margin:8px 2px 0; font-size:12.5px; color:var(--ink-muted); line-height:1.5; }
+.sans-contrat-note .sans-contrat{ cursor:default; }
+
 /* Bouton d'alerte « Accès DGs » (temporaire, voir ALERTE_ACCES_DG dans site-nav.js) :
    à côté du logo sur téléphone, juste avant le menu sur ordinateur. */
 .alerte-dg{

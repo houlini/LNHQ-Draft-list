@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Masse Salariale</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=2">
+<link rel="stylesheet" href="site.css?v=3">
 <script src="site-nav.js?v=2"></script>
+<script src="sans-contrat.js"></script>
 </head>
 <body>
 
@@ -484,9 +485,17 @@ function renderTableHead(){
   });
 }
 
+// Joueurs sans contrat LNH (contrat fictif LNHQ) par équipe : « * » sur la masse.
+let sansContrat = { cles: new Set(), parEquipe: {} };
+LNHQ_SANS_CONTRAT.charger().then(sc => { sansContrat = sc; if(state.filtered) renderTableBody(); });
+
 function renderTableBody(){
   els.tableBody.innerHTML = '';
+  const iCode = (state.rawLabels || []).findIndex(l => l.trim().toUpperCase() === 'TM');
+  const touchees = [];
   state.filtered.forEach((row, idx) => {
+    const noms = iCode >= 0 ? (sansContrat.parEquipe[String(row.raw[iCode] || '').toUpperCase()] || []) : [];
+    if(noms.length) touchees.push(`${row.raw[iCode]} (${noms.join(', ')})`);
     const tr = document.createElement('tr');
     if(idx < 20) tr.classList.add('row-in');
     if(idx < 20) tr.style.animationDelay = (idx * 25) + 'ms';
@@ -508,10 +517,25 @@ function renderTableBody(){
       }
       if(col && col.isHighlight) td.classList.add('col-highlight');
       if(col && col.textColor) td.classList.add('td-' + col.textColor);
+      if(noms.length && col && col.rawLabel.trim().toUpperCase() === 'MASSE'){
+        td.textContent += '*';
+        td.style.cursor = 'help';
+        td.title = `Comprend ${noms.length} joueur${noms.length > 1 ? 's' : ''} sans contrat LNH (contrat fictif LNHQ) : ${noms.join(', ')}`;
+      }
       tr.appendChild(td);
     });
     els.tableBody.appendChild(tr);
   });
+  // Note sous le tableau : quelles équipes ont des joueurs sans contrat LNH.
+  const wrap = els.tableBody.closest('table').parentElement;
+  let note = document.getElementById('noteSansContrat');
+  if(note) note.remove();
+  if(touchees.length){
+    note = LNHQ_SANS_CONTRAT.note([]);
+    note.id = 'noteSansContrat';
+    note.lastChild.textContent = ' Masse avec des joueurs sans contrat LNH (contrat fictif LNHQ) : ' + touchees.join(' · ') + '.';
+    wrap.after(note);
+  }
 }
 
 
