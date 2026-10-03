@@ -759,6 +759,12 @@ function equipe(fullName, cote, gagnant, num){
   return wrap;
 }
 
+// Joué : résultat soumis par photo, ou score écrit dans SCHEDULE.
+function estJoue(g){
+  if(state.resultats && state.resultats[g.num]) return true;
+  return g.awayScore !== '' && g.homeScore !== '' && !isNaN(Number(g.awayScore)) && !isNaN(Number(g.homeScore));
+}
+
 function ligneMatch(g){
   // Résultat soumis par photo en priorité, sinon le score écrit dans SCHEDULE.
   const r = state.resultats && state.resultats[g.num];
@@ -863,10 +869,11 @@ function render(){
     return bloc;
   }));
 
-  const total = state.games.length;
-  els.rowCount.textContent = state.team
-    ? `${games.length} match${games.length > 1 ? 's' : ''} affiché${games.length > 1 ? 's' : ''}`
-    : `${total} matchs dans la saison`;
+  // Matchs joués / à jouer de la saison (de l'équipe choisie, le cas échéant).
+  const saison = state.games.filter(g => !state.team || g.away === state.team || g.home === state.team);
+  const joues = saison.filter(estJoue).length;
+  const aJouer = saison.length - joues;
+  els.rowCount.textContent = `${joues} match${joues > 1 ? 's' : ''} joué${joues > 1 ? 's' : ''} · ${aJouer} à jouer`;
   els.emptyState.hidden = games.length !== 0;
   if(!games.length) els.emptyState.textContent = state.team ? 'Aucun match de cette équipe cette semaine.' : 'Aucun match cette semaine.';
 }
