@@ -51,7 +51,12 @@
   font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:17px; font-weight:500; line-height:1.1;
   text-transform:uppercase; letter-spacing:0.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.al-infos{ display:flex; flex-wrap:wrap; gap:2px 8px; font-size:11.5px; opacity:0.85; font-family:'IBM Plex Mono', monospace; }
+.al-infos{ display:flex; flex-wrap:wrap; align-items:center; gap:2px 8px; font-size:11.5px; font-family:'IBM Plex Mono', monospace; }
+.al-infos > span:not(.al-icones){ opacity:0.85; }
+.al-icones{ display:inline-flex; align-items:center; gap:5px; }
+.al-drapeau{ display:block; width:18px; height:13px; object-fit:cover; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,0.35); }
+.al-baton{ display:block; width:19px; height:19px; color:#fff; }
+.al-baton.is-droit{ transform:scaleX(-1); }
 .al-badge{
   position:absolute; top:40px; right:8px; font-size:9.5px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase;
   padding:1px 6px; border-radius:999px; background:#2F9E44;
@@ -78,6 +83,8 @@
   .al-place{ font-size:9px; padding:1px 5px; }
   .al-prenom{ font-size:10.5px; }
   .al-famille{ font-size:13.5px; }
-  .al-infos{ font-size:10px; gap:0 6px; }
+  .al-infos{ font-size:10px; gap:1px 6px; }
+  .al-drapeau{ width:15px; height:11px; }
+  .al-baton{ width:15px; height:15px; }
   .al-cartes.al-res{ grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); }
 }

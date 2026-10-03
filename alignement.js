@@ -33,7 +33,7 @@
   const FORMATS = { C: 'C', L: 'AG', R: 'AD', D: 'D', G: 'G' };
 
   async function chargerJoueurs(code){
-    const q = encodeURIComponent(`select A, B, C, H, J, K, L, AB where Z = '${code}' and H <> 'CHOIX'`);
+    const q = encodeURIComponent(`select A, B, C, H, J, K, L, AB, G where Z = '${code}' and H <> 'CHOIX'`);
     const lignes = await gviz('sheet=PLAYERSDATABASE&headers=1&tq=' + q);
     return lignes.filter(l => l[1]).map(l => {
       const v = l[1].indexOf(',');
@@ -42,7 +42,7 @@
       return {
         id: l[1], prenom, famille, nom: l[0] || (prenom + ' ' + famille).trim(),
         ov: Number(l[2]) || 0, po: (l[3] || '').toUpperCase(), sh: (l[4] || '').toUpperCase(),
-        ht: l[5] || '', wt: l[6] || '', espoir: /^(true|vrai|x|oui)$/i.test(l[7] || ''),
+        ht: l[5] || '', wt: l[6] || '', espoir: /^(true|vrai|x|oui)$/i.test(l[7] || ''), pays: (l[8] || '').toUpperCase(),
       };
     });
   }
@@ -102,7 +102,53 @@
     return e;
   }
 
-  // Carte d'un joueur (ou d'une place vide) : overall, place, prénom et nom, tir, grandeur, poids.
+  // Drapeau (colonne CNT, code à 3 lettres → flagcdn.com, comme la page Salaires).
+  const PAYS_ISO2 = {
+    can:'ca', usa:'us', swe:'se', fin:'fi', rus:'ru', cze:'cz', svk:'sk', ger:'de', sui:'ch', fra:'fr', den:'dk',
+    nor:'no', lat:'lv', blr:'by', kaz:'kz', aut:'at', ita:'it', svn:'si', hun:'hu', pol:'pl', jpn:'jp', kor:'kr',
+    chn:'cn', gbr:'gb', ned:'nl', ukr:'ua', est:'ee', ltu:'lt', rou:'ro', cro:'hr', srb:'rs', bul:'bg', esp:'es',
+    aus:'au', nzl:'nz', rsa:'za', mex:'mx', bra:'br', isl:'is', irl:'ie', bel:'be', por:'pt', isr:'il', geo:'ge', uzb:'uz',
+  };
+  function drapeau(pays){
+    const code = String(pays || '').toLowerCase();
+    const iso2 = code.length === 2 ? code : PAYS_ISO2[code];
+    if(!iso2) return null;
+    const img = el('img', 'al-drapeau');
+    img.src = `https://flagcdn.com/24x18/${iso2}.png`;
+    img.alt = pays;
+    img.title = pays;
+    img.width = 18; img.height = 13;
+    img.onerror = () => img.remove();
+    return img;
+  }
+
+  // Côté du tir : un bâton dont la lame pointe à gauche (L) ou à droite (R).
+  function baton(sh){
+    if(sh !== 'L' && sh !== 'R') return null;
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('class', 'al-baton' + (sh === 'R' ? ' is-droit' : ''));
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', sh === 'L' ? 'Tir à gauche' : 'Tir à droite');
+    const titre = document.createElementNS(ns, 'title');
+    titre.textContent = sh === 'L' ? 'Tir à gauche (L)' : 'Tir à droite (R)';
+    // Manche en diagonale (avec la poignée), lame large vers la gauche en bas
+    // (retournée pour un droitier, voir .al-baton.is-droit).
+    const manche = document.createElementNS(ns, 'path');
+    manche.setAttribute('d', 'M18.2 0.8 L21.4 2.2 L13.4 17.6 L10.2 16.4 Z');
+    const poignee = document.createElementNS(ns, 'path');
+    poignee.setAttribute('d', 'M18.2 0.8 L21.4 2.2 L20.2 4.6 L17 3.2 Z');
+    poignee.setAttribute('opacity', '0.55');
+    const lame = document.createElementNS(ns, 'path');
+    lame.setAttribute('d', 'M10.2 16.4 L13.4 17.6 Q12.6 21.6 9.4 22.4 L1.8 23.4 Q0.4 23.5 0.5 22.2 L0.7 20.6 Q0.9 19.4 2.1 19.3 L8.4 18.6 Q9.6 18.4 10.2 16.4 Z');
+    [manche, lame].forEach(p => p.setAttribute('fill', 'currentColor'));
+    poignee.setAttribute('fill', '#000');
+    svg.append(titre, manche, lame, poignee);
+    return svg;
+  }
+
+  // Carte d'un joueur (ou d'une place vide) : overall, place, prénom et nom, drapeau, tir, grandeur, poids.
   function carte(joueur, etiquette){
     const c = el('div', 'al-carte' + (joueur ? '' : ' is-vide') + (joueur && joueur.espoir ? ' is-espoir' : ''));
     const haut = el('div', 'al-haut');
@@ -115,8 +161,10 @@
     const nom = el('div', 'al-nom');
     nom.append(el('span', 'al-prenom', joueur.prenom), el('span', 'al-famille', joueur.famille));
     const infos = el('div', 'al-infos');
-    const tir = joueur.sh === 'L' ? 'Tir G' : joueur.sh === 'R' ? 'Tir D' : '';
-    infos.append(...[tir, joueur.ht, joueur.wt && joueur.wt + ' lb'].filter(Boolean).map(t => el('span', null, t)));
+    const icones = el('span', 'al-icones');
+    icones.append(...[drapeau(joueur.pays), baton(joueur.sh)].filter(Boolean));
+    if(icones.children.length) infos.append(icones);
+    infos.append(...[joueur.ht, joueur.wt && joueur.wt + ' lb'].filter(Boolean).map(t => el('span', null, t)));
     c.append(nom, infos);
     if(joueur.espoir) c.append(el('span', 'al-badge', 'Espoir'));
     c.title = `${joueur.nom} · ${joueur.po}${joueur.ov ? ' · ' + joueur.ov + ' OV' : ''}`;
