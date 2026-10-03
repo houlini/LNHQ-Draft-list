@@ -804,7 +804,7 @@ function remplirIdsLnh() {
   const aFaire = [];
   lignes.forEach(l => {
     const nom = String(l[1]).trim();
-    if (!nom || String(l[7]).trim().toUpperCase() === 'CHOIX' || deja.has(nom) || vus.has(nom)) return;
+    if (!nom || nom === 'JOUEUR' || String(l[7]).trim().toUpperCase() === 'CHOIX' || deja.has(nom) || vus.has(nom)) return;
     vus.add(nom);
     const v = nom.indexOf(',');
     const famille = v > 0 ? nom.slice(0, v).trim() : nom;
@@ -874,6 +874,26 @@ function remplirIdsLnh() {
   }
   const reste = aFaire.length - traites;
   console.log(traites + ' joueur(s) traité(s). ' + (reste > 0 ? reste + ' restant(s) : relance remplirIdsLnh.' : 'Terminé.'));
+}
+
+// Corrections confirmées par la ligue (noms écrits autrement dans la LNH). À lancer à la main :
+// écrit le numéro avec le statut « manuel » et retire la ligne d'en-tête lue par erreur.
+const CORRECTIONS_IDS_LNH = {
+  "O'Reilly, Ryan": '8475158', 'Silayev, Anton': '8484987', 'Surin, Yegor': '8484993',
+  'Sokolovsky, Maxim': '8486101', 'Shilov, Yegor': '8486099', 'Mooney, L.J.': '8485598',
+};
+function appliquerCorrectionsIdsLnh() {
+  const o = ongletIdsLnh();
+  if (o.getLastRow() < 2) return;
+  const lignes = o.getRange(2, 1, o.getLastRow() - 1, 2).getDisplayValues();
+  let n = 0;
+  lignes.forEach((l, i) => {
+    const id = CORRECTIONS_IDS_LNH[l[0]];
+    if (id) { o.getRange(i + 2, 2, 1, 3).setNumberFormat('@').setValues([[id, 'manuel', '']]); n++; }
+  });
+  // Ligne « JOUEUR » (en-tête de PLAYERSDATABASE) : supprimée, du bas vers le haut.
+  for (let i = lignes.length - 1; i >= 0; i--) if (lignes[i][0] === 'JOUEUR') o.deleteRow(i + 2);
+  console.log(n + ' correction(s) appliquée(s).');
 }
 
 // À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par
