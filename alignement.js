@@ -179,7 +179,8 @@
       c.classList.add('a-photo');
     }
     const nom = el('div', 'al-nom');
-    nom.append(el('span', 'al-prenom', joueur.prenom), el('span', 'al-famille', joueur.famille));
+    // Nom long (ex. Khusnutdinov) : plus petit pour tenir dans la colonne de gauche.
+    nom.append(el('span', 'al-prenom', joueur.prenom), el('span', 'al-famille' + (joueur.famille.length > 11 ? ' is-tres-long' : joueur.famille.length > 9 ? ' is-long' : ''), joueur.famille));
     const infos = el('div', 'al-infos');
     const icones = el('span', 'al-icones');
     icones.append(...[drapeau(joueur.pays), baton(joueur.sh)].filter(Boolean));
@@ -218,7 +219,28 @@
     else cartes.append(el('p', 'al-aucun', 'Aucun réserviste : tout le monde est dans l’alignement.'));
     res.append(cartes);
     conteneur.replaceChildren(grille, res);
+    requestAnimationFrame(() => ajusterNoms(conteneur));
+    // La police Oswald peut arriver après : on remesure une fois chargée.
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => ajusterNoms(conteneur));
   }
+
+  // Nom de famille trop large pour sa colonne : la police diminue (jusqu'à 9 px) au lieu
+  // de couper le nom. Refait quand la largeur de la fenêtre change.
+  function ajusterNoms(conteneur){
+    conteneur.querySelectorAll('.al-famille').forEach(f => {
+      f.style.fontSize = '';
+      let taille = parseFloat(getComputedStyle(f).fontSize);
+      while(f.scrollWidth > f.clientWidth + 1 && taille > 9){
+        taille -= 0.5;
+        f.style.fontSize = taille + 'px';
+      }
+    });
+  }
+  let attente = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(attente);
+    attente = setTimeout(() => document.querySelectorAll('.al-zone').forEach(ajusterNoms), 150);
+  });
 
   window.LNHQ_ALIGNEMENT = Object.freeze({ PLACES, chargerJoueurs, chargerSauvegarde, composer, carte, rendre });
 })();

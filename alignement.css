@@ -22,7 +22,7 @@
 .al-cartes{ display:grid; gap:8px; min-width:0; }
 .al-cartes.al-n3{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
 .al-cartes.al-n2{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
-.al-cartes.al-res{ grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); }
+.al-cartes.al-res{ grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); }
 
 /* ---------- Carte ---------- */
 .al-carte{
@@ -39,32 +39,41 @@
   content:''; position:absolute; inset:0; pointer-events:none;
   background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%);
 }
-/* Photo officielle : à droite, jusqu'au bas de la carte ; le texte passe devant
-   (dégradé sombre en bas pour qu'il reste lisible). */
+/* Photo officielle : moitié droite, jusqu'au bas de la carte. Le texte reste dans la
+   colonne de gauche (overall, nom, puis les infos l'une sous l'autre) : rien par-dessus. */
 .al-photo{
-  position:absolute; right:-6%; bottom:0; height:84%; width:auto; max-width:72%; object-fit:contain; object-position:bottom right;
+  position:absolute; right:-4%; bottom:0; height:94%; width:auto; max-width:56%; object-fit:contain; object-position:bottom right;
   pointer-events:none; filter:drop-shadow(0 4px 8px rgba(0,0,0,0.35));
 }
 .al-carte.a-photo{ min-height:150px; }
-.al-carte.a-photo::before{
-  content:''; position:absolute; left:0; right:0; bottom:0; height:58%; pointer-events:none; z-index:1;
-  background:linear-gradient(to top, color-mix(in srgb, var(--al-sombre) 92%, transparent), transparent);
+.al-reservistes .al-carte.a-photo{ min-height:0; }
+.al-carte.a-photo > :not(.al-photo):not(.al-badge){ max-width:50%; }
+/* Carte étroite (réservistes, téléphone) : petite photo dans le coin en haut à droite,
+   le texte en dessous sur toute la largeur. Selon la largeur de la carte elle-même. */
+.al-carte{ container-type:inline-size; }
+@container (max-width:150px){
+  .a-photo > :not(.al-photo):not(.al-badge){ max-width:none; }
+  .a-photo > .al-haut{ max-width:52%; min-height:44px; align-items:flex-start; flex-direction:column; gap:3px; }
+  .a-photo > .al-photo{ top:4px; right:2px; bottom:auto; height:48px; max-width:50%; }
 }
 .al-carte > :not(.al-photo){ position:relative; z-index:2; }
 .al-carte .al-badge{ position:absolute; }
-.al-haut{ display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
+.al-haut{ display:flex; align-items:center; justify-content:flex-start; flex-wrap:wrap; gap:4px 6px; }
 .al-ov{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:30px; line-height:0.95; font-weight:600; }
 .al-place{
   font-size:10.5px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase;
   padding:2px 6px; border-radius:999px; background:rgba(255,255,255,0.16); white-space:nowrap;
 }
-.al-nom{ display:flex; flex-direction:column; margin-top:auto; min-width:0; }
+.al-nom{ display:flex; flex-direction:column; min-width:0; }
+.al-famille.is-long{ font-size:14px; }
+.al-famille.is-tres-long{ font-size:12px; letter-spacing:0; }
 .al-prenom{ font-size:12px; opacity:0.85; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .al-famille{
   font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:17px; font-weight:500; line-height:1.1;
   text-transform:uppercase; letter-spacing:0.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.al-infos{ display:flex; flex-wrap:wrap; align-items:center; gap:2px 8px; font-size:11.5px; font-family:'IBM Plex Mono', monospace; }
+/* Infos l'une sous l'autre : drapeau + bâton, grandeur, poids. */
+.al-infos{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; margin-top:auto; font-size:11.5px; font-family:'IBM Plex Mono', monospace; }
 .al-infos > span:not(.al-icones){ opacity:0.85; }
 .al-icones{ display:inline-flex; align-items:center; gap:5px; }
 .al-drapeau{ display:block; width:18px; height:13px; object-fit:cover; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,0.35); }
@@ -92,8 +101,9 @@
   .al-rangee-nom{ font-size:11px; }
   .al-cartes{ gap:6px; }
   .al-carte{ min-height:112px; padding:7px 7px 8px; gap:4px; border-radius:8px; }
-  .al-carte.a-photo{ min-height:132px; }
-  .al-photo{ height:74%; right:-10%; }
+  .al-carte.a-photo{ min-height:0; }
+  .al-famille.is-long{ font-size:11.5px; }
+  .al-famille.is-tres-long{ font-size:10px; }
   .al-ov{ font-size:23px; }
   .al-place{ font-size:9px; padding:1px 5px; }
   .al-prenom{ font-size:10.5px; }
