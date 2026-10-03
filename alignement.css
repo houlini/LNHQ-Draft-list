@@ -1,0 +1,83 @@
+/* LNHQ — alignement (voir alignement.js). Couleurs de l'équipe : --al-couleur et
+   --al-sombre, données par la page (sinon l'orange du site). */
+.al-zone{ --al-couleur:var(--accent); --al-sombre:#1b1f24; padding:16px clamp(16px,3vw,40px) 30px; display:flex; flex-direction:column; gap:22px; }
+
+.al-grille{ display:grid; grid-template-columns:1fr; gap:22px; align-items:start; }
+@media (min-width:1000px){ .al-grille{ grid-template-columns:3fr 2fr; } }
+
+.al-bloc{ display:flex; flex-direction:column; gap:10px; min-width:0; }
+.al-bloc-titre{
+  margin:0; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:19px;
+  text-transform:uppercase; letter-spacing:0.02em;
+}
+.al-sous-titre{ margin-top:8px; }
+
+/* Rangée : étiquette verticale (Trio 1…) + cartes. */
+.al-rangee{ display:grid; grid-template-columns:22px minmax(0, 1fr); gap:8px; align-items:stretch; }
+.al-rangee-nom{
+  writing-mode:vertical-rl; transform:rotate(180deg); text-align:center;
+  font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:13px; letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--ink-muted); border-radius:6px; background:var(--surface); border:1px solid var(--line);
+}
+.al-cartes{ display:grid; gap:8px; min-width:0; }
+.al-cartes.al-n3{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
+.al-cartes.al-n2{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+.al-cartes.al-res{ grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); }
+
+/* ---------- Carte ---------- */
+.al-carte{
+  position:relative; display:flex; flex-direction:column; gap:6px; min-width:0; min-height:132px;
+  padding:9px 10px 10px; border-radius:10px; color:#fff; overflow:hidden;
+  background:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--al-couleur) 55%, transparent), transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--al-couleur) 35%, var(--al-sombre)), var(--al-sombre) 70%);
+  border:1px solid color-mix(in srgb, var(--al-couleur) 60%, #000);
+  box-shadow:0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+  transition:transform .12s, box-shadow .12s, outline-color .12s;
+}
+.al-carte::after{ /* reflet en diagonale */
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%);
+}
+.al-haut{ display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
+.al-ov{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:30px; line-height:0.95; font-weight:600; }
+.al-place{
+  font-size:10.5px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase;
+  padding:2px 6px; border-radius:999px; background:rgba(255,255,255,0.16); white-space:nowrap;
+}
+.al-nom{ display:flex; flex-direction:column; margin-top:auto; min-width:0; }
+.al-prenom{ font-size:12px; opacity:0.85; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.al-famille{
+  font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:17px; font-weight:500; line-height:1.1;
+  text-transform:uppercase; letter-spacing:0.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.al-infos{ display:flex; flex-wrap:wrap; gap:2px 8px; font-size:11.5px; opacity:0.85; font-family:'IBM Plex Mono', monospace; }
+.al-badge{
+  position:absolute; top:40px; right:8px; font-size:9.5px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase;
+  padding:1px 6px; border-radius:999px; background:#2F9E44;
+}
+.al-carte.is-vide{ background:var(--surface); border:1px dashed var(--line); color:var(--ink-muted); box-shadow:none; }
+.al-carte.is-vide::after{ display:none; }
+.al-carte.is-vide .al-place{ background:var(--stripe); color:var(--ink-muted); }
+.al-vide{ margin:auto 0; font-size:13px; text-align:center; }
+.al-reservistes .al-carte{ min-height:118px; }
+.al-aucun{ margin:0; color:var(--ink-muted); font-size:14px; }
+
+/* Page de modification : carte choisie, cartes cliquables. */
+.al-modifiable .al-carte{ cursor:pointer; }
+.al-modifiable .al-carte:hover{ transform:translateY(-2px); }
+.al-carte.is-choisie{ outline:3px solid #FFD43B; outline-offset:2px; transform:translateY(-2px); }
+
+@media (max-width:600px){
+  .al-zone{ gap:18px; }
+  .al-rangee{ grid-template-columns:18px minmax(0, 1fr); gap:6px; }
+  .al-rangee-nom{ font-size:11px; }
+  .al-cartes{ gap:6px; }
+  .al-carte{ min-height:112px; padding:7px 7px 8px; gap:4px; border-radius:8px; }
+  .al-ov{ font-size:23px; }
+  .al-place{ font-size:9px; padding:1px 5px; }
+  .al-prenom{ font-size:10.5px; }
+  .al-famille{ font-size:13.5px; }
+  .al-infos{ font-size:10px; gap:0 6px; }
+  .al-cartes.al-res{ grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); }
+}

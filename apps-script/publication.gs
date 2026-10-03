@@ -66,6 +66,7 @@ function installer() {
   ongletGardiens();
   ongletResultats();
   dossierResultats();
+  ongletAlignements();
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
@@ -110,6 +111,7 @@ function traiter(p, corps) {
   if (p.action === 'declarerGardien') return declarerGardien(JSON.parse(corps || '{}'), membre);
   if (p.action === 'retirerGardien') return retirerGardien(JSON.parse(corps || '{}'), membre);
   if (p.action === 'soumettreResultat') return soumettreResultat(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'sauverAlignement') return sauverAlignement(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lancerEnchere') return lancerEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'miserEnchere') return miserEnchere(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
@@ -680,6 +682,83 @@ function ongletResultats() {
     o.getRange(1, 1, o.getMaxRows(), RESULTATS_ENTETES.length).setNumberFormat('@');
   }
   return o;
+}
+
+/* =========================================================================
+   ALIGNEMENTS (publier.lnhq.ca/alignement.html, affiché sur la page Équipe)
+   Une ligne par équipe : une colonne par place (4 trios, 3 paires, 2 gardiens),
+   avec le nom « Nom, Prénom » de la colonne B de PLAYERSDATABASE. Le DG modifie
+   son équipe ; un dirigeant (case « Annonces ») peut modifier toutes les équipes.
+   Les places vides sont complétées automatiquement à l'affichage (alignement.js).
+   ========================================================================= */
+const ONGLET_ALIGNEMENTS = 'ALIGNEMENTS';
+const PLACES_ALIGNEMENT = ['A1G', 'A1C', 'A1D', 'A2G', 'A2C', 'A2D', 'A3G', 'A3C', 'A3D', 'A4G', 'A4C', 'A4D',
+  'D1G', 'D1D', 'D2G', 'D2D', 'D3G', 'D3D', 'G1', 'G2'];
+const ALIGNEMENTS_ENTETES = ['Équipe'].concat(PLACES_ALIGNEMENT, ['Modifié le', 'Par']);
+
+function ongletAlignements() {
+  const classeur = SpreadsheetApp.openById(SHEET_ID);
+  let o = classeur.getSheetByName(ONGLET_ALIGNEMENTS);
+  if (!o) {
+    o = classeur.insertSheet(ONGLET_ALIGNEMENTS);
+    o.appendRow(ALIGNEMENTS_ENTETES);
+    o.setFrozenRows(1);
+    o.getRange(1, 1, o.getMaxRows(), ALIGNEMENTS_ENTETES.length).setNumberFormat('@');
+  }
+  return o;
+}
+
+// Joueurs de l'équipe (colonne B), sans les choix de repêchage.
+function joueursEquipe(code) {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const lignes = o.getRange(2, 1, o.getLastRow() - 1, COL_EQUIPE_JOUEUR).getDisplayValues();
+  const noms = new Set();
+  lignes.forEach(l => {
+    if (String(l[COL_EQUIPE_JOUEUR - 1]).trim().toUpperCase() === code && String(l[7]).trim().toUpperCase() !== 'CHOIX' && String(l[1]).trim()) {
+      noms.add(String(l[1]).trim());
+    }
+  });
+  return noms;
+}
+
+function sauverAlignement(d, membre) {
+  const admin = peutModifier(membre);
+  const sienne = codeDuMembre(membre);
+  const code = String(d.equipe || sienne || '').trim().toUpperCase();
+  if (!code || !Object.keys(CODES_EQUIPES).some(n => CODES_EQUIPES[n] === code)) return { ok: false, erreur: 'equipe' };
+  if (!admin && code !== sienne) return { ok: false, erreur: 'pas_ton_equipe' };
+
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletAlignements();
+    const codes = o.getLastRow() > 1 ? o.getRange(2, 1, o.getLastRow() - 1, 1).getDisplayValues().map(l => l[0]) : [];
+    const i = codes.indexOf(code);
+    // Retour à l'alignement automatique : la ligne de l'équipe est effacée.
+    if (d.automatique) {
+      if (i >= 0) o.deleteRow(i + 2);
+      return { ok: true, automatique: true };
+    }
+    const roster = joueursEquipe(code);
+    const places = d.places || {};
+    const vus = new Set();
+    const valeurs = [code];
+    for (const id of PLACES_ALIGNEMENT) {
+      const nom = String(places[id] || '').trim();
+      if (nom) {
+        if (!roster.has(nom)) return { ok: false, erreur: 'joueur', joueur: nom };
+        if (vus.has(nom)) return { ok: false, erreur: 'doublon', joueur: nom };
+        vus.add(nom);
+      }
+      valeurs.push(nom);
+    }
+    valeurs.push(new Date().toISOString(), sienne || 'Ligue');
+    const rang = o.getRange(i >= 0 ? i + 2 : o.getLastRow() + 1, 1, 1, valeurs.length);
+    rang.setNumberFormat('@').setValues([valeurs]);
+    return { ok: true };
+  } finally {
+    verrou.releaseLock();
+  }
 }
 
 // À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par

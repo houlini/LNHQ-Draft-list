@@ -8,7 +8,25 @@
 <link rel="stylesheet" href="site.css?v=4">
 <script src="site-nav.js?v=2"></script>
 <script src="sans-contrat.js"></script>
+<link rel="stylesheet" href="alignement.css">
+<script src="alignement.js"></script>
 <style>
+  /* ---------- Vues : Salaires (par défaut) / Alignement ---------- */
+  .eq-vues{ display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:rgba(0,0,0,0.14); margin-left:auto; }
+  .eq-vues button{
+    min-height:38px; padding:0 16px; border:none; border-radius:9px; cursor:pointer;
+    background:transparent; color:var(--accent-ink); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .eq-vues button:hover{ background:rgba(255,255,255,0.15); }
+  .eq-vues button[aria-pressed="true"]{ background:var(--nav-dark); color:var(--nav-ink); }
+  .app.vue-alignement #dataWrap, .app.vue-alignement #loader, .app.vue-alignement #errorBox{ display:none !important; }
+  .app:not(.vue-alignement) #alignementWrap{ display:none; }
+  .al-etat{ color:var(--ink-muted); font-size:14px; margin:0; }
+  .al-modifier{ color:var(--accent); font-weight:700; font-size:14px; text-decoration:none; }
+  .al-modifier:hover{ text-decoration:underline; }
+  .al-entete{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:6px 16px; }
+  @media (max-width:600px){ .eq-vues{ margin-left:0; width:100%; } .eq-vues button{ flex:1; } }
+
   /* ---------- Infos du DG (nom, gamertag, Discord) — dans la bannière colorée ---------- */
   .dg-bar{
     display:flex; flex-wrap:wrap; align-items:center; gap:6px 18px;
@@ -148,6 +166,10 @@
       <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
     <div class="dg-bar" id="dgBar" hidden></div>
+    <div class="eq-vues" id="eqVues" role="group" aria-label="Vue de l'équipe" hidden>
+      <button type="button" data-vue="salaires">Salaires</button>
+      <button type="button" data-vue="alignement">Alignement</button>
+    </div>
   </div>
 
   <div class="team-modal-backdrop" id="teamModalBackdrop" hidden>
@@ -185,6 +207,14 @@
         <div class="section-title"><span>Choix de repêchage</span></div>
         <ul class="picks-list" id="picksList"></ul>
       </div>
+    </div>
+
+    <div class="al-zone" id="alignementWrap">
+      <div class="al-entete">
+        <p class="al-etat" id="alEtat">Chargement de l’alignement…</p>
+        <a class="al-modifier" id="alModifier" href="https://publier.lnhq.ca/alignement.html">Modifier l’alignement (DG) →</a>
+      </div>
+      <div id="alContenu"></div>
     </div>
 
     <p class="empty-state" id="emptyState" hidden></p>
@@ -891,12 +921,57 @@ function render(){
 
 els.retryBtn.addEventListener('click', () => loadData());
 
+/* ---------- Vue Alignement (trios, paires, gardiens ; voir alignement.js) ----------
+   Modifiable par le DG sur publier.lnhq.ca/alignement.html. */
+let alignementCharge = false;
+function initVues(){
+  const vues = document.getElementById('eqVues');
+  vues.hidden = false;
+  const vueDemandee = urlParams.get('vue') === 'alignement' ? 'alignement' : 'salaires';
+  vues.querySelectorAll('button').forEach(b => b.addEventListener('click', () => changerVue(b.dataset.vue)));
+  const zone = document.getElementById('alignementWrap');
+  const colors = TEAM_COLORS[requestedTeam];
+  if(colors){
+    zone.style.setProperty('--al-couleur', colors.primary);
+    zone.style.setProperty('--al-sombre', darkenHex(colors.dark, 0.35));
+  }
+  document.getElementById('alModifier').href = 'https://publier.lnhq.ca/alignement.html?equipe=' + currentTeam.code;
+  changerVue(vueDemandee, true);
+}
+function changerVue(vue, initiale){
+  els.app.classList.toggle('vue-alignement', vue === 'alignement');
+  document.querySelectorAll('#eqVues button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vue === vue)));
+  if(!initiale){
+    const url = new URL(location.href);
+    if(vue === 'alignement') url.searchParams.set('vue', 'alignement'); else url.searchParams.delete('vue');
+    history.replaceState(null, '', url);
+  }
+  if(vue === 'alignement' && !alignementCharge) chargerAlignement();
+}
+async function chargerAlignement(){
+  alignementCharge = true;
+  const A = window.LNHQ_ALIGNEMENT;
+  const etat = document.getElementById('alEtat');
+  try{
+    const [joueurs, sauvegarde] = await Promise.all([A.chargerJoueurs(currentTeam.code), A.chargerSauvegarde(currentTeam.code)]);
+    A.rendre(document.getElementById('alContenu'), A.composer(joueurs, sauvegarde));
+    const quand = sauvegarde && sauvegarde.modifie ? new Date(sauvegarde.modifie) : null;
+    etat.textContent = quand && !isNaN(quand)
+      ? 'Alignement du DG, mis à jour le ' + new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(quand) + '.'
+      : 'Alignement automatique (par position et overall) : le DG ne l’a pas encore modifié.';
+  }catch(e){
+    alignementCharge = false;
+    etat.textContent = 'Impossible de charger l’alignement pour le moment.';
+  }
+}
+
 if(!currentTeam){
   els.loader.hidden = true;
   els.errorBox.hidden = false;
   els.errorText.textContent = 'Choisis une équipe dans le menu « Équipes » ci-dessus pour afficher sa liste de joueurs.';
   els.retryBtn.hidden = true;
 }else{
+  initVues();
   loadDgInfo();
   LNHQ_SANS_CONTRAT.charger().then(sc => {
     state.sansContrat = sc;

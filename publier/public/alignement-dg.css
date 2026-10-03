@@ -1,0 +1,24 @@
+/* LNHQ — modification de l'alignement (publier.lnhq.ca/alignement.html). */
+.filter-band{ justify-content:space-between; }
+.dg-equipe{
+  min-height:40px; padding:0 10px; border-radius:9px; border:none; font:inherit; font-weight:700; font-size:15px;
+  background:var(--surface); color:var(--ink);
+}
+.dg-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
+.dg-btn{
+  min-height:40px; padding:0 14px; border-radius:9px; cursor:pointer; font-weight:700; font-size:13px;
+  border:1px solid rgba(255,255,255,0.55); background:transparent; color:#fff; text-transform:uppercase; letter-spacing:0.03em;
+}
+.dg-btn:hover:not(:disabled){ background:rgba(255,255,255,0.15); }
+.dg-btn:disabled{ opacity:0.45; cursor:not-allowed; }
+.dg-btn.dg-principal{ background:var(--nav-dark); border-color:var(--nav-dark); }
+.dg-aide{ margin:0; font-size:14px; color:var(--ink-muted); line-height:1.5; }
+.dg-message{ margin:0; padding:12px 14px; border-radius:8px; font-size:15px; }
+.dg-message.is-ok{ background:var(--accent-soft); color:var(--ink); }
+.dg-message.is-erreur{ background:var(--danger-soft); color:var(--danger); }
+@media (max-width:600px){
+  .dg-equipe{ width:100%; }
+  .dg-actions{ width:100%; margin-left:0; }
+  .dg-btn{ flex:1 1 auto; padding:0 10px; font-size:12px; }
+  .dg-principal{ flex-basis:100%; }
+}
