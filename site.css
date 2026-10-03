@@ -92,22 +92,33 @@ button, input{font-family:inherit;}
 
 .site-nav{ display:flex; align-items:center; gap:2px; flex-shrink:0; flex-wrap:wrap; }
 
-/* Bannière de la saison (bâtons et ruban), à droite du logo. Bords fondus dans le gris
-   du bandeau. Cachée quand le bandeau manque de place (téléphone, tablette). */
-.entete-saison{
-  display:block; height:84px; width:auto; margin:-12px auto -14px; flex-shrink:1; min-width:0; object-fit:contain;
-  -webkit-mask-image:linear-gradient(to right, transparent, #000 14%, #000 86%, transparent),
-    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
-  -webkit-mask-composite:source-in;
-  mask-image:linear-gradient(to right, transparent, #000 14%, #000 86%, transparent),
-    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
-  mask-composite:intersect;
+/* Bandeau de la saison, tiré de la bannière 2026-2027 en trois morceaux pour s'adapter
+   à toutes les largeurs : la texture métallique en fond, les flammes de droite sous le
+   menu, et les bâtons + le ruban (.entete-saison) dans l'espace libre entre le logo et
+   le menu. Le logo et le titre de l'image d'origine ne sont pas repris (le site a les siens). */
+.app-header{
+  background:url('bandeau-flammes.png') right bottom / auto 100% no-repeat,
+    #22262b url('bandeau-texture.jpg') center / 100% 100% no-repeat;
 }
-/* Centrée entre le logo et le menu : le bouton « Accès DGs » ne pousse plus vers la droite. */
+/* Prend seulement l'espace libre (jamais assez large pour faire passer le menu à la
+   ligne) ; recadrée autour des bâtons et du ruban si l'espace est plus étroit. */
+.entete-saison{
+  display:block; flex:1 1 0; max-width:540px; min-width:0; height:118px; object-fit:cover; object-position:70% center;
+  margin:calc(-1 * clamp(10px,2vw,16px)) auto -40px;
+  -webkit-mask-image:linear-gradient(to right, transparent, #000 10%, #000 92%, transparent);
+  mask-image:linear-gradient(to right, transparent, #000 10%, #000 92%, transparent);
+}
 .entete-saison ~ .alerte-dg{ margin-left:0; }
-@media (max-width:1099px){
+@media (max-width:1359px){
   .entete-saison{ display:none; }
   .entete-saison ~ .alerte-dg{ margin-left:auto; }
+}
+@media (max-width:1099px){
+  /* Menu sur deux lignes : les flammes de droite sont estompées pour qu'il reste lisible. */
+  .app-header{
+    background:linear-gradient(rgba(24,27,32,0.45), rgba(24,27,32,0.45)), url('bandeau-flammes.png') right bottom / auto 100% no-repeat,
+      #22262b url('bandeau-texture.jpg') center / 100% 100% no-repeat;
+  }
 }
 
 /* Bouton d'alerte « Accès DGs » (temporaire, voir ALERTE_ACCES_DG dans site-nav.js) :
