@@ -15,9 +15,9 @@
    ========================================================================= */
 (function(){
   const TEAM_BASE_URL = 'equipe.html?team=';
-  // Bouton d'alerte « Accès DGs » dans l'en-tête (inscription des DG, temporaire) :
-  // mettre à false pour le retirer de toutes les pages.
-  const ALERTE_ACCES_DG = true;
+  // Bouton rouge de l'en-tête : « Soumettre un résultat » (publier.lnhq.ca), la fonction
+  // la plus utilisée. L'inscription des DG reste dans le menu Ligue.
+  const URL_RESULTAT = 'https://publier.lnhq.ca/resultat.html';
   // [nom affiché, slug de equipe.html, code des fichiers Logos/XXX.png]
   const TEAMS = [
     ['Anaheim', 'anaheim', 'ANA'], ['Boston', 'boston', 'BOS'], ['Buffalo', 'buffalo', 'BUF'],
@@ -85,7 +85,8 @@
             <img class="brand-logo" src="logo-lnhq.png" alt="LNHQ">
             <h1 class="app-title" id="sheetTitle">Tableau de bord</h1>
           </a>
-          <img class="entete-saison" src="bandeau-centre.jpg" alt="Saison 2026-2027">          ${ALERTE_ACCES_DG ? `<a class="alerte-dg" href="inscription.html"${currentPage === 'inscription' ? ' aria-current="page"' : ''}><span class="alerte-dg-point"></span>Accès DGs</a>` : ''}
+          <img class="entete-saison" src="bandeau-centre.jpg" alt="Saison 2026-2027">
+          <a class="alerte-dg" href="${URL_RESULTAT}" title="Soumettre le résultat d'un match"><svg class="alerte-dg-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="alerte-dg-long">Soumettre un résultat</span><span class="alerte-dg-court">Résultat</span></a>
           <nav class="site-nav" id="siteNav">
             <a class="nav-btn" href="./"><span>Accueil</span></a>
             <a class="nav-btn" href="tv.html"${currentPage === 'tv' ? ' aria-current="page"' : ''}><span>TV</span></a>
@@ -102,6 +103,7 @@
                 ${menuItem('Règlements', 'reglements.html', currentPage === 'reglements')}
                 ${menuItem('Masse salariale', 'masse.html', currentPage === 'masse')}
                 ${menuItem('Draft 2026', 'ordre.html', currentPage === 'ordre')}
+                ${menuItem('Inscription DG', 'inscription.html', currentPage === 'inscription')}
               </div>
             </div>
 
