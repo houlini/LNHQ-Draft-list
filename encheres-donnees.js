@@ -9,9 +9,9 @@
   const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
   // Mise maximale 1000 : dès 981 la mise suivante est 1000 ; à 1000, les autres équipes
   // peuvent miser 1000 aussi (égalité → tirage au sort). Ouverture : mardi 6 octobre 2026,
-  // 17 h heure de l'Est (même date que OUVERTURE_ENCHERES dans le script).
+  // 19 h heure de l'Est (même date que OUVERTURE_ENCHERES dans le script).
   const REGLES = { miseMinimale: 50, surenchere: 20, miseMaximale: 1000, parSaison: 1000, heuresLancement: 24, heuresRelance: 12,
-    ouverture: new Date('2026-10-06T21:00:00Z') };
+    ouverture: new Date('2026-10-06T23:00:00Z') };
   const ouvert = () => Date.now() >= REGLES.ouverture.getTime();
   // Mise minimale pour devancer (ou égaler, à 1000) l'équipe en tête.
   const minimum = e => Math.min(e.mise + REGLES.surenchere, REGLES.miseMaximale);

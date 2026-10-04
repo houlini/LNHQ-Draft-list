@@ -504,8 +504,8 @@ const MISE_MAXIMALE = 1000;
 const SAISON_DEPART = '2026-27';
 const EN_COURS = 'En cours';
 const TIRAGE = 'Tirage';
-// Ouverture : mardi 6 octobre 2026, 17 h heure de l'Est (UTC−4 en octobre).
-const OUVERTURE_ENCHERES = new Date('2026-10-06T21:00:00Z');
+// Ouverture : mardi 6 octobre 2026, 19 h heure de l'Est (UTC−4 en octobre).
+const OUVERTURE_ENCHERES = new Date('2026-10-06T23:00:00Z');
 
 /* =========================================================================
    2e GARDIEN : chaque équipe le fait jouer au moins une fois par période de
