@@ -881,7 +881,11 @@ function remplirIdsLnh() {
 const CORRECTIONS_IDS_LNH = {
   "O'Reilly, Ryan": '8475158', 'Silayev, Anton': '8484987', 'Surin, Yegor': '8484993',
   'Sokolovsky, Maxim': '8486101', 'Shilov, Yegor': '8486099', 'Mooney, L.J.': '8485598',
+  // Homonymes mal associés (vérifiés par date de naissance, 2026-10-03)
+  'Brown, Josh': '8477384', 'Murray, Matt': '8476899',
 };
+// Tir (colonne J) manquant, vérifié dans l'API LNH : écrit seulement si la case est vide.
+const TIRS_MANQUANTS = { 'Black, Cooper': 'L', 'Tomkins, Matt': 'L', 'Kahkonen, Kaapo': 'L' };
 function appliquerCorrectionsIdsLnh() {
   const o = ongletIdsLnh();
   if (o.getLastRow() < 2) return;
@@ -894,6 +898,15 @@ function appliquerCorrectionsIdsLnh() {
   // Ligne « JOUEUR » (en-tête de PLAYERSDATABASE) : supprimée, du bas vers le haut.
   for (let i = lignes.length - 1; i >= 0; i--) if (lignes[i][0] === 'JOUEUR') o.deleteRow(i + 2);
   console.log(n + ' correction(s) appliquée(s).');
+
+  const pdb = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const joueurs = pdb.getRange(1, COL_JOUEUR, pdb.getLastRow(), 9).getDisplayValues();   // B à J
+  let tirs = 0;
+  joueurs.forEach((l, i) => {
+    const tir = TIRS_MANQUANTS[String(l[0]).trim()];
+    if (tir && !String(l[8]).trim()) { pdb.getRange(i + 1, 10).setValue(tir); tirs++; }
+  });
+  console.log(tirs + ' tir(s) manquant(s) rempli(s).');
 }
 
 // Agents libres ajoutés par la ligue (liste du 2026-10-03), noms exacts de la colonne B.
