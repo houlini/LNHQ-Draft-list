@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="site.css?v=6">
 <script src="site-nav.js?v=3"></script>
 <script src="encheres-donnees.js"></script>
+<script src="sans-contrat.js"></script>
 <style>
   /* Le tableau occupe toute la largeur du cadre ; il défile horizontalement sur mobile */
   #tableWrap table{ width:100%; }
@@ -67,6 +68,7 @@
       </table>
     </div>
 
+    <div id="noteSansContrat"></div>
     <p class="empty-state" id="emptyState" hidden></p>
   </main>
 </div>
@@ -475,6 +477,7 @@ const state = {
   activeFilters: new Map(), // colIndex (brut) -> valeur sélectionnée
   activeMaxFilters: new Map(), // colIndex (brut) -> valeur maximum
   encheres: new Map(),     // « Nom, Prénom » -> enchère en cours (onglet ENCHERES)
+  sansContrat: null,       // joueurs « Sans contrat LNH » (contrat fictif LNHQ), voir sans-contrat.js
   seulementEncheres: false,
 };
 
@@ -848,6 +851,8 @@ function renderTableBody(){
     const tr = document.createElement('tr');
     if(idx < 20) tr.classList.add('row-in');
     if(idx < 20) tr.style.animationDelay = (idx * 25) + 'ms';
+    const sansContrat = !!(state.sansContrat && state.sansContrat.cles.has(LNHQ_SANS_CONTRAT.cle(row.b)));
+    const aSalaire = row.display.some((v, i) => /^\d{4}-\d{2}$/.test(state.columns[i].rawLabel) && /\d/.test(v));
     row.display.forEach((val, i) => {
       const td = document.createElement('td');
       const col = state.columns[i];
@@ -867,6 +872,10 @@ function renderTableBody(){
         if(col && col.isNumeric) td.classList.add('is-numeric');
       }
       if(col && col.isHighlight) td.classList.add('col-highlight');
+      // Contrat fictif LNHQ : salaires en rouge avec « * » (le nom s'il n'a aucun salaire)
+      if(sansContrat && (/^\d{4}-\d{2}$/.test(col.rawLabel) ? /\d/.test(val) : i === 0 && !aSalaire)){
+        LNHQ_SANS_CONTRAT.marquer(i === 0 ? (td.firstChild.nodeType === 1 ? td.firstChild : td) : td);
+      }
       if(i === 0 && state.encheres.has(row.b)){
         td.appendChild(pastilleEnchere(state.encheres.get(row.b)));
         tr.classList.add('a-enchere');
@@ -876,6 +885,14 @@ function renderTableBody(){
     els.tableBody.appendChild(tr);
   });
 }
+
+// Légende sous le tableau : « * Sans contrat LNH (contrat fictif LNHQ) : … » (agents libres concernés).
+LNHQ_SANS_CONTRAT.charger().then(sc => {
+  state.sansContrat = sc;
+  const noms = (sc.parEquipe.UFA || []).map(b => { const v = b.indexOf(','); return v > 0 ? b.slice(v + 1).trim() + ' ' + b.slice(0, v).trim() : b; });
+  document.getElementById('noteSansContrat').replaceChildren(...(noms.length ? [LNHQ_SANS_CONTRAT.note(noms)] : []));
+  if(state.rows.length && !els.tableWrap.hidden) render();
+});
 
 /* ---------- Enchères en cours (onglet ENCHERES, via encheres-donnees.js) ---------- */
 // Pastille sous le nom : logo de l'équipe en tête, mise, temps restant ; mène à la carte de l'enchère.
