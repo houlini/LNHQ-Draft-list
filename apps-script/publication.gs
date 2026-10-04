@@ -1049,112 +1049,63 @@ function ajouterJoueursUfa() {
     + (debut + nouveaux.length - 1 > 2686 ? ' ATTENTION : au-delà de la ligne 2686 (plage des formules CHOIX).' : ''));
 }
 
-// OV et mise minimale de la liste complète des agents libres (2026-10-03).
-// À lancer à la main : appliquerOvUfa. Pour chaque joueur (« Nom, Prénom » en B) :
-//   C ← OV de la liste ; Z ← UFA si vide ;
-//   N (2026-27) ← mise minimale et M ← 1 seulement si N est vide (un contrat existant est gardé).
-const OV_UFA = {
-  'Reimer, James': [79, 1000000], 'Grubauer, Philipp': [82, 5900000], 'Pickard, Calvin': [74, 1000000],
-  'Rittich, David': [78, 1000000], 'Copley, Pheonix': [75, 850000], 'Brossoit, Laurent': [75, 1100000],
-  'Murray, Matt': [77, 850000], 'Merzlikins, Elvis': [81, 5400000], 'Delia, Collin': [75, 850000],
-  'Tomkins, Matt': [74, 850000], 'Jarry, Tristan': [80, 5375000], 'Husso, Ville': [78, 2200000],
-  'Johansson, Jonas': [78, 1250000], 'Demko, Thatcher': [84, 5000000], 'Hill, Adin': [80, 6250000],
-  'Kahkonen, Kaapo': [75, 1000000], 'Halverson, Brandon': [74, 850000], 'Vanecek, Vitek': [77, 1000000],
-  'Samsonov, Ilya': [78, 850000], 'Primeau, Cayden': [70, 915000], 'Tarasov, Daniil': [79, 2000000],
-  'Stevenson, Clay': [74, 850000], 'Mandolese, Kevin': [74, 850000], 'Daws, Nico': [76, 1100000],
-  'Tolopilo, Nikita': [74, 850000], 'Zherenko, Vadim': [75, 850000], 'Black, Cooper': [70, 875000],
-  'Thrun, Henry': [78, 850000], 'Nesterenko, Nikita': [76, 850000], 'Robertson, Matthew': [74, 850000],
-  'Parent, Xavier': [78, 850000], 'Pelletier, Jakob': [75, 875000], 'Dube, Pierrick': [71, 850000],
-  'Poulin, Samuel': [75, 850000], 'Suzuki, Ryan': [76, 850000], 'Kaliyev, Arthur': [78, 850000],
-  'Tomasino, Philip': [77, 900000], 'Bains, Arshdeep': [76, 850000], 'Hyry, Arttu': [76, 850000],
-  'Kolyachonok, Vladislav': [75, 850000], 'Phillips, Isaak': [77, 850000], 'Gaucher, Jacob': [75, 850000],
-  'Heinola, Ville': [76, 850000], 'Bjornfot, Tobias': [75, 850000], 'Bordeleau, Thomas': [74, 850000],
-  'Hunt, Daemon': [76, 900000], 'Wiesblatt, Ozzy': [74, 850000], 'Slaggert, Landon': [76, 850000],
-  'Mazur, Carter': [75, 850000], 'Stranges, Antonio': [76, 850000], 'Dorwart, Karsen': [76, 850000],
-  'Ostapchuk, Zack': [76, 2350000], 'Reaves, Ryan': [76, 850000], 'Petry, Jeff': [78, 850000],
-  'van Riemsdyk, James': [78, 850000], 'Dadonov, Evgenii': [76, 850000], 'Glendening, Luke': [77, 850000],
-  'Smith, Brendan': [75, 850000], 'Hamonic, Travis': [76, 850000], 'Dowling, Justin': [75, 850000],
-  'Henrique, Adam': [80, 850000], 'Hanley, Joel': [76, 850000], 'Cizikas, Casey': [78, 850000],
-  'Palat, Ondrej': [79, 850000], 'Belzile, Alex': [76, 850000], 'Pitlick, Tyler': [75, 850000],
-  'Bjugstad, Nick': [79, 850000], 'Gustafsson, Erik': [80, 850000], 'Janmark, Mattias': [77, 850000],
-  'Gravel, Kevin': [75, 850000], 'Tynan, T.J.': [75, 850000], 'Saad, Brandon': [81, 850000],
-  'Sabourin, Scott': [75, 850000], 'Sheary, Conor': [78, 850000], 'Megna, Jaycob': [75, 850000],
-  'Pearson, Tanner': [77, 850000], 'Shaw, Logan': [75, 850000], 'Hakanpaa, Jani': [78, 850000],
-  'Sgarbossa, Michael': [76, 850000], 'Watson, Austin': [76, 850000], 'Gudbranson, Erik': [79, 850000],
-  'Petrovic, Alexander': [75, 850000], 'McIlrath, Dylan': [75, 850000], 'Hutton, Ben': [77, 850000],
-  'Boyd, Travis': [77, 850000], 'Peca, Matthew': [76, 850000], 'MacDonald, Jacob': [76, 850000],
-  'Rooney, Kevin': [76, 850000], 'Schmelzer, Ryan': [75, 850000], 'Brodzinski, Jonny': [76, 850000],
-  'Goodrow, Barclay': [78, 850000], 'Ritchie, Brett': [75, 850000], 'Cousins, Nick': [77, 850000],
-  'Griffith, Seth': [75, 850000], 'Carrick, Connor': [76, 850000], 'Johnston, Ross': [76, 850000],
-  'Girgensons, Zemgus': [78, 850000], 'Brown, Josh': [77, 850000], 'Pouliot, Derrick': [75, 850000],
-  'Rosen, Calle': [75, 850000], 'Dumba, Matt': [80, 850000], 'Gaunce, Brendan': [75, 850000],
-  'O\'Brien, Liam': [76, 850000], 'Olofsson, Gustav': [75, 850000], 'Toninato, Dominic': [75, 850000],
-  'DeSimone, Nick': [75, 850000], 'Jankowski, Mark': [75, 850000], 'Bayreuther, Gavin': [75, 850000],
-  'Aston-Reese, Zach': [76, 850000], 'Fasching, Hudson': [77, 850000], 'Lazar, Curtis': [77, 850000],
-  'Hayden, John': [75, 850000], 'Lettieri, Vinni': [76, 850000], 'Hunt, Dryden': [75, 850000],
-  'Pinho, Brian': [75, 850000], 'Lucchini, Jake': [75, 850000], 'Schueneman, Corey': [75, 850000],
-  'Erne, Adam': [75, 850000], 'Bailey, Justin': [75, 850000], 'Schuldt, Jimmy': [74, 850000],
-  'Lagesson, William': [76, 850000], 'Appleton, Mason': [78, 850000], 'Seney, Brett': [75, 850000],
-  'Joshua, Dakota': [79, 850000], 'Hughes, Cameron': [74, 850000], 'Poganski, Austin': [74, 850000],
-  'Malott, Jeff': [74, 850000], 'Blais, Sammy': [76, 850000], 'Hicketts, Joe': [75, 850000],
-  'Fabbri, Robby': [79, 850000], 'McKeown, Roland': [74, 850000], 'Kirkland, Justin': [75, 850000],
-  'Dermott, Travis': [77, 850000], 'Mackey, Connor': [75, 850000], 'Mangiapane, Andrew': [82, 850000],
-  'Englund, Andreas': [76, 850000], 'Ahcan, Jack': [74, 850000], 'Laczynski, Tanner': [75, 850000],
-  'Fitzgerald, Casey': [74, 850000], 'Harkins, Jansen': [75, 850000], 'Juulsen, Noah': [76, 850000],
-  'Capobianco, Kyle': [75, 850000], 'Bear, Ethan': [78, 850000], 'Duehr, Walker': [75, 850000],
-  'Sillinger, Owen': [75, 850000], 'Condotta, Lucas': [75, 850000], 'White, Colin': [76, 850000],
-  'Paquette-Bisson, Tobie': [75, 850000], 'Pederson, Lane': [75, 850000], 'Viel, Jeffrey': [75, 850000],
-  'Jones, Caleb': [76, 850000], 'Kiersted, Matt': [75, 850000], 'Dunne, Joshua': [75, 850000],
-  'Jaaska, Juha': [75, 850000], 'Frederic, Trent': [81, 850000], 'Bean, Jake': [79, 850000],
-  'Huntington, Jimmy': [74, 850000], 'Meyers, Ben': [76, 850000], 'Matinpalo, Nikolas': [75, 850000],
-  'Valimaki, Juuso': [80, 850000], 'Timmins, Conor': [77, 850000], 'Tsyplakov, Maxim': [78, 850000],
-  'Nylander, Alex': [77, 850000], 'Jones, Max': [75, 850000], 'Coghlan, Dylan': [76, 850000],
-  'Dube, Dillon': [79, 850000], 'Cholowski, Dennis': [75, 850000], 'Tufte, Riley': [75, 850000],
-  'Gregor, Noah': [77, 850000], 'Middleton, Keaton': [76, 850000], 'Jost, Tyson': [76, 850000],
-  'Metsa, Zach': [74, 850000], 'Quenneville, David': [75, 850000], 'Ward, Taylor': [75, 850000],
-  'Leonard, John': [75, 850000], 'Shaw, Mason': [75, 850000], 'Chaffee, Mitchell': [76, 850000],
-  'Jones, Ben': [77, 850000], 'MacLean, Kyle': [76, 850000], 'Studnicka, Jack': [75, 850000],
-  'Crotty, Cameron': [75, 850000], 'Entwistle, Mackenzie': [76, 850000], 'Vaakanainen, Urho': [77, 850000],
-  'Harvey-Pinard, Rafael': [78, 850000], 'Hamblin, James': [75, 850000], 'Rathbone, Jack': [75, 850000],
-  'Crookshank, Angus': [76, 850000], 'Steeves, Alex': [75, 850000], 'McLaughlin, Marc': [75, 850000],
-  'Abruzzese, Nicholas': [75, 850000], 'Attard, Ronald': [76, 850000], 'Regenda, Pavol': [76, 850000],
-  'Halonen, Brian': [75, 850000], 'Morton, Sam': [74, 850000], 'Callahan, Michael': [75, 850000],
-  'Del Gaizo, Marc': [76, 850000], 'St. Ivany, Jack': [76, 850000], 'Leason, Brett': [76, 850000],
-  'Gatcomb, Marc': [74, 850000], 'Guttman, Cole': [76, 850000], 'Formenton, Alex': [78, 850000],
-  'Carlile, Declan': [75, 850000], 'Lee, Andre': [75, 850000], 'Stastney, Spencer': [77, 850000],
-  'Solovyov, Ilya': [76, 850000], 'Reinhardt, Cole': [74, 850000], 'Foote, Nolan': [75, 850000],
-  'Douglas, Curtis': [75, 850000], 'Foudy, Liam': [75, 850000], 'Thomas, Akil': [75, 850000],
-  'Wahlstrom, Oliver': [77, 850000], 'Bolduc, Samuel': [78, 850000], 'Gustafsson, David': [76, 850000],
-  'Hallander, Filip': [76, 850000], 'Regula, Alec': [75, 850000], 'Kuntar, Trevor': [75, 850000],
-  'Johnson, Ryan': [75, 850000], 'Houser, Michael': [75, 850000], 'Shine, Dominik': [75, 850000],
-  'Lind, Kole': [75, 850000],
+// Annule le changement d'OV fait par erreur le 2026-10-03 (liste complète non fiable) :
+// remet l'OV d'avant, seulement si la case contient encore la valeur posée par erreur.
+// Les mises minimales posées dans les salaires vides et les joueurs créés sont gardés.
+// À lancer à la main : restaurerOvUfa. « Nom, Prénom » : [OV posé par erreur, OV d'avant]
+const OV_A_RESTAURER = {
+  'Primeau, Cayden': [70, 79], 'Black, Cooper': [70, 75], 'Brodzinski, Jonny': [76, 81], 'Valimaki, Juuso': [80, 75],
+  'Jankowski, Mark': [75, 80], 'Steeves, Alex': [75, 79], 'Halverson, Brandon': [74, 78], 'Dube, Dillon': [79, 75],
+  'Malott, Jeff': [74, 78], 'Hanley, Joel': [76, 80], 'Robertson, Matthew': [74, 78], 'DeSimone, Nick': [75, 79],
+  'Matinpalo, Nikolas': [75, 79], 'Parent, Xavier': [78, 74], 'Belzile, Alex': [76, 73], 'Formenton, Alex': [78, 75],
+  'Petrovic, Alexander': [75, 78], 'Mangiapane, Andrew': [82, 79], 'Halonen, Brian': [75, 78],
+  'Rosen, Calle': [75, 78], 'Cizikas, Casey': [78, 81], 'Timmins, Conor': [77, 80], 'Carlile, Declan': [75, 78],
+  'Dadonov, Evgenii': [76, 79], 'Harkins, Jansen': [75, 78], 'Brown, Josh': [77, 74], 'Dunne, Joshua': [75, 78],
+  'Capobianco, Kyle': [75, 78], 'MacLean, Kyle': [76, 79], 'O\'Brien, Liam': [76, 79], 'Glendening, Luke': [77, 80],
+  'Gatcomb, Marc': [74, 77], 'Janmark, Mattias': [77, 80], 'Tolopilo, Nikita': [74, 77], 'Sillinger, Owen': [75, 72],
+  'Wiesblatt, Ozzy': [74, 77], 'Harvey-Pinard, Rafael': [78, 75], 'Bolduc, Samuel': [78, 75],
+  'Laczynski, Tanner': [75, 78], 'Jost, Tyson': [76, 79], 'Vaakanainen, Urho': [77, 80], 'Erne, Adam': [75, 77],
+  'Thomas, Akil': [75, 73], 'Nylander, Alex': [77, 75], 'Kaliyev, Arthur': [78, 76], 'Goodrow, Barclay': [78, 80],
+  'Jones, Ben': [77, 75], 'Meyers, Ben': [76, 78], 'Saad, Brandon': [81, 79], 'Smith, Brendan': [75, 77],
+  'Fitzgerald, Casey': [74, 76], 'White, Colin': [76, 74], 'Douglas, Curtis': [75, 77], 'Lazar, Curtis': [77, 79],
+  'Joshua, Dakota': [79, 81], 'Cholowski, Dennis': [75, 77], 'Bear, Ethan': [78, 76], 'Thrun, Henry': [78, 76],
+  'Solovyov, Ilya': [76, 78], 'van Riemsdyk, James': [78, 80], 'Petry, Jeff': [78, 80], 'Jaaska, Juha': [75, 73],
+  'Middleton, Keaton': [76, 74], 'Condotta, Lucas': [75, 73], 'Entwistle, Mackenzie': [76, 74],
+  'Appleton, Mason': [78, 80], 'Tomkins, Matt': [74, 76], 'Bjugstad, Nick': [79, 81], 'Cousins, Nick': [77, 79],
+  'Juulsen, Noah': [76, 78], 'Attard, Ronald': [76, 74], 'Stastney, Spencer': [77, 79], 'Pearson, Tanner': [77, 79],
+  'Ward, Taylor': [75, 77], 'Frederic, Trent': [81, 79], 'Zherenko, Vadim': [75, 73], 'Lettieri, Vinni': [76, 74],
+  'Regula, Alec': [75, 76], 'Englund, Andreas': [76, 75], 'Crookshank, Angus': [76, 75],
+  'Stranges, Antonio': [76, 75], 'Bains, Arshdeep': [76, 75], 'Hutton, Ben': [77, 78], 'Leason, Brett': [76, 77],
+  'Jones, Caleb': [76, 77], 'Crotty, Cameron': [75, 76], 'Hughes, Cameron': [74, 75], 'Reinhardt, Cole': [74, 75],
+  'Delia, Collin': [75, 76], 'Sheary, Conor': [78, 77], 'Schueneman, Corey': [75, 76], 'Pouliot, Derrick': [75, 74],
+  'Toninato, Dominic': [75, 76], 'Shine, Dominik': [75, 76], 'Coghlan, Dylan': [76, 75],
+  'Gustafsson, Erik': [80, 79], 'Hallander, Filip': [76, 77], 'Ahcan, Jack': [74, 75], 'Rathbone, Jack': [75, 76],
+  'St. Ivany, Jack': [76, 75], 'Studnicka, Jack': [75, 74], 'MacDonald, Jacob': [76, 75], 'Bean, Jake': [79, 80],
+  'Viel, Jeffrey': [75, 76], 'Schuldt, Jimmy': [74, 75], 'Hicketts, Joe': [75, 76], 'Leonard, John': [75, 76],
+  'Kirkland, Justin': [75, 74], 'Rooney, Kevin': [76, 75], 'Pederson, Lane': [75, 74], 'Del Gaizo, Marc': [76, 75],
+  'McLaughlin, Marc': [75, 76], 'Dumba, Matt': [80, 79], 'Kiersted, Matt': [75, 74], 'Callahan, Michael': [75, 74],
+  'Chaffee, Mitchell': [76, 77], 'Abruzzese, Nicholas': [75, 76], 'Daws, Nico': [76, 75], 'Gregor, Noah': [77, 78],
+  'Palat, Ondrej': [79, 80], 'Regenda, Pavol': [76, 77], 'Tufte, Riley': [75, 76], 'Johnston, Ross': [76, 77],
+  'Johnson, Ryan': [75, 76], 'Reaves, Ryan': [76, 75], 'Schmelzer, Ryan': [75, 74], 'Morton, Sam': [74, 75],
+  'Blais, Sammy': [76, 75], 'Hamonic, Travis': [76, 77], 'Pitlick, Tyler': [75, 74], 'Heinola, Ville': [76, 75],
+  'Kolyachonok, Vladislav': [75, 76], 'Duehr, Walker': [75, 74], 'Aston-Reese, Zach': [76, 75],
+  'Metsa, Zach': [74, 75], 'Girgensons, Zemgus': [78, 79],
 };
-function appliquerOvUfa() {
+function restaurerOvUfa() {
   const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
-  const n = o.getLastRow();
-  const rang = o.getRange(1, 1, n, COL_EQUIPE_JOUEUR);
-  const valeurs = rang.getValues();
-  const trouves = new Set();
-  let ov = 0, salaires = 0, statuts = 0;
+  const valeurs = o.getRange(1, 1, o.getLastRow(), COL_EQUIPE_JOUEUR).getValues();
+  const trouves = new Set(), modifies = [];
+  let remis = 0;
   valeurs.forEach((l, i) => {
     const nom = String(l[COL_JOUEUR - 1]).trim();
-    const info = OV_UFA[nom];
-    if (!info || i < 1) return;
-    const equipe = String(l[COL_EQUIPE_JOUEUR - 1]).trim().toUpperCase();
-    if (equipe && equipe !== STATUT_UFA) return;   // homonyme dans une équipe : on n'y touche pas
+    const info = OV_A_RESTAURER[nom];
+    if (!info || i < 1 || String(l[COL_EQUIPE_JOUEUR - 1]).trim().toUpperCase() !== STATUT_UFA) return;
     trouves.add(nom);
-    const ligne = i + 1;
-    if (l[2] !== info[0]) { o.getRange(ligne, 3).setValue(info[0]); ov++; }
-    if (l[13] === '' || l[13] === null) {
-      o.getRange(ligne, 14).setValue(info[1]);
-      if (l[12] === '' || l[12] === null) o.getRange(ligne, 13).setValue(1);
-      salaires++;
-    }
-    if (!String(l[COL_EQUIPE_JOUEUR - 1]).trim()) { o.getRange(ligne, COL_EQUIPE_JOUEUR).setValue(STATUT_UFA); statuts++; }
+    if (l[2] === info[0]) { o.getRange(i + 1, 3).setValue(info[1]); remis++; }
+    else if (l[2] !== info[1]) modifies.push(nom + ' (' + l[2] + ')');
   });
-  const absents = Object.keys(OV_UFA).filter(x => !trouves.has(x));
-  console.log(ov + ' OV changé(s), ' + salaires + ' mise(s) minimale(s) posée(s), ' + statuts + ' mis UFA. '
-    + 'Introuvables : ' + (absents.join(', ') || 'aucun') + '.');
+  console.log(remis + ' OV remis comme avant. Modifiés à la main depuis, non touchés : ' + (modifies.join(', ') || 'aucun')
+    + '. Introuvables : ' + (Object.keys(OV_A_RESTAURER).filter(x => !trouves.has(x)).join(', ') || 'aucun') + '.');
 }
 
 // À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par
