@@ -885,7 +885,11 @@ const CORRECTIONS_IDS_LNH = {
   'Brown, Josh': '8477384', 'Murray, Matt': '8476899',
 };
 // Tir (colonne J) manquant, vérifié dans l'API LNH : écrit seulement si la case est vide.
-const TIRS_MANQUANTS = { 'Black, Cooper': 'L', 'Tomkins, Matt': 'L', 'Kahkonen, Kaapo': 'L' };
+const TIRS_MANQUANTS = { 'Black, Cooper': 'L', 'Tomkins, Matt': 'L', 'Kahkonen, Kaapo': 'L',
+  // Joueurs d'équipe (vérifiés via IDS_LNH)
+  'Dipietro, Michael': 'L', 'Dagenais, Maddox': 'L', 'Wyttenbach, Ethan': 'R', 'Boumedienne, Sascha': 'L',
+  'George, Carter': 'L', 'Plante, Max': 'L', 'Augustine, Trey': 'L', 'Cover, Jaxon': 'L', 'Command, Alexander': 'L',
+  'Poirier, Remi': 'L', 'Levi, Devon': 'L', 'Bleyl, Tommy': 'R', 'Carels, Carson': 'L' };
 function appliquerCorrectionsIdsLnh() {
   const o = ongletIdsLnh();
   if (o.getLastRow() < 2) return;
