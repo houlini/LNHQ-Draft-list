@@ -23,11 +23,16 @@
     deja: 'Une enchère est déjà en cours sur ce joueur : surenchéris sur celle-ci.',
     terminee: 'Cette enchère est terminée.',
     en_tete: 'Tu es déjà en tête de cette enchère.',
+    deja_egalite: 'Tu as déjà misé le maximum sur cette enchère (égalité).',
+    maximum: 'Mise trop haute : le maximum est de 1000 jetons.',
+    pas_ouvert: 'Les enchères ne sont pas encore ouvertes.',
+    admin: 'Seuls les admins de la ligue peuvent faire le tirage.',
+    pas_tirage: 'Cette enchère n’attend plus de tirage.',
   };
   const quand = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const cibleId = new URLSearchParams(location.search).get('id') || '';
 
-  let moi = null;          // { equipe, code }
+  let moi = null;          // { equipe, code, admin }
   let donnees = null;
   let agents = [];
   let envoiEnCours = false;
@@ -48,6 +53,7 @@
   }
   const nomEquipe = code => ((donnees && donnees.equipes.find(e => e.code === code)) || {}).nom || code;
   const mesJetons = () => ((donnees && donnees.equipes.find(e => e.code === moi.code)) || {}).disponibles;
+  const MAX = () => E.REGLES.miseMaximale;
 
   function afficher(texte, erreur){
     const m = $('message');
@@ -61,6 +67,7 @@
     let t = ERREURS[r.erreur] || "L'opération a échoué. Réessaie dans un instant.";
     if(r.erreur === 'minimum' && r.minimum) t = `Mise trop basse : minimum ${r.minimum} jetons.`;
     if(r.erreur === 'jetons' && r.disponibles != null) t = `Pas assez de jetons : il t'en reste ${r.disponibles} de disponibles.`;
+    if(r.erreur === 'maximum' && r.maximum) t = `Mise trop haute : le maximum est de ${r.maximum} jetons.`;
     return t;
   }
 
@@ -82,7 +89,7 @@
 
     const meneur = el('div', 'ench-meneur');
     const qui = el('div', 'ench-qui');
-    qui.append(el('span', 'ench-etiquette', 'En tête'), el('strong', null, nomEquipe(e.equipe)));
+    qui.append(el('span', 'ench-etiquette', e.egalite.length ? 'À égalité' : 'En tête'), el('strong', null, nomEquipe(e.equipe)));
     const montant = el('div', 'ench-montant');
     montant.append(el('strong', null, e.mise), el('span', null, 'jetons'));
     meneur.append(logo(e.equipe), qui, montant);
@@ -91,12 +98,24 @@
     const reste = el('strong', 'ench-reste');
     reste.dataset.fin = e.fin;
     reste.textContent = E.tempsRestant(e.fin);
-    chrono.append(el('span', null, 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
+    chrono.append(el('span', null, e.egalite.length ? 'Tirage dans' : 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
 
-    const minimum = e.mise + E.REGLES.surenchere;
+    const minimum = E.minimum(e);
+    const auMax = e.mise >= MAX();
     const zone = el('div');
-    if(e.equipe === moi.code){
-      zone.append(el('span', 'mise-note', '✓ Tu es en tête de cette enchère.'));
+    if(!moi.code){
+      zone.append(el('span', 'mise-note', 'Mode admin : seules les équipes misent.'));
+    }else if(e.equipe === moi.code){
+      zone.append(el('span', 'mise-note', auMax ? `✓ Tu as misé le maximum (${MAX()}).` : '✓ Tu es en tête de cette enchère.'));
+    }else if(e.egalite.includes(moi.code)){
+      zone.append(el('span', 'mise-note', `✓ Tu es à égalité à ${MAX()} : tirage au sort à la fin.`));
+    }else if(auMax){
+      // Déjà au maximum : on peut seulement égaler (sans relancer le chrono).
+      const bouton = el('button', 'ench-bouton', `Égaler à ${MAX()}`);
+      bouton.type = 'button';
+      if(mesJetons() < MAX()){ bouton.disabled = true; bouton.title = 'Pas assez de jetons disponibles'; }
+      bouton.addEventListener('click', () => miser(e, MAX(), bouton));
+      zone.append(bouton);
     }else{
       const form = el('form', 'mise-carte');
       form.noValidate = true;
@@ -104,6 +123,7 @@
       champ.type = 'number';
       champ.inputMode = 'numeric';
       champ.min = String(minimum);
+      champ.max = String(MAX());
       champ.step = '1';
       champ.value = String(minimum);
       champ.setAttribute('aria-label', 'Ta mise sur ' + e.joueur);
@@ -115,8 +135,39 @@
       zone.append(form);
     }
     const pied = el('div', 'ench-pied');
-    pied.append(el('span', null, `${e.nb} mise${e.nb > 1 ? 's' : ''} · minimum ${minimum} jetons`));
-    c.append(tete, meneur, chrono, zone, pied);
+    pied.append(el('span', null, `${e.nb} mise${e.nb > 1 ? 's' : ''} · ` + (auMax
+      ? `maximum atteint : on peut égaler à ${MAX()} (le chrono ne repart pas)`
+      : minimum >= MAX() ? `prochaine mise : ${MAX()} (maximum)` : `minimum ${minimum} jetons · maximum ${MAX()}`)));
+    c.append(tete, meneur);
+    if(e.egalite.length) c.append(equipesEgalite('Aussi à ' + MAX(), e.egalite));
+    c.append(chrono, zone, pied);
+    return c;
+  }
+
+  function equipesEgalite(etiquette, codes){
+    const ligne = el('div', 'ench-egalite');
+    ligne.append(el('span', 'ench-etiquette', etiquette));
+    codes.forEach(code => { const t = el('span', 'ench-egalite-equipe'); t.append(logo(code), nomEquipe(code)); ligne.append(t); });
+    return ligne;
+  }
+
+  // Enchère terminée à égalité : bouton « Tirer au sort » pour les admins.
+  function carteTirage(e){
+    const c = el('article', 'ench-carte is-tirage');
+    c.id = 'e-' + e.id;
+    const tete = el('div', 'ench-joueur');
+    tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
+    const candidats = [e.equipe, ...e.egalite];
+    const zone = el('div');
+    if(moi.admin){
+      const bouton = el('button', 'ench-bouton', '🎲 Tirer au sort');
+      bouton.type = 'button';
+      bouton.addEventListener('click', () => tirer(e, candidats, bouton));
+      zone.append(bouton);
+    }else{
+      zone.append(el('span', 'mise-note', 'Le tirage sera fait par la ligue.'));
+    }
+    c.append(tete, el('div', 'ench-tirage-titre', `Égalité à ${e.mise} jetons`), equipesEgalite('Au tirage', candidats), zone);
     return c;
   }
 
@@ -131,10 +182,16 @@
   }
 
   function render(){
-    const dispo = mesJetons();
+    const dispo = moi.code ? mesJetons() : null;
     $('jetonsMoi').textContent = dispo != null ? dispo : '';
     $('blocJetons').hidden = dispo == null;
-    if(!$('logoMoi').src) $('logoMoi').src = 'https://lnhq.ca/Logos/' + moi.code + '.png';
+    if(moi.code && !$('logoMoi').src) $('logoMoi').src = 'https://lnhq.ca/Logos/' + moi.code + '.png';
+    // Avant l'ouverture (décompte affiché) ou admin sans équipe : pas de lancement.
+    $('blocLancer').hidden = !E.ouvert() || !moi.code;
+    const tirages = donnees.encheres.filter(e => e.statut === 'Tirage');
+    $('tirages').replaceChildren(...tirages.map(carteTirage));
+    $('blocTirages').hidden = !tirages.length;
+    $('compteTirages').textContent = tirages.length ? '(' + tirages.length + ')' : '';
     const enCours = donnees.encheres.filter(e => e.statut === 'En cours').sort((a, b) => new Date(a.fin) - new Date(b.fin));
     $('enCours').replaceChildren(...enCours.map(carte));
     $('aucuneEnCours').hidden = !!enCours.length;
@@ -148,9 +205,9 @@
       o.label = [j.position, j.ov && j.ov + ' OV', j.age && j.age + ' ans', estSansContrat(j.nom) && '* sans contrat LNH'].filter(Boolean).join(' · ');
       return o;
     }));
-    $('montantLancer').max = String(Math.max(E.REGLES.miseMinimale, dispo || 0));
+    $('montantLancer').max = String(Math.min(MAX(), Math.max(E.REGLES.miseMinimale, dispo || 0)));
     $('aideLancer').textContent = agents.length
-      ? `${agents.length} agents libres. Mise de départ : ${E.REGLES.miseMinimale} jetons minimum. Le chrono démarre à 24 h.`
+      ? `${agents.length} agents libres. Mise de départ : ${E.REGLES.miseMinimale} à ${MAX()} jetons. Le chrono démarre à 24 h.`
       : "Aucun agent libre pour l'instant (colonne LNHQ TM = UFA dans PLAYERSDATABASE).";
 
     if(cibleId && !cibleVue){
@@ -178,6 +235,7 @@
     const joueur = agents.find(j => j.nom === nom);
     if(!joueur){ afficher('Choisis un joueur dans la liste des agents libres.', true); return; }
     if(!(montant >= E.REGLES.miseMinimale)){ afficher(`Mise de départ : ${E.REGLES.miseMinimale} jetons minimum.`, true); return; }
+    if(montant > MAX()){ afficher(`Mise trop haute : le maximum est de ${MAX()} jetons.`, true); return; }
     if(!confirm(`Lancer une enchère sur ${joueur.nom} à ${montant} jetons ?`)) return;
     envoiEnCours = true;
     $('btnLancer').disabled = true;
@@ -196,14 +254,32 @@
 
   async function miser(e, montant, bouton){
     if(envoiEnCours) return;
-    const minimum = e.mise + E.REGLES.surenchere;
+    const minimum = E.minimum(e);
     if(!(montant >= minimum)){ afficher(`Mise trop basse : minimum ${minimum} jetons.`, true); return; }
-    if(!confirm(`Miser ${montant} jetons sur ${e.joueur} ?`)) return;
+    if(montant > MAX()){ afficher(`Mise trop haute : le maximum est de ${MAX()} jetons.`, true); return; }
+    const egaler = e.mise >= MAX();
+    if(!confirm(egaler
+      ? `Égaler à ${MAX()} jetons sur ${e.joueur} ? Tes ${MAX()} jetons restent bloqués jusqu'au tirage au sort.`
+      : `Miser ${montant} jetons sur ${e.joueur} ?`)) return;
     envoiEnCours = true;
     bouton.disabled = true;
     const r = await api('/api/encheres/miser', { id: e.id, montant });
     envoiEnCours = false;
-    if(r.ok) afficher(`Tu es en tête sur ${e.joueur} avec ${montant} jetons.` + (r.discord === false ? ' (Annonce Discord non envoyée.)' : ''), false);
+    if(r.ok) afficher((r.egalite ? `Tu es à égalité à ${montant} jetons sur ${e.joueur} : tirage au sort à la fin.` : `Tu es en tête sur ${e.joueur} avec ${montant} jetons.`)
+      + (r.discord === false ? ' (Annonce Discord non envoyée.)' : ''), false);
+    else afficher(texteErreur(r), true);
+    await recharger();
+  }
+
+  async function tirer(e, candidats, bouton){
+    if(envoiEnCours) return;
+    if(!confirm(`Tirer au sort ${e.joueur} entre ${candidats.map(nomEquipe).join(', ')} ?\nLe résultat est définitif et annoncé sur Discord.`)) return;
+    envoiEnCours = true;
+    bouton.disabled = true;
+    const r = await api('/api/encheres/tirage', { id: e.id });
+    envoiEnCours = false;
+    if(r.ok) afficher(`🎲 ${nomEquipe(r.gagnant)} remporte ${e.joueur}. Les autres équipes retrouvent leurs jetons.`
+      + (r.discord === false ? ' (Annonce Discord non envoyée.)' : ''), false);
     else afficher(texteErreur(r), true);
     await recharger();
   }
@@ -217,16 +293,19 @@
       $('refus').hidden = false;
       return;
     }
-    moi = { equipe: r.equipe, code: CODES[r.equipe] || '' };
-    if(!moi.code){
+    moi = { equipe: r.equipe, code: CODES[r.equipe] || '', admin: r.annonces === true };
+    // Sans équipe : seulement les admins (pour les tirages au sort).
+    if(!moi.code && !moi.admin){
       $('qui').textContent = 'Connecté au nom de la ligue';
       $('refusTexte').textContent = ERREURS.equipe;
       $('refus').hidden = false;
       return;
     }
-    $('qui').textContent = 'Tu mises pour ' + moi.equipe;
+    $('qui').textContent = (moi.code ? 'Tu mises pour ' + moi.equipe : 'Admin de la ligue') + (moi.code && moi.admin ? ' · admin' : '');
     $('formLancer').addEventListener('submit', lancer);
     $('contenu').hidden = false;
+    // Avant l'ouverture : décompte au-dessus du contenu (disparaît à l'heure).
+    E.decompte($('contenu'), () => recharger());
     await recharger();
     setInterval(() => document.querySelectorAll('.ench-reste').forEach(s => { s.textContent = E.tempsRestant(s.dataset.fin); }), 1000);
     // Données fraîches chaque minute, sauf pendant qu'on tape une mise.

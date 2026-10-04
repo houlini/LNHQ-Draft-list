@@ -37,6 +37,13 @@
 .ench-montant{ text-align:right; }
 .ench-montant strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:24px; line-height:1; }
 .ench-montant span{ font-size:12px; color:var(--ink-muted); }
+/* Égalité à 1000 : équipes qui ont aussi misé le maximum ; carte « tirage à venir ». */
+.ench-egalite{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; }
+.ench-egalite .ench-etiquette{ width:100%; }
+.ench-egalite-equipe{ display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:14px; }
+.ench-egalite-equipe .ench-logo{ width:24px; height:24px; }
+.ench-carte.is-tirage{ border-top-color:#9775FA; }
+.ench-tirage-titre{ font-weight:700; color:#9775FA; }
 .ench-chrono{
   display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
   padding:8px 12px; border-radius:8px; background:var(--accent-soft);

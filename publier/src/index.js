@@ -47,7 +47,7 @@ export default {
       if (resultat === 'lire') return lirePhotoResultat(env, await request.json().catch(() => ({})));
       return appelerScript(env, resultat, courriel, await request.text());
     }
-    const enchere = { '/api/encheres/lancer': 'lancerEnchere', '/api/encheres/miser': 'miserEnchere' }[url.pathname];
+    const enchere = { '/api/encheres/lancer': 'lancerEnchere', '/api/encheres/miser': 'miserEnchere', '/api/encheres/tirage': 'tirerAuSort' }[url.pathname];
     if (enchere && request.method === 'POST') {
       return actionEnchere(env, enchere, courriel, await request.text());
     }

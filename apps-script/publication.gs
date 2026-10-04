@@ -114,6 +114,7 @@ function traiter(p, corps) {
   if (p.action === 'sauverAlignement') return sauverAlignement(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lancerEnchere') return lancerEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'miserEnchere') return miserEnchere(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'tirerAuSort') return tirerAuSort(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
 }
 
@@ -476,7 +477,13 @@ function tronquer(texte, max) {
                les dirigeants : pénalité, bonus, nouvelle saison).
    Agents libres : lignes de PLAYERSDATABASE dont la colonne Z (LNHQ TM) vaut
    « UFA ». À la fin d'une enchère, Z prend le code de l'équipe gagnante.
-   Jetons disponibles = départ − enchères gagnées − enchères où l'équipe est en tête.
+   Jetons disponibles = départ − enchères gagnées − enchères où l'équipe est en tête
+   (ou à égalité à 1000, jusqu'au tirage).
+   Mise maximale : 1000 (le budget d'une saison). Dès 981, la mise suivante est 1000 ;
+   à 1000, d'autres équipes peuvent miser 1000 elles aussi (colonne « Égalité »), sans
+   relancer le chrono. À la fin, s'il y a égalité, l'enchère passe en « Tirage » : un
+   admin clique « Tirer au sort » sur publier.lnhq.ca ; les perdants retrouvent leurs jetons.
+   Aucune enchère avant OUVERTURE_ENCHERES.
    Seuls les dirigeants corrigent ou annulent (directement dans le classeur :
    Statut « Annulée » rend les jetons).
    ========================================================================= */
@@ -484,7 +491,8 @@ const ONGLET_JOUEURS = 'PLAYERSDATABASE';
 const COL_JOUEUR = 2;           // B  JOUEUR
 const COL_EQUIPE_JOUEUR = 26;   // Z  LNHQ TM
 const STATUT_UFA = 'UFA';
-const ENCHERES_ENTETES = ['ID', 'Joueur', 'Naissance', 'Position', 'OV', 'Équipe en tête', 'Mise', 'Nb mises', 'Début', 'Fin', 'Statut', 'Saison', 'Lancée par'];
+const ENCHERES_ENTETES = ['ID', 'Joueur', 'Naissance', 'Position', 'OV', 'Équipe en tête', 'Mise', 'Nb mises', 'Début', 'Fin', 'Statut', 'Saison', 'Lancée par', 'Égalité'];
+const COL_EGALITE = 14;         // N : équipes à égalité à 1000 (codes séparés par des virgules)
 const MISES_ENTETES = ['Date', 'ID enchère', 'Joueur', 'Équipe', 'Mise'];
 const JETONS_ENTETES = ['Équipe', 'Code', 'Jetons de départ', 'Saison'];
 const MISE_MINIMALE = 50;
@@ -492,8 +500,12 @@ const SURENCHERE_MINIMALE = 20;
 const HEURES_LANCEMENT = 24;
 const HEURES_RELANCE = 12;
 const JETONS_PAR_SAISON = 1000;
+const MISE_MAXIMALE = 1000;
 const SAISON_DEPART = '2026-27';
 const EN_COURS = 'En cours';
+const TIRAGE = 'Tirage';
+// Ouverture : mardi 6 octobre 2026, 17 h heure de l'Est (UTC−4 en octobre).
+const OUVERTURE_ENCHERES = new Date('2026-10-06T21:00:00Z');
 
 /* =========================================================================
    2e GARDIEN : chaque équipe le fait jouer au moins une fois par période de
@@ -1649,12 +1661,22 @@ function ongletEncheres(nom) {
 
 function lireEncheres() {
   const o = ongletEncheres('ENCHERES');
+  // Colonne « Égalité » ajoutée après coup : en-tête posé si absent (format texte).
+  if (o.getRange(1, COL_EGALITE).getValue() !== 'Égalité') {
+    o.getRange(1, COL_EGALITE).setValue('Égalité');
+    o.getRange(1, COL_EGALITE, o.getMaxRows(), 1).setNumberFormat('@');
+  }
   if (o.getLastRow() < 2) return [];
   return o.getRange(2, 1, o.getLastRow() - 1, ENCHERES_ENTETES.length).getDisplayValues().map((l, i) => ({
     rangee: i + 2, id: l[0], joueur: l[1], naissance: l[2], position: l[3], ov: l[4],
     equipe: l[5], mise: Number(l[6]) || 0, nb: Number(l[7]) || 0, debut: l[8], fin: l[9],
-    statut: l[10], saison: l[11],
+    statut: l[10], saison: l[11], egalite: l[13] ? l[13].split(',').map(c => c.trim()).filter(String) : [],
   })).filter(e => e.id);
+}
+
+// Avant l'ouverture : on ne lance ni ne mise.
+function encheresOuvertes() {
+  return new Date() >= OUVERTURE_ENCHERES;
 }
 
 // Jetons de départ et saison courante, lus dans l'onglet JETONS.
@@ -1674,9 +1696,10 @@ function lireJetons() {
 function jetonsEquipe(code, encheres, config) {
   const depart = config.depart[code] != null ? config.depart[code] : JETONS_PAR_SAISON;
   let depenses = 0, engages = 0;
-  encheres.filter(e => e.saison === config.saison && e.equipe === code).forEach(e => {
-    if (e.statut === 'Terminée') depenses += e.mise;
-    else if (e.statut === EN_COURS) engages += e.mise;
+  encheres.filter(e => e.saison === config.saison).forEach(e => {
+    if (e.statut === 'Terminée' && e.equipe === code) depenses += e.mise;
+    // En tête, ou à égalité à 1000 jusqu'au tirage : jetons bloqués.
+    else if ((e.statut === EN_COURS || e.statut === TIRAGE) && (e.equipe === code || e.egalite.includes(code))) engages += e.mise;
   });
   return { depart: depart, depenses: depenses, engages: engages, disponibles: depart - depenses - engages };
 }
@@ -1703,7 +1726,9 @@ function lancerEnchere(d, membre) {
   const code = codeDuMembre(membre);
   if (!code) return { ok: false, erreur: 'equipe' };
   const montant = Math.floor(Number(d.montant));
+  if (!encheresOuvertes()) return { ok: false, erreur: 'pas_ouvert', ouverture: OUVERTURE_ENCHERES.toISOString() };
   if (!(montant >= MISE_MINIMALE)) return { ok: false, erreur: 'minimum', minimum: MISE_MINIMALE };
+  if (montant > MISE_MAXIMALE) return { ok: false, erreur: 'maximum', maximum: MISE_MAXIMALE };
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
@@ -1737,6 +1762,8 @@ function miserEnchere(d, membre) {
   const code = codeDuMembre(membre);
   if (!code) return { ok: false, erreur: 'equipe' };
   const montant = Math.floor(Number(d.montant));
+  if (!encheresOuvertes()) return { ok: false, erreur: 'pas_ouvert', ouverture: OUVERTURE_ENCHERES.toISOString() };
+  if (montant > MISE_MAXIMALE) return { ok: false, erreur: 'maximum', maximum: MISE_MAXIMALE };
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
@@ -1745,10 +1772,25 @@ function miserEnchere(d, membre) {
     const maintenant = new Date();
     if (!e || e.statut !== EN_COURS || new Date(e.fin) <= maintenant) return { ok: false, erreur: 'terminee' };
     if (e.equipe === code) return { ok: false, erreur: 'en_tete' };
-    // Vérifié ici, sous verrou : une mise envoyée juste avant la nôtre a pu changer le minimum.
-    const minimum = e.mise + SURENCHERE_MINIMALE;
-    if (!(montant >= minimum)) return { ok: false, erreur: 'minimum', minimum: minimum };
+    if (e.egalite.includes(code)) return { ok: false, erreur: 'deja_egalite' };
     const j = jetonsEquipe(code, encheres, lireJetons());
+
+    // Déjà à 1000 : on peut seulement se joindre à l'égalité (le chrono ne bouge pas).
+    if (e.mise >= MISE_MAXIMALE) {
+      if (montant !== MISE_MAXIMALE) return { ok: false, erreur: 'minimum', minimum: MISE_MAXIMALE };
+      if (j.disponibles < montant) return { ok: false, erreur: 'jetons', disponibles: j.disponibles };
+      e.egalite.push(code);
+      e.nb += 1;
+      ongletEncheres('ENCHERES').getRange(e.rangee, 8).setValue(e.nb);
+      ongletEncheres('ENCHERES').getRange(e.rangee, COL_EGALITE).setValue(e.egalite.join(','));
+      ongletEncheres('MISES').appendRow([maintenant.toISOString(), e.id, e.joueur, code, montant]);
+      return { ok: true, id: e.id, egalite: true, discord: { flux: 'AGENTS', message: messageEnchere('egalite', e, code) } };
+    }
+
+    // Vérifié ici, sous verrou : une mise envoyée juste avant la nôtre a pu changer le minimum.
+    // Dès 981, +20 dépasserait 1000 : la mise suivante est 1000.
+    const minimum = Math.min(e.mise + SURENCHERE_MINIMALE, MISE_MAXIMALE);
+    if (!(montant >= minimum)) return { ok: false, erreur: 'minimum', minimum: minimum };
     if (j.disponibles < montant) return { ok: false, erreur: 'jetons', disponibles: j.disponibles };
 
     const precedente = e.equipe;
@@ -1776,6 +1818,13 @@ function cloturerEncheres() {
     const aFermer = lireEncheres().filter(e => e.statut === EN_COURS && new Date(e.fin) <= maintenant);
     const messages = [];
     aFermer.forEach(e => {
+      // Égalité à 1000 : le joueur reste UFA jusqu'au tirage (jetons toujours bloqués).
+      if (e.egalite.length) {
+        e.statut = TIRAGE;
+        ongletEncheres('ENCHERES').getRange(e.rangee, 11).setValue(e.statut);
+        messages.push({ flux: 'AGENTS', message: messageEnchere('attente_tirage', e) });
+        return;
+      }
       const joueur = trouverAgentLibre(e.joueur, e.naissance);
       if (joueur) ongletEncheres(ONGLET_JOUEURS).getRange(joueur.rangee, COL_EQUIPE_JOUEUR).setValue(e.equipe);
       else console.warn('Joueur introuvable (plus UFA ?) : ' + e.joueur);
@@ -1789,32 +1838,78 @@ function cloturerEncheres() {
   }
 }
 
+// Admin seulement (publier.lnhq.ca) : tire au sort le gagnant d'une enchère à égalité.
+// Le joueur passe au gagnant ; les autres équipes retrouvent leurs 1000 jetons
+// (l'enchère n'est plus « Tirage », la colonne Égalité reste comme trace).
+function tirerAuSort(d, membre) {
+  if (!peutModifier(membre)) return { ok: false, erreur: 'admin' };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const e = lireEncheres().find(x => x.id === String(d.id || ''));
+    if (!e || e.statut !== TIRAGE) return { ok: false, erreur: 'pas_tirage' };
+    const candidats = [e.equipe].concat(e.egalite);
+    const gagnant = candidats[Math.floor(Math.random() * candidats.length)];
+    const joueur = trouverAgentLibre(e.joueur, e.naissance);
+    if (joueur) ongletEncheres(ONGLET_JOUEURS).getRange(joueur.rangee, COL_EQUIPE_JOUEUR).setValue(gagnant);
+    else console.warn('Joueur introuvable (plus UFA ?) : ' + e.joueur);
+    e.equipe = gagnant;
+    e.statut = 'Terminée';
+    ongletEncheres('ENCHERES').getRange(e.rangee, 6).setValue(gagnant);
+    ongletEncheres('ENCHERES').getRange(e.rangee, 11).setValue(e.statut);
+    console.log('Tirage ' + e.joueur + ' : ' + candidats.join(', ') + ' → ' + gagnant + ' (par ' + membre.courriel + ')');
+    return { ok: true, id: e.id, gagnant: gagnant, candidats: candidats,
+      discord: { flux: 'AGENTS', message: messageEnchere('tirage', e, '', !joueur, candidats) } };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
 function nomEquipe(code) {
   return Object.keys(CODES_EQUIPES).find(nom => CODES_EQUIPES[nom] === code) || code;
 }
 
-function messageEnchere(type, e, precedente, joueurIntrouvable) {
+function messageEnchere(type, e, precedente, joueurIntrouvable, candidats) {
   const fin = Math.floor(new Date(e.fin).getTime() / 1000);
+  const prochaine = e.mise >= MISE_MAXIMALE
+    ? 'Mise maximale atteinte : les autres équipes peuvent miser ' + MISE_MAXIMALE + ' aussi (égalité, tirage au sort).'
+    : 'Prochaine mise minimale : ' + Math.min(e.mise + SURENCHERE_MINIMALE, MISE_MAXIMALE) + ' jetons';
   const joueur = e.joueur + (e.position || e.ov ? ' (' + [e.position, e.ov ? e.ov + ' OV' : ''].filter(String).join(', ') + ')' : '');
   const lignes = {
     nouvelle: [
       '**' + nomEquipe(e.equipe) + '** lance une enchère sur **' + joueur + '**.',
       'Mise de départ : **' + e.mise + ' jetons**',
-      'Prochaine mise minimale : ' + (e.mise + SURENCHERE_MINIMALE) + ' jetons',
+      prochaine,
       'Fin : <t:' + fin + ':f> (<t:' + fin + ':R>)',
     ],
     surenchere: [
       '**' + nomEquipe(e.equipe) + '** mise **' + e.mise + ' jetons** sur **' + joueur + '**'
         + (precedente ? ' et devance ' + nomEquipe(precedente) : '') + '.',
-      'Prochaine mise minimale : ' + (e.mise + SURENCHERE_MINIMALE) + ' jetons',
+      prochaine,
       'Fin : <t:' + fin + ':f> (<t:' + fin + ':R>)',
     ],
+    egalite: [
+      '**' + nomEquipe(precedente) + '** mise aussi **' + MISE_MAXIMALE + ' jetons** sur **' + joueur + '** : égalité.',
+      'À égalité : ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', '),
+      'Tirage au sort à la fin : <t:' + fin + ':f> (<t:' + fin + ':R>)',
+    ],
+    attente_tirage: [
+      'Enchère terminée à égalité sur **' + joueur + '** (' + MISE_MAXIMALE + ' jetons).',
+      'Équipes au tirage : ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', '),
+      'Le gagnant sera tiré au sort par la ligue ; les autres équipes retrouveront leurs jetons.',
+    ],
+    tirage: [
+      '🎲 Tirage au sort entre ' + (candidats || []).map(nomEquipe).join(', ') + '.',
+      '**' + nomEquipe(e.equipe) + '** remporte **' + joueur + '** pour **' + e.mise + ' jetons**.',
+      'Les autres équipes retrouvent leurs jetons.',
+    ].concat(joueurIntrouvable ? ['⚠️ Joueur introuvable en UFA dans PLAYERSDATABASE : à inscrire à la main.'] : []),
     fin: [
       '**' + nomEquipe(e.equipe) + '** remporte **' + joueur + '** pour **' + e.mise + ' jetons**'
         + ' (' + e.nb + ' mise' + (e.nb > 1 ? 's' : '') + ').',
     ].concat(joueurIntrouvable ? ['⚠️ Joueur introuvable en UFA dans PLAYERSDATABASE : à inscrire à la main.'] : []),
   }[type];
-  const titre = { nouvelle: '🆕 Nouvelle enchère', surenchere: '⬆️ Surenchère', fin: '🏁 Enchère terminée' }[type];
+  const titre = { nouvelle: '🆕 Nouvelle enchère', surenchere: '⬆️ Surenchère', fin: '🏁 Enchère terminée',
+    egalite: '🟰 Égalité à ' + MISE_MAXIMALE, attente_tirage: '🎲 Tirage au sort à venir', tirage: '🎲 Tirage au sort' }[type];
   return {
     username: 'Agents libres · LNHQ',
     avatar_url: 'https://lnhq.ca/logo-lnhq.png',
@@ -1822,7 +1917,7 @@ function messageEnchere(type, e, precedente, joueurIntrouvable) {
       title: titre + ' : ' + e.joueur,
       url: 'https://lnhq.ca/encheres.html#e-' + e.id,
       description: lignes.join('\n'),
-      color: type === 'fin' ? 0x2F9E44 : 0xE8590C,
+      color: type === 'fin' || type === 'tirage' ? 0x2F9E44 : type === 'attente_tirage' || type === 'egalite' ? 0x7048E8 : 0xE8590C,
       thumbnail: { url: 'https://lnhq.ca/Logos/' + e.equipe + '.png' },
     }],
     allowed_mentions: { parse: [] },

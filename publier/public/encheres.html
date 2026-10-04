@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Enchères — LNHQ</title>
 <link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
-<link rel="stylesheet" href="https://lnhq.ca/site.css?v=6">
-<link rel="stylesheet" href="https://lnhq.ca/encheres.css?v=2">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=7">
+<link rel="stylesheet" href="https://lnhq.ca/encheres.css?v=3">
 <link rel="stylesheet" href="encheres-mise.css">
-<script src="https://lnhq.ca/encheres-donnees.js" defer></script>
+<script src="https://lnhq.ca/encheres-donnees.js?v=2" defer></script>
 <script src="https://lnhq.ca/sans-contrat.js" defer></script>
 <script src="encheres-mise.js" defer></script>
 </head>
@@ -56,6 +56,11 @@
           <button type="submit" class="ench-bouton" id="btnLancer">Lancer l'enchère</button>
         </form>
         <p class="mise-aide" id="aideLancer"></p>
+      </section>
+
+      <section id="blocTirages" hidden>
+        <h2 class="ench-titre">Tirages au sort <span class="ench-compte" id="compteTirages"></span></h2>
+        <div class="ench-grille" id="tirages"></div>
       </section>
 
       <section>

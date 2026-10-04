@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agents libres</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=6">
+<link rel="stylesheet" href="site.css?v=7">
 <script src="site-nav.js?v=3"></script>
-<script src="encheres-donnees.js"></script>
+<script src="encheres-donnees.js?v=2"></script>
 <script src="sans-contrat.js"></script>
 <style>
   /* Le tableau occupe toute la largeur du cadre ; il défile horizontalement sur mobile */
@@ -24,6 +24,7 @@
   .pastille-enchere:hover{ filter:brightness(1.08); }
   .pastille-enchere img{ width:16px; height:16px; object-fit:contain; }
   .pastille-temps{ font-variant-numeric:tabular-nums; }
+  .pastille-enchere.is-tirage{ background:#9775FA; color:#fff; }
   #tableWrap tr.a-enchere td:first-child{ box-shadow:inset 3px 0 0 var(--accent); }
   .filtre-encheres{ flex-direction:row; align-items:center; gap:6px; cursor:pointer; font-weight:600; white-space:nowrap; }
   .filtre-encheres input{ width:16px; height:16px; accent-color:var(--nav-dark, #222); }
@@ -900,24 +901,35 @@ function pastilleEnchere(e){
   const a = document.createElement('a');
   a.className = 'pastille-enchere';
   a.href = 'encheres.html#e-' + encodeURIComponent(e.id);
-  a.title = `Enchère en cours : ${e.equipe} en tête à ${e.mise} jetons`;
-  const logo = document.createElement('img');
-  logo.src = 'Logos/' + e.equipe + '.png';
-  logo.alt = e.equipe;
-  logo.width = 16; logo.height = 16;
-  logo.onerror = () => logo.replaceWith(document.createTextNode(e.equipe));
+  const equipes = [e.equipe, ...e.egalite];
+  a.title = e.statut === 'Tirage' ? `Tirage au sort à venir entre ${equipes.join(', ')} (${e.mise} jetons)`
+    : e.egalite.length ? `Égalité à ${e.mise} jetons : ${equipes.join(', ')}` : `Enchère en cours : ${e.equipe} en tête à ${e.mise} jetons`;
+  // Égalité : un logo par équipe à égalité.
+  equipes.forEach(code => {
+    const logo = document.createElement('img');
+    logo.src = 'Logos/' + code + '.png';
+    logo.alt = code;
+    logo.width = 16; logo.height = 16;
+    logo.onerror = () => logo.replaceWith(document.createTextNode(code));
+    a.append(logo);
+  });
+  if(e.statut === 'Tirage'){
+    a.append(document.createTextNode(` ${e.mise} · tirage au sort à venir`));
+    a.classList.add('is-tirage');
+    return a;
+  }
   const temps = document.createElement('span');
   temps.className = 'pastille-temps';
   temps.dataset.fin = e.fin;
   temps.textContent = LNHQ_ENCHERES.tempsRestant(e.fin);
-  a.append(logo, document.createTextNode(` ${e.mise} jetons · `), temps);
+  a.append(document.createTextNode(` ${e.mise} jetons${e.egalite.length ? ' · égalité' : ''} · `), temps);
   return a;
 }
 async function chargerEncheres(){
   try{
     const d = await LNHQ_ENCHERES.charger();
     const avant = [...state.encheres.keys()].join('|');
-    state.encheres = new Map(d.encheres.filter(e => e.statut === 'En cours' && new Date(e.fin) > new Date()).map(e => [e.joueur, e]));
+    state.encheres = new Map(d.encheres.filter(e => (e.statut === 'En cours' && new Date(e.fin) > new Date()) || e.statut === 'Tirage').map(e => [e.joueur, e]));
     if(!state.encheres.size) state.seulementEncheres = false;
     if(!state.rows.length) return;
     if([...state.encheres.keys()].join('|') !== avant) renderFilterBar();
@@ -926,6 +938,8 @@ async function chargerEncheres(){
 }
 chargerEncheres();
 setInterval(chargerEncheres, 60000);
+// Avant l'ouverture des enchères : décompte au-dessus de la liste (disparaît à l'heure).
+LNHQ_ENCHERES.decompte(document.getElementById('content'), chargerEncheres);
 // Compte à rebours des pastilles
 setInterval(() => document.querySelectorAll('.pastille-temps').forEach(t => { t.textContent = LNHQ_ENCHERES.tempsRestant(t.dataset.fin); }), 15000);
 

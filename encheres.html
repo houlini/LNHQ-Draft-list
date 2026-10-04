@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Enchères des agents libres</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=6">
-<link rel="stylesheet" href="encheres.css?v=2">
+<link rel="stylesheet" href="site.css?v=7">
+<link rel="stylesheet" href="encheres.css?v=3">
 <script src="site-nav.js?v=3"></script>
 <script src="sans-contrat.js"></script>
-<script src="encheres-donnees.js"></script>
+<script src="encheres-donnees.js?v=2"></script>
 </head>
 <body>
 
@@ -17,7 +17,7 @@
   <site-header class="app-header" current-page="encheres"></site-header>
 
   <div class="filter-band ench-band">
-    <span class="ench-regles">Départ min. 50 jetons · surenchère +20 · 24 h, relancé à 12 h à chaque mise</span>
+    <span class="ench-regles">Départ min. 50 jetons · surenchère +20 · maximum 1000 (égalité → tirage au sort) · 24 h, relancé à 12 h à chaque mise</span>
     <a class="publish-btn ench-lancer" href="https://publier.lnhq.ca/encheres.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Lancer une enchère
@@ -122,7 +122,7 @@ function carteEnCours(e){
 
   const meneur = el('div', 'ench-meneur');
   const qui = el('div', 'ench-qui');
-  qui.append(el('span', 'ench-etiquette', 'En tête'), el('strong', null, nomEquipe(e.equipe)));
+  qui.append(el('span', 'ench-etiquette', e.egalite.length ? 'À égalité' : 'En tête'), el('strong', null, nomEquipe(e.equipe)));
   const montant = el('div', 'ench-montant');
   montant.append(el('strong', null, e.mise), el('span', null, 'jetons'));
   meneur.append(logo(e.equipe), qui, montant);
@@ -131,11 +131,14 @@ function carteEnCours(e){
   const reste = el('strong', 'ench-reste');
   reste.dataset.fin = e.fin;
   reste.textContent = E.tempsRestant(e.fin);
-  chrono.append(el('span', null, 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
+  chrono.append(el('span', null, e.egalite.length ? 'Tirage dans' : 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
 
+  const auMax = e.mise >= E.REGLES.miseMaximale;
   const pied = el('div', 'ench-pied');
-  pied.append(el('span', null, `${e.nb} mise${e.nb > 1 ? 's' : ''} · prochaine : ${e.mise + E.REGLES.surenchere} jetons min.`));
-  const bouton = el('a', 'ench-bouton', 'Surenchérir');
+  pied.append(el('span', null, `${e.nb} mise${e.nb > 1 ? 's' : ''} · ` + (auMax
+    ? `maximum atteint : on peut égaler à ${E.REGLES.miseMaximale}`
+    : `prochaine : ${E.minimum(e)} jetons min.`)));
+  const bouton = el('a', 'ench-bouton', auMax ? `Égaler (${E.REGLES.miseMaximale})` : 'Surenchérir');
   bouton.href = MISER + '?id=' + encodeURIComponent(e.id);
   pied.append(bouton);
 
@@ -148,7 +151,32 @@ function carteEnCours(e){
     liste.append(li);
   });
 
-  carte.append(tete, meneur, chrono, liste, pied);
+  carte.append(tete, meneur);
+  if(e.egalite.length) carte.append(ligneEgalite(e));
+  carte.append(chrono, liste, pied);
+  return carte;
+}
+
+// Équipes à égalité à 1000 (en plus de la première à y être arrivée).
+function ligneEgalite(e){
+  const ligne = el('div', 'ench-egalite');
+  ligne.append(el('span', 'ench-etiquette', 'Aussi à ' + E.REGLES.miseMaximale));
+  e.egalite.forEach(code => { const t = el('span', 'ench-egalite-equipe'); t.append(logo(code), nomEquipe(code)); ligne.append(t); });
+  return ligne;
+}
+
+// Enchère terminée à égalité : en attente du tirage au sort par la ligue.
+function carteTirage(e){
+  const carte = el('article', 'ench-carte is-tirage');
+  carte.id = 'e-' + e.id;
+  const tete = el('div', 'ench-joueur');
+  tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
+  const titre = el('div', 'ench-tirage-titre', `🎲 Tirage au sort à venir · ${e.mise} jetons`);
+  const equipes = el('div', 'ench-egalite');
+  [e.equipe, ...e.egalite].forEach(code => { const t = el('span', 'ench-egalite-equipe'); t.append(logo(code), nomEquipe(code)); equipes.append(t); });
+  const pied = el('div', 'ench-pied');
+  pied.append(el('span', null, 'Les jetons des équipes à égalité restent bloqués jusqu’au tirage.'));
+  carte.append(tete, titre, equipes, pied);
   return carte;
 }
 
@@ -156,8 +184,10 @@ function render(){
   noms.clear();
   donnees.equipes.forEach(eq => noms.set(eq.code, eq.nom));
   const enCours = donnees.encheres.filter(e => e.statut === 'En cours').sort((a, b) => new Date(a.fin) - new Date(b.fin));
-  els.enCours.replaceChildren(...enCours.map(carteEnCours));
-  els.aucuneEnCours.hidden = !!enCours.length;
+  const tirages = donnees.encheres.filter(e => e.statut === 'Tirage');
+  els.enCours.replaceChildren(...tirages.map(carteTirage), ...enCours.map(carteEnCours));
+  els.aucuneEnCours.hidden = !!(enCours.length || tirages.length);
+  els.aucuneEnCours.textContent = E.ouvert() ? 'Aucune enchère en cours. Lance la première !' : 'Les enchères ne sont pas encore ouvertes.';
   els.compteEnCours.textContent = enCours.length ? '(' + enCours.length + ')' : '';
 
   // Jetons : une petite tuile par équipe, dans l'ordre alphabétique (chacun retrouve
@@ -218,9 +248,10 @@ function renderHistorique(){
 
     const resume = el('summary', 'ench-groupe-tete');
     const titre = el('div', 'ench-groupe-titre');
-    const etat = enCours ? `En tête : ${nomEquipe(e.equipe)}`
+    const etat = enCours ? (e.egalite.length ? `Égalité : ${[e.equipe, ...e.egalite].map(nomEquipe).join(', ')}` : `En tête : ${nomEquipe(e.equipe)}`)
       : e.statut === 'Annulée' ? 'Annulée'
-      : `🏁 ${nomEquipe(e.equipe)}`;
+      : e.statut === 'Tirage' ? `🎲 Tirage à venir : ${[e.equipe, ...e.egalite].map(nomEquipe).join(', ')}`
+      : `🏁 ${nomEquipe(e.equipe)}` + (e.egalite.length ? ' (tirage au sort)' : '');
     titre.append(nomJoueur(e.joueur), el('span', null, `${etat} · ${mises.length} mise${mises.length > 1 ? 's' : ''}`));
     resume.append(logo(e.equipe), titre);
     if(e.statut !== 'Annulée') resume.append(el('span', 'ench-evt-montant', e.mise));
@@ -231,7 +262,9 @@ function renderHistorique(){
       const li = el('li', 'ench-evt');
       const corps = el('div', 'ench-evt-corps');
       const phrase = el('span', 'ench-evt-texte');
-      phrase.append(el('strong', null, nomEquipe(m.equipe)), i === mises.length - 1 ? ' lance l’enchère' : ' surenchérit');
+      // Une 2e mise (ou plus) à 1000 rejoint l'égalité au lieu de surenchérir.
+      const egale = i < mises.length - 1 && m.mise >= E.REGLES.miseMaximale && mises[i + 1].mise >= E.REGLES.miseMaximale;
+      phrase.append(el('strong', null, nomEquipe(m.equipe)), i === mises.length - 1 ? ' lance l’enchère' : egale ? ' égale à ' + m.mise : ' surenchérit');
       corps.append(phrase, el('time', null, quand.format(new Date(m.date))));
       li.append(logo(m.equipe), corps, el('span', 'ench-evt-montant', m.mise));
       liste.append(li);
@@ -273,6 +306,8 @@ async function load({ background = false } = {}){
 
 els.retryBtn.addEventListener('click', () => load());
 load();
+// Avant l'ouverture : décompte en haut de la page (disparaît à l'heure).
+E.decompte(document.getElementById('content'), () => load({ background: true }));
 // Comptes à rebours chaque seconde ; données fraîches chaque minute.
 setInterval(() => document.querySelectorAll('.ench-reste').forEach(s => { s.textContent = E.tempsRestant(s.dataset.fin); }), 1000);
 setInterval(() => { if(!document.hidden) load({ background: true }); }, 60 * 1000);
