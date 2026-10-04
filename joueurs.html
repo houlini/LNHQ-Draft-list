@@ -521,7 +521,7 @@ function parseTable(table){
       const cell = (r.c || [])[i];
       if(!cell) return '';
       // Salaires : on reformate la valeur brute (format de la feuille parfois incohérent)
-      if(estSaison(i) && typeof cell.v === 'number') return cell.v > 0 ? formatSalaire(cell.v) : '';
+      if(estSaison(i) && typeof cell.v === 'number') return cell.v > 0 ? formatMoney(cell.v) : '';
       return String(cell.f != null ? cell.f : (cell.v != null ? cell.v : '')).trim();
     });
     // "Nom, Prénom" → "Prénom Nom" ; âge décimal → années complètes
@@ -558,21 +558,12 @@ function parseTable(table){
 
 function parseNumericCell(raw){
   if(raw === '' || raw == null) return null;
-  const s = String(raw);
-  const echelle = /M\$$/.test(s) ? 1e6 : /k\$$/.test(s) ? 1e3 : 1; // format de formatSalaire
-  const n = parseFloat((echelle === 1 ? s : s.replace(',', '.')).replace(/[^\d.-]/g, '')) * echelle;
+  const n = parseFloat(String(raw).replace(/[^\d.-]/g, ''));
   return Number.isNaN(n) ? null : n;
 }
 
 function formatMoney(n){
   return new Intl.NumberFormat('fr-CA').format(Math.round(n)) + ' $';
-}
-
-// Format court pour les colonnes de salaire : 8 500 000 → « 8,50 M$ », 850 000 → « 850 k$ »
-function formatSalaire(n){
-  return n >= 1e6
-    ? new Intl.NumberFormat('fr-CA', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(n / 1e6) + ' M$'
-    : new Intl.NumberFormat('fr-CA').format(Math.round(n / 1e3)) + ' k$';
 }
 
 function renderFilterBar(){
