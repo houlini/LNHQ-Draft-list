@@ -7,12 +7,25 @@
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=5">
 <script src="site-nav.js?v=2"></script>
+<script src="encheres-donnees.js"></script>
 <style>
   /* Le tableau occupe toute la largeur du cadre ; il défile horizontalement sur mobile */
   #tableWrap table{ width:100%; }
   #tableWrap th, #tableWrap td{ white-space:nowrap; }
   #tableWrap th:not(:first-child), #tableWrap td:not(:first-child){ text-align:center; }
   #tableWrap td.is-numeric{ font-variant-numeric:tabular-nums; }
+  /* Joueur en enchère : pastille sous le nom (équipe en tête, mise, temps restant) */
+  .pastille-enchere{
+    display:flex; align-items:center; gap:4px; width:max-content; margin-top:3px;
+    padding:1px 7px 1px 4px; border-radius:999px; font-size:11.5px; font-weight:600;
+    background:var(--accent); color:var(--accent-ink); text-decoration:none;
+  }
+  .pastille-enchere:hover{ filter:brightness(1.08); }
+  .pastille-enchere img{ width:16px; height:16px; object-fit:contain; }
+  .pastille-temps{ font-variant-numeric:tabular-nums; }
+  #tableWrap tr.a-enchere td:first-child{ box-shadow:inset 3px 0 0 var(--accent); }
+  .filtre-encheres{ flex-direction:row; align-items:center; gap:6px; cursor:pointer; font-weight:600; white-space:nowrap; }
+  .filtre-encheres input{ width:16px; height:16px; accent-color:var(--nav-dark, #222); }
 </style>
 </head>
 <body>
@@ -461,6 +474,8 @@ const state = {
   query: '',
   activeFilters: new Map(), // colIndex (brut) -> valeur sélectionnée
   activeMaxFilters: new Map(), // colIndex (brut) -> valeur maximum
+  encheres: new Map(),     // « Nom, Prénom » -> enchère en cours (onglet ENCHERES)
+  seulementEncheres: false,
 };
 
 function buildUrl(){
@@ -528,7 +543,8 @@ function parseTable(table){
       if(estSaison(i) && typeof cell.v === 'number') return cell.v > 0 ? formatMoney(cell.v) : '';
       return String(cell.f != null ? cell.f : (cell.v != null ? cell.v : '')).trim();
     });
-    // "Nom, Prénom" → "Prénom Nom" ; âge décimal → années complètes
+    // "Nom, Prénom" → "Prénom Nom" (l'original sert à repérer l'enchère) ; âge décimal → années complètes
+    raw.b = raw[0];
     const v = raw[0].indexOf(',');
     if(v > 0) raw[0] = raw[0].slice(v + 1).trim() + ' ' + raw[0].slice(0, v).trim();
     const age = parseFloat(raw[2]);
@@ -554,7 +570,7 @@ function parseTable(table){
     }))
     .filter((_, i) => !isHidden(i));
 
-  state.rows = lignes.map(raw => ({ raw, display: raw.filter((_, i) => !isHidden(i)) }));
+  state.rows = lignes.map(raw => ({ raw, b: raw.b, display: raw.filter((_, i) => !isHidden(i)) }));
 
   renderFilterBar();
   applyFilterAndSort();
@@ -685,6 +701,19 @@ function renderFilterBar(){
     els.filterBar.appendChild(wrap);
   });
 
+  // Case « Enchères en cours » : seulement les joueurs mis aux enchères en ce moment.
+  if(state.encheres.size){
+    any = true;
+    const wrap = document.createElement('label');
+    wrap.className = 'filter-control filtre-encheres';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = state.seulementEncheres;
+    box.addEventListener('change', () => { state.seulementEncheres = box.checked; render(); });
+    wrap.append(box, document.createTextNode(` Enchères en cours (${state.encheres.size})`));
+    els.filterBar.appendChild(wrap);
+  }
+
   els.filterBar.hidden = !any;
 }
 
@@ -744,6 +773,7 @@ function applyFilterAndSort(){
       if(v !== null && v > maxVal) return false;
     }
     if(q && !r.display.some(v => v.toLocaleLowerCase('fr-FR').includes(q))) return false;
+    if(state.seulementEncheres && !state.encheres.has(r.b)) return false;
     return true;
   });
 
@@ -837,11 +867,50 @@ function renderTableBody(){
         if(col && col.isNumeric) td.classList.add('is-numeric');
       }
       if(col && col.isHighlight) td.classList.add('col-highlight');
+      if(i === 0 && state.encheres.has(row.b)){
+        td.appendChild(pastilleEnchere(state.encheres.get(row.b)));
+        tr.classList.add('a-enchere');
+      }
       tr.appendChild(td);
     });
     els.tableBody.appendChild(tr);
   });
 }
+
+/* ---------- Enchères en cours (onglet ENCHERES, via encheres-donnees.js) ---------- */
+// Pastille sous le nom : logo de l'équipe en tête, mise, temps restant ; mène à la carte de l'enchère.
+function pastilleEnchere(e){
+  const a = document.createElement('a');
+  a.className = 'pastille-enchere';
+  a.href = 'encheres.html#e-' + encodeURIComponent(e.id);
+  a.title = `Enchère en cours : ${e.equipe} en tête à ${e.mise} jetons`;
+  const logo = document.createElement('img');
+  logo.src = 'Logos/' + e.equipe + '.png';
+  logo.alt = e.equipe;
+  logo.width = 16; logo.height = 16;
+  logo.onerror = () => logo.replaceWith(document.createTextNode(e.equipe));
+  const temps = document.createElement('span');
+  temps.className = 'pastille-temps';
+  temps.dataset.fin = e.fin;
+  temps.textContent = LNHQ_ENCHERES.tempsRestant(e.fin);
+  a.append(logo, document.createTextNode(` ${e.mise} jetons · `), temps);
+  return a;
+}
+async function chargerEncheres(){
+  try{
+    const d = await LNHQ_ENCHERES.charger();
+    const avant = [...state.encheres.keys()].join('|');
+    state.encheres = new Map(d.encheres.filter(e => e.statut === 'En cours' && new Date(e.fin) > new Date()).map(e => [e.joueur, e]));
+    if(!state.encheres.size) state.seulementEncheres = false;
+    if(!state.rows.length) return;
+    if([...state.encheres.keys()].join('|') !== avant) renderFilterBar();
+    if(!els.tableWrap.hidden) render();
+  }catch(e){ /* enchères indisponibles : la liste s'affiche quand même */ }
+}
+chargerEncheres();
+setInterval(chargerEncheres, 60000);
+// Compte à rebours des pastilles
+setInterval(() => document.querySelectorAll('.pastille-temps').forEach(t => { t.textContent = LNHQ_ENCHERES.tempsRestant(t.dataset.fin); }), 15000);
 
 let searchTimer;
 els.search.addEventListener('input', e => {
