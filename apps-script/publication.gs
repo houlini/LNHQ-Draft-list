@@ -71,7 +71,8 @@ function installer() {
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
   }
-  console.log('Installation terminée. Le code SECRET est dans les propriétés du script.');}
+  console.log('Installation terminée. Le code SECRET est dans les propriétés du script.');
+}
 
 // Le Worker passe action, courriel et secret dans l'adresse ; le corps (titre,
 // texte, photos) est transmis tel quel, sans que le Worker ait à le relire.
