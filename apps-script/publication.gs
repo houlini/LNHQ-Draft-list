@@ -71,8 +71,7 @@ function installer() {
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
   }
-  console.log('Installation terminée. Le code SECRET est dans les propriétés du script.');
-}
+  console.log('Installation terminée. Le code SECRET est dans les propriétés du script.');}
 
 // Le Worker passe action, courriel et secret dans l'adresse ; le corps (titre,
 // texte, photos) est transmis tel quel, sans que le Worker ait à le relire.
@@ -813,7 +812,8 @@ function remplirIdsLnh() {
       pays: String(l[6]).trim().toUpperCase(), po: String(l[7]).trim().toUpperCase(), ht: String(l[10]).trim() });
   });
 
-  const groupe = po => (po === 'G' ? 'G' : po === 'D' ? 'D' : 'A');
+  // PO : « C », « LW/RW », « LD »… (ou l'ancien format C/L/R/D) ; la LNH donne C/L/R/D/G.
+  const groupe = po => { const p = String(po).split('/')[0]; return p === 'G' ? 'G' : /^(D|LD|RD)$/.test(p) ? 'D' : 'A'; };
   const chercher = textes => UrlFetchApp.fetchAll(textes.map(t => ({
     url: 'https://search.d3.nhle.com/api/v1/search/player?culture=en-us&limit=40&q=' + encodeURIComponent(normaliserNom(t)),
     muteHttpExceptions: true,
@@ -1123,6 +1123,314 @@ function restaurerOvUfa() {
   });
   console.log(remis + ' OV remis comme avant. Modifiés à la main depuis, non touchés : ' + (modifies.join(', ') || 'aucun')
     + '. Introuvables : ' + (Object.keys(OV_A_RESTAURER).filter(x => !trouves.has(x)).join(', ') || 'aucun') + '.');
+}
+
+/* =========================================================================
+   POSITIONS (2026-10-03) : colonne H au format du jeu, C / LW / RW / LD / RD / G,
+   plusieurs positions séparées par « / », la principale d'abord (« C/RW », « LD/RD »).
+   Sources : site EA NHL 27 (top 300), listes UFA du jeu (positions multiples), sinon API
+   LNH via IDS_LNH (L → LW, R → RW, D → LD/RD selon le tir).
+   1. adapterFormulesPositions : les onglets d'équipe trient attaquants / défenseurs avec
+      la 1re position (accepte l'ancien et le nouveau format). Relançable.
+   2. appliquerPositions : écrit H, seulement si la case contient encore l'ancienne valeur.
+   ========================================================================= */
+const H_PDB = 'PLAYERSDATABASE!$H$3:$H$2779';
+const REMPLACEMENTS_POSITIONS = [
+  ['(' + H_PDB + '="C")+(' + H_PDB + '="L")+(' + H_PDB + '="R")', 'REGEXMATCH(' + H_PDB + '&"", "^(C|L|R|LW|RW)(/|$)")'],
+  [H_PDB + '="D"', 'REGEXMATCH(' + H_PDB + '&"", "^(D|LD|RD)(/|$)")'],
+];
+function adapterFormulesPositions() {
+  let n = 0;
+  SpreadsheetApp.openById(SHEET_ID).getSheets().forEach(o => {
+    const lignes = o.getLastRow(), cols = o.getLastColumn();
+    if (!lignes || !cols) return;
+    const formules = o.getRange(1, 1, lignes, cols).getFormulas();
+    formules.forEach((ligne, i) => ligne.forEach((f, j) => {
+      if (!f || f.indexOf(H_PDB) < 0) return;
+      let g = f;
+      REMPLACEMENTS_POSITIONS.forEach(([avant, apres]) => { g = g.split(avant).join(apres); });
+      if (g !== f) { o.getRange(i + 1, j + 1).setFormula(g); n++; }
+    }));
+  });
+  console.log(n + ' formule(s) adaptée(s).');
+}
+
+// « Nom, Prénom » : [ancienne valeur, nouvelle valeur]
+const POSITIONS_NOUVELLES = {
+  'Rantanen, Mikko': ['R', 'RW'], 'Mantha, Anthony': ['R', 'RW'], 'Bjorkstrand, Oliver': ['R', 'RW'],
+  'Brown, Connor': ['R', 'RW'], 'Kolesar, Keegan': ['R', 'RW'], 'Rosén, Isak': ['R', 'RW'],
+  'Marjala, Viljami': ['L', 'LW'], 'Slavin, Jaccob': ['D', 'LD'], 'Hamilton, Dougie': ['D', 'RD'],
+  'McCabe, Jake': ['D', 'LD'], 'Tanev, Christopher': ['D', 'RD'], 'Chatfield, Jalen': ['D', 'RD'],
+  'Peeke, Andrew': ['D', 'RD'], 'Mancini, Victor': ['D', 'RD'], 'Crozier, Maxwell': ['D', 'RD'],
+  'Caufield, Cole': ['R', 'RW'], 'Svechnikov, Andrei': ['L', 'RW'], 'Bertuzzi, Tyler': ['L', 'LW'],
+  'Chernyshov, Igor': ['L', 'LW'], 'Hämeenaho, Lenni': ['R', 'RW'], 'Hutson, Lane': ['D', 'LD'],
+  'Lohrei, Mason': ['D', 'LD'], 'Orlov, Dmitry': ['D', 'LD'], 'Buium, Zeev': ['D', 'LD'],
+  'Klingberg, John': ['D', 'RD'], 'Jensen, Nick': ['D', 'RD'], 'Cagnoni, Luca': ['D', 'LD'],
+  'Belchetz, Ethan': ['L', 'LW'], 'Verhoeff, Keaton': ['D', 'RD'], 'Reid, Chase': ['D', 'RD'],
+  'Kaprizov, Kirill': ['L', 'LW'], 'Keller, Clayton': ['R', 'RW'], 'Nichushkin, Valeri': ['R', 'RW'],
+  'Garland, Conor': ['R', 'RW'], 'Zucker, Jason': ['L', 'LW'], 'Joseph, Mathieu': ['R', 'RW'],
+  'Pastujov, Sasha': ['R', 'RW'], 'Nyman, Jani': ['R', 'RW'], 'Hanifin, Noah': ['D', 'LD'],
+  'Carlson, John': ['D', 'RD'], 'Burns, Brent': ['D', 'RD'], 'Perbix, Nicklaus': ['D', 'RD'],
+  'Wotherspoon, Parker': ['D', 'LD'], 'Balinskis, Uvis': ['D', 'LD'], 'Kuznetsov, Yan': ['D', 'LD'],
+  'Christiansen, Jake': ['D', 'LD'], 'Reinhart, Sam': ['C', 'RW'], 'Knies, Matthew': ['L', 'LW'],
+  'Zetterlund, Fabian': ['L', 'LW'], 'Brink, Bobby': ['R', 'RW'], 'Cowan, Easton': ['C', 'RW'],
+  'Smith, Cole': ['R', 'RW'], 'Honzek, Samuel': ['L', 'LW'], 'Nadeau, Bradly': ['L', 'LW'],
+  'Hughes, Quinn': ['D', 'LD'], 'Cihar, Vojtech': ['L', 'LW'], 'Hronek, Filip': ['D', 'RD'],
+  'Middleton, Jacob': ['D', 'LD'], 'Siegenthaler, Jonas': ['D', 'LD'], 'Pionk, Neal': ['D', 'RD'],
+  'Wilsby, Adam': ['D', 'LD'], 'Boqvist, Adam': ['D', 'RD'], 'Reinbacher, David': ['D', 'RD'],
+  'Ehlers, Nikolaj': ['L', 'LW'], 'Kempe, Adrian': ['R', 'RW'], 'Robertson, Nicholas': ['L', 'LW'],
+  'Vatrano, Frank': ['R', 'RW'], 'Stenberg, Ivar': ['L', 'LW'], 'Koivunen, Ville': ['R', 'RW'],
+  'Brandsegg-Nygård, Michael': ['R', 'RW'], 'Raddysh, Darren': ['D', 'RD'], 'Dunn, Vince': ['D', 'LD'],
+  'Rielly, Morgan': ['D', 'LD'], 'Fowler, Cam': ['D', 'LD'], 'Borgen, William': ['D', 'RD'],
+  'Reilly, Mike': ['D', 'LD'], 'Livanavage, Jake': ['D', 'LD'], 'Zharovsky, Alexander': ['R', 'RW'],
+  'Nylander, William': ['R', 'RW'], 'Eklund, William': ['L', 'LW'], 'Cuylle, Will': ['L', 'LW'],
+  'Tolvanen, Eeli': ['R', 'RW'], 'Bolduc, Zack': ['R', 'RW'], 'Crouse, Lawson': ['L', 'LW'],
+  'Carrier, William': ['L', 'LW'], 'Walker, Nathan': ['L', 'LW'], 'Schwindt, Cole': ['C', 'RW'],
+  'Lekkerimaki, Jonathan': ['R', 'RW'], 'Kemell, Joakim': ['R', 'RW'], 'Sýkora, Adam': ['L', 'LW'],
+  'Sanderson, Jake': ['D', 'LD'], 'Weegar, MacKenzie': ['D', 'LD'], 'Moser, J.J.': ['D', 'LD'],
+  'McNabb, Brayden': ['D', 'LD'], 'Kesselring, Michael': ['D', 'RD'], 'Stecher, Troy': ['D', 'RD'],
+  'Joseph, Pierre-Olivier': ['D', 'LD'], 'Brzustewicz, Hunter': ['D', 'RD'], 'Michkov, Matvei': ['R', 'RW'],
+  'Slafkovský, Juraj': ['L', 'LW'], 'Landeskog, Gabriel': ['L', 'LW'], 'Foligno, Marcus': ['L', 'LW'],
+  'Perry, Corey': ['R', 'RW'], 'Foligno, Nick': ['L', 'LW'], 'Armia, Joel': ['R', 'RW'], 'Zonnon, Bill': ['C', 'RW'],
+  'McAvoy, Charlie': ['D', 'RD'], 'Guhle, Kaiden': ['D', 'LD'], 'Murphy, Connor': ['D', 'RD'],
+  'Vlasic, Alex': ['D', 'LD'], 'Carrier, Alexandre': ['D', 'RD'], 'Holl, Justin': ['D', 'RD'],
+  'Harris, Jordan': ['D', 'LD'], 'Xhekaj, Florian': ['L', 'LW'], 'Guenther, Dylan': ['R', 'LW'],
+  'Kyrou, Jordan': ['R', 'RW'], 'Carcone, Michael': ['L', 'LW'], 'Perron, David': ['L', 'LW'],
+  'Anderson, Josh': ['R', 'RW'], 'Tanev, Brandon': ['L', 'LW'], 'Engvall, Pierre': ['L', 'LW'],
+  'Vilmanis, Sandis': ['L', 'LW'], 'Musty, Quentin': ['L', 'LW'], 'Hughes, Luke': ['D', 'LD'],
+  'Sandin, Rasmus': ['D', 'LD'], 'Zellweger, Olen': ['D', 'LD'], 'Durzi, Sean': ['D', 'RD'],
+  'Ristolainen, Rasmus': ['D', 'RD'], 'Lindstein, Theo': ['D', 'LD'], 'Engström, Adam': ['D', 'LD'],
+  'Killorn, Alex': ['L', 'LW'], 'Konecny, Travis': ['R', 'RW'], 'Chinakhov, Egor': ['R', 'RW'],
+  'Wood, Miles': ['L', 'LW'], 'Danforth, Justin': ['R', 'RW'], 'MacEwen, Zack': ['C', 'RW'],
+  'Koepke, Cole': ['L', 'LW'], 'Forsling, Gustav': ['D', 'LD'], 'Walman, Jake': ['D', 'LD'],
+  'Walker, Sean': ['D', 'RD'], 'Spurgeon, Jared': ['D', 'RD'], 'Maatta, Olli': ['D', 'LD'],
+  'Liljegren, Timothy': ['D', 'RD'], 'Kessel, Matthew': ['D', 'RD'], 'Ruck, Liam': ['C', 'RW'],
+  'Batherson, Drake': ['R', 'RW'], 'Cates, Noah': ['L', 'LW'], 'Toffoli, Tyler': ['C', 'RW'],
+  'Kakko, Kaapo': ['R', 'RW'], 'Gaudette, Adam': ['R', 'RW'], 'Panarin, Artemi': ['L', 'LW'],
+  'Holmberg, Pontus': ['R', 'RW'], 'Grundstrom, Carl': ['R', 'RW'], 'Cristall, Andrew': ['L', 'LW'],
+  'Reichel, Lukas': ['L', 'LW'], 'Faber, Brock': ['D', 'RD'], 'Pesce, Brett': ['D', 'RD'],
+  'Skjei, Brady': ['D', 'LD'], 'Duclair, Anthony': ['L', 'LW'], 'Bryson, Jacob': ['D', 'LD'],
+  'Bogosian, Zach': ['D', 'RD'], 'Myers, Philippe': ['D', 'RD'], 'Villeneuve, Xavier': ['D', 'LD'],
+  'Pettersson, Marcus': ['D', 'LD'], 'Bratt, Jesper': ['L', 'LW'], 'Fiala, Kevin': ['L', 'LW'],
+  'Aspirot, Jonathan': ['D', 'LD'], 'Eberle, Jordan': ['R', 'RW'], 'Schwartz, Jaden': ['C', 'LW'],
+  'Wood, Matthew': ['R', 'RW'], 'Novotný, Adam': ['L', 'LW'], 'O\'Reilly, Sam': ['C', 'RW'],
+  'Coleman, Blake': ['L', 'C'], 'LaCombe, Jackson': ['D', 'LD'], 'Toews, Devon': ['D', 'LD'],
+  'D\'Astous, Charle-Edouard': ['D', 'LD'], 'Lundkvist, Nils': ['D', 'RD'], 'Jones, Seth': ['D', 'RD'],
+  'Graves, Ryan': ['D', 'LD'], 'Bonk, Oliver': ['D', 'RD'], 'Wyttenbach, Ethan': ['L', 'LW'],
+  'Tkachuk, Matthew': ['L', 'LW'], 'Zuccarello, Mats': ['C', 'RW'], 'Laferriere, Alex': ['R', 'RW'],
+  'Laine, Patrik': ['L', 'LW'], 'Martinook, Jordan': ['L', 'LW'], 'Iafallo, Alex': ['L', 'LW'],
+  'Farabee, Joel': ['L', 'LW'], 'Drouin, Jonathan': ['L', 'LW'], 'Kartye, Tye': ['L', 'LW'],
+  'Carbonneau, Justin': ['R', 'RW'], 'Theodore, Shea': ['D', 'LD'], 'Hague, Nicolas': ['D', 'LD'],
+  'Ekblad, Aaron': ['D', 'RD'], 'Zub, Artem': ['D', 'RD'], 'Xhekaj, Arber': ['D', 'LD'],
+  'Jiříček, Adam': ['D', 'RD'], 'Mukhamadullin, Shakir': ['D', 'LD'], 'Mahura, Josh': ['D', 'LD'],
+  'Marner, Mitch': ['R', 'RW'], 'Ovechkin, Alex': ['L', 'LW'], 'Haula, Erik': ['L', 'LW'],
+  'Perreault, Gabe': ['R', 'RW'], 'Gallagher, Brendan': ['R', 'RW'], 'Grebenkin, Nikita': ['R', 'RW'],
+  'Gridin, Matvei': ['R', 'RW'], 'Klepov, Nikita': ['R', 'RW'], 'Morrissey, Josh': ['D', 'LD'],
+  'Letang, Kris': ['D', 'RD'], 'Helleson, Drew': ['D', 'RD'], 'Mintyukov, Pavel': ['D', 'LD'],
+  'Levshunov, Artyom': ['D', 'RD'], 'Bichsel, Lian': ['D', 'LD'], 'Ufko, Ryan': ['D', 'RD'],
+  'Brunicke, Harrison': ['D', 'RD'], 'Boldy, Matt': ['L', 'LW'], 'Terry, Troy': ['R', 'RW'],
+  'Marchment, Mason': ['L', 'LW'], 'Kuzmenko, Andrei': ['L', 'LW'], 'Heinen, Danton': ['L', 'LW'],
+  'Bourgault, Xavier': ['R', 'RW'], 'Clarke, Brandt': ['D', 'RD'], 'Kovacevic, Johnathan': ['D', 'RD'],
+  'Carlo, Brandon': ['D', 'RD'], 'Bahl, Kevin': ['D', 'LD'], 'Kulak, Brett': ['D', 'LD'],
+  'Mayfield, Scott': ['D', 'RD'], 'Benoit, Simon': ['D', 'LD'], 'Fleury, Haydn': ['D', 'LD'],
+  'Mooney, L.J.': ['R', 'C'], 'Reid, Cameron': ['D', 'LD'], 'Stone, Mark': ['R', 'RW'],
+  'Sennecke, Beckett': ['R', 'LW'], 'Evangelista, Luke': ['R', 'RW'], 'Shabanov, Maxim': ['R', 'RW'],
+  'Gadjovich, Jonah': ['L', 'LW'], 'Fox, Adam': ['D', 'RD'], 'Edvinsson, Simon': ['D', 'LD'],
+  'Doughty, Drew': ['D', 'RD'], 'Seeler, Nick': ['D', 'LD'], 'Hutson, Cole': ['D', 'LD'],
+  'Simashev, Dmitri': ['D', 'LD'], 'Lamoureux, Maveric': ['D', 'RD'], 'Cullen, Wyatt': ['C', 'LW'],
+  'Boumedienne, Sascha': ['D', 'LD'], 'Debrincat, Alex': ['R', 'RW'], 'Rakell, Rickard': ['R', 'RW'],
+  'Lehkonen, Artturi': ['L', 'LW'], 'Arvidsson, Viktor': ['L', 'LW'], 'O\'Connor, Drew': ['L', 'LW'],
+  'Hartman, Ryan': ['R', 'RW'], 'Noesen, Stefan': ['R', 'RW'], 'Raddysh, Taylor': ['R', 'RW'],
+  'Klapka, Adam': ['R', 'RW'], 'Chychrun, Jakob': ['D', 'LD'], 'Pulock, Ryan': ['D', 'RD'],
+  'Ekholm, Mattias': ['D', 'LD'], 'Samberg, Dylan': ['D', 'LD'], 'Roy, Matt': ['D', 'RD'],
+  'Korczak, Kaedan': ['D', 'RD'], 'Pachal, Brayden': ['D', 'RD'], 'Gustafsson, Malte': ['D', 'LD'],
+  'Hagel, Brandon': ['L', 'LW'], 'Forsberg, Filip': ['L', 'LW'], 'McMichael, Connor': ['L', 'C'],
+  'Lardis, Nick': ['L', 'LW'], 'Kapanen, Kasperi': ['R', 'RW'], 'Eklund, Victor': ['R', 'RW'],
+  'Bear, Carter': ['L', 'LW'], 'Halttunen, Kasper': ['R', 'RW'], 'Hedman, Victor': ['D', 'LD'],
+  'Power, Owen': ['D', 'LD'], 'Schmidt, Nate': ['D', 'LD'], 'Oleksiak, Jamie': ['D', 'LD'],
+  'DeAngelo, Tony': ['D', 'RD'], 'Jiricek, David': ['D', 'RD'], 'Chiarot, Ben': ['D', 'LD'],
+  'Davies, Jeremy': ['D', 'LD'], 'Blake, Jackson': ['R', 'RW'], 'Neighbours, Jake': ['L', 'LW'],
+  'Lafrenière, Alexis': ['L', 'LW'], 'Foegele, Warren': ['L', 'LW'], 'Niederreiter, Nino': ['R', 'RW'],
+  'Berggren, Jonatan': ['R', 'RW'], 'Protas, Ilya': ['L', 'LW'], 'Miroshnichenko, Ivan': ['L', 'LW'],
+  'McGroarty, Rutger': ['C', 'RW'], 'Makar, Cale': ['D', 'RD'], 'Pelech, Adam': ['D', 'LD'],
+  'Nikishin, Alexander': ['D', 'LD'], 'Gudas, Radko': ['D', 'RD'], 'Andrae, Emil': ['D', 'LD'],
+  'Leddy, Nick': ['D', 'LD'], 'Korchinski, Kevin': ['D', 'LD'], 'Solberg, Stian': ['D', 'LD'],
+  'Jarvis, Seth': ['R', 'RW'], 'Gauthier, Cutter': ['L', 'LW'], 'Coronato, Matt': ['R', 'RW'],
+  'Leonard, Ryan': ['R', 'RW'], 'Benn, Jamie': ['L', 'LW'], 'Melanson, Jacob': ['R', 'RW'],
+  'Werenski, Zach': ['D', 'LD'], 'Nemec, Simon': ['D', 'RD'], 'York, Cam': ['D', 'LD'],
+  'Schneider, Braden': ['D', 'RD'], 'Willander, Tom': ['D', 'RD'], 'Pettersson, Elias D': ['D', 'LD'],
+  'Moore, Ian': ['D', 'RD'], 'Smits, Alberts': ['D', 'LD'], 'Plante, Max': ['C', 'LW'],
+  'Byfield, Quinton': ['R', 'C'], 'Quinn, Jack': ['R', 'RW'], 'Holmstrom, Simon': ['R', 'RW'],
+  'Maccelli, Matias': ['L', 'LW'], 'Hoglander, Nils': ['L', 'LW'], 'Öhgren, Liam': ['L', 'LW'],
+  'Eiserman, Cole': ['L', 'LW'], 'Howard, Isaac': ['L', 'LW'], 'Harley, Thomas': ['D', 'LD'],
+  'Chabot, Thomas': ['D', 'LD'], 'Nurse, Darnell': ['D', 'LD'], 'Kaiser, Wyatt': ['D', 'LD'],
+  'Sandin Pellikka, Axel': ['D', 'RD'], 'Johansson, Albert': ['D', 'LD'], 'Rinzel, Sam': ['D', 'RD'],
+  'Raymond, Lucas': ['L', 'RW'], 'Martone, Porter': ['R', 'RW'], 'Benson, Zach': ['L', 'LW'],
+  'Lee, Anders': ['L', 'LW'], 'Heineman, Emil': ['L', 'LW'], 'Frank, Ethen': ['R', 'RW'], 'Iginla, Tij': ['L', 'C'],
+  'Sergachev, Mikhail': ['D', 'LD'], 'Schaefer, Reid': ['L', 'LW'], 'Lindell, Esa': ['D', 'LD'],
+  'Drysdale, Jamie': ['D', 'RD'], 'Jokiharju, Henri': ['D', 'RD'], 'Lindgren, Ryan': ['D', 'LD'],
+  'Yakemchuk, Carter': ['D', 'RD'], 'Mrtka, Radim': ['D', 'RD'], 'Fortescue, Drew': ['D', 'LD'],
+  'Connor, Kyle': ['L', 'LW'], 'Cover, Jaxon': ['L', 'RW'], 'Snuggerud, Jimmy': ['R', 'RW'],
+  'Buchnevich, Pavel': ['L', 'LW'], 'Paul, Nick': ['L', 'LW'], 'Amadio, Michael': ['R', 'RW'],
+  'Duhaime, Brandon': ['R', 'LW'], 'Smith, Reilly': ['R', 'RW'], 'Josi, Roman': ['D', 'LD'],
+  'Burakovsky, Andre': ['L', 'LW'], 'Demelo, Dylan': ['D', 'RD'], 'Manson, Josh': ['D', 'RD'],
+  'Gavrikov, Vladislav': ['D', 'LD'], 'Cole, Ian': ['D', 'LD'], 'McDonagh, Ryan': ['D', 'LD'],
+  'Schenn, Luke': ['D', 'RD'], 'Silayev, Anton': ['D', 'LD'], 'Grzelcyk, Matt': ['D', 'LD'],
+  'Nestrasil, Vaclav': ['R', 'RW'], 'Verhaeghe, Carter': ['C', 'LW'], 'Wilson, Tom': ['R', 'RW'],
+  'Malenstyn, Beck': ['L', 'LW'], 'Toropchenko, Alexei': ['R', 'RW'], 'Robinson, Eric': ['L', 'LW'],
+  'Bump, Alex': ['L', 'LW'], 'Byram, Bowen': ['D', 'LD'], 'Parayko, Colton': ['D', 'RD'],
+  'Fix-Wolansky, Trey': ['R', 'RW'], 'Zadorov, Nikita': ['D', 'LD'], 'Girard, Samuel': ['D', 'LD'],
+  'van Riemsdyk, Trevor': ['D', 'RD'], 'Ceci, Cody': ['D', 'RD'], 'Luneau, Tristan': ['D', 'RD'],
+  'Sokolovsky, Maxim': ['D', 'LD'], 'Pugachyov, Gleb': ['R', 'RW'], 'Demidov, Ivan': ['R', 'RW'],
+  'Dorofeyev, Pavel': ['R', 'LW'], 'Foerster, Tyson': ['R', 'RW'], 'Yurov, Danila': ['R', 'RW'],
+  'McKenna, Gavin': ['L', 'LW'], 'O\'Connor, Logan': ['R', 'RW'], 'Dvorský, Dalibor': ['R', 'RW'],
+  'But, Daniil': ['L', 'LW'], 'Brindley, Gavin': ['R', 'C'], 'Heiskanen, Miro': ['D', 'LD'],
+  'Samuelsson, Mattias': ['D', 'LD'], 'Larsson, Adam': ['D', 'RD'], 'Severson, Damon': ['D', 'RD'],
+  'Dumoulin, Brian': ['D', 'LD'], 'Parekh, Zayne': ['D', 'RD'], 'Aitcheson, Kashawn': ['D', 'LD'],
+  'Jones, Zachary': ['D', 'LD'], 'Smith, Jackson': ['D', 'LD'], 'Robertson, Jason': ['L', 'LW'],
+  'Tuch, Alex': ['R', 'RW'], 'Tkachuk, Brady': ['L', 'LW'], 'McCann, Jared': ['L', 'C'],
+  'Tarasenko, Vladimir': ['R', 'RW'], 'Kane, Evander': ['L', 'LW'], 'Soderblom, Elmer': ['L', 'LW'],
+  'MacDermid, Kurtis': ['L', 'LW'], 'Brodin, Jonas': ['D', 'LD'], 'Connelly, Trevor': ['L', 'LW'],
+  'Mikkola, Niko': ['D', 'LD'], 'Cernak, Erik': ['D', 'RD'], 'Spence, Jordan': ['D', 'RD'],
+  'Struble, Jayden': ['D', 'LD'], 'Lyubushkin, Ilya': ['D', 'RD'], 'Soucy, Carson': ['D', 'LD'],
+  'Rudolph, Daxon': ['D', 'RD'], 'Kucherov, Nikita': ['R', 'RW'], 'Guentzel, Jake': ['C', 'LW'],
+  'Podkolzin, Vasily': ['R', 'RW'], 'Gritsyuk, Arseny': ['R', 'RW'], 'Olofsson, Victor': ['R', 'LW'],
+  'Bunting, Michael': ['L', 'LW'], 'Kiviranta, Joel': ['L', 'LW'], 'Karlsson, Erik': ['D', 'RD'],
+  'Gostisbehere, Shayne': ['D', 'LD'], 'Faulk, Justin': ['D', 'RD'], 'Lindholm, Hampus': ['D', 'LD'],
+  'Shea, Ryan': ['D', 'LD'], 'Kleven, Tyler': ['D', 'LD'], 'Emberson, Ty': ['D', 'RD'],
+  'Mailloux, Logan': ['D', 'RD'], 'Morrow, Scott': ['D', 'RD'], 'Graf, Collin': ['R', 'RW'],
+  'Hyman, Zach': ['L', 'LW'], 'Brazeau, Justin': ['R', 'RW'], 'Greentree, Liam': ['R', 'RW'],
+  'Sanheim, Travis': ['D', 'LD'], 'Provorov, Ivan': ['D', 'LD'], 'Fehervary, Martin': ['D', 'LD'],
+  'Myers, Tyler': ['D', 'RD'], 'Dickinson, Sam': ['D', 'LD'], 'Chisholm, Declan': ['D', 'LD'],
+  'Bernard-Docker, Jacob': ['D', 'RD'], 'Hemming, Oscar': ['C', 'LW'], 'Pastrnak, David': ['R', 'RW'],
+  'Rust, Bryan': ['R', 'RW'], 'Hall, Taylor': ['L', 'LW'], 'Moore, Trevor': ['L', 'LW'],
+  'Nyquist, Gustav': ['C', 'RW'], 'Lomberg, Ryan': ['L', 'LW'], 'Deslauriers, Nicolas': ['L', 'LW'],
+  'Hermansson, Elton': ['R', 'RW'], 'Nordmark, Marcus': ['L', 'LW'], 'Kantserov, Roman': ['R', 'RW'],
+  'Montour, Brandon': ['D', 'RD'], 'Malinski, Sam': ['D', 'RD'], 'Ekman-Larsson, Oliver': ['D', 'LD'],
+  'Marino, John': ['D', 'RD'], 'Dillon, Brenden': ['D', 'LD'], 'Blankenburg, Nick': ['D', 'RD'],
+  'Lilleberg, Emil': ['D', 'LD'], 'Marchenko, Kirill': ['R', 'RW'], 'Protas, Aliaksei': ['L', 'C'],
+  'Doan, Josh': ['R', 'RW'], 'Voronkov, Dmitri': ['L', 'LW'], 'Huberdeau, Jonathan': ['L', 'LW'],
+  'Greenway, Jordan': ['L', 'LW'], 'Cotter, Paul': ['L', 'LW'], 'Jeannot, Tanner': ['L', 'LW'],
+  'Bouchard, Evan': ['D', 'RD'], 'Miller, K\'Andre': ['D', 'LD'], 'Mateychuk, Denton': ['D', 'LD'],
+  'Romanov, Alexander': ['D', 'LD'], 'Evans, Ryker': ['D', 'LD'], 'Tucker, Tyler': ['D', 'LD'],
+  'Legault, Charles-Alexis': ['D', 'RD'], 'Pickering, Owen': ['D', 'LD'], 'Pickford, Bryce': ['D', 'RD'],
+  'Mittelstadt, Luke': ['D', 'LD'], 'Marchand, Brad': ['L', 'LW'], 'Barbashev, Ivan': ['L', 'LW'],
+  'Tippett, Owen': ['R', 'RW'], 'Bowman, Braeden': ['R', 'RW'], 'Samoskevich, Mackie': ['R', 'RW'],
+  'Mikheyev, Ilya': ['R', 'RW'], 'Compher, J.T.': ['L', 'LW'], 'L\'Heureux, Zachary': ['L', 'LW'],
+  'Lakovic, Lynden': ['L', 'LW'], 'Dahlin, Rasmus': ['D', 'LD'], 'Seider, Moritz': ['D', 'RD'],
+  'Broberg, Philip': ['D', 'LD'], 'Trouba, Jacob': ['D', 'RD'], 'Crevier, Louis': ['D', 'RD'],
+  'Ferraro, Mario': ['D', 'LD'], 'Perunovich, Scott': ['D', 'LD'], 'Bleyl, Tommy': ['D', 'RD'],
+  'Holloway, Dylan': ['L', 'LW'], 'Meier, Timo': ['R', 'RW'], 'Texier, Alexandre': ['L', 'LW'],
+  'Beauvillier, Anthony': ['R', 'RW'], 'Bastian, Nathan': ['R', 'RW'], 'Hathaway, Garnet': ['R', 'RW'],
+  'Holtz, Alexander': ['R', 'RW'], 'Schaefer, Matthew': ['D', 'LD'], 'Unger Sörum, Felix': ['R', 'RW'],
+  'Andersson, Rasmus': ['D', 'RD'], 'Whitecloud, Zach': ['D', 'RD'], 'Anderson, Mikey': ['D', 'LD'],
+  'Stanley, Logan': ['D', 'LD'], 'Barron, Justin': ['D', 'RD'], 'Salomonsson, Elias': ['D', 'RD'],
+  'Carels, Carson': ['D', 'LD'], 'Lin, Ryan': ['D', 'RD'], 'Lee, Ryker': ['R', 'RW'], 'Peterka, JJ': ['R', 'RW'],
+  'Boeser, Brock': ['R', 'RW'], 'Olivier, Mathieu': ['R', 'RW'], 'Kreider, Chris': ['L', 'LW'],
+  'Sherwood, Kiefer': ['L', 'LW'], 'Greer, A.J.': ['L', 'LW'], 'Yamamoto, Kailer': ['R', 'RW'],
+  'Dobson, Noah': ['D', 'RD'], 'Matheson, Mike': ['D', 'LD'], 'Lauzon, Jeremy': ['D', 'LD'],
+  'Edmundson, Joel': ['D', 'LD'], 'Fabbro, Dante': ['D', 'RD'], 'Desharnais, Vincent': ['D', 'RD'],
+  'Clifton, Connor': ['D', 'RD'], 'Kulikov, Dmitry': ['D', 'LD'], 'Veilleux, Xavier': ['D', 'LD'],
+  'Kane, Patrick': ['R', 'RW'], 'Giroux, Claude': ['R', 'C'], 'DeBrusk, Jake': ['L', 'LW'],
+  'Pezzetta, Michael': ['L', 'LW'], 'Bjugstad, Nick': ['C', 'C/RW'], 'Janmark, Mattias': ['C', 'LW/RW'],
+  'van Riemsdyk, James': ['L', 'LW/RW'], 'Palat, Ondrej': ['L', 'C/LW'], 'Jankowski, Mark': ['L', 'C'],
+  'Goodrow, Barclay': ['C', 'C/LW'], 'Glendening, Luke': ['C', 'C/RW'], 'Appleton, Mason': ['C', 'C/RW'],
+  'Saad, Brandon': ['L', 'LW/RW'], 'Pearson, Tanner': ['L', 'LW'], 'O\'Brien, Liam': ['C', 'C/LW'],
+  'Mangiapane, Andrew': ['L', 'LW/RW'], 'Lazar, Curtis': ['C', 'C/RW'], 'Girgensons, Zemgus': ['C', 'C/LW'],
+  'Frederic, Trent': ['C', 'C/LW'], 'Fabbri, Robby': ['C', 'C/LW'], 'Dadonov, Evgenii': ['R', 'RW/LW'],
+  'Cousins, Nick': ['C', 'C/LW'], 'Tsyplakov, Maxim': ['R', 'RW/LW'], 'Malott, Jeff': ['L', 'LW'],
+  'Halonen, Brian': ['R', 'C/LW'], 'Gregor, Noah': ['L', 'C'], 'Wiesblatt, Ozzy': ['C', 'RW'],
+  'Ward, Taylor': ['R', 'RW'], 'Tomasino, Philip': ['C', 'C/RW'], 'Sheary, Conor': ['L', 'LW/RW'],
+  'Regenda, Pavol': ['L', 'LW/RW'], 'Leason, Brett': ['R', 'RW'], 'Johnston, Ross': ['L', 'RW'],
+  'Gatcomb, Marc': ['C', 'RW'], 'Erne, Adam': ['L', 'LW/RW'], 'Chaffee, Mitchell': ['R', 'RW'],
+  'Viel, Jeffrey': ['L', 'LW'], 'Tufte, Riley': ['L', 'LW'], 'Toninato, Dominic': ['C', 'LW/C'],
+  'Slaggert, Landon': ['L', 'LW/C'], 'Shine, Dominik': ['R', 'RW/LW'], 'Ostapchuk, Zack': ['C', 'LW'],
+  'Nesterenko, Nikita': ['C', 'RW'], 'Leonard, John': ['L', 'LW'], 'Kaliyev, Arthur': ['R', 'RW/LW'],
+  'Hyry, Arttu': ['R', 'RW'], 'Gustafsson, David': ['C', 'C/LW'], 'Dorwart, Karsen': ['L', 'LW'],
+  'Stranges, Antonio': ['L', 'C/LW'], 'Sabourin, Scott': ['R', 'RW/C'], 'Reinhardt, Cole': ['L', 'C'],
+  'Reaves, Ryan': ['R', 'RW'], 'Poulin, Samuel': ['C', 'LW/RW'], 'Pelletier, Jakob': ['L', 'LW'],
+  'Morton, Sam': ['C', 'C/LW'], 'Mazur, Carter': ['L', 'LW'], 'Lucchini, Jake': ['C', 'C/LW'],
+  'Lind, Kole': ['R', 'RW'], 'Lee, Andre': ['L', 'LW/C'], 'Jones, Max': ['L', 'LW/RW'], 'Hunt, Dryden': ['L', 'LW'],
+  'Hayden, John': ['C', 'C/RW'], 'Hamblin, James': ['L', 'C'], 'Gaunce, Brendan': ['C', 'LW'],
+  'Foudy, Liam': ['C', 'C/LW'], 'Foote, Nolan': ['L', 'LW'], 'Dube, Dillon': ['L', 'C/LW'],
+  'Crookshank, Angus': ['L', 'LW/C'], 'Blais, Sammy': ['L', 'LW/RW'], 'Bains, Arshdeep': ['L', 'LW'],
+  'Aston-Reese, Zach': ['C', 'LW/RW'], 'White, Colin': ['C', 'RW/C'], 'Pitlick, Tyler': ['C', 'C/RW'],
+  'Parent, Xavier': ['L', 'C'], 'Lettieri, Vinni': ['C', 'C/RW'], 'Entwistle, Mackenzie': ['R', 'RW/LW'],
+  'Duehr, Walker': ['R', 'RW'], 'Jaaska, Juha': ['L', 'C'], 'Condotta, Lucas': ['C', 'LW'],
+  'Belzile, Alex': ['R', 'RW/C'], 'Sillinger, Owen': ['C', 'C/LW'], 'Schmelzer, Ryan': ['C', 'C/RW'],
+  'Harvey-Pinard, Rafael': ['L', 'LW/RW'], 'Vaakanainen, Urho': ['D', 'LD/RD'], 'Timmins, Conor': ['D', 'RD'],
+  'Petry, Jeff': ['D', 'RD'], 'Hanley, Joel': ['D', 'LD/RD'], 'Bean, Jake': ['D', 'LD/RD'],
+  'Stastney, Spencer': ['D', 'LD'], 'Matinpalo, Nikolas': ['D', 'RD/LD'], 'Gustafsson, Erik': ['D', 'LD'],
+  'Gudbranson, Erik': ['D', 'RD'], 'Dumba, Matt': ['D', 'RD'], 'DeSimone, Nick': ['D', 'RD'],
+  'Solovyov, Ilya': ['D', 'LD/RD'], 'Rosen, Calle': ['D', 'LD'], 'Robertson, Matthew': ['D', 'LD'],
+  'Petrovic, Alexander': ['D', 'RD'], 'Juulsen, Noah': ['D', 'RD'], 'Hutton, Ben': ['D', 'LD/RD'],
+  'Carlile, Declan': ['D', 'LD'], 'Capobianco, Kyle': ['D', 'RD'], 'Smith, Brendan': ['D', 'LD/RD'],
+  'Phillips, Isaak': ['D', 'LD/RD'], 'Jones, Caleb': ['D', 'LD'], 'Hamonic, Travis': ['D', 'RD'],
+  'Cholowski, Dennis': ['D', 'LD'], 'Thrun, Henry': ['D', 'LD'], 'Schueneman, Corey': ['D', 'LD'],
+  'Regula, Alec': ['D', 'RD'], 'Rathbone, Jack': ['D', 'LD'], 'Mermis, Dakota': ['D', 'LD'],
+  'Lagesson, William': ['D', 'LD'], 'Kolyachonok, Vladislav': ['D', 'LD'], 'Johnson, Ryan': ['D', 'LD'],
+  'Hunt, Daemon': ['D', 'LD/RD'], 'Hicketts, Joe': ['D', 'LD'], 'Fitzgerald, Casey': ['D', 'RD'],
+  'Crotty, Cameron': ['D', 'RD'], 'Bear, Ethan': ['D', 'RD'], 'Valimaki, Juuso': ['D', 'LD'],
+  'St. Ivany, Jack': ['D', 'LD'], 'Metsa, Zach': ['D', 'RD'], 'Megna, Jaycob': ['D', 'LD'],
+  'McWard, Cole': ['D', 'RD'], 'McIlrath, Dylan': ['D', 'RD'], 'Mackey, Connor': ['D', 'LD'],
+  'MacDonald, Jacob': ['D', 'LD/RD'], 'Heinola, Ville': ['D', 'LD'], 'Englund, Andreas': ['D', 'LD'],
+  'Del Gaizo, Marc': ['D', 'LD/RD'], 'Coghlan, Dylan': ['D', 'RD'], 'Bolduc, Samuel': ['D', 'LD'],
+  'Bjornfot, Tobias': ['D', 'LD'], 'Bayreuther, Gavin': ['D', 'LD'], 'Ahcan, Jack': ['D', 'LD'],
+  'Pouliot, Derrick': ['D', 'LD'], 'Middleton, Keaton': ['D', 'LD/RD'], 'Kiersted, Matt': ['D', 'LD'],
+  'Callahan, Michael': ['D', 'LD/RD'], 'Burroughs, Kyle': ['D', 'RD/LD'], 'Attard, Ronald': ['D', 'RD'],
+  'Schuldt, Jimmy': ['D', 'LD'], 'Gravel, Kevin': ['D', 'LD'], 'Brown, Josh': ['D', 'RD'],
+  'Formenton, Alex': ['L', 'LW'], 'Nylander, Alex': ['R', 'RW'], 'Shaw, Logan': ['R', 'RW/C'],
+  'Seney, Brett': ['L', 'LW/C'], 'Watson, Austin': ['R', 'RW/LW'], 'Olofsson, Gustav': ['D', 'LD'],
+  'Poganski, Austin': ['R', 'RW'], 'McKeown, Roland': ['D', 'RD'], 'Paquette-Bisson, Tobie': ['D', 'LD/RD'],
+  'Dermott, Travis': ['D', 'LD/RD'], 'Boyd, Travis': ['C', 'C/RW'], 'Peca, Matthew': ['L', 'LW/C'],
+  'Hakanpaa, Jani': ['D', 'LD'], 'Carrick, Connor': ['D', 'RD'], 'Fasching, Hudson': ['C', 'C/RW'],
+  'Bailey, Justin': ['R', 'RW'], 'Quenneville, David': ['D', 'RD'], 'Ritchie, Brett': ['R', 'RW'],
+  'Dube, Pierrick': ['R', 'RW'], 'Wahlstrom, Oliver': ['R', 'RW'], 'Benning, Matt': ['D', 'RD'],
+};
+function appliquerPositions() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const valeurs = o.getRange(1, 1, o.getLastRow(), COL_EQUIPE_JOUEUR).getDisplayValues();
+  const colonne = o.getRange(1, 8, valeurs.length, 1).getValues();   // H
+  // Réécrite d'un bloc : on refuse s'il y a une formule dans H (elle serait remplacée par sa valeur).
+  if (o.getRange(1, 8, valeurs.length, 1).getFormulas().some(f => f[0])) throw new Error('Formule dans la colonne H : arrêt, rien écrit.');
+  const trouves = new Set(), autres = [];
+  let n = 0;
+  valeurs.forEach((l, i) => {
+    const info = POSITIONS_NOUVELLES[String(l[COL_JOUEUR - 1]).trim()];
+    if (!info || i < 1 || !String(l[COL_EQUIPE_JOUEUR - 1]).trim()) return;   // équipe ou UFA seulement
+    trouves.add(String(l[COL_JOUEUR - 1]).trim());
+    const actuelle = String(colonne[i][0]).trim();
+    if (actuelle === info[0]) { colonne[i][0] = info[1]; n++; }
+    else if (actuelle !== info[1]) autres.push(l[COL_JOUEUR - 1] + ' (' + actuelle + ')');
+  });
+  o.getRange(1, 8, colonne.length, 1).setValues(colonne);
+  console.log(n + ' position(s) écrite(s). Modifiées depuis, non touchées : ' + (autres.join(', ') || 'aucune')
+    + '. Introuvables : ' + (Object.keys(POSITIONS_NOUVELLES).filter(x => !trouves.has(x)).join(', ') || 'aucun') + '.');
+}
+
+// Lecture seule. Liste les formules (dédoublonnées en R1C1) qui citent PLAYERSDATABASE,
+// pour savoir lesquelles dépendent des colonnes PO (H) / PO2 (I) avant de changer leur format.
+function auditerFormulesPositions() {
+  const classeur = SpreadsheetApp.openById(SHEET_ID);
+  classeur.getSheets().forEach(o => {
+    const n = o.getLastRow(), m = o.getLastColumn();
+    if (!n || !m) return;
+    const r1c1 = o.getRange(1, 1, n, m).getFormulasR1C1();
+    const a1 = o.getRange(1, 1, n, m).getFormulas();
+    const vus = new Map();
+    r1c1.forEach((ligne, i) => ligne.forEach((f, j) => {
+      if (!f) return;
+      const texte = a1[i][j];
+      // H ou I de PLAYERSDATABASE : plage directe, ou VLOOKUP depuis B avec l'index 7 (H) / 8 (I).
+      const plage = /PLAYERSDATABASE!\$?[HI]\$?\d/i.test(texte);
+      const vlookup = /PLAYERSDATABASE!\$?B\$?\d+:\$?[A-Z]+\$?\d+\s*,\s*[78]\s*,/i.test(texte);
+      const local = o.getName() === ONGLET_JOUEURS && /(^|[^A-Z!])\$?[HI]\$?\d/.test(texte);
+      if (!plage && !vlookup && !local) return;
+      if (!vus.has(f)) vus.set(f, { n: 0, cellule: o.getRange(i + 1, j + 1).getA1Notation(), texte });
+      vus.get(f).n++;
+    }));
+    if (vus.size) console.log('§ ' + o.getName() + ' : ' + [...vus.values()].map(v => v.cellule + ' x' + v.n + ' ' + v.texte.replace(/PLAYERSDATABASE!/g, 'P!').slice(0, 260)).join(' ¦ '));
+  });
 }
 
 // À lancer à la main au besoin : remet tout l'onglet RESULTATS en texte. L'API lue par

@@ -9,7 +9,7 @@
 <script src="site-nav.js?v=2"></script>
 <script src="sans-contrat.js"></script>
 <link rel="stylesheet" href="alignement.css?v=5">
-<script src="alignement.js?v=5"></script>
+<script src="alignement.js?v=6"></script>
 <style>
   /* ---------- Vues : Salaires (par défaut) / Alignement ---------- */
   .eq-vues{ display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:rgba(0,0,0,0.14); margin-left:auto; }
@@ -94,6 +94,8 @@
   .section-block th:nth-child(1), .section-block td:nth-child(1){ width:170px; }
   .section-block th:nth-child(n+2):nth-child(-n+9), .section-block td:nth-child(n+2):nth-child(-n+9){ width:56px; }
   .section-block th:nth-child(n+10), .section-block td:nth-child(n+10){ width:92px; }
+  /* PO : plusieurs positions possibles (« LW/RW ») */
+  .section-block th:nth-child(5), .section-block td:nth-child(5){ width:76px; }
   tr.total-row td{ background:var(--stripe) !important; font-weight:700; border-top:2px solid var(--accent); }
   .section-empty{
     border:1px solid var(--line); border-top:none; border-radius:0 0 var(--radius) var(--radius);

@@ -30,7 +30,14 @@
     return lignes;
   }
 
-  const FORMATS = { C: 'C', L: 'AG', R: 'AD', D: 'D', G: 'G' };
+  // Colonne H (PO) : une ou plusieurs positions, la principale d'abord (« C », « C/RW »,
+  // « LD/RD »). Les anciennes valeurs L, R et D sont encore acceptées.
+  const ANCIENNES = { L: 'LW', R: 'RW' };
+  const positions = h => String(h || '').toUpperCase().split(/[\/,\s]+/).filter(Boolean).map(t => ANCIENNES[t] || t);
+  const groupePo = p => p === 'G' ? 'G' : /^(LD|RD|D)$/.test(p) ? 'D' : 'A';
+  const ETIQUETTES = { C: 'C', LW: 'AG', RW: 'AD', LD: 'DG', RD: 'DD', D: 'D', G: 'G' };
+  const ORDRE_PO = { C: 0, LW: 1, RW: 2, LD: 3, RD: 4, D: 4, G: 5 };
+  const trierReservistes = liste => liste.sort((a, b) => (a.espoir - b.espoir) || ((ORDRE_PO[a.po] ?? 9) - (ORDRE_PO[b.po] ?? 9)) || (b.ov - a.ov));
 
   // Numéros LNH (onglet IDS_LNH, rempli par remplirIdsLnh du script) → photo officielle.
   async function chargerIds(){
@@ -48,9 +55,11 @@
       const v = l[1].indexOf(',');
       const famille = v > 0 ? l[1].slice(0, v).trim() : l[1];
       const prenom = v > 0 ? l[1].slice(v + 1).trim() : '';
+      const pos = positions(l[3]);
       return {
         id: l[1], prenom, famille, nom: l[0] || (prenom + ' ' + famille).trim(),
-        ov: Number(l[2]) || 0, po: (l[3] || '').toUpperCase(), sh: (l[4] || '').toUpperCase(),
+        ov: Number(l[2]) || 0, po: pos[0] || '', positions: pos, poTexte: pos.map(p => ETIQUETTES[p] || p).join('/'),
+        sh: (l[4] || '').toUpperCase(),
         ht: l[5] || '', wt: l[6] || '', espoir: /^(true|vrai|x|oui)$/i.test(l[7] || ''), pays: (l[8] || '').toUpperCase(),
         idLnh: ids.get(l[1]) || '',
       };
@@ -71,9 +80,9 @@
   }
 
   // Place → joueur. Les places enregistrées dont le joueur est encore dans l'équipe sont
-  // gardées ; les autres sont complétées du 1er trio au 4e : centre par les centres,
-  // ailiers par leur côté, sinon le meilleur attaquant restant ; défense et gardiens
-  // par overall seulement.
+  // gardées ; les autres sont complétées du 1er trio au 4e (et de la 1re paire à la 3e) :
+  // d'abord la position principale, puis un joueur qui peut jouer cette position, sinon le
+  // meilleur attaquant (ou défenseur) restant ; gardiens par overall.
   function composer(joueurs, sauvegarde){
     const parId = new Map(joueurs.map(j => [j.id, j]));
     const places = {};
@@ -91,17 +100,20 @@
       }
       places[p.id] = null;
     };
-    const attaquant = j => ['C', 'L', 'R'].includes(j.po);
+    const principal = pos => j => j.po === pos;
+    const peutJouer = pos => j => groupePo(j.po) === groupePo(pos) && j.positions.includes(pos);
+    const groupe = g => j => groupePo(j.po) === g;
     for(let l = 1; l <= 4; l++){
-      prendre({ id: 'A' + l + 'C' }, j => j.po === 'C', attaquant);
-      prendre({ id: 'A' + l + 'G' }, j => j.po === 'L', attaquant);
-      prendre({ id: 'A' + l + 'D' }, j => j.po === 'R', attaquant);
+      prendre({ id: 'A' + l + 'C' }, principal('C'), peutJouer('C'), groupe('A'));
+      prendre({ id: 'A' + l + 'G' }, principal('LW'), peutJouer('LW'), groupe('A'));
+      prendre({ id: 'A' + l + 'D' }, principal('RW'), peutJouer('RW'), groupe('A'));
     }
-    PLACES.filter(p => p.groupe === 'D').forEach(p => prendre(p, j => j.po === 'D'));
-    PLACES.filter(p => p.groupe === 'G').forEach(p => prendre(p, j => j.po === 'G'));
-    const ordrePo = { C: 0, L: 1, R: 2, D: 3, G: 4 };
-    const reservistes = joueurs.filter(j => !pris.has(j.id))
-      .sort((a, b) => (a.espoir - b.espoir) || ((ordrePo[a.po] ?? 9) - (ordrePo[b.po] ?? 9)) || (b.ov - a.ov));
+    for(let l = 1; l <= 3; l++){
+      prendre({ id: 'D' + l + 'G' }, principal('LD'), peutJouer('LD'), groupe('D'));
+      prendre({ id: 'D' + l + 'D' }, principal('RD'), peutJouer('RD'), groupe('D'));
+    }
+    PLACES.filter(p => p.groupe === 'G').forEach(p => prendre(p, groupe('G')));
+    const reservistes = trierReservistes(joueurs.filter(j => !pris.has(j.id)));
     return { places, reservistes };
   }
 
@@ -188,7 +200,7 @@
     infos.append(...[joueur.ht, joueur.wt && joueur.wt + ' lb'].filter(Boolean).map(t => el('span', null, t)));
     c.append(nom, infos);
     if(joueur.espoir) c.append(el('span', 'al-badge', 'Espoir'));
-    c.title = `${joueur.nom} · ${joueur.po}${joueur.ov ? ' · ' + joueur.ov + ' OV' : ''}`;
+    c.title = `${joueur.nom} · ${joueur.poTexte}${joueur.ov ? ' · ' + joueur.ov + ' OV' : ''}`;
     return c;
   }
 
@@ -215,7 +227,7 @@
     grille.append(att, def);
     const res = bloc(`Réservistes (${compo.reservistes.length})`, 'al-reservistes');
     const cartes = el('div', 'al-cartes al-res');
-    if(compo.reservistes.length) compo.reservistes.forEach(j => cartes.append(brancher('R:' + j.id, carte(j, j.po === 'L' ? 'AG' : j.po === 'R' ? 'AD' : j.po))));
+    if(compo.reservistes.length) compo.reservistes.forEach(j => cartes.append(brancher('R:' + j.id, carte(j, j.poTexte))));
     else cartes.append(el('p', 'al-aucun', 'Aucun réserviste : tout le monde est dans l’alignement.'));
     res.append(cartes);
     conteneur.replaceChildren(grille, res);
@@ -242,5 +254,5 @@
     attente = setTimeout(() => document.querySelectorAll('.al-zone').forEach(ajusterNoms), 150);
   });
 
-  window.LNHQ_ALIGNEMENT = Object.freeze({ PLACES, chargerJoueurs, chargerSauvegarde, composer, carte, rendre });
+  window.LNHQ_ALIGNEMENT = Object.freeze({ PLACES, chargerJoueurs, chargerSauvegarde, composer, carte, rendre, trierReservistes, positions, groupePo });
 })();

@@ -54,7 +54,6 @@
     equipe: "Ton courriel n'est lié à aucune équipe.",
     pas_ton_equipe: "Tu peux seulement modifier l'alignement de ton équipe.",
   };
-  const ordrePo = { C: 0, L: 1, R: 2, D: 3, G: 4 };
 
   let moi = null;          // { code, admin }
   let code = '';
@@ -86,7 +85,9 @@
   }
 
   function trierReservistes(){
-    compo.reservistes.sort((a, b) => (a.espoir - b.espoir) || ((ordrePo[a.po] ?? 9) - (ordrePo[b.po] ?? 9)) || (b.ov - a.ov));
+    // alignement.js vient de lnhq.ca : repli tant que la nouvelle version n'y est pas publiée.
+    if(A.trierReservistes) A.trierReservistes(compo.reservistes);
+    else compo.reservistes.sort((a, b) => (a.espoir - b.espoir) || (b.ov - a.ov));
   }
 
   function joueurDe(cle){

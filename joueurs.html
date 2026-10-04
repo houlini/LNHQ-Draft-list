@@ -98,9 +98,13 @@ const CONFIG = {
 
   // Ordre personnalisé des valeurs dans le menu déroulant d'une colonne filtrable
   // (clé = nom exact de l'en-tête ; valeurs non listées passent après, triées alphabétiquement).
-  FILTER_VALUE_ORDER: {
-    PO: ['C', 'R', 'L', 'D', 'G'],
-  },
+  FILTER_VALUE_ORDER: {},
+
+  // Colonne des positions (« C », « C/RW », « LD/RD »…) : menu fixe, et un joueur à plusieurs
+  // positions sort sous chacune. Valeur → libellé ; A, D = tous les attaquants / défenseurs.
+  POSITION_COLUMN: 'PO',
+  POSITION_OPTIONS: [['A', 'Attaquants'], ['C', 'C'], ['LW', 'LW'], ['RW', 'RW'],
+    ['D', 'Défenseurs'], ['LD', 'LD'], ['RD', 'RD'], ['G', 'Gardiens']],
 
   // Renommage du LIBELLÉ AFFICHÉ DANS LE FILTRE seulement (la colonne du tableau garde son vrai nom).
   FILTER_LABELS: {
@@ -578,7 +582,8 @@ function renderFilterBar(){
     any = true;
 
     const order = (CONFIG.FILTER_VALUE_ORDER || {})[name];
-    const values = Array.from(
+    const estPosition = name === CONFIG.POSITION_COLUMN;
+    const values = estPosition ? CONFIG.POSITION_OPTIONS.map(o => o[0]) : Array.from(
       new Set(state.rows.map(r => r.raw[colIndex]).filter(v => v !== ''))
     ).sort((a, b) => {
       if(order){
@@ -611,7 +616,7 @@ function renderFilterBar(){
     values.forEach(v => {
       const opt = document.createElement('option');
       opt.value = v;
-      opt.textContent = v;
+      opt.textContent = estPosition ? CONFIG.POSITION_OPTIONS.find(o => o[0] === v)[1] : v;
       if(state.activeFilters.get(colIndex) === v) opt.selected = true;
       select.appendChild(opt);
     });
@@ -714,11 +719,25 @@ function appendFlag(container, raw){
   }
 }
 
+// « C/RW » → ['C', 'RW'] ; anciennes valeurs : L → LW, R → RW, D → LD et RD.
+function positionsDe(raw){
+  return String(raw || '').toUpperCase().split(/[\/,\s]+/).filter(Boolean)
+    .flatMap(p => p === 'L' ? ['LW'] : p === 'R' ? ['RW'] : p === 'D' ? ['LD', 'RD'] : [p]);
+}
+function jouePosition(raw, filtre){
+  const pos = positionsDe(raw);
+  if(filtre === 'A') return pos.some(p => ['C', 'LW', 'RW'].includes(p));
+  if(filtre === 'D') return pos.some(p => ['LD', 'RD'].includes(p));
+  return pos.includes(filtre);
+}
+
 function applyFilterAndSort(){
   const q = state.query.trim().toLocaleLowerCase('fr-FR');
   let rows = state.rows.filter(r => {
     for(const [colIndex, val] of state.activeFilters){
-      if((r.raw[colIndex] || '') !== val) return false;
+      if(state.rawLabels[colIndex] === CONFIG.POSITION_COLUMN){
+        if(!jouePosition(r.raw[colIndex], val)) return false;
+      }else if((r.raw[colIndex] || '') !== val) return false;
     }
     for(const [colIndex, maxVal] of state.activeMaxFilters){
       const v = parseNumericCell(r.raw[colIndex]);
