@@ -106,6 +106,7 @@
         ajouter(e, 'tirsContre', nombre(adv('tirs')));
         ajouter(e, 'mises', nombre(s('mises')));
         ajouter(e, 'attaque', secondes(s('attaque')));
+        ajouter(e, 'defense', secondes(adv('attaque')));   // temps en défensive = temps d'attaque adverse
         ajouter(e, 'passes', nombre(s('passes')));
         ajouter(e, 'penalites', secondes(s('penalites')));
         ajouter(e, 'minAvantage', secondes(s('minAvantage')));
@@ -124,13 +125,14 @@
       tirsMoy: moy(e, 'tirs'), tirsContreMoy: moy(e, 'tirsContre'),
       misesMoy: moy(e, 'mises'),
       attaqueMoy: moy(e, 'attaque'),                                       // secondes
+      defenseMoy: moy(e, 'defense'),                                       // secondes
       passesMoy: moy(e, 'passes'),                                         // %
       mjPct: e.mjPour + e.mjContre ? 100 * e.mjPour / (e.mjPour + e.mjContre) : null,
       penalitesMoy: e.nb.penalites ? e.somme.penalites / 60 / e.nb.penalites : null,   // minutes
       // Cumuls de la saison (null si aucun match n'a la valeur) : buts en AN / occasions ;
       // désavantages écoulés sans but / désavantages (buts accordés = dnButs).
       anButs: e.anNb ? e.anButs : null, anOcc: e.anOcc, anPct: e.anOcc ? 100 * e.anButs / e.anOcc : null,
-      dnArrets: e.dnNb ? e.dnOcc - e.dnButs : null, dnButs: e.dnButs, dnOcc: e.dnOcc,
+      dnArrets: e.dnNb ? e.dnOcc - e.dnButs : null, dnButs: e.dnNb ? e.dnButs : null, dnOcc: e.dnOcc,
       dnPct: e.dnOcc ? 100 * (1 - e.dnButs / e.dnOcc) : null,
       minAvantage: e.nb.minAvantage ? e.somme.minAvantage : null,          // secondes (total)
       inferiorite: e.nb.inferiorite ? e.somme.inferiorite : null,          // total
