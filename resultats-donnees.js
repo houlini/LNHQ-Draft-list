@@ -111,6 +111,8 @@
         ajouter(e, 'penalites', secondes(s('penalites')));
         ajouter(e, 'minAvantage', secondes(s('minAvantage')));
         ajouter(e, 'inferiorite', nombre(s('inferiorite')));
+        // Buts accordés pendant son propre avantage numérique = buts en infériorité de l'adversaire.
+        ajouter(e, 'bcAvantage', nombre(adv('inferiorite')));
         // Mises au jeu : seulement si les deux équipes ont une valeur.
         const mjP = nombre(s('engagements')), mjC = nombre(adv('engagements'));
         if(mjP != null && mjC != null){ e.mjPour += mjP; e.mjContre += mjC; }
@@ -136,6 +138,7 @@
       dnPct: e.dnOcc ? 100 * (1 - e.dnButs / e.dnOcc) : null,
       minAvantage: e.nb.minAvantage ? e.somme.minAvantage : null,          // secondes (total)
       inferiorite: e.nb.inferiorite ? e.somme.inferiorite : null,          // total
+      bcAvantage: e.nb.bcAvantage ? e.somme.bcAvantage : null,             // total
     }));
   }
 
