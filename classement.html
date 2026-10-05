@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=7">
 <script src="site-nav.js?v=3"></script>
-<script src="resultats-donnees.js?v=2"></script>
+<script src="resultats-donnees.js?v=3"></script>
 <style>
   .cl-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:1240px; margin:0 auto; width:100%; box-sizing:border-box; }
   .cl-haut{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px; margin-bottom:16px; }
@@ -134,7 +134,9 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
     ['bcMoy', 'BC/M', 'Buts contre par match', un, true],
     ['tirsMoy', 'Tirs/M', 'Tirs par match', un],
     ['tirsContreMoy', 'TC/M', 'Tirs contre par match', un, true],
+    ['anButs', 'AN', 'Avantage numérique, cumul de la saison : buts / occasions', (v, s) => v + '/' + s.anOcc],
     ['anPct', 'AN %', 'Avantage numérique : buts / occasions', pct],
+    ['dnArrets', 'DN', 'Désavantage numérique, cumul de la saison : pénalités écoulées sans but / désavantages', (v, s) => v + '/' + s.dnOcc],
     ['dnPct', 'DN %', 'Désavantage numérique : pénalités écoulées sans but', pct],
     ['mjPct', 'MAJ %', 'Mises au jeu gagnées', pct],
     ['passesMoy', 'Passes %', 'Passes réussies (moyenne)', pct],
@@ -238,8 +240,9 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
       COLONNES_STATS.forEach(([cle, , , format]) => {
         const v = s[cle];
         const vide = !s.pj || v == null;
-        const td = el('td', (vide ? 'is-vide' : '') + (tri.cle === cle ? ' is-trie' : '') || null, vide ? '—' : format(v));
-        if(cle === 'anPct' && !vide) td.title = `${s.anButs} but${s.anButs > 1 ? 's' : ''} en ${s.anOcc} occasion${s.anOcc > 1 ? 's' : ''}`;
+        const td = el('td', (vide ? 'is-vide' : '') + (tri.cle === cle ? ' is-trie' : '') || null, vide ? '—' : format(v, s));
+        if((cle === 'anPct' || cle === 'anButs') && !vide) td.title = `${s.anButs} but${s.anButs > 1 ? 's' : ''} en ${s.anOcc} occasion${s.anOcc > 1 ? 's' : ''}`;
+        if((cle === 'dnPct' || cle === 'dnArrets') && !vide) td.title = `${s.dnButs} but${s.dnButs > 1 ? 's' : ''} accordé${s.dnButs > 1 ? 's' : ''} en ${s.dnOcc} désavantage${s.dnOcc > 1 ? 's' : ''}`;
         tr.append(td);
       });
       tbody.append(tr);

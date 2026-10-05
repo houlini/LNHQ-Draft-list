@@ -93,7 +93,7 @@
   function statsEquipes(resultats, codes){
     const t = {};
     const vide = c => ({ code: c, pj: 0, bp: 0, bc: 0, somme: {}, nb: {}, mjPour: 0, mjContre: 0,
-      anButs: 0, anOcc: 0, dnButs: 0, dnOcc: 0 });
+      anButs: 0, anOcc: 0, dnButs: 0, dnOcc: 0, anNb: 0, dnNb: 0 });
     const ajouter = (e, cle, v) => { if(v == null) return; e.somme[cle] = (e.somme[cle] || 0) + v; e.nb[cle] = (e.nb[cle] || 0) + 1; };
     (codes || []).forEach(c => { t[c] = vide(c); });
     Object.values(resultats).forEach(r => {
@@ -113,8 +113,8 @@
         // Mises au jeu : seulement si les deux équipes ont une valeur.
         const mjP = nombre(s('engagements')), mjC = nombre(adv('engagements'));
         if(mjP != null && mjC != null){ e.mjPour += mjP; e.mjContre += mjC; }
-        const an = fraction(s('avantages')); if(an){ e.anButs += an[0]; e.anOcc += an[1]; }
-        const dn = fraction(adv('avantages')); if(dn){ e.dnButs += dn[0]; e.dnOcc += dn[1]; }
+        const an = fraction(s('avantages')); if(an){ e.anButs += an[0]; e.anOcc += an[1]; e.anNb++; }
+        const dn = fraction(adv('avantages')); if(dn){ e.dnButs += dn[0]; e.dnOcc += dn[1]; e.dnNb++; }
       });
     });
     const moy = (e, cle) => e.nb[cle] ? e.somme[cle] / e.nb[cle] : null;
@@ -127,7 +127,10 @@
       passesMoy: moy(e, 'passes'),                                         // %
       mjPct: e.mjPour + e.mjContre ? 100 * e.mjPour / (e.mjPour + e.mjContre) : null,
       penalitesMoy: e.nb.penalites ? e.somme.penalites / 60 / e.nb.penalites : null,   // minutes
-      anButs: e.anButs, anOcc: e.anOcc, anPct: e.anOcc ? 100 * e.anButs / e.anOcc : null,
+      // Cumuls de la saison (null si aucun match n'a la valeur) : buts en AN / occasions ;
+      // désavantages écoulés sans but / désavantages (buts accordés = dnButs).
+      anButs: e.anNb ? e.anButs : null, anOcc: e.anOcc, anPct: e.anOcc ? 100 * e.anButs / e.anOcc : null,
+      dnArrets: e.dnNb ? e.dnOcc - e.dnButs : null, dnButs: e.dnButs, dnOcc: e.dnOcc,
       dnPct: e.dnOcc ? 100 * (1 - e.dnButs / e.dnOcc) : null,
       minAvantage: e.nb.minAvantage ? e.somme.minAvantage : null,          // secondes (total)
       inferiorite: e.nb.inferiorite ? e.somme.inferiorite : null,          // total
