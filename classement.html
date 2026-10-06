@@ -10,6 +10,8 @@
 <script src="resultats-donnees.js?v=5"></script>
 <style>
   .cl-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:1240px; margin:0 auto; width:100%; box-sizing:border-box; }
+  /* Vue Stats : toute la largeur de l'écran (beaucoup de colonnes). */
+  .cl-page.is-large{ max-width:none; }
   .cl-haut{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px; margin-bottom:16px; }
   .cl-titre{
     margin:0; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500;
@@ -274,6 +276,7 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
     const classer = codes => R.classement(resultats, codes);
     boite.classList.toggle('a-deux', vue === 'division' || vue === 'conference');
     document.querySelector('.cl-note').hidden = vue === 'stats';
+    document.querySelector('.cl-page').classList.toggle('is-large', vue === 'stats');
     if(vue === 'stats'){
       boite.replaceChildren(tableStats(equipes, parCode));
       return;
