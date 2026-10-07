@@ -47,7 +47,7 @@ export default {
       if (resultat === 'lire') return lirePhotoResultat(env, await request.json().catch(() => ({})));
       return appelerScript(env, resultat, courriel, await request.text());
     }
-    const enchere = { '/api/encheres/lancer': 'lancerEnchere', '/api/encheres/miser': 'miserEnchere', '/api/encheres/tirage': 'tirerAuSort' }[url.pathname];
+    const enchere = { '/api/encheres/lancer': 'lancerEnchere', '/api/encheres/miser': 'miserEnchere', '/api/encheres/tirage': 'tirerAuSort', '/api/encheres/programmer': 'programmerTirage' }[url.pathname];
     if (enchere && request.method === 'POST') {
       return actionEnchere(env, enchere, courriel, await request.text());
     }
@@ -205,11 +205,19 @@ async function cloturerEncheres(env) {
       const statut = c[10] && c[10].v, fin = c[9] && c[9].v;
       return statut === 'En cours' && fin && new Date(fin).getTime() <= maintenant;
     });
-    if (!echue) return;
-    const r = await scriptJson(env, 'cloturerEncheres', 'systeme');
-    for (const msg of r.messages || []) {
-      const envoi = await envoyerDiscord(env, msg.flux, msg.message);
-      if (envoi.erreur) console.error('Discord (fin d\'enchère) :', envoi.erreur);
+    // Tirage au sort programmé (colonne O) dont l'heure est arrivée.
+    const tirageDu = table.rows.some(r => {
+      const c = r.c || [];
+      const statut = c[10] && c[10].v, prevu = c[14] && c[14].v;
+      return statut === 'Tirage' && prevu && new Date(prevu).getTime() <= maintenant;
+    });
+    const actions = [echue && 'cloturerEncheres', tirageDu && 'tirerAuSortAuto'].filter(Boolean);
+    for (const action of actions) {
+      const r = await scriptJson(env, action, 'systeme');
+      for (const msg of r.messages || []) {
+        const envoi = await envoyerDiscord(env, msg.flux, msg.message);
+        if (envoi.erreur) console.error('Discord (' + action + ') :', envoi.erreur);
+      }
     }
   } catch (err) {
     console.error('Clôture des enchères :', err.message);

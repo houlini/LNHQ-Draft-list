@@ -29,6 +29,10 @@
 .mise-carte .ench-bouton{ min-height:44px; }
 .mise-note{ font-size:13px; font-weight:700; color:var(--accent); }
 
+/* Tirage au sort : heure prévue et champ de programmation (admin). */
+.mise-tirage{ display:flex; flex-direction:column; gap:10px; }
+.mise-tirage input[type="datetime-local"]{ color-scheme:dark; }
+
 /* Filtres au-dessus des enchères en cours (le style de base vient de site.css / encheres.css). */
 .mise-filtres{ margin:0 0 12px; }
 .mise-filtres .ench-filtre span{ color:var(--ink-muted); }

@@ -47,6 +47,57 @@
 .ench-egalite .ench-etiquette{ width:100%; }
 .ench-egalite-equipe{ display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:14px; }
 .ench-egalite-equipe .ench-logo{ width:24px; height:24px; }
+/* Tirage au sort en direct (encheres.html, Spectacle) : ruban de logos plein écran. */
+.tirage-scene{
+  position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
+  padding:16px; background:rgba(8,10,14,0.88); overflow:hidden;
+}
+.tirage-boite{
+  position:relative; z-index:1; width:min(640px, 100%); padding:22px 18px 18px; text-align:center;
+  background:var(--surface); border:2px solid #9775FA; border-radius:var(--radius);
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+}
+.tirage-sur{ margin:0; font-family:'Oswald', sans-serif; font-size:15px; letter-spacing:0.08em; text-transform:uppercase; color:#9775FA; }
+.tirage-boite > strong{ font-family:'Oswald', sans-serif; font-weight:500; font-size:clamp(22px,6vw,30px); text-transform:uppercase; color:var(--accent); line-height:1.15; }
+.tirage-fenetre{
+  position:relative; width:100%; height:150px; overflow:hidden; border-radius:10px;
+  background:rgba(255,255,255,0.05); border:1px solid var(--line);
+  -webkit-mask-image:linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+  mask-image:linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+}
+.tirage-ruban{ position:absolute; top:0; left:0; height:100%; display:flex; will-change:transform; }
+.tirage-case{
+  flex:0 0 132px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  font-weight:700; font-size:13px; white-space:nowrap;
+}
+.tirage-case .ench-logo{ width:76px; height:76px; }
+.tirage-case.is-gagnant{ background:rgba(151,117,250,0.22); box-shadow:inset 0 0 0 3px #9775FA; border-radius:10px; }
+.tirage-case.is-gagnant .ench-logo{ animation:tirage-pop 0.6s ease 2; }
+@keyframes tirage-pop{ 50%{ transform:scale(1.18); } }
+.tirage-repere{
+  position:absolute; top:0; bottom:0; left:50%; width:3px; transform:translateX(-50%);
+  background:var(--accent); box-shadow:0 0 12px var(--accent);
+}
+.tirage-repere::before, .tirage-repere::after{
+  content:''; position:absolute; left:50%; transform:translateX(-50%);
+  border-left:9px solid transparent; border-right:9px solid transparent;
+}
+.tirage-repere::before{ top:0; border-top:11px solid var(--accent); }
+.tirage-repere::after{ bottom:0; border-bottom:11px solid var(--accent); }
+.tirage-etat{ margin:0; min-height:1.4em; font-size:15px; color:var(--ink-muted); }
+.tirage-scene.is-fini .tirage-etat{ font-size:clamp(17px,4.5vw,22px); color:var(--ink); }
+.tirage-scene.is-fini .tirage-repere{ opacity:0.35; }
+.tirage-fermer{
+  padding:9px 18px; border-radius:8px; cursor:pointer; font:inherit; font-weight:600;
+  background:transparent; color:var(--ink); border:1px solid var(--line);
+}
+.tirage-fermer:hover{ border-color:var(--accent); color:var(--accent); }
+.tirage-confetti{
+  position:absolute; top:-12px; z-index:2; width:9px; height:14px; border-radius:2px; pointer-events:none;
+  animation:tirage-chute linear forwards;
+}
+@keyframes tirage-chute{ to{ top:105%; transform:rotate(720deg) translateX(40px); } }
+
 .ench-carte.is-tirage{ border-top-color:#9775FA; }
 .ench-tirage-titre{ font-weight:700; color:#9775FA; }
 .ench-chrono{

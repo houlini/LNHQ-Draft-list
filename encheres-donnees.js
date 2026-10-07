@@ -48,6 +48,7 @@
       id: l[0], joueur: l[1], naissance: l[2], position: l[3], ov: l[4], equipe: l[5].toUpperCase(),
       mise: nombre(l[6]), nb: nombre(l[7]), debut: l[8], fin: l[9], statut: l[10], saison: l[11],
       egalite: (l[13] || '').split(',').map(c => c.trim().toUpperCase()).filter(Boolean),
+      tiragePrevu: l[14] || '',   // heure du tirage au sort programmé (ISO)
     })).filter(e => e.id);
 
     const mises = (((tMises.cols[0] || {}).label || '') === 'Date' ? lignes(tMises) : []).map(l => ({

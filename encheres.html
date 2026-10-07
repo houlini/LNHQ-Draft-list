@@ -6,10 +6,10 @@
 <title>Enchères des agents libres</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=7">
-<link rel="stylesheet" href="encheres.css?v=4">
+<link rel="stylesheet" href="encheres.css?v=5">
 <script src="site-nav.js?v=3"></script>
 <script src="sans-contrat.js"></script>
-<script src="encheres-donnees.js?v=4"></script>
+<script src="encheres-donnees.js?v=5"></script>
 </head>
 <body>
 
@@ -175,9 +175,25 @@ function carteTirage(e){
   const titre = el('div', 'ench-tirage-titre', `🎲 Tirage au sort à venir · ${e.mise} jetons`);
   const equipes = el('div', 'ench-egalite');
   [e.equipe, ...e.egalite].forEach(code => { const t = el('span', 'ench-egalite-equipe'); t.append(logo(code), nomEquipe(code)); equipes.append(t); });
+  // Heure du tirage en direct (programmée par la ligue) : décompte, ou bouton pour regarder.
+  const quandTirage = el('div', 'ench-chrono');
+  if(e.tiragePrevu){
+    const reste = el('strong', 'ench-reste');
+    reste.dataset.fin = e.tiragePrevu;
+    reste.textContent = E.tempsRestant(e.tiragePrevu);
+    quandTirage.append(el('span', null, 'En direct dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.tiragePrevu))));
+  }else{
+    quandTirage.append(el('span', null, 'Heure du tirage à venir'));
+  }
   const pied = el('div', 'ench-pied');
   pied.append(el('span', null, 'Les jetons des équipes à égalité restent bloqués jusqu’au tirage.'));
-  carte.append(tete, titre, equipes, pied);
+  if(e.tiragePrevu && new Date(e.tiragePrevu) <= new Date()){
+    const voir = el('button', 'ench-bouton', '🎲 Regarder le tirage');
+    voir.type = 'button';
+    voir.addEventListener('click', () => Spectacle.lancer(e));
+    pied.append(voir);
+  }
+  carte.append(tete, titre, equipes, quandTirage, pied);
   return carte;
 }
 
@@ -212,6 +228,7 @@ function render(){
   }));
 
   renderHistorique();
+  Spectacle.surveiller(donnees.encheres);
 
   els.rowCount.textContent = `${enCours.length} enchère${enCours.length > 1 ? 's' : ''} en cours`;
   if(!ancreSuivie && location.hash){
@@ -278,6 +295,13 @@ function renderHistorique(){
     });
     details.append(liste);
 
+    // Enchère gagnée au tirage au sort : on peut revoir l'animation.
+    if(e.statut === 'Terminée' && e.egalite && e.egalite.length){
+      const revoir = el('button', 'ench-groupe-lien', '🎲 Revoir le tirage');
+      revoir.type = 'button';
+      revoir.addEventListener('click', () => Spectacle.revoir(e));
+      details.append(revoir);
+    }
     if(enCours){
       const aller = el('button', 'ench-groupe-lien', 'Voir l’enchère');
       aller.type = 'button';
@@ -310,6 +334,160 @@ async function load({ background = false } = {}){
     if(!background) show('error');
   }
 }
+
+/* ---------- Tirage au sort en direct ----------
+   À l'heure programmée par la ligue (colonne « Tirage prévu »), le Worker fait le tirage
+   (au plus une minute plus tard). Ici, tous ceux qui ont la page ouverte voient au même
+   moment un ruban de logos défiler, puis ralentir et s'arrêter sur le gagnant dès que le
+   résultat arrive dans le classeur. « Revoir le tirage » rejoue l'animation après coup. */
+const Spectacle = (() => {
+  const LARGEUR = 132;                 // largeur d'une case du ruban (px)
+  const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let actif = null;                    // { id, joueur, candidats, pos, vitesse, gagnant, ... }
+  const vus = new Set(), minuteurs = new Map();
+  let sondage = null;
+
+  const melange = l => l.map(v => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+
+  function construire(joueur, candidats){
+    const scene = el('div', 'tirage-scene');
+    scene.setAttribute('role', 'dialog');
+    scene.setAttribute('aria-label', 'Tirage au sort');
+    const boite = el('div', 'tirage-boite');
+    const fenetre = el('div', 'tirage-fenetre');
+    const ruban = el('div', 'tirage-ruban');
+    // Assez de répétitions pour défiler plusieurs tours avant de s'arrêter.
+    const tours = Math.max(14, Math.ceil(60 / candidats.length));
+    for(let t = 0; t < tours; t++) candidats.forEach(code => {
+      const caseEq = el('div', 'tirage-case');
+      caseEq.append(logo(code), el('span', null, nomEquipe(code)));
+      ruban.append(caseEq);
+    });
+    fenetre.append(ruban, el('div', 'tirage-repere'));
+    const etat = el('p', 'tirage-etat', 'Le sort est lancé…');
+    const fermer = el('button', 'tirage-fermer', 'Fermer');
+    fermer.type = 'button';
+    fermer.addEventListener('click', arreter);
+    boite.append(el('p', 'tirage-sur', '🎲 Tirage au sort'), nomJoueur(joueur), fenetre, etat, fermer);
+    scene.append(boite);
+    document.body.append(scene);
+    return { scene, fenetre, ruban, etat };
+  }
+
+  // Position « pos » (px, le long du ruban) placée au centre de la fenêtre.
+  function placer(){
+    const centre = actif.fenetre.clientWidth / 2;
+    actif.ruban.style.transform = `translateX(${centre - actif.pos}px)`;
+  }
+
+  function demarrer(id, joueur, candidats){
+    if(actif) arreter();
+    actif = Object.assign({ id, joueur, candidats, pos: candidats.length * LARGEUR + LARGEUR / 2, vitesse: 1.6, gagnant: null }, construire(joueur, candidats));
+    actif.cycle = candidats.length * LARGEUR;
+    let avant = performance.now();
+    const boucle = maintenant => {
+      if(!actif || actif.gagnant) return;
+      actif.pos += actif.vitesse * (maintenant - avant);
+      avant = maintenant;
+      // Ruban répété : on revient d'un tour en arrière sans que ça se voie.
+      if(actif.pos > 3 * actif.cycle) actif.pos -= actif.cycle;
+      placer();
+      actif.raf = requestAnimationFrame(boucle);
+    };
+    if(reduit){ actif.etat.textContent = 'Tirage en cours…'; placer(); }
+    else actif.raf = requestAnimationFrame(boucle);
+  }
+
+  // Ralentit et s'arrête sur une case du gagnant, quelques tours plus loin.
+  function atterrir(gagnant){
+    if(!actif || actif.gagnant) return;
+    actif.gagnant = gagnant;
+    cancelAnimationFrame(actif.raf);
+    const n = actif.candidats.length;
+    const depart = actif.pos;
+    let j = Math.floor(depart / LARGEUR) + 2 * n;
+    while(actif.candidats[j % n] !== gagnant) j++;
+    const cible = j * LARGEUR + LARGEUR / 2;
+    const duree = reduit ? 0 : 4200;
+    const t0 = performance.now();
+    const ease = t => 1 - Math.pow(1 - t, 3);
+    const fin = () => {
+      actif.pos = cible; placer();
+      actif.ruban.children[j].classList.add('is-gagnant');
+      const v = actif.joueur.indexOf(',');
+      const prenomNom = v > 0 ? actif.joueur.slice(v + 1).trim() + ' ' + actif.joueur.slice(0, v).trim() : actif.joueur;
+      actif.etat.replaceChildren(el('strong', null, `🏆 ${nomEquipe(gagnant)} remporte ${prenomNom} !`));
+      actif.scene.classList.add('is-fini');
+      if(!reduit) confettis(actif.scene);
+    };
+    if(!duree) return fin();
+    const pas = maintenant => {
+      if(!actif) return;
+      const t = Math.min(1, (maintenant - t0) / duree);
+      actif.pos = depart + (cible - depart) * ease(t);
+      placer();
+      if(t < 1) requestAnimationFrame(pas); else fin();
+    };
+    requestAnimationFrame(pas);
+  }
+
+  function confettis(scene){
+    const couleurs = ['#FF8A3D', '#FFD43B', '#69DB7C', '#4DABF7', '#F783AC', '#ffffff'];
+    for(let i = 0; i < 90; i++){
+      const c = el('span', 'tirage-confetti');
+      c.style.left = Math.random() * 100 + '%';
+      c.style.background = couleurs[i % couleurs.length];
+      c.style.animationDelay = Math.random() * 0.6 + 's';
+      c.style.animationDuration = 2.4 + Math.random() * 1.8 + 's';
+      c.style.transform = `rotate(${Math.random() * 360}deg)`;
+      scene.append(c);
+    }
+  }
+
+  function arreter(){
+    if(!actif) return;
+    cancelAnimationFrame(actif.raf);
+    actif.scene.remove();
+    actif = null;
+  }
+
+  // En direct : défile jusqu'à ce que le résultat arrive (voir surveiller).
+  function lancer(e){ demarrer(e.id, e.joueur, melange([e.equipe, ...e.egalite])); }
+  // Après coup : même animation, arrêt sur le gagnant après quelques secondes.
+  function revoir(e){
+    demarrer(e.id, e.joueur, melange([e.equipe, ...e.egalite]));
+    setTimeout(() => { if(actif && actif.id === e.id) atterrir(e.equipe); }, 2600);
+  }
+
+  // Appelée à chaque mise à jour des données : lance le direct à l'heure, pose
+  // l'arrivée quand le résultat est dans le classeur, accélère la lecture au besoin.
+  function surveiller(encheres){
+    const maintenant = Date.now();
+    let imminent = false;
+    encheres.forEach(e => {
+      if(e.statut !== 'Tirage' || !e.tiragePrevu) return;
+      const ms = new Date(e.tiragePrevu).getTime() - maintenant;
+      if(ms <= 0){
+        // Heure passée depuis moins de 10 min : direct lancé une seule fois automatiquement.
+        if(!vus.has(e.id) && ms > -10 * 60000){ vus.add(e.id); lancer(e); }
+      }else if(ms < 3 * 60000){
+        imminent = true;
+        if(!minuteurs.has(e.id)) minuteurs.set(e.id, setTimeout(() => { vus.add(e.id); lancer(e); load({ background: true }); }, ms));
+      }
+    });
+    if(actif && !actif.gagnant){
+      const e = encheres.find(x => x.id === actif.id);
+      if(e && e.statut === 'Terminée') atterrir(e.equipe);
+      else if(e && e.statut === 'Tirage') actif.etat.textContent = 'Le sort est lancé… résultat dans un instant';
+    }
+    const rapide = imminent || (actif && !actif.gagnant);
+    if(rapide && !sondage) sondage = setInterval(() => load({ background: true }), 4000);
+    if(!rapide && sondage){ clearInterval(sondage); sondage = null; }
+  }
+
+  document.addEventListener('keydown', ev => { if(ev.key === 'Escape') arreter(); });
+  return { lancer, revoir, surveiller };
+})();
 
 els.retryBtn.addEventListener('click', () => load());
 const barre = E.barreFiltres(document.getElementById('filtres'), () => { if(donnees) render(); });

@@ -92,6 +92,7 @@ function traiter(p, corps) {
   if (!secret || p.secret !== secret) return { ok: false, erreur: 'secret' };
   // Appelée chaque minute par le Worker (tâche planifiée), sans membre connecté.
   if (p.action === 'cloturerEncheres') return cloturerEncheres();
+  if (p.action === 'tirerAuSortAuto') return tirerAuSortAuto();
   // Chaque jour (tâche planifiée du Worker) : rappels et fins de période du 2e gardien.
   if (p.action === 'rappelsGardiens') return rappelsGardiens();
   // Page d'inscription publique (par le Worker api.lnhq.ca), sans membre connecté.
@@ -115,6 +116,7 @@ function traiter(p, corps) {
   if (p.action === 'lancerEnchere') return lancerEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'miserEnchere') return miserEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'tirerAuSort') return tirerAuSort(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'programmerTirage') return programmerTirage(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
 }
 
@@ -491,8 +493,9 @@ const ONGLET_JOUEURS = 'PLAYERSDATABASE';
 const COL_JOUEUR = 2;           // B  JOUEUR
 const COL_EQUIPE_JOUEUR = 26;   // Z  LNHQ TM
 const STATUT_UFA = 'UFA';
-const ENCHERES_ENTETES = ['ID', 'Joueur', 'Naissance', 'Position', 'OV', 'Équipe en tête', 'Mise', 'Nb mises', 'Début', 'Fin', 'Statut', 'Saison', 'Lancée par', 'Égalité'];
+const ENCHERES_ENTETES = ['ID', 'Joueur', 'Naissance', 'Position', 'OV', 'Équipe en tête', 'Mise', 'Nb mises', 'Début', 'Fin', 'Statut', 'Saison', 'Lancée par', 'Égalité', 'Tirage prévu'];
 const COL_EGALITE = 14;         // N : équipes à égalité à 1000 (codes séparés par des virgules)
+const COL_TIRAGE_PREVU = 15;    // O : heure du tirage au sort programmé (ISO), lancé par le Worker
 const MISES_ENTETES = ['Date', 'ID enchère', 'Joueur', 'Équipe', 'Mise'];
 const JETONS_ENTETES = ['Équipe', 'Code', 'Jetons de départ', 'Saison'];
 const MISE_MINIMALE = 50;
@@ -1661,16 +1664,19 @@ function ongletEncheres(nom) {
 
 function lireEncheres() {
   const o = ongletEncheres('ENCHERES');
-  // Colonne « Égalité » ajoutée après coup : en-tête posé si absent (format texte).
-  if (o.getRange(1, COL_EGALITE).getValue() !== 'Égalité') {
-    o.getRange(1, COL_EGALITE).setValue('Égalité');
-    o.getRange(1, COL_EGALITE, o.getMaxRows(), 1).setNumberFormat('@');
-  }
+  // Colonnes « Égalité » et « Tirage prévu » ajoutées après coup : en-tête posé si absent (format texte).
+  [[COL_EGALITE, 'Égalité'], [COL_TIRAGE_PREVU, 'Tirage prévu']].forEach(([col, titre]) => {
+    if (o.getRange(1, col).getValue() !== titre) {
+      o.getRange(1, col).setValue(titre);
+      o.getRange(1, col, o.getMaxRows(), 1).setNumberFormat('@');
+    }
+  });
   if (o.getLastRow() < 2) return [];
   return o.getRange(2, 1, o.getLastRow() - 1, ENCHERES_ENTETES.length).getDisplayValues().map((l, i) => ({
     rangee: i + 2, id: l[0], joueur: l[1], naissance: l[2], position: l[3], ov: l[4],
     equipe: l[5], mise: Number(l[6]) || 0, nb: Number(l[7]) || 0, debut: l[8], fin: l[9],
     statut: l[10], saison: l[11], egalite: l[13] ? l[13].split(',').map(c => c.trim()).filter(String) : [],
+    tiragePrevu: l[14] || '',
   })).filter(e => e.id);
 }
 
@@ -1838,9 +1844,29 @@ function cloturerEncheres() {
   }
 }
 
-// Admin seulement (publier.lnhq.ca) : tire au sort le gagnant d'une enchère à égalité.
-// Le joueur passe au gagnant ; les autres équipes retrouvent leurs 1000 jetons
-// (l'enchère n'est plus « Tirage », la colonne Égalité reste comme trace).
+// Tirage au sort d'une enchère à égalité (sous verrou, appelé par les deux fonctions
+// suivantes). Chaque équipe a la même chance. Le joueur passe au gagnant ; les autres
+// retrouvent leurs 1000 jetons (l'enchère n'est plus « Tirage »). Après le tirage :
+// F = gagnant, N = les autres candidats (la liste complète reste donc lisible).
+function effectuerTirage(e, auteur) {
+  const candidats = [e.equipe].concat(e.egalite);
+  const gagnant = candidats[Math.floor(Math.random() * candidats.length)];
+  const joueur = trouverAgentLibre(e.joueur, e.naissance);
+  if (joueur) ongletEncheres(ONGLET_JOUEURS).getRange(joueur.rangee, COL_EQUIPE_JOUEUR).setValue(gagnant);
+  else console.warn('Joueur introuvable (plus UFA ?) : ' + e.joueur);
+  e.equipe = gagnant;
+  e.egalite = candidats.filter(c => c !== gagnant);
+  e.statut = 'Terminée';
+  const o = ongletEncheres('ENCHERES');
+  o.getRange(e.rangee, 6).setValue(gagnant);
+  o.getRange(e.rangee, 11).setValue(e.statut);
+  o.getRange(e.rangee, COL_EGALITE).setValue(e.egalite.join(','));
+  console.log('Tirage ' + e.joueur + ' : ' + candidats.join(', ') + ' → ' + gagnant + ' (' + auteur + ')');
+  return { id: e.id, gagnant: gagnant, candidats: candidats,
+    discord: { flux: 'AGENTS', message: messageEnchere('tirage', e, '', !joueur, candidats) } };
+}
+
+// Admin seulement (publier.lnhq.ca) : tirage immédiat.
 function tirerAuSort(d, membre) {
   if (!peutModifier(membre)) return { ok: false, erreur: 'admin' };
   const verrou = LockService.getScriptLock();
@@ -1848,18 +1874,41 @@ function tirerAuSort(d, membre) {
   try {
     const e = lireEncheres().find(x => x.id === String(d.id || ''));
     if (!e || e.statut !== TIRAGE) return { ok: false, erreur: 'pas_tirage' };
-    const candidats = [e.equipe].concat(e.egalite);
-    const gagnant = candidats[Math.floor(Math.random() * candidats.length)];
-    const joueur = trouverAgentLibre(e.joueur, e.naissance);
-    if (joueur) ongletEncheres(ONGLET_JOUEURS).getRange(joueur.rangee, COL_EQUIPE_JOUEUR).setValue(gagnant);
-    else console.warn('Joueur introuvable (plus UFA ?) : ' + e.joueur);
-    e.equipe = gagnant;
-    e.statut = 'Terminée';
-    ongletEncheres('ENCHERES').getRange(e.rangee, 6).setValue(gagnant);
-    ongletEncheres('ENCHERES').getRange(e.rangee, 11).setValue(e.statut);
-    console.log('Tirage ' + e.joueur + ' : ' + candidats.join(', ') + ' → ' + gagnant + ' (par ' + membre.courriel + ')');
-    return { ok: true, id: e.id, gagnant: gagnant, candidats: candidats,
-      discord: { flux: 'AGENTS', message: messageEnchere('tirage', e, '', !joueur, candidats) } };
+    return Object.assign({ ok: true }, effectuerTirage(e, 'par ' + membre.courriel));
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// Admin seulement : programme (ou reprogramme) l'heure du tirage. À l'heure, le Worker
+// (tâche de chaque minute) appelle tirerAuSortAuto ; la page Enchères fait le spectacle.
+function programmerTirage(d, membre) {
+  if (!peutModifier(membre)) return { ok: false, erreur: 'admin' };
+  const quand = new Date(String(d.quand || ''));
+  if (isNaN(quand.getTime()) || quand.getTime() < Date.now() + 60000) return { ok: false, erreur: 'heure' };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const e = lireEncheres().find(x => x.id === String(d.id || ''));
+    if (!e || e.statut !== TIRAGE) return { ok: false, erreur: 'pas_tirage' };
+    e.tiragePrevu = quand.toISOString();
+    ongletEncheres('ENCHERES').getRange(e.rangee, COL_TIRAGE_PREVU).setValue(e.tiragePrevu);
+    console.log('Tirage programmé ' + e.joueur + ' : ' + e.tiragePrevu + ' (par ' + membre.courriel + ')');
+    return { ok: true, id: e.id, quand: e.tiragePrevu,
+      discord: { flux: 'AGENTS', message: messageEnchere('tirage_programme', e) } };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// Appelée par le Worker (sans membre) : fait les tirages dont l'heure est arrivée.
+function tirerAuSortAuto() {
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const maintenant = new Date();
+    const dus = lireEncheres().filter(e => e.statut === TIRAGE && e.tiragePrevu && new Date(e.tiragePrevu) <= maintenant);
+    return { ok: true, messages: dus.map(e => effectuerTirage(e, 'automatique').discord) };
   } finally {
     verrou.releaseLock();
   }
@@ -1898,6 +1947,11 @@ function messageEnchere(type, e, precedente, joueurIntrouvable, candidats) {
       'Équipes au tirage : ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', '),
       'Le gagnant sera tiré au sort par la ligue ; les autres équipes retrouveront leurs jetons.',
     ],
+    tirage_programme: [
+      'Tirage au sort pour **' + joueur + '** entre ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', ') + '.',
+      'En direct sur la page des enchères : <t:' + Math.floor(new Date(e.tiragePrevu).getTime() / 1000) + ':F> (<t:'
+        + Math.floor(new Date(e.tiragePrevu).getTime() / 1000) + ':R>)',
+    ],
     tirage: [
       '🎲 Tirage au sort entre ' + (candidats || []).map(nomEquipe).join(', ') + '.',
       '**' + nomEquipe(e.equipe) + '** remporte **' + joueur + '** pour **' + e.mise + ' jetons**.',
@@ -1909,7 +1963,8 @@ function messageEnchere(type, e, precedente, joueurIntrouvable, candidats) {
     ].concat(joueurIntrouvable ? ['⚠️ Joueur introuvable en UFA dans PLAYERSDATABASE : à inscrire à la main.'] : []),
   }[type];
   const titre = { nouvelle: '🆕 Nouvelle enchère', surenchere: '⬆️ Surenchère', fin: '🏁 Enchère terminée',
-    egalite: '🟰 Égalité à ' + MISE_MAXIMALE, attente_tirage: '🎲 Tirage au sort à venir', tirage: '🎲 Tirage au sort' }[type];
+    egalite: '🟰 Égalité à ' + MISE_MAXIMALE, attente_tirage: '🎲 Tirage au sort à venir', tirage: '🎲 Tirage au sort',
+    tirage_programme: '📅 Tirage au sort programmé' }[type];
   return {
     username: 'Agents libres · LNHQ',
     avatar_url: 'https://lnhq.ca/logo-lnhq.png',
@@ -1917,7 +1972,7 @@ function messageEnchere(type, e, precedente, joueurIntrouvable, candidats) {
       title: titre + ' : ' + e.joueur,
       url: 'https://lnhq.ca/encheres.html#e-' + e.id,
       description: lignes.join('\n'),
-      color: type === 'fin' || type === 'tirage' ? 0x2F9E44 : type === 'attente_tirage' || type === 'egalite' ? 0x7048E8 : 0xE8590C,
+      color: type === 'fin' || type === 'tirage' ? 0x2F9E44 : /^(attente_tirage|egalite|tirage_programme)$/.test(type) ? 0x7048E8 : 0xE8590C,
       thumbnail: { url: 'https://lnhq.ca/Logos/' + e.equipe + '.png' },
     }],
     allowed_mentions: { parse: [] },

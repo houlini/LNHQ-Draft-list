@@ -28,6 +28,7 @@
     pas_ouvert: 'Les enchères ne sont pas encore ouvertes.',
     admin: 'Seuls les admins de la ligue peuvent faire le tirage.',
     pas_tirage: 'Cette enchère n’attend plus de tirage.',
+    heure: 'Choisis une heure dans le futur (au moins 1 minute).',
   };
   const quand = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   // Arrivée par « Surenchérir » sur lnhq.ca (?id=…) : on affiche seulement cette enchère.
@@ -159,17 +160,40 @@
     const tete = el('div', 'ench-joueur');
     tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
     const candidats = [e.equipe, ...e.egalite];
-    const zone = el('div');
+    const zone = el('div', 'mise-tirage');
+    const prevu = e.tiragePrevu ? new Date(e.tiragePrevu) : null;
+    zone.append(el('span', 'mise-note', prevu
+      ? `📅 Tirage en direct sur lnhq.ca : ${quandLong.format(prevu)} (dans ${E.tempsRestant(e.tiragePrevu)})`
+      : 'Heure du tirage à venir : la ligue la programme.'));
+    // Admin : programme (ou change) l'heure ; le tirage se fait tout seul à l'heure, en direct.
     if(moi.admin){
-      const bouton = el('button', 'ench-bouton', '🎲 Tirer au sort');
-      bouton.type = 'button';
-      bouton.addEventListener('click', () => tirer(e, candidats, bouton));
-      zone.append(bouton);
-    }else{
-      zone.append(el('span', 'mise-note', 'Le tirage sera fait par la ligue.'));
+      const form = el('form', 'mise-carte');
+      form.noValidate = true;
+      const champ = el('input');
+      champ.type = 'datetime-local';
+      champ.setAttribute('aria-label', 'Heure du tirage au sort');
+      champ.value = versChamp(prevu || heureParDefaut());
+      const bouton = el('button', 'ench-bouton', prevu ? 'Changer l’heure' : '📅 Programmer le tirage');
+      bouton.type = 'submit';
+      form.append(champ, bouton);
+      form.addEventListener('submit', ev => { ev.preventDefault(); programmer(e, candidats, champ.value, bouton); });
+      zone.append(form);
     }
     c.append(tete, el('div', 'ench-tirage-titre', `Égalité à ${e.mise} jetons`), equipesEgalite('Au tirage', candidats), zone);
     return c;
+  }
+
+  // Champ datetime-local (heure de l'ordinateur) ; par défaut : la prochaine demi-heure, dans 30 min au moins.
+  const quandLong = new Intl.DateTimeFormat('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  function heureParDefaut(){
+    const d = new Date(Date.now() + 30 * 60000);
+    d.setSeconds(0, 0);
+    d.setMinutes(d.getMinutes() < 30 ? 30 : 60);
+    return d;
+  }
+  function versChamp(d){
+    const z = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`;
   }
 
   // Joueurs sans contrat LNH (contrat fictif LNHQ) : nom en rouge avec « * ».
@@ -292,15 +316,17 @@
     await recharger();
   }
 
-  async function tirer(e, candidats, bouton){
+  async function programmer(e, candidats, valeur, bouton){
     if(envoiEnCours) return;
-    if(!confirm(`Tirer au sort ${e.joueur} entre ${candidats.map(nomEquipe).join(', ')} ?\nLe résultat est définitif et annoncé sur Discord.`)) return;
+    const quand = new Date(valeur);
+    if(isNaN(quand.getTime()) || quand.getTime() < Date.now() + 60000){ afficher('Choisis une heure dans le futur (au moins 1 minute).', true); return; }
+    if(!confirm(`Programmer le tirage de ${e.joueur} (${candidats.map(nomEquipe).join(', ')}) pour ${quandLong.format(quand)} ?\n`
+      + 'Il se fera tout seul à l’heure, en direct sur la page des enchères, et sera annoncé sur Discord.')) return;
     envoiEnCours = true;
     bouton.disabled = true;
-    const r = await api('/api/encheres/tirage', { id: e.id });
+    const r = await api('/api/encheres/programmer', { id: e.id, quand: quand.toISOString() });
     envoiEnCours = false;
-    if(r.ok) afficher(`🎲 ${nomEquipe(r.gagnant)} remporte ${e.joueur}. Les autres équipes retrouvent leurs jetons.`
-      + (r.discord === false ? ' (Annonce Discord non envoyée.)' : ''), false);
+    if(r.ok) afficher(`📅 Tirage programmé pour ${quandLong.format(quand)}.` + (r.discord === false ? ' (Annonce Discord non envoyée.)' : ''), false);
     else afficher(texteErreur(r), true);
     await recharger();
   }
