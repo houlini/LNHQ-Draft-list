@@ -10,6 +10,11 @@
   padding:10px 18px; border-radius:9px; text-decoration:none;
 }
 .ench-lancer:hover{ opacity:0.9; }
+/* Filtres position / équipe : 2e ligne de la bande orange (page publique), ou au-dessus des
+   enchères en cours (page de mise). */
+.ench-filtres{ display:flex; flex-wrap:wrap; gap:8px 14px; width:100%; }
+.ench-filtre span{ font-weight:700; font-size:12.5px; text-transform:uppercase; letter-spacing:0.04em; }
+.ench-filtre select{ max-width:220px; }
 .ench-lancer svg{ width:16px; height:16px; }
 
 .ench-titre{

@@ -134,5 +134,50 @@
     return bloc;
   }
 
-  window.LNHQ_ENCHERES = Object.freeze({ REGLES, ouvert, minimum, charger, agentsLibres, tempsRestant, decompte });
+  /* Filtres des enchères (position du joueur, équipe en tête ou à égalité).
+     Positions : « C/RW », « LD/RD »… ; anciennes valeurs L, R, D acceptées. */
+  const POSITIONS = [['', 'Toutes les positions'], ['A', 'Attaquants'], ['C', 'C'], ['LW', 'LW'], ['RW', 'RW'],
+    ['D', 'Défenseurs'], ['LD', 'LD'], ['RD', 'RD'], ['G', 'Gardiens']];
+  const positionsDe = p => String(p || '').toUpperCase().split(/[\/,\s]+/).filter(Boolean)
+    .flatMap(t => t === 'L' ? ['LW'] : t === 'R' ? ['RW'] : t === 'D' ? ['LD', 'RD'] : [t]);
+  function correspond(e, filtres){
+    if(filtres.equipe && e.equipe !== filtres.equipe && !(e.egalite || []).includes(filtres.equipe)) return false;
+    if(!filtres.position) return true;
+    const pos = positionsDe(e.position);
+    if(filtres.position === 'A') return pos.some(p => ['C', 'LW', 'RW'].includes(p));
+    if(filtres.position === 'D') return pos.some(p => ['LD', 'RD'].includes(p));
+    return pos.includes(filtres.position);
+  }
+  // Deux menus (position, équipe) ajoutés à `conteneur`. majEquipes(encheres, nomEquipe) remplit
+  // le menu des équipes avec celles qui ont une enchère (et leur nombre), en gardant le choix.
+  function barreFiltres(conteneur, quandChange){
+    const filtres = { position: '', equipe: '' };
+    const menu = (cle, etiquette) => {
+      const bloc = document.createElement('label');
+      bloc.className = 'filter-control ench-filtre';
+      const texte = document.createElement('span');
+      texte.textContent = etiquette;
+      const select = document.createElement('select');
+      select.addEventListener('change', () => { filtres[cle] = select.value; quandChange(filtres); });
+      bloc.append(texte, select);
+      conteneur.append(bloc);
+      return select;
+    };
+    const selPosition = menu('position', 'Position');
+    selPosition.append(...POSITIONS.map(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; }));
+    const selEquipe = menu('equipe', 'Équipe');
+    selEquipe.append(new Option('Toutes les équipes', ''));
+    function majEquipes(encheres, nomEquipe){
+      const compte = new Map();
+      encheres.forEach(e => [e.equipe, ...(e.egalite || [])].forEach(c => { if(c) compte.set(c, (compte.get(c) || 0) + 1); }));
+      const codes = [...compte.keys()].sort((a, b) => nomEquipe(a).localeCompare(nomEquipe(b), 'fr'));
+      if(filtres.equipe && !compte.has(filtres.equipe)) codes.push(filtres.equipe);
+      const options = [['', 'Toutes les équipes'], ...codes.map(c => [c, `${nomEquipe(c)} (${compte.get(c) || 0})`])];
+      selEquipe.replaceChildren(...options.map(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; }));
+      selEquipe.value = filtres.equipe;
+    }
+    return { filtres, majEquipes };
+  }
+
+  window.LNHQ_ENCHERES = Object.freeze({ REGLES, ouvert, minimum, charger, agentsLibres, tempsRestant, decompte, correspond, barreFiltres });
 })();

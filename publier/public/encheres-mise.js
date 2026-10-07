@@ -37,6 +37,7 @@
   let donnees = null;
   let agents = [];
   let envoiEnCours = false;
+  let barre = null;        // filtres position / équipe (E.barreFiltres)
 
   function el(tag, cls, text){
     const e = document.createElement(tag);
@@ -206,11 +207,15 @@
     $('blocTirages').hidden = !tirages.length || !!cible;
     $('compteTirages').textContent = tirages.length ? '(' + tirages.length + ')' : '';
     const enCours = donnees.encheres.filter(e => e.statut === 'En cours').sort((a, b) => new Date(a.fin) - new Date(b.fin));
-    const autres = enCours.filter(e => e !== cible);
+    // Filtres position / équipe (au-dessus de la grille).
+    barre.majEquipes(enCours, nomEquipe);
+    const filtre = !!(barre.filtres.position || barre.filtres.equipe);
+    const autres = enCours.filter(e => e !== cible && E.correspond(e, barre.filtres));
     $('enCours').replaceChildren(...autres.map(carte));
     $('blocEnCours').hidden = !!cible;
     $('aucuneEnCours').hidden = !!autres.length;
-    $('compteEnCours').textContent = enCours.length ? '(' + enCours.length + ')' : '';
+    $('aucuneEnCours').textContent = filtre && enCours.length ? 'Aucune enchère pour ces filtres.' : 'Aucune enchère en cours.';
+    $('compteEnCours').textContent = !enCours.length ? '' : filtre ? `(${autres.length} sur ${enCours.length})` : '(' + enCours.length + ')';
 
     // Liste des agents libres, sans ceux déjà en enchère.
     const occupes = new Set(enCours.map(e => e.joueur + '|' + e.naissance));
@@ -319,6 +324,7 @@
     }
     $('qui').textContent = (moi.code ? 'Tu mises pour ' + moi.equipe : 'Admin de la ligue') + (moi.code && moi.admin ? ' · admin' : '');
     $('formLancer').addEventListener('submit', lancer);
+    barre = E.barreFiltres($('filtres'), () => { if(donnees) render(); });
     $('voirTout').addEventListener('click', () => { quitterCible(); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     $('contenu').hidden = false;
     // Avant l'ouverture : décompte au-dessus du contenu (disparaît à l'heure).

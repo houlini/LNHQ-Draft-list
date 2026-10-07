@@ -29,6 +29,10 @@
 .mise-carte .ench-bouton{ min-height:44px; }
 .mise-note{ font-size:13px; font-weight:700; color:var(--accent); }
 
+/* Filtres au-dessus des enchères en cours (le style de base vient de site.css / encheres.css). */
+.mise-filtres{ margin:0 0 12px; }
+.mise-filtres .ench-filtre span{ color:var(--ink-muted); }
+
 /* Arrivée par « Surenchérir » : l'enchère seule, en grand, puis un lien vers le reste. */
 .mise-cible{ display:flex; flex-direction:column; gap:12px; }
 .mise-cible .ench-grille{ grid-template-columns:minmax(0, 520px); }

@@ -6,10 +6,10 @@
 <title>Enchères des agents libres</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=7">
-<link rel="stylesheet" href="encheres.css?v=3">
+<link rel="stylesheet" href="encheres.css?v=4">
 <script src="site-nav.js?v=3"></script>
 <script src="sans-contrat.js"></script>
-<script src="encheres-donnees.js?v=3"></script>
+<script src="encheres-donnees.js?v=4"></script>
 </head>
 <body>
 
@@ -22,6 +22,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Lancer une enchère
     </a>
+    <div class="ench-filtres" id="filtres"></div>
   </div>
 
   <main id="content">
@@ -185,10 +186,16 @@ function render(){
   donnees.equipes.forEach(eq => noms.set(eq.code, eq.nom));
   const enCours = donnees.encheres.filter(e => e.statut === 'En cours').sort((a, b) => new Date(a.fin) - new Date(b.fin));
   const tirages = donnees.encheres.filter(e => e.statut === 'Tirage');
-  els.enCours.replaceChildren(...tirages.map(carteTirage), ...enCours.map(carteEnCours));
-  els.aucuneEnCours.hidden = !!(enCours.length || tirages.length);
-  els.aucuneEnCours.textContent = E.ouvert() ? 'Aucune enchère en cours. Lance la première !' : 'Les enchères ne sont pas encore ouvertes.';
-  els.compteEnCours.textContent = enCours.length ? '(' + enCours.length + ')' : '';
+  // Filtres position / équipe (bande orange) : seulement les cartes ; l'historique reste complet.
+  barre.majEquipes([...enCours, ...tirages], nomEquipe);
+  const garde = e => E.correspond(e, barre.filtres);
+  const enCoursVus = enCours.filter(garde), tiragesVus = tirages.filter(garde);
+  const filtre = !!(barre.filtres.position || barre.filtres.equipe);
+  els.enCours.replaceChildren(...tiragesVus.map(carteTirage), ...enCoursVus.map(carteEnCours));
+  els.aucuneEnCours.hidden = !!(enCoursVus.length || tiragesVus.length);
+  els.aucuneEnCours.textContent = filtre && (enCours.length || tirages.length) ? 'Aucune enchère pour ces filtres.'
+    : E.ouvert() ? 'Aucune enchère en cours. Lance la première !' : 'Les enchères ne sont pas encore ouvertes.';
+  els.compteEnCours.textContent = !enCours.length ? '' : filtre ? `(${enCoursVus.length} sur ${enCours.length})` : '(' + enCours.length + ')';
 
   // Jetons : une petite tuile par équipe, dans l'ordre alphabétique (chacun retrouve
   // la sienne au même endroit). Engagés et dépensés seulement s'il y en a.
@@ -305,6 +312,7 @@ async function load({ background = false } = {}){
 }
 
 els.retryBtn.addEventListener('click', () => load());
+const barre = E.barreFiltres(document.getElementById('filtres'), () => { if(donnees) render(); });
 load();
 // Avant l'ouverture : décompte en haut de la page (disparaît à l'heure).
 E.decompte(document.getElementById('content'), () => load({ background: true }));
