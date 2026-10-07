@@ -1940,12 +1940,12 @@ function messageEnchere(type, e, precedente, joueurIntrouvable, candidats) {
     egalite: [
       '**' + nomEquipe(precedente) + '** mise aussi **' + MISE_MAXIMALE + ' jetons** sur **' + joueur + '** : égalité.',
       'À égalité : ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', '),
-      'Tirage au sort à la fin : <t:' + fin + ':f> (<t:' + fin + ':R>)',
+      'Fin de l\'enchère : <t:' + fin + ':f> (<t:' + fin + ':R>) ; le tirage au sort en direct sera programmé ensuite par la ligue.',
     ],
     attente_tirage: [
       'Enchère terminée à égalité sur **' + joueur + '** (' + MISE_MAXIMALE + ' jetons).',
       'Équipes au tirage : ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', '),
-      'Le gagnant sera tiré au sort par la ligue ; les autres équipes retrouveront leurs jetons.',
+      'Le tirage au sort se fera en direct sur la page des enchères, à l\'heure que la ligue annoncera ; les autres équipes retrouveront leurs jetons.',
     ],
     tirage_programme: [
       'Tirage au sort pour **' + joueur + '** entre ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', ') + '.',

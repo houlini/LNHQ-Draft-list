@@ -100,7 +100,7 @@
     const reste = el('strong', 'ench-reste');
     reste.dataset.fin = e.fin;
     reste.textContent = E.tempsRestant(e.fin);
-    chrono.append(el('span', null, e.egalite.length ? 'Tirage dans' : 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
+    chrono.append(el('span', null, 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
 
     const minimum = E.minimum(e);
     const auMax = e.mise >= MAX();
@@ -110,7 +110,7 @@
     }else if(e.equipe === moi.code){
       zone.append(el('span', 'mise-note', auMax ? `✓ Tu as misé le maximum (${MAX()}).` : '✓ Tu es en tête de cette enchère.'));
     }else if(e.egalite.includes(moi.code)){
-      zone.append(el('span', 'mise-note', `✓ Tu es à égalité à ${MAX()} : tirage au sort à la fin.`));
+      zone.append(el('span', 'mise-note', `✓ Tu es à égalité à ${MAX()} : tirage au sort en direct après la fin (heure annoncée par la ligue).`));
     }else if(auMax){
       // Déjà au maximum : on peut seulement égaler (sans relancer le chrono).
       const bouton = el('button', 'ench-bouton', `Égaler à ${MAX()}`);

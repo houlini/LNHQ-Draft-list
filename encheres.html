@@ -132,12 +132,12 @@ function carteEnCours(e){
   const reste = el('strong', 'ench-reste');
   reste.dataset.fin = e.fin;
   reste.textContent = E.tempsRestant(e.fin);
-  chrono.append(el('span', null, e.egalite.length ? 'Tirage dans' : 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
+  chrono.append(el('span', null, 'Fin dans'), reste, el('span', 'ench-fin', quand.format(new Date(e.fin))));
 
   const auMax = e.mise >= E.REGLES.miseMaximale;
   const pied = el('div', 'ench-pied');
   pied.append(el('span', null, `${e.nb} mise${e.nb > 1 ? 's' : ''} · ` + (auMax
-    ? `maximum atteint : on peut égaler à ${E.REGLES.miseMaximale}`
+    ? `maximum atteint : on peut égaler à ${E.REGLES.miseMaximale}` + (e.egalite.length ? ' · à la fin, tirage au sort en direct (heure annoncée par la ligue)' : '')
     : `prochaine : ${E.minimum(e)} jetons min.`)));
   const bouton = el('a', 'ench-bouton', auMax ? `Égaler (${E.REGLES.miseMaximale})` : 'Surenchérir');
   bouton.href = MISER + '?id=' + encodeURIComponent(e.id);
