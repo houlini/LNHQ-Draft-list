@@ -29,6 +29,16 @@
 .mise-carte .ench-bouton{ min-height:44px; }
 .mise-note{ font-size:13px; font-weight:700; color:var(--accent); }
 
+/* Arrivée par « Surenchérir » : l'enchère seule, en grand, puis un lien vers le reste. */
+.mise-cible{ display:flex; flex-direction:column; gap:12px; }
+.mise-cible .ench-grille{ grid-template-columns:minmax(0, 520px); }
+.mise-cible .ench-carte{ box-shadow:0 0 0 2px var(--accent); }
+.mise-tout{
+  align-self:flex-start; padding:10px 14px; border-radius:8px; cursor:pointer;
+  background:transparent; color:var(--ink); border:1px solid var(--line); font:inherit; font-weight:600;
+}
+.mise-tout:hover{ border-color:var(--accent); color:var(--accent); }
+
 .pub-message{ margin:0; padding:12px 14px; border-radius:8px; font-size:15px; }
 .pub-message.is-erreur{ background:var(--danger-soft); color:var(--danger); }
 .pub-message.is-succes{ background:var(--accent-soft); color:var(--ink); }

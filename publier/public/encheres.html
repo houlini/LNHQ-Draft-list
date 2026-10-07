@@ -41,6 +41,13 @@
     <div id="contenu" hidden>
       <div class="mise-jetons" id="blocJetons" hidden><div class="mise-jetons-ligne"><img id="logoMoi" alt=""><strong id="jetonsMoi"></strong></div><span>jetons disponibles</span></div>
 
+      <!-- Arrivée par « Surenchérir » (?id=…) : seulement cette enchère, sans le formulaire de lancement. -->
+      <section class="mise-cible" id="blocCible" hidden>
+        <h2 class="ench-titre">Surenchérir</h2>
+        <div class="ench-grille" id="cible"></div>
+        <button type="button" class="mise-tout" id="voirTout">Voir toutes les enchères ou en lancer une</button>
+      </section>
+
       <section class="mise-lancer" id="blocLancer">
         <h2 class="ench-titre">Lancer une enchère</h2>
         <form id="formLancer" class="mise-form" novalidate>
@@ -63,7 +70,7 @@
         <div class="ench-grille" id="tirages"></div>
       </section>
 
-      <section>
+      <section id="blocEnCours">
         <h2 class="ench-titre">Enchères en cours <span class="ench-compte" id="compteEnCours"></span></h2>
         <div class="ench-grille" id="enCours"></div>
         <p class="ench-vide" id="aucuneEnCours" hidden>Aucune enchère en cours.</p>

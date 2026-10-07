@@ -30,13 +30,13 @@
     pas_tirage: 'Cette enchère n’attend plus de tirage.',
   };
   const quand = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const cibleId = new URLSearchParams(location.search).get('id') || '';
+  // Arrivée par « Surenchérir » sur lnhq.ca (?id=…) : on affiche seulement cette enchère.
+  let cibleId = new URLSearchParams(location.search).get('id') || '';
 
   let moi = null;          // { equipe, code, admin }
   let donnees = null;
   let agents = [];
   let envoiEnCours = false;
-  let cibleVue = false;
 
   function el(tag, cls, text){
     const e = document.createElement(tag);
@@ -186,15 +186,30 @@
     $('jetonsMoi').textContent = dispo != null ? dispo : '';
     $('blocJetons').hidden = dispo == null;
     if(moi.code && !$('logoMoi').src) $('logoMoi').src = 'https://lnhq.ca/Logos/' + moi.code + '.png';
-    // Avant l'ouverture (décompte affiché) ou admin sans équipe : pas de lancement.
-    $('blocLancer').hidden = !E.ouvert() || !moi.code;
-    const tirages = donnees.encheres.filter(e => e.statut === 'Tirage');
+    // Enchère visée par « Surenchérir » : seule en haut de la page. Terminée entre-temps :
+    // on le dit et on revient à la page complète.
+    let cible = null;
+    if(cibleId){
+      cible = donnees.encheres.find(e => e.id === cibleId && (e.statut === 'En cours' || e.statut === 'Tirage')) || null;
+      if(!cible){
+        const e = donnees.encheres.find(x => x.id === cibleId);
+        afficher(e ? `L’enchère sur ${e.joueur} est terminée.` : 'Cette enchère est introuvable ou terminée.', true);
+        quitterCible();
+      }
+    }
+    $('blocCible').hidden = !cible;
+    $('cible').replaceChildren(...(cible ? [cible.statut === 'Tirage' ? carteTirage(cible) : carte(cible)] : []));
+    // Avant l'ouverture (décompte affiché), admin sans équipe ou surenchère : pas de lancement.
+    $('blocLancer').hidden = !E.ouvert() || !moi.code || !!cible;
+    const tirages = donnees.encheres.filter(e => e.statut === 'Tirage' && e !== cible);
     $('tirages').replaceChildren(...tirages.map(carteTirage));
-    $('blocTirages').hidden = !tirages.length;
+    $('blocTirages').hidden = !tirages.length || !!cible;
     $('compteTirages').textContent = tirages.length ? '(' + tirages.length + ')' : '';
     const enCours = donnees.encheres.filter(e => e.statut === 'En cours').sort((a, b) => new Date(a.fin) - new Date(b.fin));
-    $('enCours').replaceChildren(...enCours.map(carte));
-    $('aucuneEnCours').hidden = !!enCours.length;
+    const autres = enCours.filter(e => e !== cible);
+    $('enCours').replaceChildren(...autres.map(carte));
+    $('blocEnCours').hidden = !!cible;
+    $('aucuneEnCours').hidden = !!autres.length;
     $('compteEnCours').textContent = enCours.length ? '(' + enCours.length + ')' : '';
 
     // Liste des agents libres, sans ceux déjà en enchère.
@@ -209,11 +224,12 @@
     $('aideLancer').textContent = agents.length
       ? `${agents.length} agents libres. Mise de départ : ${E.REGLES.miseMinimale} à ${MAX()} jetons. Le chrono démarre à 24 h.`
       : "Aucun agent libre pour l'instant (colonne LNHQ TM = UFA dans PLAYERSDATABASE).";
+  }
 
-    if(cibleId && !cibleVue){
-      const cible = document.getElementById('e-' + cibleId);
-      if(cible){ cible.classList.add('is-ciblee'); cible.scrollIntoView({ block: 'center' }); cibleVue = true; }
-    }
+  // Retour à la page complète (toutes les enchères, formulaire de lancement).
+  function quitterCible(){
+    cibleId = '';
+    history.replaceState(null, '', location.pathname);
   }
 
   async function recharger(){
@@ -303,6 +319,7 @@
     }
     $('qui').textContent = (moi.code ? 'Tu mises pour ' + moi.equipe : 'Admin de la ligue') + (moi.code && moi.admin ? ' · admin' : '');
     $('formLancer').addEventListener('submit', lancer);
+    $('voirTout').addEventListener('click', () => { quitterCible(); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     $('contenu').hidden = false;
     // Avant l'ouverture : décompte au-dessus du contenu (disparaît à l'heure).
     E.decompte($('contenu'), () => recharger());
