@@ -24,6 +24,7 @@
     terminee: 'Cette enchère est terminée.',
     en_tete: 'Tu es déjà en tête de cette enchère.',
     deja_egalite: 'Tu as déjà misé le maximum sur cette enchère (égalité).',
+    plafond: 'Ce joueur te ferait dépasser le plafond salarial.',
     maximum: 'Mise trop haute : le maximum est de 1000 jetons.',
     pas_ouvert: 'Les enchères ne sont pas encore ouvertes.',
     admin: 'Seuls les admins de la ligue peuvent faire le tirage.',
@@ -57,6 +58,19 @@
   const nomEquipe = code => ((donnees && donnees.equipes.find(e => e.code === code)) || {}).nom || code;
   const mesJetons = () => ((donnees && donnees.equipes.find(e => e.code === moi.code)) || {}).disponibles;
   const MAX = () => E.REGLES.miseMaximale;
+  // Plafond salarial : espace sous le plafond (onglet masse) moins les salaires déjà engagés.
+  let espaces = {};
+  const argent = n => new Intl.NumberFormat('fr-CA').format(Math.round(n || 0)) + ' $';
+  const salaireDe = (nom, naissance) => ((agents.find(j => j.nom === nom && j.naissance === naissance)) || {}).salaire || 0;
+  function espaceRestant(sauf){
+    if(!moi.code || espaces[moi.code] == null) return null;
+    return espaces[moi.code] - E.salairesEngages(moi.code, donnees.encheres, agents, sauf);
+  }
+  // Message si ce joueur ferait dépasser le plafond, sinon ''.
+  function horsPlafond(salaire, sauf){
+    const reste = espaceRestant(sauf);
+    return reste != null && salaire > reste ? `Hors plafond : salaire ${argent(salaire)}, espace restant ${argent(reste)}` : '';
+  }
 
   function afficher(texte, erreur){
     const m = $('message');
@@ -71,6 +85,12 @@
     if(r.erreur === 'minimum' && r.minimum) t = `Mise trop basse : minimum ${r.minimum} jetons.`;
     if(r.erreur === 'jetons' && r.disponibles != null) t = `Pas assez de jetons : il t'en reste ${r.disponibles} de disponibles.`;
     if(r.erreur === 'maximum' && r.maximum) t = `Mise trop haute : le maximum est de ${r.maximum} jetons.`;
+    if(r.erreur === 'plafond'){
+      const $$ = n => Number(n || 0).toLocaleString('fr-CA') + ' $';
+      t = `Ce joueur te ferait dépasser le plafond salarial : salaire ${$$(r.salaire)}`
+        + (r.engage ? ` + ${$$(r.engage)} déjà engagés dans tes autres enchères` : '')
+        + `, espace disponible ${$$(r.espace)}.`;
+    }
     return t;
   }
 
@@ -88,7 +108,9 @@
     const c = el('article', 'ench-carte');
     c.id = 'e-' + e.id;
     const tete = el('div', 'ench-joueur');
-    tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
+    const salaire = salaireDe(e.joueur, e.naissance);
+    tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV', salaire && argent(salaire)].filter(Boolean).join(' · ')));
+    const plafond = horsPlafond(salaire, e.id);
 
     const meneur = el('div', 'ench-meneur');
     const qui = el('div', 'ench-qui');
@@ -112,6 +134,8 @@
       zone.append(el('span', 'mise-note', auMax ? `✓ Tu as misé le maximum (${MAX()}).` : '✓ Tu es en tête de cette enchère.'));
     }else if(e.egalite.includes(moi.code)){
       zone.append(el('span', 'mise-note', `✓ Tu es à égalité à ${MAX()} : tirage au sort en direct après la fin (heure annoncée par la ligue).`));
+    }else if(plafond){
+      zone.append(el('span', 'mise-note is-plafond', plafond + '.'));
     }else if(auMax){
       // Déjà au maximum : on peut seulement égaler (sans relancer le chrono).
       const bouton = el('button', 'ench-bouton', `Égaler à ${MAX()}`);
@@ -186,7 +210,8 @@
     const c = el('article', 'ench-carte is-tirage');
     c.id = 'e-' + e.id;
     const tete = el('div', 'ench-joueur');
-    tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
+    const salaire = salaireDe(e.joueur, e.naissance);
+    tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV', salaire && argent(salaire)].filter(Boolean).join(' · ')));
     const candidats = [e.equipe, ...e.egalite];
     c.append(tete, el('div', 'ench-tirage-titre', `Égalité à ${e.mise} jetons`), equipesEgalite('Au tirage', candidats), zoneTirage(e, candidats));
     return c;
@@ -220,6 +245,9 @@
     const dispo = moi.code ? mesJetons() : null;
     $('jetonsMoi').textContent = dispo != null ? dispo : '';
     $('blocJetons').hidden = dispo == null;
+    const reste = espaceRestant('');
+    $('plafondMoi').textContent = reste != null ? `Espace sous le plafond : ${argent(reste)}` : '';
+    $('plafondMoi').hidden = reste == null;
     if(moi.code && !$('logoMoi').src) $('logoMoi').src = 'https://lnhq.ca/Logos/' + moi.code + '.png';
     // Enchère visée par « Surenchérir » : seule en haut de la page. Terminée entre-temps :
     // on le dit et on revient à la page complète.
@@ -256,7 +284,8 @@
     $('listeJoueurs').replaceChildren(...agents.filter(j => !occupes.has(j.nom + '|' + j.naissance)).map(j => {
       const o = el('option');
       o.value = j.nom;
-      o.label = [j.position, j.ov && j.ov + ' OV', j.age && j.age + ' ans', estSansContrat(j.nom) && '* sans contrat LNH'].filter(Boolean).join(' · ');
+      o.label = [j.position, j.ov && j.ov + ' OV', j.age && j.age + ' ans', j.salaire && argent(j.salaire),
+        estSansContrat(j.nom) && '* sans contrat LNH', reste != null && j.salaire > reste && '⚠ hors plafond'].filter(Boolean).join(' · ');
       return o;
     }));
     $('montantLancer').max = String(Math.min(MAX(), Math.max(E.REGLES.miseMinimale, dispo || 0)));
@@ -273,7 +302,7 @@
 
   async function recharger(){
     try{
-      [donnees, agents] = await Promise.all([E.charger(), E.agentsLibres()]);
+      [donnees, agents, espaces] = await Promise.all([E.charger(), E.agentsLibres(), E.espacesPlafond().catch(() => ({}))]);
       render();
     }catch(err){
       console.error(err);

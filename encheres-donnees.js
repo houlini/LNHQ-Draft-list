@@ -75,9 +75,33 @@
 
   // Agents libres : colonne Z (LNHQ TM) = UFA dans PLAYERSDATABASE.
   async function agentsLibres(){
-    const q = encodeURIComponent("select B, C, D, E, H where Z = 'UFA' order by C desc");
+    const q = encodeURIComponent("select B, C, D, E, H, N where Z = 'UFA' order by C desc");
     const table = await gviz('sheet=PLAYERSDATABASE&tq=' + q);
-    return lignes(table).map(l => ({ nom: l[0], ov: l[1], age: l[2] ? String(Math.floor(nombre(l[2]))) : '', naissance: l[3], position: l[4] })).filter(j => j.nom);
+    return lignes(table).map(l => ({ nom: l[0], ov: l[1], age: l[2] ? String(Math.floor(nombre(l[2]))) : '', naissance: l[3], position: l[4],
+      salaire: nombre(l[5]) })).filter(j => j.nom);
+  }
+
+  // Espace sous le plafond salarial par équipe (onglet masse salariale, colonne PLAFOND) : { code: montant }.
+  async function espacesPlafond(){
+    const table = await gviz('gid=900003016');
+    const cols = table.cols.map(c => (c.label || '').trim().toUpperCase());
+    const iCode = cols.indexOf('TM'), iEspace = cols.indexOf('PLAFOND');
+    const espaces = {};
+    if(iCode < 0 || iEspace < 0) return espaces;
+    table.rows.forEach(r => {
+      const c = r.c || [], code = String((c[iCode] || {}).v || '').trim().toUpperCase();
+      if(code && c[iEspace] && c[iEspace].v != null) espaces[code] = Number(c[iEspace].v) || 0;
+    });
+    return espaces;
+  }
+
+  // Salaires engagés par une équipe : enchères où elle est en tête ou à égalité, et enchères
+  // gagnées dont le joueur est encore UFA (pas encore dans la masse). Même calcul que le script.
+  function salairesEngages(code, encheres, agents, sauf){
+    const salaire = e => ((agents.find(j => j.nom === e.joueur && j.naissance === e.naissance)) || {}).salaire || 0;
+    return encheres.filter(e => e.id !== sauf && (
+      ((e.statut === 'En cours' || e.statut === 'Tirage') && (e.equipe === code || e.egalite.includes(code))) ||
+      (e.statut === 'Terminée' && e.equipe === code))).reduce((s, e) => s + salaire(e), 0);
   }
 
   // « 23 h 04 min », « 12 min 30 s », ou « Terminée ».
@@ -180,5 +204,5 @@
     return { filtres, majEquipes };
   }
 
-  window.LNHQ_ENCHERES = Object.freeze({ REGLES, ouvert, minimum, charger, agentsLibres, tempsRestant, decompte, correspond, barreFiltres });
+  window.LNHQ_ENCHERES = Object.freeze({ REGLES, ouvert, minimum, charger, agentsLibres, espacesPlafond, salairesEngages, tempsRestant, decompte, correspond, barreFiltres });
 })();

@@ -1728,6 +1728,56 @@ function codeDuMembre(membre) {
   return CODES_EQUIPES[membre.equipe] || '';
 }
 
+/* ---------- Plafond salarial ----------
+   Onglet de la masse salariale (celui de lnhq.ca/masse.html) : colonne TM (code d'équipe)
+   et PLAFOND = espace restant sous le plafond. Salaire d'un agent libre : 2026-27 (colonne N).
+   Une équipe ne peut pas lancer ni miser si : salaire du joueur + salaires des joueurs des
+   autres enchères où elle est en tête (ou à égalité) > son espace sous le plafond. */
+const GID_MASSE = 900003016;
+const COL_SALAIRE = 14;   // N  2026-27
+const argent = v => Number(String(v || '').replace(/[^\d.-]/g, '')) || 0;
+
+function espacesPlafond() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheets().find(s => s.getSheetId() === GID_MASSE);
+  if (!o) throw new Error('Onglet de la masse salariale introuvable');
+  const lignes = o.getDataRange().getDisplayValues();
+  const entetes = lignes[0].map(h => String(h).trim().toUpperCase());
+  const iCode = entetes.indexOf('TM'), iEspace = entetes.indexOf('PLAFOND');
+  if (iCode < 0 || iEspace < 0) throw new Error('Colonnes TM / PLAFOND introuvables dans la masse salariale');
+  const espaces = {};
+  lignes.slice(1).forEach(l => { const c = String(l[iCode]).trim().toUpperCase(); if (c) espaces[c] = argent(l[iEspace]); });
+  return espaces;
+}
+
+// Salaire 2026-27 des agents libres : « Nom, Prénom|naissance » → montant.
+function salairesUfa() {
+  const o = ongletEncheres(ONGLET_JOUEURS);
+  const valeurs = o.getRange(2, COL_JOUEUR, o.getLastRow() - 1, COL_EQUIPE_JOUEUR - COL_JOUEUR + 1).getDisplayValues();
+  const salaires = {};
+  valeurs.forEach(l => {
+    if (String(l[COL_EQUIPE_JOUEUR - COL_JOUEUR]).trim().toUpperCase() !== STATUT_UFA) return;
+    salaires[l[0].trim() + '|' + l[5 - COL_JOUEUR].trim()] = argent(l[COL_SALAIRE - COL_JOUEUR]);
+  });
+  return salaires;
+}
+
+// null si ça passe ; sinon la réponse d'erreur « plafond » (avec les montants pour le message).
+function depassePlafond(code, joueur, encheres, idActuel) {
+  const salaires = salairesUfa();
+  const salaire = salaires[joueur.nom + '|' + joueur.naissance] || 0;
+  // Enchères gagnées dont le joueur est encore UFA (pas encore transféré dans l'équipe,
+  // donc absent de la masse) : comptées aussi. Les joueurs transférés ne sont plus dans `salaires`.
+  const engage = encheres
+    .filter(e => e.id !== idActuel && (
+      ((e.statut === EN_COURS || e.statut === TIRAGE) && (e.equipe === code || e.egalite.includes(code))) ||
+      (e.statut === 'Terminée' && e.equipe === code)))
+    .reduce((s, e) => s + (salaires[e.joueur + '|' + e.naissance] || 0), 0);
+  const espace = espacesPlafond()[code];
+  if (espace == null) return null;   // équipe absente de l'onglet : on ne bloque pas
+  if (salaire + engage <= espace) return null;
+  return { ok: false, erreur: 'plafond', salaire: salaire, engage: engage, espace: espace };
+}
+
 function lancerEnchere(d, membre) {
   const code = codeDuMembre(membre);
   if (!code) return { ok: false, erreur: 'equipe' };
@@ -1747,6 +1797,8 @@ function lancerEnchere(d, membre) {
     const config = lireJetons();
     const j = jetonsEquipe(code, encheres, config);
     if (j.disponibles < montant) return { ok: false, erreur: 'jetons', disponibles: j.disponibles };
+    const plafond = depassePlafond(code, joueur, encheres, '');
+    if (plafond) return plafond;
 
     const maintenant = new Date();
     const e = {
@@ -1779,6 +1831,8 @@ function miserEnchere(d, membre) {
     if (!e || e.statut !== EN_COURS || new Date(e.fin) <= maintenant) return { ok: false, erreur: 'terminee' };
     if (e.equipe === code) return { ok: false, erreur: 'en_tete' };
     if (e.egalite.includes(code)) return { ok: false, erreur: 'deja_egalite' };
+    const plafond = depassePlafond(code, { nom: e.joueur, naissance: e.naissance }, encheres, e.id);
+    if (plafond) return plafond;
     const j = jetonsEquipe(code, encheres, lireJetons());
 
     // Déjà à 1000 : on peut seulement se joindre à l'égalité (le chrono ne bouge pas).

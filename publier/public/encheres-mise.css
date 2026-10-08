@@ -9,6 +9,8 @@
 .mise-jetons-ligne img{ width:46px; height:46px; object-fit:contain; }
 .mise-jetons strong{ font-family:'IBM Plex Mono', monospace; font-size:40px; line-height:1.1; color:var(--accent); }
 .mise-jetons span{ font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
+.mise-jetons .mise-plafond{ margin-top:6px; text-transform:none; letter-spacing:0; font-size:14px; color:var(--ink); }
+.mise-note.is-plafond{ color:#c62828; }
 
 .mise-lancer{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
 .mise-form{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
