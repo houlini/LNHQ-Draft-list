@@ -94,6 +94,40 @@
     aspect-ratio:16 / 9; padding:16px; color:var(--ink-muted); font-size:14px; border:1px dashed var(--line); border-radius:var(--radius);
   }
   @media (min-width:1100px){ .tv-scene.avec-chat .tv-chat{ min-height:420px; } }
+
+  /* ---------- Plein écran : seulement les vidéos, le plus grand possible ----------
+     .is-plein : posée sur le lecteur (1 stream) ou la grille (2 ou 4), avec ou sans l'API
+     plein écran du navigateur (iPhone : la page couvre simplement l'écran). */
+  .tv-plein-btn{
+    display:inline-flex; align-items:center; gap:7px; min-height:38px; padding:0 14px; border:none; border-radius:9px; cursor:pointer;
+    background:rgba(0,0,0,0.12); color:#fff; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .tv-plein-btn:hover{ background:rgba(255,255,255,0.15); }
+  .tv-plein-btn svg{ width:16px; height:16px; }
+  .is-plein{
+    position:fixed !important; inset:0; z-index:5000; width:100vw !important; height:100vh !important; height:100dvh !important;
+    margin:0; border-radius:0 !important; background:#000; aspect-ratio:auto !important;
+  }
+  .tv-multi.is-plein{ gap:2px; grid-template-columns:1fr; grid-auto-rows:1fr; }
+  .tv-multi.mode-2.is-plein{ grid-template-columns:repeat(2, minmax(0, 1fr)); grid-template-rows:1fr; }
+  .tv-multi.mode-4.is-plein{ grid-template-columns:repeat(2, minmax(0, 1fr)); grid-template-rows:repeat(2, minmax(0, 1fr)); }
+  @media (orientation:portrait){
+    /* Téléphone à la verticale : 2 streams l'un sous l'autre. */
+    .tv-multi.mode-2.is-plein{ grid-template-columns:1fr; grid-template-rows:repeat(2, minmax(0, 1fr)); }
+  }
+  .is-plein .tv-case{ border:none; border-radius:0; background:#000; min-height:0; }
+  .is-plein .tv-case-tete{ display:none; }
+  .is-plein .tv-case .tv-lecteur{ flex:1; aspect-ratio:auto; min-height:0; }
+  .is-plein .tv-case-vide{ aspect-ratio:auto; height:100%; border:none; border-radius:0; background:#0b0d10; }
+  .tv-quitter{
+    position:absolute; top:10px; right:10px; z-index:2; padding:8px 14px; border:none; border-radius:8px; cursor:pointer;
+    background:rgba(0,0,0,0.65); color:#fff; font-weight:700; font-size:13px; opacity:0; transition:opacity 0.3s;
+  }
+  /* Les vidéos (iframes Twitch) ne transmettent pas les mouvements de souris : le bouton reste
+     discret en permanence, bien visible au survol ou après un mouvement hors des vidéos. */
+  .is-plein .tv-quitter{ opacity:0.4; }
+  .is-plein.montre-quitter .tv-quitter, .tv-quitter:hover, .tv-quitter:focus-visible{ opacity:1; }
+  @media (hover:none){ .is-plein .tv-quitter{ opacity:0.85; } }
   @media (max-width:600px){
     /* Bande plus mince : modes et résumé sur la même ligne. */
     .tv-band{ flex-wrap:nowrap; gap:8px; }
@@ -115,6 +149,10 @@
         <button type="button" data-mode="2" title="2 streams"><svg viewBox="0 0 18 14" fill="currentColor"><rect x="0" y="0" width="8" height="14" rx="2"/><rect x="10" y="0" width="8" height="14" rx="2"/></svg>2</button>
         <button type="button" data-mode="4" title="4 streams"><svg viewBox="0 0 18 14" fill="currentColor"><rect x="0" y="0" width="8" height="6" rx="1.5"/><rect x="10" y="0" width="8" height="6" rx="1.5"/><rect x="0" y="8" width="8" height="6" rx="1.5"/><rect x="10" y="8" width="8" height="6" rx="1.5"/></svg>4</button>
       </div>
+      <button type="button" class="tv-plein-btn" id="pleinEcran" title="Plein écran : seulement les vidéos (Échap pour quitter)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 4 4 9 4"/><polyline points="15 4 20 4 20 9"/><polyline points="20 15 20 20 15 20"/><polyline points="9 20 4 20 4 15"/></svg>
+        Plein écran
+      </button>
       <span id="resume" style="font-weight:700">LNHQ TV</span>
     </div>
   </div>
@@ -473,6 +511,51 @@ async function load({ background = false } = {}){
     if(!background) show('error');
   }
 }
+
+/* ---------- Plein écran ----------
+   Cible : la grille (2 ou 4 streams) ou le lecteur (1 stream). API plein écran du
+   navigateur si elle existe ; sinon (iPhone) la classe .is-plein couvre l'écran seule. */
+let plein = null;   // { cible, quitter, minuteur }
+function cibleEcran(){
+  return state.mode === 1 ? els.scene.querySelector('.tv-lecteur') : (state.multi && state.multi.grille);
+}
+function entrerPleinEcran(){
+  const cible = cibleEcran();
+  if(!cible || plein) return;
+  const quitter = el('button', 'tv-quitter', '✕ Quitter le plein écran');
+  quitter.type = 'button';
+  quitter.addEventListener('click', sortirPleinEcran);
+  cible.append(quitter);
+  cible.classList.add('is-plein');
+  plein = { cible, quitter, minuteur: 0 };
+  // Bouton « Quitter » visible quelques secondes après chaque mouvement de souris.
+  const montrer = () => {
+    cible.classList.add('montre-quitter');
+    clearTimeout(plein.minuteur);
+    plein.minuteur = setTimeout(() => cible.classList.remove('montre-quitter'), 2500);
+  };
+  plein.montrer = montrer;
+  cible.addEventListener('mousemove', montrer);
+  montrer();
+  const demande = cible.requestFullscreen || cible.webkitRequestFullscreen;
+  if(demande) Promise.resolve(demande.call(cible)).catch(() => {});
+}
+function sortirPleinEcran(){
+  if(!plein) return;
+  const { cible, quitter, montrer } = plein;
+  plein = null;
+  cible.classList.remove('is-plein', 'montre-quitter');
+  cible.removeEventListener('mousemove', montrer);
+  quitter.remove();
+  const actuel = document.fullscreenElement || document.webkitFullscreenElement;
+  if(actuel) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+}
+// Sortie par Échap ou par le navigateur : on enlève aussi la mise en page plein écran.
+['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
+  if(plein && !(document.fullscreenElement || document.webkitFullscreenElement)) sortirPleinEcran();
+}));
+document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && plein) sortirPleinEcran(); });
+document.getElementById('pleinEcran').addEventListener('click', entrerPleinEcran);
 
 els.retryBtn.addEventListener('click', () => load());
 document.querySelectorAll('.tv-modes button').forEach(b => b.addEventListener('click', () => changerMode(Number(b.dataset.mode))));
