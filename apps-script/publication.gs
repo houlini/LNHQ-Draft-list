@@ -256,10 +256,15 @@ function publier(d, membre) {
   return { ok: true, id: id, page: pageUrl, discord: { flux: flux, message: messageDiscord(v, date, pageUrl) } };
 }
 
+const TEXTE_MAX = 45000;   // même valeur dans publier/public/publier.js
+
 function lireChamps(d, flux) {
   const titre = String(d.titre || '').trim().slice(0, 200);
-  const texte = String(d.texte || '').trim().slice(0, 20000);
+  const texte = String(d.texte || '').trim();
   if (!titre || !texte) return { erreur: 'vide' };
+  // Une cellule Google Sheets accepte 50 000 caractères : on refuse au-delà de TEXTE_MAX
+  // plutôt que de couper le texte sans prévenir.
+  if (texte.length > TEXTE_MAX) return { erreur: 'long', maximum: TEXTE_MAX, longueur: texte.length };
   if (d.couverture && d.couverture !== 'garder' && !TYPES_PHOTO.includes(d.couverture.mime)) return { erreur: 'photo' };
   return { titre: titre, texte: texte, type: TYPES[flux].includes(d.type) ? d.type : 'Général' };
 }

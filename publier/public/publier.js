@@ -4,6 +4,7 @@
   const $ = id => document.getElementById(id);
   const COTE_MAX = 1600;
   const QUALITE_JPEG = 0.85;
+  const TEXTE_MAX = 45000;   // même valeur que dans le script (cellule Sheets : 50 000 max)
   // Même palette que nouvelles.js, qui refuse toute autre couleur à l'affichage.
   const COULEURS = ['#E8590C', '#E03131', '#2F9E44', '#1C7ED6', '#E0A800', '#868E96'];
   const PAGES = { NOUVELLES: 'https://lnhq.ca/?fil=nouvelles', ANNONCES: 'https://lnhq.ca/?fil=annonces' };
@@ -17,6 +18,7 @@
     taille: "L'image est trop lourde.",
     dirigeant: 'Seuls les dirigeants de la ligue peuvent modifier une publication.',
     introuvable: 'Publication introuvable : elle a peut-être été retirée du classeur.',
+    long: `Le texte est trop long (maximum ${TEXTE_MAX.toLocaleString('fr-CA')} caractères) : sépare-le en deux parties.`,
   };
 
   // Types et modèles de chaque fil (Markdown, comme le texte de l'éditeur). Pas de
@@ -383,6 +385,18 @@
     };
   }
 
+  // Compteur de caractères sous l'éditeur (en rouge au-delà de la limite).
+  let minuterieCompteur = 0;
+  function majCompteur(){
+    clearTimeout(minuterieCompteur);
+    minuterieCompteur = setTimeout(() => {
+      const n = editeur.getMarkdown().trim().length;
+      const c = $('compteur');
+      c.textContent = `${n.toLocaleString('fr-CA')} / ${TEXTE_MAX.toLocaleString('fr-CA')} caractères`;
+      c.classList.toggle('is-trop', n > TEXTE_MAX);
+    }, 300);
+  }
+
   /* ---------- Envoi ---------- */
   $('formulaire').addEventListener('submit', async e => {
     e.preventDefault();
@@ -390,6 +404,7 @@
     const titre = $('titre').value.trim();
     const texte = nettoyerSpans(editeur.getMarkdown()).trim();
     if(!titre || !texte){ afficher(ERREURS.vide, true); return; }
+    if(texte.length > TEXTE_MAX){ afficher(ERREURS.long, true); return; }
 
     const bouton = $('envoyer');
     bouton.disabled = true;
@@ -490,9 +505,11 @@
     });
     $('type').addEventListener('change', appliquerModele);
     $('editeur').addEventListener('paste', () => setTimeout(nettoyerEditeur, 0));
+    editeur.on('change', majCompteur);
 
     const idModif = new URLSearchParams(location.search).get('modifier');
     if(idModif) await chargerModification(idModif);
+    majCompteur();
     if(moi.annonces) listerRecentes(idModif);
     $('formulaire').hidden = false;
   }

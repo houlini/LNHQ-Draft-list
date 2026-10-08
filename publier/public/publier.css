@@ -173,3 +173,7 @@
   letter-spacing:0.03em; text-transform:uppercase;
 }
 .pub-envoyer:disabled{ opacity:0.6; cursor:progress; }
+
+/* Compteur de caractères sous l'éditeur */
+.pub-compteur{ display:block; margin-top:6px; text-align:right; font-size:12px; color:var(--ink-muted); }
+.pub-compteur.is-trop{ color:#c62828; font-weight:700; }
