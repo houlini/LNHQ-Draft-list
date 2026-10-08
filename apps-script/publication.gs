@@ -1882,6 +1882,8 @@ function tirerAuSort(d, membre) {
 
 // Admin seulement : programme (ou reprogramme) l'heure du tirage. À l'heure, le Worker
 // (tâche de chaque minute) appelle tirerAuSortAuto ; la page Enchères fait le spectacle.
+// Possible d'avance, dès qu'il y a égalité à 1000 sur une enchère encore en cours : l'heure
+// doit alors être après la fin du chrono (d'autres équipes peuvent égaler jusque-là).
 function programmerTirage(d, membre) {
   if (!peutModifier(membre)) return { ok: false, erreur: 'admin' };
   const quand = new Date(String(d.quand || ''));
@@ -1890,7 +1892,9 @@ function programmerTirage(d, membre) {
   verrou.waitLock(30000);
   try {
     const e = lireEncheres().find(x => x.id === String(d.id || ''));
-    if (!e || e.statut !== TIRAGE) return { ok: false, erreur: 'pas_tirage' };
+    const egaliteEnCours = e && e.statut === EN_COURS && e.egalite.length > 0;
+    if (!e || (e.statut !== TIRAGE && !egaliteEnCours)) return { ok: false, erreur: 'pas_tirage' };
+    if (egaliteEnCours && quand.getTime() < new Date(e.fin).getTime() + 60000) return { ok: false, erreur: 'avant_fin', fin: e.fin };
     e.tiragePrevu = quand.toISOString();
     ongletEncheres('ENCHERES').getRange(e.rangee, COL_TIRAGE_PREVU).setValue(e.tiragePrevu);
     console.log('Tirage programmé ' + e.joueur + ' : ' + e.tiragePrevu + ' (par ' + membre.courriel + ')');
@@ -1945,7 +1949,10 @@ function messageEnchere(type, e, precedente, joueurIntrouvable, candidats) {
     attente_tirage: [
       'Enchère terminée à égalité sur **' + joueur + '** (' + MISE_MAXIMALE + ' jetons).',
       'Équipes au tirage : ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', '),
-      'Le tirage au sort se fera en direct sur la page des enchères, à l\'heure que la ligue annoncera ; les autres équipes retrouveront leurs jetons.',
+      e.tiragePrevu
+        ? 'Tirage au sort en direct sur la page des enchères : <t:' + Math.floor(new Date(e.tiragePrevu).getTime() / 1000) + ':F> (<t:'
+          + Math.floor(new Date(e.tiragePrevu).getTime() / 1000) + ':R>) ; les autres équipes retrouveront leurs jetons.'
+        : 'Le tirage au sort se fera en direct sur la page des enchères, à l\'heure que la ligue annoncera ; les autres équipes retrouveront leurs jetons.',
     ],
     tirage_programme: [
       'Tirage au sort pour **' + joueur + '** entre ' + [e.equipe].concat(e.egalite).map(nomEquipe).join(', ') + '.',

@@ -154,7 +154,12 @@ function carteEnCours(e){
 
   carte.append(tete, meneur);
   if(e.egalite.length) carte.append(ligneEgalite(e));
-  carte.append(chrono, liste, pied);
+  carte.append(chrono);
+  // Égalité avec un tirage déjà programmé (d'avance, pour après la fin du chrono).
+  if(e.egalite.length && e.tiragePrevu){
+    carte.append(el('div', 'ench-tirage-titre', `🎲 Tirage en direct : ${quand.format(new Date(e.tiragePrevu))}`));
+  }
+  carte.append(liste, pied);
   return carte;
 }
 
@@ -465,7 +470,10 @@ const Spectacle = (() => {
     const maintenant = Date.now();
     let imminent = false;
     encheres.forEach(e => {
-      if(e.statut !== 'Tirage' || !e.tiragePrevu) return;
+      // Tirage en attente, ou programmé d'avance sur une enchère à égalité encore en cours
+      // (elle passe en « Tirage » à la fin du chrono, avant l'heure du tirage).
+      const attend = e.statut === 'Tirage' || (e.statut === 'En cours' && e.egalite.length);
+      if(!attend || !e.tiragePrevu) return;
       const ms = new Date(e.tiragePrevu).getTime() - maintenant;
       if(ms <= 0){
         // Heure passée depuis moins de 10 min : direct lancé une seule fois automatiquement.

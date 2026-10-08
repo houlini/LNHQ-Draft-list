@@ -29,6 +29,7 @@
     admin: 'Seuls les admins de la ligue peuvent faire le tirage.',
     pas_tirage: 'Cette enchère n’attend plus de tirage.',
     heure: 'Choisis une heure dans le futur (au moins 1 minute).',
+    avant_fin: 'Le tirage doit être après la fin de l’enchère : d’autres équipes peuvent encore égaler d’ici là.',
   };
   const quand = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   // Arrivée par « Surenchérir » sur lnhq.ca (?id=…) : on affiche seulement cette enchère.
@@ -142,8 +143,35 @@
       : minimum >= MAX() ? `prochaine mise : ${MAX()} (maximum)` : `minimum ${minimum} jetons · maximum ${MAX()}`)));
     c.append(tete, meneur);
     if(e.egalite.length) c.append(equipesEgalite('Aussi à ' + MAX(), e.egalite));
-    c.append(chrono, zone, pied);
+    c.append(chrono, zone);
+    // Égalité déjà là : l'heure du tirage peut être programmée d'avance (après la fin du chrono).
+    if(e.egalite.length && (moi.admin || e.tiragePrevu)) c.append(zoneTirage(e, [e.equipe, ...e.egalite]));
+    c.append(pied);
     return c;
+  }
+
+  // Heure du tirage en direct : affichée à tous ; champ pour la programmer (admin).
+  function zoneTirage(e, candidats){
+    const zone = el('div', 'mise-tirage');
+    const prevu = e.tiragePrevu ? new Date(e.tiragePrevu) : null;
+    zone.append(el('span', 'mise-note', prevu
+      ? `📅 Tirage en direct sur lnhq.ca : ${quandLong.format(prevu)} (dans ${E.tempsRestant(e.tiragePrevu)})`
+      : e.statut === 'Tirage' ? 'Heure du tirage à venir : la ligue la programme.'
+      : `Tirage au sort après la fin (${quandLong.format(new Date(e.fin))}) : heure à programmer.`));
+    if(moi.admin){
+      const form = el('form', 'mise-carte');
+      form.noValidate = true;
+      const champ = el('input');
+      champ.type = 'datetime-local';
+      champ.setAttribute('aria-label', 'Heure du tirage au sort');
+      champ.value = versChamp(prevu || heureParDefaut(e.statut === 'En cours' ? new Date(e.fin) : null));
+      const bouton = el('button', 'ench-bouton', prevu ? 'Changer l’heure' : '📅 Programmer le tirage');
+      bouton.type = 'submit';
+      form.append(champ, bouton);
+      form.addEventListener('submit', ev => { ev.preventDefault(); programmer(e, candidats, champ.value, bouton); });
+      zone.append(form);
+    }
+    return zone;
   }
 
   function equipesEgalite(etiquette, codes){
@@ -160,33 +188,15 @@
     const tete = el('div', 'ench-joueur');
     tete.append(nomJoueur(e.joueur), el('span', null, [e.position, e.ov && e.ov + ' OV'].filter(Boolean).join(' · ')));
     const candidats = [e.equipe, ...e.egalite];
-    const zone = el('div', 'mise-tirage');
-    const prevu = e.tiragePrevu ? new Date(e.tiragePrevu) : null;
-    zone.append(el('span', 'mise-note', prevu
-      ? `📅 Tirage en direct sur lnhq.ca : ${quandLong.format(prevu)} (dans ${E.tempsRestant(e.tiragePrevu)})`
-      : 'Heure du tirage à venir : la ligue la programme.'));
-    // Admin : programme (ou change) l'heure ; le tirage se fait tout seul à l'heure, en direct.
-    if(moi.admin){
-      const form = el('form', 'mise-carte');
-      form.noValidate = true;
-      const champ = el('input');
-      champ.type = 'datetime-local';
-      champ.setAttribute('aria-label', 'Heure du tirage au sort');
-      champ.value = versChamp(prevu || heureParDefaut());
-      const bouton = el('button', 'ench-bouton', prevu ? 'Changer l’heure' : '📅 Programmer le tirage');
-      bouton.type = 'submit';
-      form.append(champ, bouton);
-      form.addEventListener('submit', ev => { ev.preventDefault(); programmer(e, candidats, champ.value, bouton); });
-      zone.append(form);
-    }
-    c.append(tete, el('div', 'ench-tirage-titre', `Égalité à ${e.mise} jetons`), equipesEgalite('Au tirage', candidats), zone);
+    c.append(tete, el('div', 'ench-tirage-titre', `Égalité à ${e.mise} jetons`), equipesEgalite('Au tirage', candidats), zoneTirage(e, candidats));
     return c;
   }
 
-  // Champ datetime-local (heure de l'ordinateur) ; par défaut : la prochaine demi-heure, dans 30 min au moins.
+  // Champ datetime-local (heure de l'ordinateur) ; par défaut : la prochaine demi-heure, au moins
+  // 30 min après maintenant (ou après la fin de l'enchère, si elle est encore en cours).
   const quandLong = new Intl.DateTimeFormat('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
-  function heureParDefaut(){
-    const d = new Date(Date.now() + 30 * 60000);
+  function heureParDefaut(apres){
+    const d = new Date(Math.max(Date.now(), apres ? apres.getTime() : 0) + 30 * 60000);
     d.setSeconds(0, 0);
     d.setMinutes(d.getMinutes() < 30 ? 30 : 60);
     return d;
@@ -320,6 +330,10 @@
     if(envoiEnCours) return;
     const quand = new Date(valeur);
     if(isNaN(quand.getTime()) || quand.getTime() < Date.now() + 60000){ afficher('Choisis une heure dans le futur (au moins 1 minute).', true); return; }
+    if(e.statut === 'En cours' && quand.getTime() < new Date(e.fin).getTime() + 60000){
+      afficher(`Le tirage doit être après la fin de l’enchère (${quandLong.format(new Date(e.fin))}) : d’autres équipes peuvent encore égaler d’ici là.`, true);
+      return;
+    }
     if(!confirm(`Programmer le tirage de ${e.joueur} (${candidats.map(nomEquipe).join(', ')}) pour ${quandLong.format(quand)} ?\n`
       + 'Il se fera tout seul à l’heure, en direct sur la page des enchères, et sera annoncé sur Discord.')) return;
     envoiEnCours = true;
