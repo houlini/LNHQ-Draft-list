@@ -71,6 +71,8 @@
   font-weight:700; font-size:13px; white-space:nowrap;
 }
 .tirage-case .ench-logo{ width:76px; height:76px; }
+.tirage-case .ench-logo{ transition:transform 0.12s ease; }
+.tirage-case.is-sous .ench-logo{ transform:scale(1.12); }
 .tirage-case.is-gagnant{ background:rgba(151,117,250,0.22); box-shadow:inset 0 0 0 3px #9775FA; border-radius:10px; }
 .tirage-case.is-gagnant .ench-logo{ animation:tirage-pop 0.6s ease 2; }
 @keyframes tirage-pop{ 50%{ transform:scale(1.18); } }

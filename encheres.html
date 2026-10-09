@@ -6,7 +6,7 @@
 <title>Enchères des agents libres</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=7">
-<link rel="stylesheet" href="encheres.css?v=5">
+<link rel="stylesheet" href="encheres.css?v=6">
 <script src="site-nav.js?v=3"></script>
 <script src="sans-contrat.js"></script>
 <script src="encheres-donnees.js?v=6"></script>
@@ -379,15 +379,32 @@ const Spectacle = (() => {
     return { scene, fenetre, ruban, etat };
   }
 
-  // Position « pos » (px, le long du ruban) placée au centre de la fenêtre.
+  // Déroulement : défilement de croisière (au moins DEFILEMENT_MIN, même si le résultat
+  // arrive avant), puis long ralentissement (~RALENTI) où les dernières cases passent une
+  // à une, une courte pause, et l'annonce du gagnant.
+  const CROISIERE = 0.9;               // px/ms (~7 cases par seconde)
+  const DEFILEMENT_MIN = 12000;        // ms de défilement minimum en direct
+  const RALENTI = 11000;               // ms de ralentissement (environ)
+  const PAUSE = 700;                   // ms d'arrêt sur la case avant l'annonce
+
+  // Position « pos » (px, le long du ruban) placée au centre de la fenêtre ; la case sous
+  // le repère est mise en évidence.
   function placer(){
     const centre = actif.fenetre.clientWidth / 2;
     actif.ruban.style.transform = `translateX(${centre - actif.pos}px)`;
+    const i = Math.floor(actif.pos / LARGEUR);
+    if(i !== actif.sous){
+      const avant = actif.ruban.children[actif.sous], apres = actif.ruban.children[i];
+      if(avant) avant.classList.remove('is-sous');
+      if(apres) apres.classList.add('is-sous');
+      actif.sous = i;
+    }
   }
 
-  function demarrer(id, joueur, candidats){
+  function demarrer(id, joueur, candidats, minimum){
     if(actif) arreter();
-    actif = Object.assign({ id, joueur, candidats, pos: candidats.length * LARGEUR + LARGEUR / 2, vitesse: 1.6, gagnant: null }, construire(joueur, candidats));
+    actif = Object.assign({ id, joueur, candidats, pos: candidats.length * LARGEUR + LARGEUR / 2, vitesse: CROISIERE,
+      gagnant: null, debut: performance.now(), minimum, sous: -1 }, construire(joueur, candidats));
     actif.cycle = candidats.length * LARGEUR;
     let avant = performance.now();
     const boucle = maintenant => {
@@ -403,19 +420,31 @@ const Spectacle = (() => {
     else actif.raf = requestAnimationFrame(boucle);
   }
 
-  // Ralentit et s'arrête sur une case du gagnant, quelques tours plus loin.
+  // Ralentit et s'arrête sur une case du gagnant ; attend d'abord le défilement minimum.
   function atterrir(gagnant){
-    if(!actif || actif.gagnant) return;
+    if(!actif || actif.gagnant || actif.attente) return;
+    const reste = reduit ? 0 : actif.minimum - (performance.now() - actif.debut);
+    if(reste > 0){
+      actif.attente = setTimeout(() => { if(actif){ actif.attente = null; atterrir(gagnant); } }, reste);
+      return;
+    }
     actif.gagnant = gagnant;
     cancelAnimationFrame(actif.raf);
     const n = actif.candidats.length;
+    // Recule d'un nombre entier de tours (invisible) pour garder de la marge sur le ruban.
+    while(actif.pos > 2 * actif.cycle) actif.pos -= actif.cycle;
     const depart = actif.pos;
-    let j = Math.floor(depart / LARGEUR) + 2 * n;
+    // Ralentissement « quintique » : vitesse de départ = 5 × distance / durée. On vise la
+    // première case du gagnant à au moins la distance voulue, puis on ajuste la durée pour
+    // garder la même vitesse au raccord (pas d'à-coup).
+    let j = Math.ceil((depart + CROISIERE * RALENTI / 5) / LARGEUR);
     while(actif.candidats[j % n] !== gagnant) j++;
-    const cible = j * LARGEUR + LARGEUR / 2;
-    const duree = reduit ? 0 : 4200;
+    // Arrêt un peu décalé dans la case : on ne sait pas d'avance de quel côté ça tombe.
+    const cible = j * LARGEUR + LARGEUR * (0.3 + Math.random() * 0.4);
+    const duree = reduit ? 0 : Math.min(15000, 5 * (cible - depart) / CROISIERE);
     const t0 = performance.now();
-    const ease = t => 1 - Math.pow(1 - t, 3);
+    const ease = t => 1 - Math.pow(1 - t, 5);
+    actif.etat.textContent = 'Ça ralentit…';
     const fin = () => {
       actif.pos = cible; placer();
       actif.ruban.children[j].classList.add('is-gagnant');
@@ -431,7 +460,8 @@ const Spectacle = (() => {
       const t = Math.min(1, (maintenant - t0) / duree);
       actif.pos = depart + (cible - depart) * ease(t);
       placer();
-      if(t < 1) requestAnimationFrame(pas); else fin();
+      if(t < 1) requestAnimationFrame(pas);
+      else { actif.etat.textContent = '…'; setTimeout(() => { if(actif) fin(); }, PAUSE); }
     };
     requestAnimationFrame(pas);
   }
@@ -452,16 +482,17 @@ const Spectacle = (() => {
   function arreter(){
     if(!actif) return;
     cancelAnimationFrame(actif.raf);
+    clearTimeout(actif.attente);
     actif.scene.remove();
     actif = null;
   }
 
   // En direct : défile jusqu'à ce que le résultat arrive (voir surveiller).
-  function lancer(e){ demarrer(e.id, e.joueur, melange([e.equipe, ...e.egalite])); }
-  // Après coup : même animation, arrêt sur le gagnant après quelques secondes.
+  function lancer(e){ demarrer(e.id, e.joueur, melange([e.equipe, ...e.egalite]), DEFILEMENT_MIN); }
+  // Après coup : même animation, plus courte avant le ralentissement.
   function revoir(e){
-    demarrer(e.id, e.joueur, melange([e.equipe, ...e.egalite]));
-    setTimeout(() => { if(actif && actif.id === e.id) atterrir(e.equipe); }, 2600);
+    demarrer(e.id, e.joueur, melange([e.equipe, ...e.egalite]), 4000);
+    atterrir(e.equipe);
   }
 
   // Appelée à chaque mise à jour des données : lance le direct à l'heure, pose
