@@ -256,6 +256,31 @@ function publier(d, membre) {
   return { ok: true, id: id, page: pageUrl, discord: { flux: flux, message: messageDiscord(v, date, pageUrl) } };
 }
 
+/* Mise en page de « 32 Thoughts : La notion du respect ébranlée » (demandée le 8 oct. 2026) :
+   réflexions « 1\. … » → « **1. Phrase-choc.** … », titre « Les 32 réflexions », retrait de
+   « (suite de l'article) ». Les mots ne changent pas. Ne fait rien si déjà appliquée. */
+function miseEnPageChronique() {
+  const pub = trouverPublication('18b43bd3-fea9-4d31-88b2-f1e3f1cb8ab0');
+  if (!pub) { console.log('Chronique introuvable'); return; }
+  const cellule = pub.onglet.getRange(pub.rangee, 5);
+  const texte = String(cellule.getValue());
+  if (texte.includes('## Les 32 réflexions')) { console.log('Mise en page déjà appliquée'); return; }
+  const sortie = [];
+  let premier = true;
+  texte.split('\n').forEach(ligne => {
+    if (/^\(suite de l'article\)\s*$/i.test(ligne.trim())) return;
+    const m = ligne.match(/^(\d+)\\\.\s*(.*)$/);
+    if (!m) { sortie.push(ligne); return; }
+    if (premier) { sortie.push('---', '', '## Les 32 réflexions', ''); premier = false; }
+    const corps = m[2].replace(/\\([.,\-!?()])/g, '$1');
+    const p = corps.match(/^(.+?(?<!\bSt)[.!?])(\s+|$)/);   // phrase-choc (pas « St. » Louis)
+    sortie.push(p ? ('**' + m[1] + '. ' + p[1] + '** ' + corps.slice(p[0].length)).trimEnd() : '**' + m[1] + '.** ' + corps);
+  });
+  const resultat = sortie.join('\n').replace(/\n{3,}/g, '\n\n');
+  cellule.setValue(resultat);
+  console.log('Mise en page appliquée : ' + texte.length + ' → ' + resultat.length + ' caractères');
+}
+
 const TEXTE_MAX = 45000;   // même valeur dans publier/public/publier.js
 
 function lireChamps(d, flux) {
