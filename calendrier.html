@@ -863,9 +863,15 @@ function render(){
 
   els.groupsWrap.replaceChildren(...[...parSemaine.entries()].sort().map(([sem, jours]) => {
     const bloc = el('section', 'sem');
-    const nb = [...jours.values()].reduce((t, l) => t + l.length, 0);
+    const liste = [...jours.values()].flat();
+    const nb = liste.length;
+    // Dès qu'un match de la semaine est joué : nombre de matchs restants.
+    const restants = liste.filter(g => !estJoue(g)).length;
+    const suivi = restants === nb ? ''
+      : restants === 0 ? ' · tous joués'
+      : ` · ${restants} restant${restants > 1 ? 's' : ''}`;
     const titre = el('h2', 'sem-titre', 'Semaine ' + (semaines.indexOf(sem) + 1));
-    titre.append(el('span', null, `${etiquetteSemaine(sem)} · ${nb} match${nb > 1 ? 's' : ''}`));
+    titre.append(el('span', null, `${etiquetteSemaine(sem)} · ${nb} match${nb > 1 ? 's' : ''}${suivi}`));
     const grille = el('div', 'sem-jours');
     [...jours.entries()].sort().forEach(([date, liste]) => {
       const jour = el('div', 'jour' + (date === aujourdhui ? ' is-aujourdhui' : ''));
