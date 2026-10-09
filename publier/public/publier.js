@@ -43,6 +43,19 @@
       '**Joueur :** ', '', '**Blessure :** ', '', '**Absence prévue :** ', '',
       "## Impact sur l'équipe", '', 'Qui le remplace dans l’alignement ?',
     ].join('\n'),
+    // Chronique façon « 32 Thoughts » : un sujet de la semaine, puis des réflexions numérotées.
+    'Chronique': [
+      '*Mise en contexte de la semaine…*', '',
+      '## Le sujet de la semaine', '', 'Texte…', '',
+      '> « Citation » — Nom, rôle', '',
+      '---', '',
+      '## Les réflexions', '',
+      '**1. Phrase-choc.** Développement…', '',
+      '**2. Phrase-choc.** Développement…', '',
+      '**3. Phrase-choc.** Développement…', '',
+      '---', '',
+      '**— Nom du chroniqueur**', '*Chroniqueur, LNHQ*',
+    ].join('\n'),
   }, ANNONCES: {
     'Général': '',
     'Règlement': [

@@ -62,6 +62,7 @@
 .type-resultat{ --type-color:#2F9E44; }
 .type-blessure{ --type-color:#E03131; }
 .type-general{ --type-color:var(--accent); }
+.type-chronique{ --type-color:#C2255C; }
 .type-reglement{ --type-color:#7048E8; }
 .type-calendrier{ --type-color:#1098AD; }
 .type-evenement{ --type-color:#E0A800; }

@@ -13,6 +13,7 @@
     'Résultat': 'type-resultat',
     'Blessure': 'type-blessure',
     'Général': 'type-general',
+    'Chronique': 'type-chronique',
     'Règlement': 'type-reglement',
     'Calendrier': 'type-calendrier',
     'Événement': 'type-evenement',

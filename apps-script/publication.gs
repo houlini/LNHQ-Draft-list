@@ -17,7 +17,7 @@ const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
 const ONGLET_ACCES = 'ACCES';
 const ONGLET_JOURNAL = 'JOURNAL';
 const TYPES = {
-  NOUVELLES: ['Général', 'Transaction', 'Résultat', 'Blessure'],
+  NOUVELLES: ['Général', 'Transaction', 'Résultat', 'Blessure', 'Chronique'],
   ANNONCES: ['Général', 'Règlement', 'Calendrier', 'Événement'],
 };
 // Les annonces sont signées au nom de la ligue, pas de l'équipe de la personne.
@@ -39,7 +39,7 @@ const EQUIPES = [
 ];
 const ENTETES = ['Date', 'Équipe', 'Type', 'Titre', 'Texte', 'Photos', 'Visible', 'Épinglé', 'ID Discord', 'ID réponse'];
 const COULEURS_TYPE = {
-  'Transaction': 0x1C7ED6, 'Résultat': 0x2F9E44, 'Blessure': 0xE03131, 'Général': 0xE8590C,
+  'Transaction': 0x1C7ED6, 'Résultat': 0x2F9E44, 'Blessure': 0xE03131, 'Général': 0xE8590C, 'Chronique': 0xC2255C,
   'Règlement': 0x7048E8, 'Calendrier': 0x1098AD, 'Événement': 0xE0A800,
 };
 const TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp'];
