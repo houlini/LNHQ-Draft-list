@@ -587,8 +587,10 @@ function lireCalendrierGardiens() {
     if (String(r[2]).trim().toLowerCase() === 'time') { periode++; return; }
     const date = String(r[1]).trim().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !String(r[3]).trim()) return;
+    const score = v => String(v).trim() !== '' && !isNaN(Number(v));
     matchs.push({
       num: String(r[0]).trim(), date: date, periode: Math.max(1, periode), ligne: i + 1,
+      joue: score(r[5]) && score(r[6]),   // F / G : score inscrit = match joué
       visiteur: CODES_NOMS_COMPLETS[String(r[3]).trim().toLowerCase()] || '',
       domicile: CODES_NOMS_COMPLETS[String(r[8]).trim().toLowerCase()] || '',
     });
@@ -677,13 +679,45 @@ function rappelsGardiens() {
         + 'Équipes qui n\'ont pas encore déclaré de match pour leur 2e gardien :\n' + manquantes.join(', '), 0xE0A800));
     }
     if (ecart(fin, jour) === 1) {
-      messages.push(manquantes.length
+      // Seule une équipe qui a joué tous ses matchs de la période peut être illégale
+      // (ex. DG parti en cours de période : matchs non joués → non comptée).
+      const incompletes = new Set();
+      matchs.filter(m => m.periode === Number(p) && !m.joue).forEach(m => { incompletes.add(m.visiteur); incompletes.add(m.domicile); });
+      const sansDecl = codes.filter(c => !faites.has(c + '|' + Number(p)));
+      const illegales = sansDecl.filter(c => !incompletes.has(c)).map(nomEquipe);
+      const sansMatch = sansDecl.filter(c => incompletes.has(c)).map(nomEquipe);
+      const note = sansMatch.length ? '\n\n*Matchs de la période pas tous joués (non comptées) : ' + sansMatch.join(', ') + '*' : '';
+      messages.push(illegales.length
         ? messageGardiens('🚨 Fin de la période ' + p + ' — équipes illégales',
-          'Aucun départ du 2e gardien déclaré pendant la période ' + p + ' :\n' + manquantes.join(', '), 0xE03131)
-        : messageGardiens('✅ Fin de la période ' + p, 'Toutes les équipes ont fait jouer leur 2e gardien.', 0x2F9E44));
+          'Aucun départ du 2e gardien déclaré pendant la période ' + p + ' :\n' + illegales.join(', ') + note, 0xE03131)
+        : messageGardiens('✅ Fin de la période ' + p,
+          (sansMatch.length ? 'Aucune équipe illégale.' : 'Toutes les équipes ont fait jouer leur 2e gardien.') + note, 0x2F9E44));
     }
   });
-  return { ok: true, messages: messages };
+  return { ok: true, messages: dejaEnvoyes(messages) };
+}
+
+// La tâche planifiée du Worker peut se déclencher deux fois : chaque message n'est
+// remis qu'une fois (clé = titre, mémorisée 30 jours dans les propriétés du script).
+function dejaEnvoyes(messages) {
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const envoyes = JSON.parse(props.getProperty('GARDIENS_ENVOYES') || '{}');
+    const limite = Date.now() - 30 * 86400000;
+    Object.keys(envoyes).forEach(k => { if (envoyes[k] < limite) delete envoyes[k]; });
+    const nouveaux = messages.filter(m => {
+      const cle = m.message.embeds[0].title;
+      if (envoyes[cle]) return false;
+      envoyes[cle] = Date.now();
+      return true;
+    });
+    props.setProperty('GARDIENS_ENVOYES', JSON.stringify(envoyes));
+    return nouveaux;
+  } finally {
+    verrou.releaseLock();
+  }
 }
 
 function messageGardiens(titre, texte, couleur) {

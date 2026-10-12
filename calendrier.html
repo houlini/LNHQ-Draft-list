@@ -249,6 +249,8 @@
   .gar-ligne.is-fait > b{ color:#2F9E44; }
   .gar-ligne.is-a-faire > b{ color:var(--accent); }
   .gar-ligne.is-illegal > b{ color:#E03131; }
+  .gar-ligne.is-sans-match > b{ color:var(--ink-muted); }
+  .gar-ligne.is-sans-match .gar-logos{ opacity:0.55; }
   .gar-logos{ display:grid; grid-template-columns:repeat(auto-fill, minmax(44px, 1fr)); gap:6px; }
   .gar-logos span{
     display:flex; align-items:center; justify-content:center; aspect-ratio:1; border-radius:10px;
@@ -492,6 +494,7 @@ function applyData(rows){
 async function chargerResultats(){
   if(!window.LNHQ_RESULTATS) return;
   state.resultats = await LNHQ_RESULTATS.chargerResultats();
+  if(state.decl) renderGardiens();   // matchs joués : qui compte comme illégal
   if(!els.dataWrap.hidden) render();
 }
 
@@ -568,8 +571,18 @@ function renderGardiens(){
   if(precedente){
     const corps = carte('gar-prec', 'Période ' + precedente.num + ' terminée',
       `${court.format(parseDate(precedente.debut))} au ${court.format(parseDate(precedente.fin))}`);
-    const illegales = codes.filter(c => !decl[c + '|' + precedente.num]);
-    corps.append(ligneGardien('is-illegal', '❌ Illégales', illegales, null, '✅ Toutes les équipes ont fait jouer leur 2e gardien.'));
+    // Seule une équipe qui a joué tous ses matchs de la période peut être illégale
+    // (ex. DG parti en cours de période : matchs non joués → non comptée).
+    const joues = new Set(state.games.filter(estJoue).map(g => g.num));
+    const incompletes = new Set();
+    state.matchsG.filter(m => m.periode === precedente.num && !joues.has(m.num))
+      .forEach(m => { incompletes.add(m.codeVisiteur); incompletes.add(m.codeDomicile); });
+    const sansDecl = codes.filter(c => !decl[c + '|' + precedente.num]);
+    const illegales = sansDecl.filter(c => !incompletes.has(c));
+    const sansMatch = sansDecl.filter(c => incompletes.has(c));
+    corps.append(ligneGardien('is-illegal', '❌ Illégales', illegales, null,
+      sansMatch.length ? '✅ Aucune équipe illégale.' : '✅ Toutes les équipes ont fait jouer leur 2e gardien.'));
+    if(sansMatch.length) corps.append(ligneGardien('is-sans-match', 'Matchs pas tous joués · non comptées', sansMatch, null, ''));
   }
   const titre = el('h2', 'sem-titre', '2e gardien');
   if(sousTitre) titre.append(el('span', null, sousTitre));
