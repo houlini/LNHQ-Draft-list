@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="site.css?v=7">
 <script src="site-nav.js?v=5"></script>
 <script src="resultats-donnees.js?v=6"></script>
+<script src="gardiens-donnees.js"></script>
 <style>
   /* ---------- Bande : équipe ---------- */
   .rs-equipe{
@@ -43,6 +44,11 @@
   .rs-ligne img{ width:30px; height:30px; object-fit:contain; }
   .rs-nom{ font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-muted); }
   .rs-nom small{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
+  /* Match déclaré pour le 2e gardien de l'équipe (même pastille que le calendrier). */
+  .rs-2eg{
+    display:inline-block; margin-left:6px; padding:1px 5px; border-radius:999px; vertical-align:2px;
+    background:#2F9E44; color:#fff; font-size:10px; font-weight:800; letter-spacing:0.03em; text-transform:none;
+  }
   .rs-buts{ font-family:'IBM Plex Mono', monospace; font-size:26px; font-weight:700; color:var(--ink-muted); min-width:32px; text-align:right; }
   .rs-ligne.is-gagnant .rs-nom, .rs-ligne.is-gagnant .rs-buts{ color:var(--ink); font-weight:700; }
   .rs-ligne.is-gagnant .rs-buts::after{ content:'◂'; margin-left:4px; font-size:14px; color:var(--accent); vertical-align:middle; }
@@ -129,6 +135,7 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
 document.title = 'Résultats';
 
 let resultats = [];
+let deuxiemes = new Set();   // « match|équipe » déclarés pour le 2e gardien (onglet GARDIENS)
 let equipe = (new URLSearchParams(location.search).get('equipe') || '').toUpperCase();
 let montres = PAR_PAGE;
 
@@ -175,6 +182,11 @@ function carte(r){
   [[r.visiteur, r.butsV, r.butsV > r.butsD, 'Visiteur'], [r.domicile, r.butsD, r.butsD > r.butsV, 'Domicile']].forEach(([code, buts, gagne, role]) => {
     const l = el('div', 'rs-ligne' + (gagne ? ' is-gagnant' : ''));
     const n = el('span', 'rs-nom', nom(code));
+    if(deuxiemes.has(r.match + '|' + code)){
+      const b = el('span', 'rs-2eg', '2e G');
+      b.title = '2e gardien';
+      n.append(b);
+    }
     n.append(el('small', null, role));
     l.append(logo(code), n, el('span', 'rs-buts', String(buts)));
     equipes.append(l);
@@ -279,7 +291,9 @@ function remplirEquipes(){
 async function charger({ fond = false } = {}){
   if(!fond){ $('loader').hidden = false; $('errorBox').hidden = true; }
   try{
-    const res = await R.chargerResultats();
+    const [res, decl] = await Promise.all([R.chargerResultats(),
+      window.LNHQ_GARDIENS ? LNHQ_GARDIENS.chargerDeclarations().catch(() => ({})) : {}]);
+    deuxiemes = new Set(Object.values(decl).map(d => d.match + '|' + d.equipe));
     // Ordre où les matchs ont été joués : heure de soumission ; sinon la date du calendrier.
     resultats = Object.values(res).map(r => Object.assign(r, { joue: r.soumisLe && !isNaN(new Date(r.soumisLe)) ? new Date(r.soumisLe) : null }))
       .sort((a, b) => ((b.joue || dateCalendrier(b.date)) - (a.joue || dateCalendrier(a.date))) || Number(b.match) - Number(a.match));
