@@ -57,8 +57,11 @@
       if(!l[0] || l[4] === '' || l[5] === '' || isNaN(butsV) || isNaN(butsD)) return;
       const stats = {};
       STATS.forEach((s, i) => { stats[s.cle] = [l[7 + i * 2] || '', l[8 + i * 2] || '']; });
+      // Après la photo : équipe qui a soumis, puis heure de soumission (ISO, UTC) = ordre où les matchs ont été joués.
+      const apres = 7 + STATS.length * 2;
       res[l[0]] = { match: l[0], date: l[1], visiteur: (l[2] || '').toUpperCase(), domicile: (l[3] || '').toUpperCase(),
-        butsV, butsD, fin: FINS[l[6]] != null ? l[6] : '', stats, photo: l[7 + STATS.length * 2] || '' };
+        butsV, butsD, fin: FINS[l[6]] != null ? l[6] : '', stats, photo: l[apres] || '',
+        soumisPar: (l[apres + 1] || '').toUpperCase(), soumisLe: l[apres + 2] || '' };
     });
     return res;
   }

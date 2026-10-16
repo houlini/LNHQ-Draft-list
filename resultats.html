@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Résultats</title>
+<link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css?v=7">
+<script src="site-nav.js?v=5"></script>
+<script src="resultats-donnees.js?v=6"></script>
+<style>
+  /* ---------- Bande : équipe ---------- */
+  .rs-equipe{
+    height:42px; padding:0 12px; border-radius:9px; border:none; font:inherit; font-size:15px; font-weight:700;
+    background:var(--surface); color:var(--ink); max-width:100%;
+  }
+  .rs-compte{ font-size:13.5px; font-weight:700; color:var(--accent-ink); opacity:0.9; }
+
+  /* ---------- Journées (jour où les matchs ont été joués) ---------- */
+  #liste{ display:flex; flex-direction:column; gap:26px; padding:16px clamp(12px,3vw,40px) 30px; }
+  .rs-jour-titre{
+    display:flex; align-items:baseline; gap:10px; margin:0 0 10px;
+    font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:19px; text-transform:uppercase; letter-spacing:0.02em;
+  }
+  .rs-jour-titre span{ font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; font-weight:400; color:var(--ink-muted); text-transform:none; letter-spacing:0; }
+  .rs-grille{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap:12px; align-items:start; }
+
+  /* ---------- Carte d'un résultat ---------- */
+  .rs-carte{
+    display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; text-align:left; font:inherit; color:inherit; padding:0; width:100%;
+  }
+  button.rs-carte{ cursor:pointer; transition:border-color .12s, transform .12s; }
+  button.rs-carte:hover, button.rs-carte:focus-visible{ border-color:var(--accent); transform:translateY(-1px); outline:none; }
+  .rs-tete{
+    display:flex; justify-content:space-between; align-items:center; gap:8px; padding:7px 12px;
+    background:var(--stripe); font-size:12px; color:var(--ink-muted);
+  }
+  .rs-final{ font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink); }
+  .rs-final small{ margin-left:6px; padding:1px 6px; border-radius:999px; background:var(--accent); color:var(--accent-ink); font-size:10.5px; letter-spacing:0.04em; }
+  .rs-equipes{ display:flex; flex-direction:column; gap:2px; padding:8px 12px; }
+  .rs-ligne{ display:grid; grid-template-columns:30px minmax(0, 1fr) auto; align-items:center; gap:10px; min-height:38px; }
+  .rs-ligne img{ width:30px; height:30px; object-fit:contain; }
+  .rs-nom{ font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-muted); }
+  .rs-nom small{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
+  .rs-buts{ font-family:'IBM Plex Mono', monospace; font-size:26px; font-weight:700; color:var(--ink-muted); min-width:32px; text-align:right; }
+  .rs-ligne.is-gagnant .rs-nom, .rs-ligne.is-gagnant .rs-buts{ color:var(--ink); font-weight:700; }
+  .rs-ligne.is-gagnant .rs-buts::after{ content:'◂'; margin-left:4px; font-size:14px; color:var(--accent); vertical-align:middle; }
+  .rs-pied{ display:flex; justify-content:space-between; gap:8px; padding:7px 12px; border-top:1px solid var(--line); font-size:12px; color:var(--ink-muted); }
+  .rs-pied b{ color:var(--accent); font-weight:700; }
+  .rs-plus{ align-self:center; min-height:44px; padding:0 22px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; font-weight:700; cursor:pointer; }
+  .rs-plus:hover{ border-color:var(--accent); color:var(--accent); }
+
+  /* ---------- Fiche d'un match (stats et photo), comme le calendrier ---------- */
+  .fiche{
+    width:min(560px, calc(100vw - 24px)); max-height:calc(100vh - 32px); box-sizing:border-box; padding:18px 16px 16px;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); color:var(--ink);
+  }
+  .fiche::backdrop{ background:rgba(0,0,0,0.6); }
+  .fiche-fermer{
+    position:absolute; top:6px; right:8px; width:34px; height:34px; border:none; border-radius:50%;
+    background:transparent; color:var(--ink-muted); font-size:24px; line-height:1; cursor:pointer;
+  }
+  .fiche-fermer:hover{ background:var(--accent-soft); color:var(--ink); }
+  .fiche-tete{ display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; gap:10px; margin:6px 0 14px; }
+  .fiche-equipe{ display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; min-width:0; }
+  .fiche-equipe img{ width:52px; height:52px; object-fit:contain; }
+  .fiche-nom{ font-size:13px; color:var(--ink-muted); }
+  .fiche-buts{ font-family:'IBM Plex Mono', monospace; font-size:34px; line-height:1; color:var(--ink-muted); }
+  .fiche-equipe.is-gagnant .fiche-buts{ color:var(--ink); }
+  .fiche-milieu{ text-align:center; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.04em; color:var(--accent); }
+  .fiche-milieu small{ display:block; margin-top:2px; font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-muted); }
+  .fiche-stats{ width:100%; border-collapse:collapse; margin-bottom:14px; }
+  .fiche-stats td, .fiche-stats th{ padding:7px 4px; border-top:1px solid var(--line); }
+  .fiche-stats td{ width:28%; text-align:center; font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:15px; }
+  .fiche-stats th{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:var(--ink-muted); }
+  .fiche-photo{ display:block; }
+  .fiche-photo img{ display:block; width:100%; border-radius:8px; }
+
+  @media (max-width:600px){
+    .rs-equipe{ flex:1 1 100%; height:38px; font-size:14px; }
+    .rs-jour-titre{ font-size:17px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <site-header class="app-header" current-page="resultats"></site-header>
+
+  <div class="filter-band">
+    <select id="equipe" class="rs-equipe" aria-label="Équipe"></select>
+    <span class="rs-compte" id="compte"></span>
+  </div>
+
+  <main id="content">
+    <div id="loader">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+    </div>
+    <div id="errorBox" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <div>Impossible de charger les résultats.</div>
+        <button class="retry" id="retryBtn">Réessayer</button>
+      </div>
+    </div>
+    <div id="liste" hidden></div>
+    <p class="empty-state" id="vide" hidden></p>
+  </main>
+  <dialog id="fiche" class="fiche" aria-label="Fiche du match"></dialog>
+</div>
+
+<script>
+/* =========================================================================
+   Résultats dans l'ordre où les matchs ont été joués (heure de soumission du
+   résultat, onglet RESULTATS), du plus récent au plus ancien — et non dans
+   l'ordre du calendrier. Regroupés par jour ; ?equipe=MTL filtre une équipe.
+   ========================================================================= */
+const R = window.LNHQ_RESULTATS;
+const EQUIPES = new Map((window.LNHQ_TEAMS || []).map(t => [t.code, t]));
+const PAR_PAGE = 60;
+const $ = id => document.getElementById(id);
+const els = { rowCount: document.getElementById('rowCount'), lastUpdated: document.getElementById('lastUpdated') };
+document.getElementById('sheetTitle').textContent = 'LNHQ';
+document.title = 'Résultats';
+
+let resultats = [];
+let equipe = (new URLSearchParams(location.search).get('equipe') || '').toUpperCase();
+let montres = PAR_PAGE;
+
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text != null) e.textContent = text;
+  return e;
+}
+function logo(code){
+  const img = el('img');
+  img.src = 'Logos/' + code + '.png';
+  img.alt = '';
+  img.loading = 'lazy';
+  img.onerror = () => { img.style.visibility = 'hidden'; };
+  return img;
+}
+const nom = c => (EQUIPES.get(c) || {}).name || c;
+const jourCle = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const jourLong = new Intl.DateTimeFormat('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' });
+const heure = new Intl.DateTimeFormat('fr-CA', { hour: '2-digit', minute: '2-digit' });
+const court = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short' });
+const dateCalendrier = s => { const [a, m, j] = String(s).slice(0, 10).split('-').map(Number); return new Date(a, m - 1, j); };
+
+function titreJour(cle){
+  const auj = new Date(), hier = new Date(Date.now() - 86400000);
+  const d = dateCalendrier(cle);
+  const texte = jourLong.format(d);
+  return cle === jourCle(auj) ? ['Aujourd’hui', texte] : cle === jourCle(hier) ? ['Hier', texte] : [texte.charAt(0).toUpperCase() + texte.slice(1), ''];
+}
+
+function carte(r){
+  const avecFiche = r.photo || Object.values(r.stats || {}).some(p => p[0] !== '' || p[1] !== '');
+  const c = el(avecFiche ? 'button' : 'article', 'rs-carte');
+  if(avecFiche){ c.type = 'button'; c.title = 'Voir les stats du match'; c.addEventListener('click', () => ouvrirFiche(r)); }
+  const tete = el('div', 'rs-tete');
+  const fin = el('span', 'rs-final', 'Final');
+  if(r.fin) fin.append(el('small', null, R.FINS[r.fin]));
+  tete.append(fin, el('span', null, r.joue ? heure.format(r.joue) : ''));
+  const equipes = el('div', 'rs-equipes');
+  [[r.visiteur, r.butsV, r.butsV > r.butsD, 'Visiteur'], [r.domicile, r.butsD, r.butsD > r.butsV, 'Domicile']].forEach(([code, buts, gagne, role]) => {
+    const l = el('div', 'rs-ligne' + (gagne ? ' is-gagnant' : ''));
+    const n = el('span', 'rs-nom', nom(code));
+    n.append(el('small', null, role));
+    l.append(logo(code), n, el('span', 'rs-buts', String(buts)));
+    equipes.append(l);
+  });
+  const pied = el('div', 'rs-pied');
+  pied.append(el('span', null, `Match nº ${r.match}` + (r.date ? ` · calendrier : ${court.format(dateCalendrier(r.date))}` : '')));
+  if(avecFiche) pied.append(el('b', null, 'Stats →'));
+  c.append(tete, equipes, pied);
+  return c;
+}
+
+// Fiche du match : score, stats de l'écran de fin et photo soumise (comme le calendrier).
+function ouvrirFiche(r){
+  const fiche = $('fiche');
+  const cote = (code, buts, gagnant) => {
+    const d = el('div', 'fiche-equipe' + (gagnant ? ' is-gagnant' : ''));
+    d.append(logo(code), el('span', 'fiche-nom', nom(code)), el('b', 'fiche-buts', String(buts)));
+    return d;
+  };
+  const tete = el('div', 'fiche-tete');
+  const milieu = el('div', 'fiche-milieu', 'Final' + (r.fin ? ' · ' + R.FINS[r.fin] : ''));
+  milieu.append(el('small', null, r.joue ? jourLong.format(r.joue) : ''));
+  tete.append(cote(r.visiteur, r.butsV, r.butsV > r.butsD), milieu, cote(r.domicile, r.butsD, r.butsD > r.butsV));
+  const corps = el('tbody');
+  R.STATS.forEach(s => {
+    const [v, d] = r.stats[s.cle] || ['', ''];
+    if(v === '' && d === '') return;
+    const tr = el('tr');
+    tr.append(el('td', null, v), el('th', null, s.nom), el('td', null, d));
+    corps.append(tr);
+  });
+  const contenu = [tete];
+  if(corps.children.length){ const t = el('table', 'fiche-stats'); t.append(corps); contenu.push(t); }
+  if(r.photo){
+    const lien = el('a', 'fiche-photo');
+    lien.href = r.photo; lien.target = '_blank'; lien.rel = 'noopener';
+    const img = el('img'); img.src = r.photo; img.alt = 'Photo de l’écran de fin de match'; img.loading = 'lazy';
+    lien.append(img);
+    contenu.push(lien);
+  }
+  const fermer = el('button', 'fiche-fermer', '×');
+  fermer.type = 'button';
+  fermer.setAttribute('aria-label', 'Fermer');
+  fermer.addEventListener('click', () => fiche.close());
+  fiche.replaceChildren(fermer, ...contenu);
+  fiche.showModal();
+}
+$('fiche').addEventListener('click', ev => {
+  const b = ev.currentTarget.getBoundingClientRect();
+  if(ev.clientX < b.left || ev.clientX > b.right || ev.clientY < b.top || ev.clientY > b.bottom) ev.currentTarget.close();
+});
+
+function render(){
+  const choisis = resultats.filter(r => !equipe || r.visiteur === equipe || r.domicile === equipe);
+  const visibles = choisis.slice(0, montres);
+  const jours = new Map();
+  visibles.forEach(r => {
+    const cle = r.joue ? jourCle(r.joue) : String(r.date).slice(0, 10);
+    if(!jours.has(cle)) jours.set(cle, []);
+    jours.get(cle).push(r);
+  });
+  const blocs = [...jours].map(([cle, liste]) => {
+    const s = el('section');
+    const [titre, sous] = titreJour(cle);
+    const h = el('h2', 'rs-jour-titre', titre);
+    h.append(el('span', null, [sous, `${liste.length} match${liste.length > 1 ? 's' : ''}`].filter(Boolean).join(' · ')));
+    const grille = el('div', 'rs-grille');
+    liste.forEach(r => grille.append(carte(r)));
+    s.append(h, grille);
+    return s;
+  });
+  if(choisis.length > montres){
+    const plus = el('button', 'rs-plus', `Voir les ${Math.min(PAR_PAGE, choisis.length - montres)} résultats précédents`);
+    plus.type = 'button';
+    plus.addEventListener('click', () => { montres += PAR_PAGE; render(); });
+    blocs.push(plus);
+  }
+  $('liste').replaceChildren(...blocs);
+  $('liste').hidden = !choisis.length;
+  $('vide').hidden = !!choisis.length;
+  $('vide').textContent = equipe ? `Aucun match joué par ${nom(equipe)} pour l’instant.` : 'Aucun résultat pour l’instant.';
+  $('compte').textContent = `${choisis.length} match${choisis.length > 1 ? 's' : ''} joué${choisis.length > 1 ? 's' : ''}`;
+  if(els.rowCount) els.rowCount.textContent = equipe ? 'Résultats — ' + nom(equipe) : 'Résultats — toute la ligue';
+}
+
+function remplirEquipes(){
+  const sel = $('equipe');
+  sel.replaceChildren(new Option('Toutes les équipes', ''),
+    ...[...EQUIPES.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr')).map(t => new Option(t.name, t.code)));
+  if(!EQUIPES.has(equipe)) equipe = '';
+  sel.value = equipe;
+  sel.addEventListener('change', () => {
+    equipe = sel.value;
+    montres = PAR_PAGE;
+    history.replaceState(null, '', equipe ? '?equipe=' + equipe : location.pathname);
+    render();
+  });
+}
+
+async function charger({ fond = false } = {}){
+  if(!fond){ $('loader').hidden = false; $('errorBox').hidden = true; }
+  try{
+    const res = await R.chargerResultats();
+    // Ordre où les matchs ont été joués : heure de soumission ; sinon la date du calendrier.
+    resultats = Object.values(res).map(r => Object.assign(r, { joue: r.soumisLe && !isNaN(new Date(r.soumisLe)) ? new Date(r.soumisLe) : null }))
+      .sort((a, b) => ((b.joue || dateCalendrier(b.date)) - (a.joue || dateCalendrier(a.date))) || Number(b.match) - Number(a.match));
+    $('loader').hidden = true;
+    render();
+    if(els.lastUpdated) els.lastUpdated.textContent = 'Mis à jour à ' + heure.format(new Date());
+  }catch(err){
+    console.error(err);
+    if(!fond){ $('loader').hidden = true; $('errorBox').hidden = false; }
+  }
+}
+
+remplirEquipes();
+$('retryBtn').addEventListener('click', () => charger());
+charger();
+// Nouveaux résultats : rafraîchis chaque minute (sauf onglet caché).
+setInterval(() => { if(!document.hidden) charger({ fond: true }); }, 60000);
+</script>
+</body>
+</html>

@@ -98,6 +98,7 @@
               </button>
               <div class="nav-dropdown" hidden>
                 ${menuItem('Calendrier', 'calendrier.html', currentPage === 'calendrier')}
+                ${menuItem('Résultats', 'resultats.html', currentPage === 'resultats')}
                 ${menuItem('Classement', 'classement.html', currentPage === 'classement')}
                 ${menuItem('DGs', 'dgs.html', currentPage === 'dgs')}
                 ${menuItem('Règlements', 'reglements.html', currentPage === 'reglements')}
