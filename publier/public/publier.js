@@ -7,7 +7,7 @@
   const TEXTE_MAX = 45000;   // même valeur que dans le script (cellule Sheets : 50 000 max)
   // Même palette que nouvelles.js, qui refuse toute autre couleur à l'affichage.
   const COULEURS = ['#E8590C', '#E03131', '#2F9E44', '#1C7ED6', '#E0A800', '#868E96'];
-  const PAGES = { NOUVELLES: 'https://lnhq.ca/?fil=nouvelles', ANNONCES: 'https://lnhq.ca/?fil=annonces' };
+  const PAGES = { NOUVELLES: 'https://lnhq.ca/?fil=nouvelles', ANNONCES: 'https://lnhq.ca/?fil=annonces', TRANSACTIONS: 'https://lnhq.ca/?fil=transactions' };
   const ERREURS = {
     acces: 'Accès refusé : ta session de connexion n’est plus valide.',
     session: "Ta session a peut-être expiré. Recharge la page pour te reconnecter, ton texte sera perdu : copie-le d'abord.",
@@ -73,7 +73,8 @@
       '## Quand', '', '**Date :** ', '', '**Heure :** ', '',
       '## Détails', '', '- ',
     ].join('\n'),
-  } };
+  // Fil des transactions : publié seulement par la page des transactions (ici : modification).
+  }, TRANSACTIONS: { 'Transaction': '' } };
   let dernierModele = '';
 
   let couverture = null; // { blob, url } nouvelle image, ou { existante: true, url }
@@ -124,9 +125,9 @@
 
   // Les types (et leurs modèles) ne sont pas les mêmes pour les nouvelles et les annonces.
   function remplirTypes(choisi){
-    const types = Object.keys(MODELES[fluxChoisi()]);
+    const types = Object.keys(MODELES[fluxChoisi()] || { 'Général': '' });
     $('type').replaceChildren(...types.map(t => new Option(t, t)));
-    $('type').value = types.includes(choisi) ? choisi : 'Général';
+    $('type').value = types.includes(choisi) ? choisi : types.includes('Général') ? 'Général' : types[0];
   }
 
   function changerFlux(){
@@ -444,7 +445,7 @@
         : 'Modifications enregistrées sur le site et sur Discord.', r.discord === false, liens.slice(0, 1));
       if(couverture) couverture.existante = true; // déjà envoyée : ne pas la renvoyer au prochain enregistrement
     }else if(r.ok){
-      const quoi = flux === 'ANNONCES' ? 'Annonce publiée' : 'Nouvelle publiée';
+      const quoi = flux === 'ANNONCES' ? 'Annonce publiée' : flux === 'TRANSACTIONS' ? 'Transaction publiée' : 'Nouvelle publiée';
       afficher(r.discord === false
         ? quoi + " sur le site, mais Discord l'a refusée. Préviens le dirigeant de la ligue."
         : quoi + ' sur le site et sur Discord.',
@@ -535,7 +536,7 @@
     const choix = $('choixModif');
     r.publications.forEach(p => {
       const quand = p.date ? ' · ' + date.format(new Date(p.date)) : '';
-      choix.append(new Option(`${p.titre} — ${p.flux === 'ANNONCES' ? 'Annonce' : p.equipe}${quand}`, p.id));
+      choix.append(new Option(`${p.titre} — ${p.flux === 'ANNONCES' ? 'Annonce' : p.flux === 'TRANSACTIONS' ? 'Transaction' : p.equipe}${quand}`, p.id));
     });
     choix.value = r.publications.some(p => p.id === idActuel) ? idActuel : '';
     choix.addEventListener('change', () => {

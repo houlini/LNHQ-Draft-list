@@ -19,7 +19,10 @@ const ONGLET_JOURNAL = 'JOURNAL';
 const TYPES = {
   NOUVELLES: ['Général', 'Transaction', 'Résultat', 'Blessure', 'Chronique'],
   ANNONCES: ['Général', 'Règlement', 'Calendrier', 'Événement'],
+  // Fil des transactions approuvées (publiées par la page des transactions seulement).
+  TRANSACTIONS: ['Transaction'],
 };
+const FILS_PUBLICS = ['NOUVELLES', 'ANNONCES', 'TRANSACTIONS'];
 // Les annonces sont signées au nom de la ligue, pas de l'équipe de la personne.
 const SIGNATURE_ANNONCES = 'Commissaire de la ligue';
 // Code des logos (lnhq.ca/Logos/XXX.png), pour l'avatar des messages Discord.
@@ -61,12 +64,13 @@ function installer() {
   dossierPhotos();
   // Onglets publics des deux fils, avec leurs en-têtes et le format texte forcé :
   // à créer ici plutôt qu'à la main (sinon un ID Discord devient un nombre arrondi).
-  ['NOUVELLES', 'ANNONCES'].forEach(ouvrirOnglet);
+  FILS_PUBLICS.forEach(ouvrirOnglet);
   installerEncheres();
   ongletGardiens();
   ongletResultats();
   dossierResultats();
   ongletAlignements();
+  deplacerTransactionsVersFil();   // TEMPORAIRE : à retirer après exécution
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
@@ -303,7 +307,7 @@ function lireChamps(d, flux) {
 // Retrouve une publication par son id (colonne « ID réponse ») dans l'un des deux fils.
 function trouverPublication(id) {
   if (!/^[0-9a-f-]{36}$/.test(id)) return null;
-  for (const flux of ['NOUVELLES', 'ANNONCES']) {
+  for (const flux of FILS_PUBLICS) {
     const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
     if (!onglet || onglet.getLastRow() < 2) continue;
     const lignes = onglet.getRange(2, 1, onglet.getLastRow() - 1, ENTETES.length).getValues();
@@ -322,7 +326,7 @@ function peutModifier(membre) {
 function recentes(membre) {
   if (!peutModifier(membre)) return { ok: false, erreur: 'dirigeant' };
   const liste = [];
-  ['NOUVELLES', 'ANNONCES'].forEach(flux => {
+  FILS_PUBLICS.forEach(flux => {
     const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
     if (!onglet || onglet.getLastRow() < 2) return;
     onglet.getRange(2, 1, onglet.getLastRow() - 1, ENTETES.length).getValues().forEach(l => {
@@ -369,17 +373,20 @@ function modifier(d, membre) {
   };
 }
 
-// Canal Discord d'une publication : les transactions approuvées (nouvelles « Transaction »
-// signées par la ligue) vont dans le canal des échanges (WEBHOOK_ECHANGES du Worker).
-// Sur le site, elles restent dans le fil des nouvelles.
-function fluxDiscord(flux, v) {
-  return flux === 'NOUVELLES' && v.type === 'Transaction' && v.equipe === SIGNATURE_ANNONCES ? 'ECHANGES' : flux;
+// Canal Discord d'un fil : les transactions approuvées (fil TRANSACTIONS du site) vont
+// dans le canal des échanges (WEBHOOK_ECHANGES du Worker).
+function fluxDiscord(flux) {
+  return flux === 'TRANSACTIONS' ? 'ECHANGES' : flux;
+}
+// Et l'inverse : onglet du fil d'après le canal rapporté par le Worker.
+function filDeFlux(flux) {
+  return flux === 'ANNONCES' ? 'ANNONCES' : flux === 'ECHANGES' || flux === 'TRANSACTIONS' ? 'TRANSACTIONS' : 'NOUVELLES';
 }
 
 // Le Worker rapporte le résultat de l'envoi à Discord : id du message dans la
 // colonne « ID Discord », ou raison du refus dans le JOURNAL (colonne F).
 function noterDiscord(d, membre) {
-  const flux = d.flux === 'ANNONCES' ? 'ANNONCES' : 'NOUVELLES';
+  const flux = filDeFlux(d.flux);
   const id = String(d.id || '');
   const journal = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL);
   const entrees = journal.getDataRange().getValues();
@@ -402,7 +409,7 @@ function noterDiscord(d, membre) {
 function enAttente(membre) {
   if (!membre.annonces) return { ok: false, erreur: 'annonces' };
   const attente = [];
-  ['NOUVELLES', 'ANNONCES'].forEach(flux => {
+  FILS_PUBLICS.forEach(flux => {
     const onglet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(flux);
     if (!onglet || onglet.getLastRow() < 2) return;
     const lignes = onglet.getRange(2, 1, onglet.getLastRow() - 1, ENTETES.length).getValues();
@@ -437,12 +444,13 @@ function ouvrirOnglet(nom) {
   const classeur = SpreadsheetApp.openById(SHEET_ID);
   const onglet = classeur.getSheetByName(nom) || classeur.insertSheet(nom);
   if (onglet.getLastRow() === 0) {
-    onglet.appendRow(ENTETES);
+    // Fil des transactions : colonne K « Détails » = éléments échangés (JSON), pour les cartes du site.
+    onglet.appendRow(nom === 'TRANSACTIONS' ? ENTETES.concat(['Détails']) : ENTETES);
     onglet.setFrozenRows(1);
     // Format texte forcé : l'API lue par le site devine un seul type par colonne et
     // efface silencieusement les valeurs qui ne correspondent pas (ex. un titre « 2026 »).
     onglet.getRange('B:F').setNumberFormat('@');
-    onglet.getRange('I:J').setNumberFormat('@');
+    onglet.getRange(nom === 'TRANSACTIONS' ? 'I:K' : 'I:J').setNumberFormat('@');
   }
   return onglet;
 }
@@ -2295,7 +2303,7 @@ function detaillerMouvements(mouvements, elements) {
 function vueTransaction(t, elements, masses) {
   const v = { id: t.id, cree: t.cree, par: t.par, equipes: t.equipes, mouvements: t.mouvements, message: t.message, statut: t.statut,
     acceptees: t.acceptees, expire: t.expire, remplace: t.remplace, decideeLe: t.decideeLe, decideePar: t.decideePar, note: t.note,
-    publication: t.publication ? lienPage('NOUVELLES', t.publication) : '' };
+    publication: t.publication ? lienPage('TRANSACTIONS', t.publication) : '' };
   if ((t.statut === TX.ATTENTE || t.statut === TX.APPROBATION) && elements) {
     const r = bilanTransaction(t.equipes, t.mouvements, elements, masses);
     v.bilan = r.bilan; v.erreurs = r.erreurs;
@@ -2512,12 +2520,37 @@ function publierTransaction(t, membre, date) {
     .concat(...t.equipes.map(c => ['## ' + nomEquipe(c) + ' reçoit', ''].concat(t.mouvements.filter(m => m.vers === c).map(ligne), ['']))).join('\n').trim();
   const v = { titre: titre, texte: texte, type: 'Transaction', equipe: SIGNATURE_ANNONCES, photos: [] };
   const id = Utilities.getUuid();
-  const pageUrl = lienPage('NOUVELLES', id);
-  const onglet = ouvrirOnglet('NOUVELLES');
-  onglet.appendRow([date, v.equipe, v.type, v.titre, v.texte, '', true, false, '', id]);
-  const cases = onglet.getRange(onglet.getLastRow(), 7, 1, 2);
+  const pageUrl = lienPage('TRANSACTIONS', id);
+  ajouterAuFilTransactions([date, v.equipe, v.type, v.titre, v.texte, '', true, false, '', id], t.mouvements);
+  SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).appendRow([date, membre.courriel, 'TRANSACTIONS', v.titre, id, '']);
+  return { id: id, page: pageUrl, discord: { flux: fluxDiscord('TRANSACTIONS'), message: messageDiscord(v, date, pageUrl) } };
+}
+
+// Ligne du fil TRANSACTIONS (lnhq.ca/?fil=transactions) : publication + détails (cartes du site).
+function ajouterAuFilTransactions(valeurs, mouvements) {
+  const onglet = ouvrirOnglet('TRANSACTIONS');
+  const details = JSON.stringify(mouvements.map(m => ({ joueur: m.joueur, de: m.de, vers: m.vers, type: m.type, po: m.po, ov: m.ov, salaire: m.salaire })));
+  const rang = onglet.getRange(onglet.getLastRow() + 1, 1, 1, 11);
+  rang.setValues([valeurs.slice(0, 10).concat([details])]);
+  const cases = onglet.getRange(rang.getRow(), 7, 1, 2);
   cases.insertCheckboxes();
-  cases.setValues([[true, false]]);
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).appendRow([date, membre.courriel, 'NOUVELLES', v.titre, id, '']);
-  return { id: id, page: pageUrl, discord: { flux: fluxDiscord('NOUVELLES', v), message: messageDiscord(v, date, pageUrl) } };
+  cases.setValues([[valeurs[6] === true, valeurs[7] === true]]);
+}
+
+// Ponctuel (création du fil séparé, octobre 2026) : les transactions approuvées déjà publiées dans les
+// Nouvelles passent dans le fil TRANSACTIONS (même ligne, avec les détails pour les cartes).
+// Seulement celles publiées par la page des transactions ; ne fait rien si déjà déplacées.
+function deplacerTransactionsVersFil() {
+  const nouvelles = SpreadsheetApp.openById(SHEET_ID).getSheetByName('NOUVELLES');
+  const approuvees = lireTransactions().filter(t => t.statut === TX.APPROUVEE && t.publication);
+  let deplacees = 0;
+  approuvees.forEach(t => {
+    const lignes = nouvelles.getRange(2, 1, nouvelles.getLastRow() - 1, ENTETES.length).getValues();
+    const i = lignes.findIndex(l => String(l[9]) === t.publication);
+    if (i < 0) return;
+    ajouterAuFilTransactions(lignes[i], t.mouvements);
+    nouvelles.deleteRow(i + 2);
+    deplacees++;
+  });
+  console.log(deplacees + ' transaction(s) déplacée(s) vers le fil TRANSACTIONS.');
 }
