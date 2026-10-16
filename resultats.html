@@ -151,6 +151,7 @@ const jourCle = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2
 const jourLong = new Intl.DateTimeFormat('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' });
 const heure = new Intl.DateTimeFormat('fr-CA', { hour: '2-digit', minute: '2-digit' });
 const court = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short' });
+const jourCourt = new Intl.DateTimeFormat('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' });
 const dateCalendrier = s => { const [a, m, j] = String(s).slice(0, 10).split('-').map(Number); return new Date(a, m - 1, j); };
 
 function titreJour(cle){
@@ -167,7 +168,9 @@ function carte(r){
   const tete = el('div', 'rs-tete');
   const fin = el('span', 'rs-final', 'Final');
   if(r.fin) fin.append(el('small', null, R.FINS[r.fin]));
-  tete.append(fin, el('span', null, r.joue ? heure.format(r.joue) : ''));
+  // Une équipe choisie : pas de titres de jour, la date est dans la carte.
+  const quand = r.joue ? (equipe ? jourCourt.format(r.joue) + ' · ' : '') + heure.format(r.joue) : '';
+  tete.append(fin, el('span', null, quand));
   const equipes = el('div', 'rs-equipes');
   [[r.visiteur, r.butsV, r.butsV > r.butsD, 'Visiteur'], [r.domicile, r.butsD, r.butsD > r.butsV, 'Domicile']].forEach(([code, buts, gagne, role]) => {
     const l = el('div', 'rs-ligne' + (gagne ? ' is-gagnant' : ''));
@@ -233,7 +236,9 @@ function render(){
     if(!jours.has(cle)) jours.set(cle, []);
     jours.get(cle).push(r);
   });
-  const blocs = [...jours].map(([cle, liste]) => {
+  // Équipe choisie (souvent un match par jour) : une seule grille sur toute la largeur.
+  const blocs = equipe ? [(() => { const g = el('div', 'rs-grille'); visibles.forEach(r => g.append(carte(r))); return g; })()]
+    : [...jours].map(([cle, liste]) => {
     const s = el('section');
     const [titre, sous] = titreJour(cle);
     const h = el('h2', 'rs-jour-titre', titre);
