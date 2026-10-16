@@ -28,5 +28,7 @@ GEMINI_MODEL = "gemini-flash-latest"
 #                                    npx wrangler secret put WEBHOOK_AGENTS   (canal agents libres)
 #                                    npx wrangler secret put WEBHOOK_GARDIENS (rappels du 2e gardien ;
 #                                    sans lui, ils vont dans le canal des annonces)
+#                                    npx wrangler secret put WEBHOOK_ECHANGES (canal des échanges :
+#                                    transactions approuvées)
 #                                    npx wrangler secret put GEMINI_KEY       (clé Google AI Studio,
 #                                    lecture des photos de résultats)

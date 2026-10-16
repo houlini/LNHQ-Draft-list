@@ -365,8 +365,15 @@ function modifier(d, membre) {
   const v = { titre: champs.titre, texte: champs.texte, type: champs.type, equipe: pub.l[1], photos: photos };
   return {
     ok: true, id: id, page: pageUrl,
-    discord: { flux: pub.flux, idDiscord: String(pub.l[8] || ''), message: messageDiscord(v, new Date(pub.l[0]), pageUrl) },
+    discord: { flux: fluxDiscord(pub.flux, v), idDiscord: String(pub.l[8] || ''), message: messageDiscord(v, new Date(pub.l[0]), pageUrl) },
   };
+}
+
+// Canal Discord d'une publication : les transactions approuvées (nouvelles « Transaction »
+// signées par la ligue) vont dans le canal des échanges (WEBHOOK_ECHANGES du Worker).
+// Sur le site, elles restent dans le fil des nouvelles.
+function fluxDiscord(flux, v) {
+  return flux === 'NOUVELLES' && v.type === 'Transaction' && v.equipe === SIGNATURE_ANNONCES ? 'ECHANGES' : flux;
 }
 
 // Le Worker rapporte le résultat de l'envoi à Discord : id du message dans la
@@ -404,7 +411,7 @@ function enAttente(membre) {
     const l = lignes[i];
     const v = { equipe: l[1], type: l[2], titre: l[3], texte: l[4], photos: String(l[5]).split(',').filter(String) };
     const pageUrl = lienPage(flux, l[9]);
-    attente.push({ flux: flux, id: String(l[9]), titre: v.titre, message: messageDiscord(v, new Date(l[0]), pageUrl) });
+    attente.push({ flux: fluxDiscord(flux, v), id: String(l[9]), titre: v.titre, message: messageDiscord(v, new Date(l[0]), pageUrl) });
   });
   return { ok: true, attente: attente };
 }
@@ -2512,5 +2519,5 @@ function publierTransaction(t, membre, date) {
   cases.insertCheckboxes();
   cases.setValues([[true, false]]);
   SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).appendRow([date, membre.courriel, 'NOUVELLES', v.titre, id, '']);
-  return { id: id, page: pageUrl, discord: { flux: 'NOUVELLES', message: messageDiscord(v, date, pageUrl) } };
+  return { id: id, page: pageUrl, discord: { flux: fluxDiscord('NOUVELLES', v), message: messageDiscord(v, date, pageUrl) } };
 }
