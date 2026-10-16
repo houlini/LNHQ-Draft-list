@@ -758,7 +758,8 @@
     recues: t => OUVERTS.includes(t.statut) && t.equipes.includes(moi.code) && t.par !== moi.code,
     envoyees: t => OUVERTS.includes(t.statut) && t.par === moi.code,
     approbation: t => t.statut === 'À approuver',
-    historique: t => !OUVERTS.includes(t.statut),
+    // Historique : seulement les transactions de son équipe (dirigeant sans équipe : toutes).
+    historique: t => !OUVERTS.includes(t.statut) && (!moi.code || t.equipes.includes(moi.code)),
   };
   const VIDES = {
     recues: 'Aucune offre reçue pour l’instant.',
