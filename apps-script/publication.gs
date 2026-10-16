@@ -2515,8 +2515,7 @@ function publierTransaction(t, membre, date) {
     const details = [m.po, m.ov ? m.ov + ' OV' : '', m.type === 'espoir' ? 'espoir' : m.salaire ? montant(m.salaire) : ''].filter(String);
     return '- **' + prenomNom(m.joueur) + '**' + (details.length ? ' · ' + details.join(' · ') : '') + (t.equipes.length > 2 ? ' · de ' + nomEquipe(m.de) : '');
   };
-  const texte = ['**' + noms.slice(0, -1).join('**, **') + '** et **' + noms[noms.length - 1] + '** concluent une transaction, approuvée par la ligue.', '']
-    .concat(...t.equipes.map(c => ['## ' + nomEquipe(c) + ' reçoit', ''].concat(t.mouvements.filter(m => m.vers === c).map(ligne), ['']))).join('\n').trim();
+  const texte = [].concat(...t.equipes.map(c => ['## ' + nomEquipe(c) + ' reçoit', ''].concat(t.mouvements.filter(m => m.vers === c).map(ligne), ['']))).join('\n').trim();
   const v = { titre: titre, texte: texte, type: 'Transaction', equipe: SIGNATURE_ANNONCES, photos: [] };
   const id = Utilities.getUuid();
   const pageUrl = lienPage('TRANSACTIONS', id);
@@ -2534,6 +2533,22 @@ function ajouterAuFilTransactions(valeurs, mouvements) {
   const cases = onglet.getRange(rang.getRow(), 7, 1, 2);
   cases.insertCheckboxes();
   cases.setValues([[valeurs[6] === true, valeurs[7] === true]]);
+}
+
+// Ponctuel (demandé en octobre 2026) : retire la phrase « X et Y concluent une transaction,
+// approuvée par la ligue. » des transactions déjà publiées. Ne touche à rien d'autre.
+function retirerPhraseTransactions() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName('TRANSACTIONS');
+  if (!o || o.getLastRow() < 2) return;
+  const rang = o.getRange(2, 5, o.getLastRow() - 1, 1);
+  const textes = rang.getValues();
+  let n = 0;
+  textes.forEach(l => {
+    const nouveau = String(l[0]).replace(/^[^\n]*concluent une transaction, approuvée par la ligue\.\s*/, '');
+    if (nouveau !== l[0]) { l[0] = nouveau; n++; }
+  });
+  if (n) rang.setValues(textes);
+  console.log(n + ' transaction(s) sans la phrase d\'introduction.');
 }
 
 // Ponctuel (création du fil séparé, octobre 2026) : les transactions approuvées déjà publiées dans les
