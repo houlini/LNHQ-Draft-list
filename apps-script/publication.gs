@@ -70,7 +70,6 @@ function installer() {
   ongletResultats();
   dossierResultats();
   ongletAlignements();
-  deplacerTransactionsVersFil();   // TEMPORAIRE : à retirer après exécution
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('SECRET')) {
     props.setProperty('SECRET', Utilities.getUuid() + Utilities.getUuid());
