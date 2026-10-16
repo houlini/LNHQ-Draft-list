@@ -33,6 +33,12 @@
   padding:10px 14px; border-radius:10px; background:var(--accent-soft); color:var(--ink); font-size:14px;
 }
 .tx-vue{ display:flex; flex-direction:column; gap:14px; }
+.tx-admin{
+  display:flex; align-items:flex-start; gap:10px; padding:10px 14px; border-radius:10px; cursor:pointer;
+  border:1px dashed var(--line); font-size:14px; line-height:1.4;
+}
+.tx-admin input{ width:18px; height:18px; margin:1px 0 0; flex-shrink:0; accent-color:var(--accent); }
+.tx-admin:has(input:checked){ border:2px solid #E0A800; background:color-mix(in srgb, #E0A800 12%, transparent); }
 .tx-partenaires{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
 .tx-partenaire{
   display:inline-flex; align-items:center; gap:10px; min-height:52px; padding:0 18px 0 12px; border-radius:12px;

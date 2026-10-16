@@ -60,8 +60,9 @@ export default {
       return actionTransaction(env, transaction, courriel, await request.text());
     }
     // Approbation : la transaction est publiée dans les nouvelles, comme une publication.
-    if (url.pathname === '/api/transactions/decider' && request.method === 'POST') {
-      return publier(env, 'deciderTransaction', courriel, await request.text());
+    const execution = { '/api/transactions/decider': 'deciderTransaction', '/api/transactions/enregistrer': 'enregistrerTransaction' }[url.pathname];
+    if (execution && request.method === 'POST') {
+      return publier(env, execution, courriel, await request.text());
     }
     const action = { '/api/publier': 'publier', '/api/modifier': 'modifier', '/api/photo': 'photo' }[url.pathname];
     if (action && request.method === 'POST') {

@@ -89,6 +89,7 @@
   let ids = new Map();       // « Nom, Prénom » → numéro LNH (photos)
   // Offre en cours : équipes (la mienne d'abord) et éléments choisis (« joueur|de » → équipe qui reçoit).
   const offre = { equipes: [], choix: new Map(), message: '', remplace: null };
+  let modeAdmin = false;     // dirigeant : transaction conclue hors du site, équipes libres, exécutée tout de suite
   let colonneActive = '';
   let destinationOuverte = '';   // carte qui montre le choix de l'équipe qui reçoit (3 équipes)
   let envoi = false;
@@ -326,13 +327,13 @@
     couleursEquipe(col, c);
     const tete = el('header', 'tx-tete');
     const titre = el('div', 'tx-tete-nom');
-    titre.append(logo(c, 'tx-tete-logo'), el('h2', null, nom(c) + (c === moi.code ? ' · toi' : '')));
+    titre.append(logo(c, 'tx-tete-logo'), el('h2', null, nom(c) + (c === moi.code && !modeAdmin ? ' · toi' : '')));
     const m = masses[c] || {};
     const stats = el('div', 'tx-tete-stats');
     const stat = (libelle, valeur) => { const s = el('span'); s.append(el('small', null, libelle), el('b', null, valeur)); return s; };
     stats.append(stat('Masse', millions(m.masse || 0)), stat('Espace', millions((m.plafond || 0) - (m.masse || 0))), stat('Joueurs', `${m.joueurs || 0}/${MAX_JOUEURS}`));
     tete.append(titre, stats);
-    if(c !== moi.code){
+    if(c !== moi.code || modeAdmin){
       const retirer = el('button', 'tx-retirer', '✕');
       retirer.type = 'button';
       retirer.title = 'Retirer ' + nom(c) + ' de l’offre';
@@ -418,18 +419,22 @@
       problemes.forEach(e => ul.append(el('li', null, texteRegle(e))));
       fin.append(ul);
     }
-    const msg = el('textarea', 'tx-mot');
-    msg.placeholder = 'Un mot pour l’autre DG (facultatif, privé)';
-    msg.maxLength = 600;
-    msg.rows = 3;
-    msg.value = offre.message;
-    msg.addEventListener('input', () => { offre.message = msg.value; });
-    const bouton = el('button', 'tx-bouton tx-principal', envoi ? 'Envoi…' : offre.remplace ? 'Envoyer la contre-offre' : 'Envoyer l’offre');
+    const bouton = el('button', 'tx-bouton tx-principal',
+      envoi ? 'Envoi…' : modeAdmin ? 'Enregistrer la transaction' : offre.remplace ? 'Envoyer la contre-offre' : 'Envoyer l’offre');
     bouton.type = 'button';
     bouton.disabled = envoi || !mouvements.length || r.erreurs.length > 0;
-    bouton.addEventListener('click', envoyer);
-    const note = el('p', 'tx-note', `L’offre est privée et expire après 48 h sans réponse. Quand toutes les équipes l’ont acceptée, un dirigeant l’approuve, puis les joueurs changent d’équipe.`);
-    fin.append(msg, bouton, note);
+    bouton.addEventListener('click', modeAdmin ? enregistrer : envoyer);
+    if(modeAdmin){
+      fin.append(bouton, el('p', 'tx-note', 'Mode admin : pas d’acceptation des DG. Les joueurs et choix changent d’équipe dès l’enregistrement, et la transaction est annoncée sur le site et dans Discord.'));
+    }else{
+      const msg = el('textarea', 'tx-mot');
+      msg.placeholder = 'Un mot pour l’autre DG (facultatif, privé)';
+      msg.maxLength = 600;
+      msg.rows = 3;
+      msg.value = offre.message;
+      msg.addEventListener('input', () => { offre.message = msg.value; });
+      fin.append(msg, bouton, el('p', 'tx-note', `L’offre est privée et expire après 48 h sans réponse. Quand toutes les équipes l’ont acceptée, un dirigeant l’approuve, puis les joueurs changent d’équipe.`));
+    }
     zone.replaceChildren(titre, ...blocs, fin);
 
     const n = mouvements.length;
@@ -469,7 +474,7 @@
   function rendrePartenaires(){
     const zone = $('partenaires');
     const puces = offre.equipes.map((c, i) => {
-      const p = el('span', 'tx-partenaire' + (i === 0 ? ' is-moi' : ''));
+      const p = el('span', 'tx-partenaire' + (i === 0 && !modeAdmin ? ' is-moi' : ''));
       couleursEquipe(p, c);
       p.append(logo(c, 'tx-logo'), el('b', null, nom(c)));
       return p;
@@ -478,6 +483,7 @@
     puces.forEach((p, i) => { if(i) morceaux.push(el('span', 'tx-echange', '⇄')); morceaux.push(p); });
     if(offre.equipes.length < 3){
       const ajouter = el('button', 'tx-ajouter', offre.equipes.length < 2 ? '+ Choisir une équipe' : '+ 3e équipe');
+      if(modeAdmin && !offre.equipes.length) ajouter.textContent = '+ 1re équipe';
       ajouter.type = 'button';
       ajouter.addEventListener('click', ouvrirModal);
       if(offre.equipes.length > 1) morceaux.push(el('span', 'tx-echange', '⇄'));
@@ -485,7 +491,7 @@
     }
     zone.replaceChildren(...morceaux);
     $('aideNouvelle').textContent = offre.equipes.length < 2
-      ? 'Choisis l’équipe avec qui tu veux transiger (tu pourras ajouter une 3e équipe).'
+      ? (modeAdmin ? 'Choisis les équipes de la transaction (2 ou 3).' : 'Choisis l’équipe avec qui tu veux transiger (tu pourras ajouter une 3e équipe).')
       : offre.equipes.length === 2
         ? 'Touche les joueurs, espoirs et choix à échanger, des deux côtés. Touche de nouveau une carte pour la retirer.'
         : 'Touche une carte, puis choisis l’équipe qui la reçoit. Touche de nouveau une carte choisie pour la retirer.';
@@ -526,7 +532,7 @@
   }
 
   function nouvelleOffre(){
-    offre.equipes = [moi.code];
+    offre.equipes = modeAdmin ? [] : [moi.code];
     offre.choix = new Map();
     offre.message = '';
     offre.remplace = null;
@@ -552,8 +558,37 @@
     afficher(`Offre envoyée à ${autres}. Elle attend leur réponse (48 h).`, false);
   }
 
+  // Mode admin : transaction conclue hors du site, exécutée et annoncée dès l'enregistrement.
+  async function enregistrer(){
+    const mouvements = mouvementsOffre();
+    if(envoi || !mouvements.length) return;
+    const noms = offre.equipes.map(nom).join(', ');
+    if(!confirm(`Enregistrer la transaction entre ${noms} ? Les joueurs et choix changent d’équipe tout de suite, et la transaction est annoncée sur le site et dans Discord.`)) return;
+    envoi = true; rendreBilan();
+    const r = await api('/api/transactions/enregistrer', {
+      equipes: offre.equipes, mouvements: mouvements.map(m => ({ joueur: m.joueur, de: m.de, vers: m.vers })),
+    });
+    envoi = false;
+    if(!r.ok){ rendreBilan(); afficher(texteErreur(r), true); return; }
+    offre.equipes.forEach(c => effectifs.delete(c));
+    offre.choix = new Map();
+    await Promise.all([chargerListe(), chargerMasses().catch(() => {})]);
+    nouvelleOffre();
+    allerA('historique');
+    afficher('Transaction enregistrée : les joueurs ont changé d’équipe' + (r.discord === false ? ' (l’annonce Discord n’est pas partie).' : ' et l’annonce est publiée.'), false);
+  }
+
+  function changerMode(actif){
+    if(actif === modeAdmin) return;
+    if(offre.choix.size && !confirm('Changer de mode efface l’offre en cours. Continuer ?')){ $('modeAdmin').checked = modeAdmin; return; }
+    modeAdmin = actif;
+    $('modeAdmin').checked = actif;
+    nouvelleOffre();
+  }
+
   // Contre-offre : l'offre reçue s'ouvre dans l'atelier, modifiable ; l'ancienne sera remplacée.
   async function contreOffre(t){
+    if(modeAdmin){ modeAdmin = false; $('modeAdmin').checked = false; }
     offre.equipes = [moi.code, ...t.equipes.filter(c => c !== moi.code)];
     offre.choix = new Map(t.mouvements.map(m => [m.joueur + '|' + m.de, m.vers]));
     offre.message = '';
@@ -597,7 +632,7 @@
     t.equipes.forEach((c, i) => { if(i) logos.append(el('span', 'tx-echange', '⇄')); logos.append(logo(c, 'tx-offre-logo')); });
     const titre = el('div', 'tx-offre-titre');
     titre.append(el('h3', null, t.equipes.map(nom).join(t.equipes.length === 2 ? ' ⇄ ' : ' · ')),
-      el('small', null, `Proposée par ${nom(t.par)} · ${dateCourte(t.cree)}`));
+      el('small', null, (EQUIPES[t.par] ? `Proposée par ${nom(t.par)}` : 'Conclue hors du site, saisie par un dirigeant') + ` · ${dateCourte(t.cree)}`));
     tete.append(logos, titre, el('span', 'tx-statut is-' + etat, t.statut));
     a.append(tete);
 
@@ -776,12 +811,19 @@
       couleursPage(sienne);
       $('lienEquipe').href = 'https://lnhq.ca/equipe.html?team=' + EQUIPES[sienne][1];
     }else{
+      // Dirigeant sans équipe : seulement le mode admin pour composer.
       $('lienEquipe').href = 'https://lnhq.ca/';
-      document.querySelector('[data-vue="nouvelle"]').hidden = true;
       document.querySelector('[data-vue="recues"]').hidden = true;
       document.querySelector('[data-vue="envoyees"]').hidden = true;
+      modeAdmin = true;
     }
     $('ongletApprobation').hidden = !moi.admin;
+    if(moi.admin){
+      $('blocAdmin').hidden = false;
+      $('modeAdmin').checked = modeAdmin;
+      $('modeAdmin').disabled = !sienne;
+      $('modeAdmin').addEventListener('change', () => changerMode($('modeAdmin').checked));
+    }
     $('barre').hidden = false;
     document.querySelectorAll('.tx-onglets button').forEach(b => b.addEventListener('click', () => allerA(b.dataset.vue)));
     $('fermerModal').addEventListener('click', () => $('modalEquipes').close());
@@ -805,7 +847,7 @@
     const avec = (params.get('avec') || '').toUpperCase();
     const aRepondre = liste.some(t => t.statut === 'En attente' && t.equipes.includes(sienne) && !t.acceptees.includes(sienne));
     let depart = FILTRES[demandee] || demandee === 'nouvelle' ? demandee : (aRepondre ? 'recues' : 'nouvelle');
-    if(!sienne && depart !== 'historique') depart = 'approbation';
+    if(!sienne && !['historique', 'nouvelle'].includes(depart)) depart = 'approbation';
     allerA(depart);
     if(sienne && EQUIPES[avec] && avec !== sienne){ allerA('nouvelle'); ajouterEquipe(avec); }
     // Les offres changent (réponses des autres DG) : rafraîchies chaque minute hors de l'atelier.

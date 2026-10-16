@@ -122,6 +122,7 @@ function traiter(p, corps) {
   if (p.action === 'repondreTransaction') return repondreTransaction(JSON.parse(corps || '{}'), membre);
   if (p.action === 'annulerTransaction') return annulerTransaction(JSON.parse(corps || '{}'), membre);
   if (p.action === 'deciderTransaction') return deciderTransaction(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'enregistrerTransaction') return enregistrerTransaction(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
 }
 
@@ -2415,29 +2416,64 @@ function deciderTransaction(d, membre) {
     const elements = lireEffectifs();
     const r = bilanTransaction(t.equipes, t.mouvements, elements, lireMasses());
     if (r.erreurs.length) return { ok: false, erreur: 'regles', erreurs: r.erreurs };
-
-    // 1. Changement d'équipe (colonne Z) de chaque élément.
-    const pdb = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
-    const parCle = new Map(elements.map(e => [e.joueur + '|' + e.equipe, e]));
-    t.mouvements.forEach(m => pdb.getRange(parCle.get(m.joueur + '|' + m.de).rangee, COL_EQUIPE_JOUEUR).setValue(m.vers));
-    // 2. Alignements enregistrés : les joueurs partis libèrent leur place.
-    retirerDesAlignements(t.mouvements);
-    // 3. Autres offres ouvertes qui contiennent un élément échangé : annulées.
-    const partis = new Set(t.mouvements.map(m => m.joueur + '|' + m.de));
-    liste.filter(x => x.id !== t.id && (x.statut === TX.ATTENTE || x.statut === TX.APPROBATION)
-      && x.mouvements.some(m => partis.has(m.joueur + '|' + m.de))).forEach(x => {
-      x.statut = TX.ANNULEE; x.decideeLe = t.decideeLe; x.decideePar = 'Ligue'; x.note = 'Un élément de l\'offre a été échangé ailleurs';
-      ecrireTransaction(x);
-    });
-    // 4. Publication de la transaction (site + Discord par le Worker).
-    const pub = publierTransaction(t, membre, maintenant);
-    t.statut = TX.APPROUVEE; t.publication = pub.id;
-    ecrireTransaction(t);
+    const pub = executerTransaction(t, liste, elements, membre, maintenant);
     console.log('Transaction approuvée ' + t.id + ' par ' + membre.courriel);
     return { ok: true, statut: t.statut, id: pub.id, page: pub.page, discord: pub.discord };
   } finally {
     verrou.releaseLock();
   }
+}
+
+// Dirigeant, mode admin : transaction conclue hors du site (2 ou 3 équipes quelconques),
+// enregistrée et exécutée tout de suite, sans acceptation des DG. Mêmes règles.
+function enregistrerTransaction(d, membre) {
+  if (!peutModifier(membre)) return { ok: false, erreur: 'admin' };
+  const premiere = String((Array.isArray(d.equipes) && d.equipes[0]) || '').trim().toUpperCase();
+  const offre = lireOffre(d, premiere);
+  if (offre.erreur) return { ok: false, erreur: offre.erreur };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const liste = lireTransactions();
+    noterExpirees(liste);
+    const elements = lireEffectifs();
+    const r = bilanTransaction(offre.equipes, offre.mouvements, elements, lireMasses());
+    if (r.erreurs.length) return { ok: false, erreur: 'regles', erreurs: r.erreurs };
+    const maintenant = new Date();
+    const t = {
+      id: Utilities.getUuid(), cree: maintenant.toISOString(), par: 'Ligue', equipes: offre.equipes,
+      mouvements: detaillerMouvements(offre.mouvements, elements), message: '', statut: TX.APPROBATION,
+      acceptees: offre.equipes.slice(), expire: '', remplace: '', decideeLe: maintenant.toISOString(),
+      decideePar: codeDuMembre(membre) || 'Ligue', note: 'Conclue hors du site, saisie par un dirigeant',
+    };
+    const pub = executerTransaction(t, liste, elements, membre, maintenant);
+    console.log('Transaction saisie ' + t.id + ' par ' + membre.courriel);
+    return { ok: true, statut: t.statut, id: pub.id, page: pub.page, discord: pub.discord };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// Exécute une transaction validée (sous verrou) et l'enregistre « Approuvée ».
+function executerTransaction(t, liste, elements, membre, maintenant) {
+  // 1. Changement d'équipe (colonne Z) de chaque élément.
+  const pdb = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const parCle = new Map(elements.map(e => [e.joueur + '|' + e.equipe, e]));
+  t.mouvements.forEach(m => pdb.getRange(parCle.get(m.joueur + '|' + m.de).rangee, COL_EQUIPE_JOUEUR).setValue(m.vers));
+  // 2. Alignements enregistrés : les joueurs partis libèrent leur place.
+  retirerDesAlignements(t.mouvements);
+  // 3. Autres offres ouvertes qui contiennent un élément échangé : annulées.
+  const partis = new Set(t.mouvements.map(m => m.joueur + '|' + m.de));
+  liste.filter(x => x.id !== t.id && (x.statut === TX.ATTENTE || x.statut === TX.APPROBATION)
+    && x.mouvements.some(m => partis.has(m.joueur + '|' + m.de))).forEach(x => {
+    x.statut = TX.ANNULEE; x.decideeLe = t.decideeLe; x.decideePar = 'Ligue'; x.note = 'Un élément de l\'offre a été échangé ailleurs';
+    ecrireTransaction(x);
+  });
+  // 4. Publication de la transaction (site + Discord par le Worker).
+  const pub = publierTransaction(t, membre, maintenant);
+  t.statut = TX.APPROUVEE; t.publication = pub.id;
+  ecrireTransaction(t);
+  return pub;
 }
 
 function retirerDesAlignements(mouvements) {
