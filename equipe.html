@@ -35,6 +35,39 @@
     .dg-item .dg-label{ font-size:9.5px; }
   }
 
+  /* ---------- Recherche d'un joueur (toutes les équipes) ---------- */
+  .eq-recherche{ position:relative; flex:0 1 260px; min-width:0; }
+  .eq-recherche input{
+    width:100%; box-sizing:border-box; height:38px; padding:0 12px 0 34px; border-radius:9px; border:none;
+    background:var(--surface); color:var(--ink); font:inherit; font-size:14px;
+  }
+  .eq-recherche-icone{ position:absolute; left:11px; top:50%; width:16px; height:16px; transform:translateY(-50%); color:var(--ink-muted); pointer-events:none; }
+  .eq-suggestions{
+    position:absolute; z-index:150; top:calc(100% + 6px); left:0; width:max(100%, 320px); max-width:calc(100vw - 24px);
+    margin:0; padding:6px; list-style:none; box-sizing:border-box; border-radius:12px;
+    background:var(--surface); border:1px solid var(--line); box-shadow:0 14px 40px rgba(0,0,0,0.35);
+  }
+  .eq-suggestions li{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; color:var(--ink); }
+  .eq-suggestions li[aria-selected="true"], .eq-suggestions li:hover{ background:var(--accent-soft); }
+  .eq-suggestions .sg-ov{
+    flex-shrink:0; width:34px; text-align:center; padding:3px 0; border-radius:7px; background:var(--stripe);
+    font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:15px;
+  }
+  .eq-suggestions .sg-nom{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .eq-suggestions .sg-nom b{ font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .eq-suggestions .sg-nom b mark{ background:none; color:var(--accent); }
+  .eq-suggestions .sg-nom small{ font-size:12px; color:var(--ink-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .eq-suggestions .sg-logo{ width:28px; height:28px; object-fit:contain; flex-shrink:0; }
+  .eq-suggestions .sg-vide{ cursor:default; color:var(--ink-muted); font-size:14px; }
+  .eq-suggestions .sg-vide:hover{ background:none; }
+  /* Joueur trouvé par la recherche : ligne surlignée dans le tableau. */
+  tr.is-cherche td{ background:var(--accent-soft) !important; box-shadow:inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  @media (max-width:600px){
+    .eq-recherche{ flex:1 1 100%; order:5; }
+    .eq-recherche input{ height:36px; }
+    .eq-suggestions{ width:100%; }
+  }
+
   /* ---------- Infos du DG (nom, gamertag, Discord) — dans la bannière colorée ---------- */
   .dg-bar{
     display:flex; flex-wrap:wrap; align-items:center; gap:6px 18px;
@@ -175,6 +208,12 @@
       <span id="teamSwitchLabel">Choisir une équipe</span>
       <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
+    <div class="eq-recherche" role="search">
+      <svg class="eq-recherche-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      <input type="search" id="rechercheJoueur" placeholder="Trouver un joueur…" autocomplete="off" spellcheck="false"
+        aria-label="Rechercher un joueur" aria-autocomplete="list" aria-controls="suggestionsJoueur" aria-expanded="false" role="combobox">
+      <ul class="eq-suggestions" id="suggestionsJoueur" role="listbox" hidden></ul>
+    </div>
     <div class="dg-bar" id="dgBar" hidden></div>
     <div class="eq-vues" id="eqVues" role="group" aria-label="Vue de l'équipe" hidden>
       <button type="button" data-vue="salaires">Salaires</button>
@@ -279,6 +318,9 @@ const TEAM_GIDS = {
 
 const urlParams = new URLSearchParams(location.search);
 const requestedTeam = (urlParams.get('team') || '').trim().toLowerCase();
+// Joueur choisi dans la recherche (« Nom, Prénom ») : sa ligne est surlignée.
+const joueurCherche = (urlParams.get('joueur') || '').trim();
+let joueurMontre = false;
 const currentTeam = TEAM_GIDS[requestedTeam] || null;
 
 // Couleurs approximatives par équipe (primaire = accent, dark = bandeau du haut).
@@ -864,6 +906,7 @@ function renderSections(){
     players.forEach((p, idx) => {
       const tr = document.createElement('tr');
       if(idx < 20) tr.classList.add('row-in');
+      if(joueurCherche && (p[1] || '').trim() === joueurCherche) tr.classList.add('is-cherche');
       buildPlayerCells(tr, p, 'td');
       tbody.appendChild(tr);
     });
@@ -927,9 +970,131 @@ function render(){
   const teamName = currentTeam ? currentTeam.name + ' — ' : '';
   els.rowCount.textContent = teamName + `${state.sections.reduce((n, s) => n + s.players.length, 0)} joueurs`;
   els.emptyState.hidden = true;
+  // Arrivée par la recherche : on amène le joueur à l'écran (une seule fois).
+  const trouve = joueurCherche && !joueurMontre && els.sectionsWrap.querySelector('tr.is-cherche');
+  if(trouve){ joueurMontre = true; requestAnimationFrame(() => trouve.scrollIntoView({ block: 'center', behavior: 'smooth' })); }
 }
 
 els.retryBtn.addEventListener('click', () => loadData());
+
+/* ---------- Recherche d'un joueur dans toutes les équipes ----------
+   PLAYERSDATABASE (colonne Z = équipe) : suggestions par nom, sans accents ; un choix
+   mène à la page de son équipe (?joueur= surligne sa ligne), ou aux agents libres (UFA). */
+(function(){
+  const champ = document.getElementById('rechercheJoueur');
+  const liste = document.getElementById('suggestionsJoueur');
+  const SLUG_DE_CODE = Object.fromEntries(Object.entries(TEAM_GIDS).map(([slug, t]) => [t.code, slug]));
+  const sansAccents = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  let joueurs = null, chargement = null, choix = [], actif = -1;
+
+  function charger(){
+    if(chargement) return chargement;
+    const q = encodeURIComponent("select A, B, C, H, Z where Z <> '' and H <> 'CHOIX'");
+    chargement = fetch(`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&headers=1&sheet=PLAYERSDATABASE&tq=${q}`)
+      .then(r => r.text())
+      .then(t => {
+        const json = JSON.parse(t.match(/setResponse\(([\s\S]*)\);\s*$/)[1]);
+        joueurs = json.table.rows.map(r => (r.c || []).map(c => c ? String(c.f != null ? c.f : (c.v != null ? c.v : '')).trim() : ''))
+          .map(l => {
+            const code = l[4].toUpperCase();
+            const v = l[1].indexOf(',');
+            const nom = l[0] || (v > 0 ? l[1].slice(v + 1).trim() + ' ' + l[1].slice(0, v).trim() : l[1]);
+            return { id: l[1], nom, ov: Number(l[2]) || 0, po: l[3], code, slug: SLUG_DE_CODE[code] || '', ufa: code === 'UFA', cle: sansAccents(nom + ' ' + l[1]) };
+          })
+          .filter(j => j.id && (j.slug || j.ufa));
+      })
+      .catch(() => { joueurs = []; chargement = null; });
+    return chargement;
+  }
+
+  function surligner(texte, mots){
+    const frag = document.createDocumentFragment();
+    const base = sansAccents(texte);
+    const premier = mots.map(m => base.indexOf(m)).filter(i => i >= 0).sort((a, b) => a - b)[0];
+    const mot = mots.find(m => base.indexOf(m) === premier);
+    if(premier == null){ frag.append(texte); return frag; }
+    const mark = document.createElement('mark');
+    mark.textContent = texte.slice(premier, premier + mot.length);
+    frag.append(texte.slice(0, premier), mark, texte.slice(premier + mot.length));
+    return frag;
+  }
+
+  function fermer(){ liste.hidden = true; champ.setAttribute('aria-expanded', 'false'); actif = -1; }
+  function aller(j){
+    location.href = j.ufa ? 'joueurs.html' : `equipe.html?team=${j.slug}&joueur=${encodeURIComponent(j.id)}`;
+  }
+
+  async function chercher(){
+    const mots = sansAccents(champ.value).split(/[\s,]+/).filter(Boolean);
+    if(!mots.length){ fermer(); return; }
+    if(!joueurs) await charger();
+    if(sansAccents(champ.value).split(/[\s,]+/).filter(Boolean).join(' ') !== mots.join(' ')) return;   // tapé entre-temps
+    // Tous les mots présents ; ceux dont le nom de famille ou le prénom commence par le 1er mot d'abord.
+    const debut = j => j.cle.split(/[\s,]+/).some(p => p.startsWith(mots[0])) ? 0 : 1;
+    choix = joueurs.filter(j => mots.every(m => j.cle.includes(m)))
+      .sort((a, b) => debut(a) - debut(b) || b.ov - a.ov).slice(0, 8);
+    actif = choix.length ? 0 : -1;
+    afficher(mots);
+  }
+
+  function afficher(mots){
+    liste.replaceChildren();
+    if(!choix.length){
+      const li = document.createElement('li');
+      li.className = 'sg-vide';
+      li.textContent = 'Aucun joueur trouvé dans une équipe.';
+      liste.append(li);
+    }
+    choix.forEach((j, i) => {
+      const li = document.createElement('li');
+      li.id = 'sg-' + i;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', i === actif ? 'true' : 'false');
+      const ov = document.createElement('span');
+      ov.className = 'sg-ov';
+      ov.textContent = j.ov || '–';
+      const texte = document.createElement('span');
+      texte.className = 'sg-nom';
+      const b = document.createElement('b');
+      b.append(surligner(j.nom, mots));
+      const petit = document.createElement('small');
+      petit.textContent = [j.po, j.ufa ? 'Agent libre' : TEAM_GIDS[j.slug].name].filter(Boolean).join(' · ');
+      texte.append(b, petit);
+      li.append(ov, texte);
+      if(!j.ufa){
+        const img = document.createElement('img');
+        img.className = 'sg-logo';
+        img.src = teamLogoPath(j.code);
+        img.alt = '';
+        li.append(img);
+      }
+      li.addEventListener('mousedown', ev => { ev.preventDefault(); aller(j); });
+      liste.append(li);
+    });
+    liste.hidden = false;
+    champ.setAttribute('aria-expanded', 'true');
+    champ.setAttribute('aria-activedescendant', actif >= 0 ? 'sg-' + actif : '');
+  }
+
+  let minuterie = 0;
+  champ.addEventListener('focus', charger, { once: true });
+  champ.addEventListener('input', () => { clearTimeout(minuterie); minuterie = setTimeout(chercher, 120); });
+  champ.addEventListener('keydown', ev => {
+    if(liste.hidden || !choix.length){ if(ev.key === 'Escape') fermer(); return; }
+    if(ev.key === 'ArrowDown' || ev.key === 'ArrowUp'){
+      ev.preventDefault();
+      actif = (actif + (ev.key === 'ArrowDown' ? 1 : -1) + choix.length) % choix.length;
+      [...liste.children].forEach((li, i) => li.setAttribute('aria-selected', i === actif ? 'true' : 'false'));
+      champ.setAttribute('aria-activedescendant', 'sg-' + actif);
+    }else if(ev.key === 'Enter'){
+      ev.preventDefault();
+      if(actif >= 0) aller(choix[actif]);
+    }else if(ev.key === 'Escape'){
+      fermer();
+    }
+  });
+  champ.addEventListener('blur', () => setTimeout(fermer, 100));
+})();
 
 /* ---------- Vue Alignement (trios, paires, gardiens ; voir alignement.js) ----------
    Modifiable par le DG sur publier.lnhq.ca/alignement.html. */
