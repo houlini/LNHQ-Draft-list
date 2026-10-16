@@ -226,7 +226,7 @@ function nomChaine(valeur) {
   return m ? m[1].toLowerCase() : '';
 }
 
-async function streams(env, logins) {
+async function streams(env, logins, reessai = false) {
   const resultat = new Map();
   if (!logins.length) return resultat;
   const jeton = await jetonTwitch(env);
@@ -238,7 +238,14 @@ async function streams(env, logins) {
     const rep = await fetch('https://api.twitch.tv/helix/streams?' + params, {
       headers: { 'Client-Id': env.TWITCH_CLIENT_ID, 'Authorization': 'Bearer ' + jeton },
     });
-    if (rep.status === 401) { jetonMemoire = null; throw new Error('jeton refusé'); }
+    // Jeton invalidé par Twitch avant son échéance : on l'oublie (mémoire ET cache, sinon
+    // il serait réutilisé jusqu'à 60 jours) et on en redemande un, une seule fois.
+    if (rep.status === 401) {
+      jetonMemoire = null;
+      await caches.default.delete(CLE_JETON);
+      if (!reessai) return streams(env, logins, true);
+      throw new Error('jeton refusé (même après renouvellement : vérifier TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET)');
+    }
     if (!rep.ok) throw new Error('HTTP ' + rep.status);
     (await rep.json()).data.forEach(s => resultat.set(s.user_login.toLowerCase(), s));
   }
@@ -246,10 +253,11 @@ async function streams(env, logins) {
 }
 
 // Jeton d'application Twitch (valide ~60 jours), gardé en mémoire et dans le cache.
+const CLE_JETON = new Request('https://api.lnhq.ca/twitch?jeton');
 let jetonMemoire = null;
 async function jetonTwitch(env) {
   if (jetonMemoire && jetonMemoire.expire > Date.now()) return jetonMemoire.valeur;
-  const cle = new Request('https://api.lnhq.ca/twitch?jeton');
+  const cle = CLE_JETON;
   const enCache = await caches.default.match(cle);
   if (enCache) {
     jetonMemoire = await enCache.json();
