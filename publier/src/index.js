@@ -203,15 +203,10 @@ async function actionEnchere(env, action, courriel, corps) {
 }
 
 /* ---------- Transactions entre équipes ---------- */
-// Le script vérifie tout sous verrou. Avis Discord facultatif (secret WEBHOOK_TRANSACTIONS) :
-// « une offre t'attend », « une transaction attend l'approbation », sans le contenu.
+// Le script vérifie tout sous verrou. Les offres restent privées : rien sur Discord ;
+// seule la transaction approuvée y est publiée (route /api/transactions/decider).
 async function actionTransaction(env, action, courriel, corps) {
   const r = await scriptJson(env, action, courriel, corps);
-  if (r.ok && r.notifier && env.WEBHOOK_TRANSACTIONS) {
-    const envoi = await envoyerDiscord(env, 'TRANSACTIONS', r.notifier);
-    if (envoi.erreur) console.error('Discord (transaction) :', envoi.erreur);
-  }
-  delete r.notifier;
   return json(r, r.ok ? 200 : 400);
 }
 

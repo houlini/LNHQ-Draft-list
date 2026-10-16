@@ -2337,7 +2337,7 @@ function proposerTransaction(d, membre) {
       ecrireTransaction(ancienne);
     }
     console.log('Transaction proposée ' + t.id + ' par ' + membre.courriel);
-    return { ok: true, id: t.id, notifier: messageTransaction('offre', t) };
+    return { ok: true, id: t.id };
   } finally {
     verrou.releaseLock();
   }
@@ -2368,7 +2368,7 @@ function repondreTransaction(d, membre) {
     const toutes = t.equipes.every(c => t.acceptees.indexOf(c) >= 0);
     if (toutes) t.statut = TX.APPROBATION;
     ecrireTransaction(t);
-    return { ok: true, statut: t.statut, notifier: toutes ? messageTransaction('approbation', t) : null };
+    return { ok: true, statut: t.statut };
   } finally {
     verrou.releaseLock();
   }
@@ -2477,18 +2477,4 @@ function publierTransaction(t, membre, date) {
   cases.setValues([[true, false]]);
   SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).appendRow([date, membre.courriel, 'NOUVELLES', v.titre, id, '']);
   return { id: id, page: pageUrl, discord: { flux: 'NOUVELLES', message: messageDiscord(v, date, pageUrl) } };
-}
-
-// Avis Discord facultatif (WEBHOOK_TRANSACTIONS du Worker) : ne révèle jamais le contenu.
-function messageTransaction(type, t) {
-  const recoivent = t.equipes.filter(c => c !== t.par).map(nomEquipe);
-  const texte = type === 'offre'
-    ? '📨 **' + recoivent.join('** et **') + '** : une nouvelle offre de transaction t\'attend.'
-    : '🧾 Une transaction attend l\'approbation d\'un dirigeant.';
-  return {
-    username: 'Transactions · LNHQ',
-    avatar_url: 'https://lnhq.ca/logo-lnhq.png',
-    embeds: [{ description: texte + '\n[Ouvrir les transactions →](https://publier.lnhq.ca/transactions.html)', color: type === 'offre' ? 0x1C7ED6 : 0xE0A800 }],
-    allowed_mentions: { parse: [] },
-  };
 }
