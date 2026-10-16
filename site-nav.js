@@ -103,6 +103,7 @@
                 ${menuItem('Règlements', 'reglements.html', currentPage === 'reglements')}
                 ${menuItem('Masse salariale', 'masse.html', currentPage === 'masse')}
                 ${menuItem('Draft 2026', 'ordre.html', currentPage === 'ordre')}
+                ${menuItem('Transactions (DG)', 'https://publier.lnhq.ca/transactions.html', false)}
                 ${menuItem('Inscription DG', 'inscription.html', currentPage === 'inscription')}
               </div>
             </div>

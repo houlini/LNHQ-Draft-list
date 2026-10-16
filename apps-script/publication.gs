@@ -117,6 +117,11 @@ function traiter(p, corps) {
   if (p.action === 'miserEnchere') return miserEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'tirerAuSort') return tirerAuSort(JSON.parse(corps || '{}'), membre);
   if (p.action === 'programmerTirage') return programmerTirage(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'transactions') return transactions(membre);
+  if (p.action === 'proposerTransaction') return proposerTransaction(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'repondreTransaction') return repondreTransaction(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'annulerTransaction') return annulerTransaction(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'deciderTransaction') return deciderTransaction(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
 }
 
@@ -2100,6 +2105,390 @@ function messageEnchere(type, e, precedente, joueurIntrouvable, candidats) {
       color: type === 'fin' || type === 'tirage' ? 0x2F9E44 : /^(attente_tirage|egalite|tirage_programme)$/.test(type) ? 0x7048E8 : 0xE8590C,
       thumbnail: { url: 'https://lnhq.ca/Logos/' + e.equipe + '.png' },
     }],
+    allowed_mentions: { parse: [] },
+  };
+}
+
+/* =========================================================================
+   TRANSACTIONS ENTRE ÉQUIPES (publier.lnhq.ca/transactions.html)
+   Un DG compose une offre (2 ou 3 équipes) : joueurs, espoirs et choix de repêchage,
+   chacun de son équipe actuelle vers une autre équipe de l'offre. Les autres équipes
+   acceptent, refusent ou font une contre-offre (48 h pour répondre). Quand toutes ont
+   accepté, un dirigeant (case « Annonces ») approuve ou rejette. À l'approbation :
+     - colonne Z de PLAYERSDATABASE = nouvelle équipe (joueurs, espoirs et choix) ;
+     - joueurs retirés des alignements enregistrés de leur ancienne équipe ;
+     - autres offres ouvertes contenant un de ces éléments : annulées ;
+     - nouvelle « Transaction » publiée sur le site et dans Discord (par le Worker).
+   Règles revérifiées à l'envoi, à chaque acceptation et à l'approbation, avec les
+   données du moment (onglet de la masse salariale, salaires 2026-27, colonne N) :
+   une équipe ne peut pas, à cause de l'échange, dépasser le plafond, tomber sous le
+   plancher ou dépasser 28 joueurs sous contrat (espoirs et choix exclus). Une équipe
+   déjà hors règle peut faire un échange qui améliore sa situation.
+   Les offres restent privées : onglet TRANSACTIONS du classeur privé (celui du script).
+   ========================================================================= */
+const ONGLET_TRANSACTIONS = 'TRANSACTIONS';
+const TRANSACTIONS_ENTETES = ['ID', 'Créée le', 'Proposée par', 'Équipes', 'Mouvements', 'Message', 'Statut',
+  'Acceptée par', 'Expire le', 'Remplace', 'Décidée le', 'Décidée par', 'Note', 'Publication'];
+const TX = { ATTENTE: 'En attente', APPROBATION: 'À approuver', APPROUVEE: 'Approuvée', REFUSEE: 'Refusée',
+  REJETEE: 'Rejetée', ANNULEE: 'Annulée', EXPIREE: 'Expirée', CONTRE: 'Contre-offre' };
+const HEURES_OFFRE = 48;
+const MAX_JOUEURS_CONTRAT = 28;
+const MAX_MOUVEMENTS = 24;
+const COL_OV = 3;          // C
+const COL_PO = 8;          // H  (« CHOIX » pour un choix de repêchage)
+const COL_ESPOIR = 28;     // AB
+
+function ongletTransactions() {
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  let o = classeur.getSheetByName(ONGLET_TRANSACTIONS);
+  if (!o) {
+    o = classeur.insertSheet(ONGLET_TRANSACTIONS);
+    o.appendRow(TRANSACTIONS_ENTETES);
+    o.setFrozenRows(1);
+    o.getRange(1, 1, o.getMaxRows(), TRANSACTIONS_ENTETES.length).setNumberFormat('@');
+  }
+  return o;
+}
+
+const codesValides = () => Object.keys(CODES_EQUIPES).map(n => CODES_EQUIPES[n]);
+const listeCodes = v => String(v || '').split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+
+// Offres enregistrées ; une offre « En attente » dont le délai est passé est vue « Expirée ».
+function lireTransactions() {
+  const o = ongletTransactions();
+  if (o.getLastRow() < 2) return [];
+  const maintenant = Date.now();
+  return o.getRange(2, 1, o.getLastRow() - 1, TRANSACTIONS_ENTETES.length).getDisplayValues().map((l, i) => {
+    let mouvements = [];
+    try { mouvements = JSON.parse(l[4] || '[]'); } catch (e) { mouvements = []; }
+    const t = {
+      rangee: i + 2, id: l[0], cree: l[1], par: l[2], equipes: listeCodes(l[3]), mouvements: mouvements, message: l[5],
+      statut: l[6], acceptees: listeCodes(l[7]), expire: l[8], remplace: l[9], decideeLe: l[10], decideePar: l[11],
+      note: l[12], publication: l[13],
+    };
+    if (t.statut === TX.ATTENTE && t.expire && new Date(t.expire).getTime() < maintenant) { t.statut = TX.EXPIREE; t.aExpirer = true; }
+    return t;
+  }).filter(t => t.id);
+}
+
+function ecrireTransaction(t) {
+  const o = ongletTransactions();
+  const valeurs = [t.id, t.cree, t.par, t.equipes.join(','), JSON.stringify(t.mouvements), t.message, t.statut,
+    t.acceptees.join(','), t.expire, t.remplace || '', t.decideeLe || '', t.decideePar || '', t.note || '', t.publication || ''];
+  const rang = o.getRange(t.rangee || o.getLastRow() + 1, 1, 1, valeurs.length);
+  rang.setNumberFormat('@').setValues([valeurs]);
+}
+
+// Les offres expirées sont notées dans l'onglet à la prochaine écriture.
+function noterExpirees(liste) {
+  liste.filter(t => t.aExpirer).forEach(t => { t.aExpirer = false; ecrireTransaction(t); });
+}
+
+// Joueurs, espoirs et choix des 32 équipes (PLAYERSDATABASE, colonne Z = propriétaire).
+function lireEffectifs() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const valeurs = o.getRange(2, 1, o.getLastRow() - 1, COL_ESPOIR).getDisplayValues();
+  const codes = new Set(codesValides());
+  const elements = [];
+  valeurs.forEach((l, i) => {
+    const joueur = String(l[COL_JOUEUR - 1]).trim(), equipe = String(l[COL_EQUIPE_JOUEUR - 1]).trim().toUpperCase();
+    if (!joueur || !codes.has(equipe) || joueur.toUpperCase() === 'JOUEUR') return;
+    const choix = String(l[COL_PO - 1]).trim().toUpperCase() === 'CHOIX';
+    const espoir = /^(true|vrai|x|oui)$/i.test(String(l[COL_ESPOIR - 1]).trim());
+    elements.push({
+      rangee: i + 2, joueur: joueur, equipe: equipe, type: choix ? 'choix' : espoir ? 'espoir' : 'joueur',
+      po: choix ? '' : String(l[COL_PO - 1]).trim(), ov: Number(l[COL_OV - 1]) || 0, salaire: argent(l[COL_SALAIRE - 1]),
+    });
+  });
+  return elements;
+}
+
+// Onglet de la masse salariale : { MTL: { masse, plafond, plancher, joueurs } }. Plafond et
+// plancher (montants de la ligue) = masse + espace sous le plafond, masse − marge au-dessus du plancher.
+function lireMasses() {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheets().find(s => s.getSheetId() === GID_MASSE);
+  if (!o) throw new Error('Onglet de la masse salariale introuvable');
+  const lignes = o.getDataRange().getValues();
+  const ent = lignes[0].map(h => String(h).trim().toUpperCase());
+  const i = { code: ent.indexOf('TM'), masse: ent.indexOf('MASSE'), plafond: ent.indexOf('PLAFOND'), plancher: ent.indexOf('PLANCHER'), tot: ent.indexOf('TOT') };
+  if (Object.keys(i).some(k => i[k] < 0)) throw new Error('Colonnes de la masse salariale introuvables');
+  const masses = {};
+  lignes.slice(1).forEach(l => {
+    const code = String(l[i.code]).trim().toUpperCase();
+    if (!code) return;
+    const masse = argent(l[i.masse]);
+    masses[code] = { masse: masse, plafond: masse + argent(l[i.plafond]), plancher: masse - argent(l[i.plancher]), joueurs: argent(l[i.tot]) };
+  });
+  return masses;
+}
+
+// Impact de l'échange sur chaque équipe et règles non respectées (données du moment).
+function bilanTransaction(equipes, mouvements, elements, masses) {
+  const parCle = new Map(elements.map(e => [e.joueur + '|' + e.equipe, e]));
+  const erreurs = [];
+  const bilan = {};
+  equipes.forEach(c => {
+    const m = masses[c] || {};
+    bilan[c] = { masseAvant: m.masse || 0, masseApres: m.masse || 0, plafond: m.plafond, plancher: m.plancher,
+      joueursAvant: m.joueurs || 0, joueursApres: m.joueurs || 0, recoit: 0, cede: 0 };
+  });
+  mouvements.forEach(mv => {
+    const e = parCle.get(mv.joueur + '|' + mv.de);
+    if (!e) { erreurs.push({ regle: 'possession', equipe: mv.de, joueur: mv.joueur }); return; }
+    bilan[mv.de].cede++;
+    bilan[mv.vers].recoit++;
+    if (e.type !== 'joueur') return;
+    bilan[mv.de].masseApres -= e.salaire; bilan[mv.vers].masseApres += e.salaire;
+    bilan[mv.de].joueursApres--; bilan[mv.vers].joueursApres++;
+  });
+  equipes.forEach(c => {
+    const b = bilan[c];
+    if (!b.recoit && !b.cede) erreurs.push({ regle: 'vide', equipe: c });
+    if (b.plafond && b.masseApres > b.plafond && b.masseApres > b.masseAvant) erreurs.push({ regle: 'plafond', equipe: c, montant: b.masseApres - b.plafond });
+    if (b.plancher && b.masseApres < b.plancher && b.masseApres < b.masseAvant) erreurs.push({ regle: 'plancher', equipe: c, montant: b.plancher - b.masseApres });
+    if (b.joueursApres > MAX_JOUEURS_CONTRAT && b.joueursApres > b.joueursAvant) erreurs.push({ regle: 'effectif', equipe: c, nombre: b.joueursApres });
+  });
+  return { bilan: bilan, erreurs: erreurs };
+}
+
+// Offre reçue du navigateur → équipes et mouvements vérifiés (forme seulement).
+function lireOffre(d, code) {
+  const valides = new Set(codesValides());
+  const equipes = [];
+  (Array.isArray(d.equipes) ? d.equipes : []).forEach(c => {
+    c = String(c || '').trim().toUpperCase();
+    if (valides.has(c) && equipes.indexOf(c) < 0) equipes.push(c);
+  });
+  if (equipes.length < 2 || equipes.length > 3 || equipes.indexOf(code) < 0) return { erreur: 'equipes' };
+  const vus = new Set();
+  const mouvements = [];
+  for (const m of (Array.isArray(d.mouvements) ? d.mouvements : [])) {
+    const joueur = String(m && m.joueur || '').trim(), de = String(m && m.de || '').toUpperCase(), vers = String(m && m.vers || '').toUpperCase();
+    if (!joueur || equipes.indexOf(de) < 0 || equipes.indexOf(vers) < 0 || de === vers) return { erreur: 'mouvement' };
+    if (vus.has(joueur + '|' + de)) continue;
+    vus.add(joueur + '|' + de);
+    mouvements.push({ joueur: joueur, de: de, vers: vers });
+  }
+  if (!mouvements.length) return { erreur: 'vide' };
+  if (mouvements.length > MAX_MOUVEMENTS) return { erreur: 'trop' };
+  return { equipes: equipes, mouvements: mouvements, message: String(d.message || '').trim().slice(0, 600) };
+}
+
+// Détails figés au moment de l'offre (pour l'historique), à partir des données du moment.
+function detaillerMouvements(mouvements, elements) {
+  const parCle = new Map(elements.map(e => [e.joueur + '|' + e.equipe, e]));
+  return mouvements.map(m => {
+    const e = parCle.get(m.joueur + '|' + m.de) || {};
+    return { joueur: m.joueur, de: m.de, vers: m.vers, type: e.type || '', po: e.po || '', ov: e.ov || 0, salaire: e.salaire || 0 };
+  });
+}
+
+// Ce que voit le navigateur (jamais de courriel).
+function vueTransaction(t, elements, masses) {
+  const v = { id: t.id, cree: t.cree, par: t.par, equipes: t.equipes, mouvements: t.mouvements, message: t.message, statut: t.statut,
+    acceptees: t.acceptees, expire: t.expire, remplace: t.remplace, decideeLe: t.decideeLe, decideePar: t.decideePar, note: t.note,
+    publication: t.publication ? lienPage('NOUVELLES', t.publication) : '' };
+  if ((t.statut === TX.ATTENTE || t.statut === TX.APPROBATION) && elements) {
+    const r = bilanTransaction(t.equipes, t.mouvements, elements, masses);
+    v.bilan = r.bilan; v.erreurs = r.erreurs;
+  }
+  return v;
+}
+
+function transactions(membre) {
+  const code = codeDuMembre(membre), admin = peutModifier(membre);
+  if (!code && !admin) return { ok: false, erreur: 'equipe' };
+  const liste = lireTransactions().filter(t => admin || t.equipes.indexOf(code) >= 0);
+  const ouvertes = liste.some(t => t.statut === TX.ATTENTE || t.statut === TX.APPROBATION);
+  const elements = ouvertes ? lireEffectifs() : null, masses = ouvertes ? lireMasses() : null;
+  liste.sort((a, b) => String(b.cree).localeCompare(String(a.cree)));
+  return { ok: true, equipe: code, admin: admin, max: MAX_JOUEURS_CONTRAT,
+    transactions: liste.slice(0, 150).map(t => vueTransaction(t, elements, masses)) };
+}
+
+function proposerTransaction(d, membre) {
+  const code = codeDuMembre(membre);
+  if (!code) return { ok: false, erreur: 'equipe' };
+  const offre = lireOffre(d, code);
+  if (offre.erreur) return { ok: false, erreur: offre.erreur };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const liste = lireTransactions();
+    noterExpirees(liste);
+    let ancienne = null;
+    if (d.remplace) {
+      ancienne = liste.find(t => t.id === String(d.remplace));
+      if (!ancienne || ancienne.statut !== TX.ATTENTE || ancienne.equipes.indexOf(code) < 0) return { ok: false, erreur: 'contre_offre' };
+    }
+    const elements = lireEffectifs();
+    const r = bilanTransaction(offre.equipes, offre.mouvements, elements, lireMasses());
+    if (r.erreurs.length) return { ok: false, erreur: 'regles', erreurs: r.erreurs };
+    const maintenant = new Date();
+    const t = {
+      id: Utilities.getUuid(), cree: maintenant.toISOString(), par: code, equipes: offre.equipes,
+      mouvements: detaillerMouvements(offre.mouvements, elements), message: offre.message, statut: TX.ATTENTE,
+      acceptees: [code], expire: new Date(maintenant.getTime() + HEURES_OFFRE * 3600000).toISOString(),
+      remplace: ancienne ? ancienne.id : '',
+    };
+    ecrireTransaction(t);
+    if (ancienne) {
+      ancienne.statut = TX.CONTRE; ancienne.decideeLe = t.cree; ancienne.decideePar = code; ancienne.note = 'Remplacée par une contre-offre';
+      ecrireTransaction(ancienne);
+    }
+    console.log('Transaction proposée ' + t.id + ' par ' + membre.courriel);
+    return { ok: true, id: t.id, notifier: messageTransaction('offre', t) };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+function repondreTransaction(d, membre) {
+  const code = codeDuMembre(membre);
+  if (!code) return { ok: false, erreur: 'equipe' };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const liste = lireTransactions();
+    noterExpirees(liste);
+    const t = liste.find(x => x.id === String(d.id || ''));
+    if (!t || t.equipes.indexOf(code) < 0) return { ok: false, erreur: 'introuvable' };
+    if (t.statut === TX.EXPIREE) return { ok: false, erreur: 'expiree' };
+    if (t.statut !== TX.ATTENTE) return { ok: false, erreur: 'statut', statut: t.statut };
+    if (t.acceptees.indexOf(code) >= 0) return { ok: false, erreur: 'deja' };
+    const maintenant = new Date().toISOString();
+    if (d.reponse !== 'accepter') {
+      t.statut = TX.REFUSEE; t.decideeLe = maintenant; t.decideePar = code;
+      ecrireTransaction(t);
+      return { ok: true, statut: t.statut };
+    }
+    const r = bilanTransaction(t.equipes, t.mouvements, lireEffectifs(), lireMasses());
+    if (r.erreurs.length) return { ok: false, erreur: 'regles', erreurs: r.erreurs };
+    t.acceptees.push(code);
+    const toutes = t.equipes.every(c => t.acceptees.indexOf(c) >= 0);
+    if (toutes) t.statut = TX.APPROBATION;
+    ecrireTransaction(t);
+    return { ok: true, statut: t.statut, notifier: toutes ? messageTransaction('approbation', t) : null };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// L'équipe qui a proposé retire son offre (avant l'approbation).
+function annulerTransaction(d, membre) {
+  const code = codeDuMembre(membre);
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const liste = lireTransactions();
+    noterExpirees(liste);
+    const t = liste.find(x => x.id === String(d.id || ''));
+    if (!t || !code || t.par !== code) return { ok: false, erreur: 'introuvable' };
+    if (t.statut !== TX.ATTENTE && t.statut !== TX.APPROBATION) return { ok: false, erreur: 'statut', statut: t.statut };
+    t.statut = TX.ANNULEE; t.decideeLe = new Date().toISOString(); t.decideePar = code;
+    ecrireTransaction(t);
+    return { ok: true, statut: t.statut };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// Dirigeant : approuve (et exécute) ou rejette une transaction acceptée par toutes les équipes.
+function deciderTransaction(d, membre) {
+  if (!peutModifier(membre)) return { ok: false, erreur: 'admin' };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const liste = lireTransactions();
+    noterExpirees(liste);
+    const t = liste.find(x => x.id === String(d.id || ''));
+    if (!t) return { ok: false, erreur: 'introuvable' };
+    if (t.statut !== TX.APPROBATION) return { ok: false, erreur: 'statut', statut: t.statut };
+    const maintenant = new Date();
+    t.decideeLe = maintenant.toISOString(); t.decideePar = codeDuMembre(membre) || 'Ligue';
+    t.note = String(d.note || '').trim().slice(0, 300);
+    if (d.decision !== 'approuver') {
+      t.statut = TX.REJETEE;
+      ecrireTransaction(t);
+      return { ok: true, statut: t.statut };
+    }
+    const elements = lireEffectifs();
+    const r = bilanTransaction(t.equipes, t.mouvements, elements, lireMasses());
+    if (r.erreurs.length) return { ok: false, erreur: 'regles', erreurs: r.erreurs };
+
+    // 1. Changement d'équipe (colonne Z) de chaque élément.
+    const pdb = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+    const parCle = new Map(elements.map(e => [e.joueur + '|' + e.equipe, e]));
+    t.mouvements.forEach(m => pdb.getRange(parCle.get(m.joueur + '|' + m.de).rangee, COL_EQUIPE_JOUEUR).setValue(m.vers));
+    // 2. Alignements enregistrés : les joueurs partis libèrent leur place.
+    retirerDesAlignements(t.mouvements);
+    // 3. Autres offres ouvertes qui contiennent un élément échangé : annulées.
+    const partis = new Set(t.mouvements.map(m => m.joueur + '|' + m.de));
+    liste.filter(x => x.id !== t.id && (x.statut === TX.ATTENTE || x.statut === TX.APPROBATION)
+      && x.mouvements.some(m => partis.has(m.joueur + '|' + m.de))).forEach(x => {
+      x.statut = TX.ANNULEE; x.decideeLe = t.decideeLe; x.decideePar = 'Ligue'; x.note = 'Un élément de l\'offre a été échangé ailleurs';
+      ecrireTransaction(x);
+    });
+    // 4. Publication de la transaction (site + Discord par le Worker).
+    const pub = publierTransaction(t, membre, maintenant);
+    t.statut = TX.APPROUVEE; t.publication = pub.id;
+    ecrireTransaction(t);
+    console.log('Transaction approuvée ' + t.id + ' par ' + membre.courriel);
+    return { ok: true, statut: t.statut, id: pub.id, page: pub.page, discord: pub.discord };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+function retirerDesAlignements(mouvements) {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_ALIGNEMENTS);
+  if (!o || o.getLastRow() < 2) return;
+  const rang = o.getRange(2, 1, o.getLastRow() - 1, 1 + PLACES_ALIGNEMENT.length);
+  const valeurs = rang.getDisplayValues();
+  let change = false;
+  mouvements.forEach(m => {
+    const l = valeurs.find(x => String(x[0]).toUpperCase() === m.de);
+    if (!l) return;
+    for (let i = 1; i < l.length; i++) if (l[i] === m.joueur) { l[i] = ''; change = true; }
+  });
+  if (change) rang.setNumberFormat('@').setValues(valeurs);
+}
+
+const prenomNom = b => { const v = b.indexOf(','); return v > 0 ? b.slice(v + 1).trim() + ' ' + b.slice(0, v).trim() : b; };
+const montant = n => Utilities.formatString('%s $', String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '));
+
+function publierTransaction(t, membre, date) {
+  const noms = t.equipes.map(nomEquipe);
+  const titre = 'Transaction : ' + (noms.length === 2 ? noms.join(' ⇄ ') : noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1]);
+  const ligne = m => {
+    if (m.type === 'choix') return '- **' + m.joueur + '**' + (t.equipes.length > 2 ? ' · de ' + nomEquipe(m.de) : '');
+    const details = [m.po, m.ov ? m.ov + ' OV' : '', m.type === 'espoir' ? 'espoir' : m.salaire ? montant(m.salaire) : ''].filter(String);
+    return '- **' + prenomNom(m.joueur) + '**' + (details.length ? ' · ' + details.join(' · ') : '') + (t.equipes.length > 2 ? ' · de ' + nomEquipe(m.de) : '');
+  };
+  const texte = ['**' + noms.slice(0, -1).join('**, **') + '** et **' + noms[noms.length - 1] + '** concluent une transaction, approuvée par la ligue.', '']
+    .concat(...t.equipes.map(c => ['## ' + nomEquipe(c) + ' reçoit', ''].concat(t.mouvements.filter(m => m.vers === c).map(ligne), ['']))).join('\n').trim();
+  const v = { titre: titre, texte: texte, type: 'Transaction', equipe: SIGNATURE_ANNONCES, photos: [] };
+  const id = Utilities.getUuid();
+  const pageUrl = lienPage('NOUVELLES', id);
+  const onglet = ouvrirOnglet('NOUVELLES');
+  onglet.appendRow([date, v.equipe, v.type, v.titre, v.texte, '', true, false, '', id]);
+  const cases = onglet.getRange(onglet.getLastRow(), 7, 1, 2);
+  cases.insertCheckboxes();
+  cases.setValues([[true, false]]);
+  SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).appendRow([date, membre.courriel, 'NOUVELLES', v.titre, id, '']);
+  return { id: id, page: pageUrl, discord: { flux: 'NOUVELLES', message: messageDiscord(v, date, pageUrl) } };
+}
+
+// Avis Discord facultatif (WEBHOOK_TRANSACTIONS du Worker) : ne révèle jamais le contenu.
+function messageTransaction(type, t) {
+  const recoivent = t.equipes.filter(c => c !== t.par).map(nomEquipe);
+  const texte = type === 'offre'
+    ? '📨 **' + recoivent.join('** et **') + '** : une nouvelle offre de transaction t\'attend.'
+    : '🧾 Une transaction attend l\'approbation d\'un dirigeant.';
+  return {
+    username: 'Transactions · LNHQ',
+    avatar_url: 'https://lnhq.ca/logo-lnhq.png',
+    embeds: [{ description: texte + '\n[Ouvrir les transactions →](https://publier.lnhq.ca/transactions.html)', color: type === 'offre' ? 0x1C7ED6 : 0xE0A800 }],
     allowed_mentions: { parse: [] },
   };
 }

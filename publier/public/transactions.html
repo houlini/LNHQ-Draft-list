@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transactions — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=7">
+<link rel="stylesheet" href="https://lnhq.ca/alignement.css?v=5">
+<link rel="stylesheet" href="transactions.css">
+<script src="https://lnhq.ca/alignement.js?v=6" defer></script>
+<script src="transactions.js" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">LNHQ</h1>
+      </a>
+      <nav class="site-nav">
+        <a class="nav-btn" id="lienEquipe" href="https://lnhq.ca/">Voir la page de l'équipe</a>
+      </nav>
+    </div>
+    <div class="meta-row"><span id="qui">Vérification de ton accès…</span></div>
+  </header>
+
+  <div class="filter-band tx-bande" id="barre" hidden>
+    <nav class="tx-onglets" aria-label="Transactions">
+      <button type="button" data-vue="nouvelle">Nouvelle offre</button>
+      <button type="button" data-vue="recues">Reçues <span class="tx-pastille" id="nbRecues" hidden></span></button>
+      <button type="button" data-vue="envoyees">Envoyées <span class="tx-pastille is-douce" id="nbEnvoyees" hidden></span></button>
+      <button type="button" data-vue="approbation" id="ongletApprobation" hidden>À approuver <span class="tx-pastille" id="nbApprobation" hidden></span></button>
+      <button type="button" data-vue="historique">Historique</button>
+    </nav>
+  </div>
+
+  <main class="tx-page">
+    <div id="refus" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div id="refusTexte"></div>
+    </div>
+    <p id="message" class="tx-message" role="status" hidden></p>
+
+    <!-- Composer une offre : équipes, effectifs (cartes), bilan. -->
+    <section class="tx-vue" id="vueNouvelle" hidden>
+      <div class="tx-contre" id="bandeauContre" hidden>
+        <span id="texteContre"></span>
+        <button type="button" class="tx-lien" id="quitterContre">Abandonner la contre-offre</button>
+      </div>
+      <div class="tx-partenaires" id="partenaires"></div>
+      <p class="tx-aide" id="aideNouvelle"></p>
+      <div class="tx-atelier" id="atelier" hidden>
+        <div class="tx-effectifs">
+          <div class="tx-choix-colonne" id="choixColonne" role="tablist" aria-label="Équipe affichée"></div>
+          <div class="tx-colonnes" id="colonnes"></div>
+        </div>
+        <aside class="tx-bilan" id="bilan" aria-label="Bilan de l'offre"></aside>
+      </div>
+      <button type="button" class="tx-panier" id="panier" hidden></button>
+    </section>
+
+    <!-- Offres reçues, envoyées, à approuver, historique. -->
+    <section class="tx-vue" id="vueListe" hidden>
+      <div class="tx-liste" id="liste"></div>
+    </section>
+  </main>
+
+  <dialog class="tx-modal" id="modalEquipes" aria-label="Choisir une équipe">
+    <div class="tx-modal-tete">
+      <span>Avec quelle équipe ?</span>
+      <button type="button" class="tx-modal-fermer" id="fermerModal" aria-label="Fermer">✕</button>
+    </div>
+    <div class="tx-modal-grille" id="grilleEquipes"></div>
+  </dialog>
+</div>
+
+</body>
+</html>

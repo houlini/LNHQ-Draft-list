@@ -51,6 +51,18 @@ export default {
     if (enchere && request.method === 'POST') {
       return actionEnchere(env, enchere, courriel, await request.text());
     }
+    if (url.pathname === '/api/transactions' && request.method === 'GET') {
+      return appelerScript(env, 'transactions', courriel);
+    }
+    const transaction = { '/api/transactions/proposer': 'proposerTransaction', '/api/transactions/repondre': 'repondreTransaction',
+      '/api/transactions/annuler': 'annulerTransaction' }[url.pathname];
+    if (transaction && request.method === 'POST') {
+      return actionTransaction(env, transaction, courriel, await request.text());
+    }
+    // Approbation : la transaction est publiée dans les nouvelles, comme une publication.
+    if (url.pathname === '/api/transactions/decider' && request.method === 'POST') {
+      return publier(env, 'deciderTransaction', courriel, await request.text());
+    }
     const action = { '/api/publier': 'publier', '/api/modifier': 'modifier', '/api/photo': 'photo' }[url.pathname];
     if (action && request.method === 'POST') {
       const taille = Number(request.headers.get('Content-Length') || 0);
@@ -187,6 +199,19 @@ async function actionEnchere(env, action, courriel, corps) {
     if (envoi.erreur) console.error('Discord (enchère) :', envoi.erreur);
     r.discord = !envoi.erreur;
   }
+  return json(r, r.ok ? 200 : 400);
+}
+
+/* ---------- Transactions entre équipes ---------- */
+// Le script vérifie tout sous verrou. Avis Discord facultatif (secret WEBHOOK_TRANSACTIONS) :
+// « une offre t'attend », « une transaction attend l'approbation », sans le contenu.
+async function actionTransaction(env, action, courriel, corps) {
+  const r = await scriptJson(env, action, courriel, corps);
+  if (r.ok && r.notifier && env.WEBHOOK_TRANSACTIONS) {
+    const envoi = await envoyerDiscord(env, 'TRANSACTIONS', r.notifier);
+    if (envoi.erreur) console.error('Discord (transaction) :', envoi.erreur);
+  }
+  delete r.notifier;
   return json(r, r.ok ? 200 : 400);
 }
 
