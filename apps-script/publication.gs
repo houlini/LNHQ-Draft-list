@@ -2602,13 +2602,14 @@ function importerStats(d, membre) {
     if (o.getLastRow() > 1 && o.getLastColumn() > 0) {
       const tout = o.getRange(1, 1, o.getLastRow(), o.getLastColumn()).getDisplayValues();
       const ou = STATS_ENTETES.map(h => tout[0].indexOf(h));
-      tout.slice(1).forEach(r => { if (r[0]) avant.set(r[0].trim(), ou.map(i => i >= 0 ? r[i] : '')); });
+      // Clé : nom complet du classeur (deux « M. Wood » homonymes), sinon le nom abrégé.
+      tout.slice(1).forEach(r => { const v = ou.map(i => i >= 0 ? r[i] : ''); if (r[0]) avant.set((v[1] || v[0]).trim(), v); });
     }
     const valeurs = [];
     for (const l of lignes) {
       const joueur = String(l.joueur || '').trim().slice(0, 80);
       if (!joueur) return { ok: false, erreur: 'ligne' };
-      const ancien = avant.get(joueur) || [];
+      const ancien = avant.get(String(l.nom || '').trim() || joueur) || [];
       const ligne = [];
       for (let i = 0; i < CLES.length; i++) {
         const c = CLES[i];

@@ -137,7 +137,12 @@
     const compact = s => sansAccents(s).replace(/[^a-z]/g, '');
     const famille = compact(point > 0 ? j.joueur.slice(point + 1) : j.joueur);
     const memeNom = roster.filter(r => compact(r.b.split(',')[0]) === famille);
-    const exacts = memeNom.filter(r => !ini || sansAccents(r.b.split(',')[1]).startsWith(ini));
+    let exacts = memeNom.filter(r => !ini || sansAccents(r.b.split(',')[1]).startsWith(ini));
+    // Homonymes (deux « E. Pettersson ») : départagés par la position (C ≠ D).
+    const groupe = po => /^(LD|RD|D)$/.test(String(po || '').split('/')[0].toUpperCase()) ? 'D' : 'A';
+    if(exacts.length > 1){ const memePo = exacts.filter(r => groupe(r.po) === groupe(j.po)); if(memePo.length === 1) exacts = memePo; }
+    // Un joueur du classeur ne peut être choisi qu'une fois d'office.
+    if(exacts.length === 1 && joueurs.some(x => x !== j && x.choix === exacts[0])) exacts = [];
     j.suggestions = exacts.length === 1 ? exacts : memeNom;
     j.choix = exacts.length === 1 ? exacts[0] : null;
   }
@@ -166,7 +171,8 @@
       return j;
     }).filter(j => j.joueur);
     joueurs.forEach(rattacher);
-    const doublons = joueurs.map(j => sansAccents(j.joueur)).filter((n, i, a) => a.indexOf(n) !== i);
+    // Même nom abrégé ET même position : vrai doublon (deux homonymes C et D, c'est normal).
+    const doublons = joueurs.map(j => sansAccents(j.joueur) + ' (' + j.po + ')').filter((n, i, a) => a.indexOf(n) !== i);
     // Colonnes incohérentes : décochées d'office.
     inclure = {};
     COLONNES.forEach(c => { inclure[c.cle] = index[c.cle] != null; });
@@ -330,7 +336,7 @@
       rendre(true);
       const msgs = [];
       if(info.absentes.length) msgs.push('Colonnes absentes : ' + info.absentes.join(', '));
-      if(info.doublons.length) msgs.push('Doublons : ' + [...new Set(info.doublons)].join(', '));
+      if(info.doublons.length) msgs.push('Homonymes à rattacher à la main (même nom, même position) : ' + [...new Set(info.doublons)].join(', '));
       afficher(msgs.join(' · ') || `${joueurs.length} joueurs lus. Vérifie le rapport, puis importe.`, msgs.length ? 'is-alerte' : 'is-ok');
     }catch(err){
       $('rapport').hidden = true;
