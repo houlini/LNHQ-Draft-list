@@ -1,0 +1,57 @@
+/* LNHQ — import des stats de joueurs (publier.lnhq.ca/stats-import.html). */
+.si-page{ padding:18px clamp(12px,3vw,40px) 40px; max-width:1200px; margin:0 auto; box-sizing:border-box; width:100%; }
+#contenu{ display:flex; flex-direction:column; gap:16px; }
+.si-titre{ margin:0; font-family:'Oswald', sans-serif; font-weight:500; font-size:26px; text-transform:uppercase; }
+.si-titre small{ margin-left:8px; font-family:'IBM Plex Sans', sans-serif; font-size:14px; text-transform:none; color:var(--ink-muted); }
+.si-aide{ margin:0; font-size:14px; color:var(--ink-muted); line-height:1.5; }
+.si-depot{
+  display:flex; flex-direction:column; align-items:center; gap:4px; padding:28px 16px; border-radius:14px; cursor:pointer; text-align:center;
+  border:2px dashed var(--line); background:var(--surface); transition:border-color .15s, background .15s;
+}
+.si-depot:hover, .si-depot.is-survol{ border-color:var(--accent); background:var(--accent-soft); }
+.si-depot input{ position:absolute; opacity:0; width:1px; height:1px; }
+.si-depot b{ font-size:17px; }
+.si-depot span{ font-size:13.5px; color:var(--ink-muted); }
+.si-coller summary{ cursor:pointer; color:var(--accent); font-weight:700; font-size:14px; }
+.si-coller textarea{ display:block; width:100%; box-sizing:border-box; margin:8px 0; padding:10px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:13px 'IBM Plex Mono', monospace; }
+.si-bouton{ min-height:42px; padding:0 16px; border-radius:9px; cursor:pointer; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; font-weight:700; }
+.si-bouton.is-principal{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.si-bouton:disabled{ opacity:0.5; cursor:wait; }
+.si-message{ margin:0; padding:12px 14px; border-radius:8px; font-size:15px; background:var(--stripe); }
+.si-message.is-ok{ background:color-mix(in srgb, #2f9e44 15%, var(--surface)); }
+.si-message.is-alerte{ background:color-mix(in srgb, #e0a800 20%, var(--surface)); }
+.si-message.is-erreur{ background:var(--danger-soft); color:var(--danger); }
+#rapport{ display:flex; flex-direction:column; gap:16px; }
+.si-tuiles{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
+.si-tuile{ padding:12px 14px; border-radius:12px; background:var(--surface); border:1px solid var(--line); border-top:4px solid var(--line); }
+.si-tuile small{ display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
+.si-tuile strong{ display:block; font-family:'Oswald', sans-serif; font-weight:500; font-size:30px; line-height:1.1; }
+.si-tuile.is-ok{ border-top-color:#2f9e44; } .si-tuile.is-alerte{ border-top-color:#e0a800; } .si-tuile.is-erreur{ border-top-color:#e03131; }
+.si-bloc{ padding:14px 16px; border-radius:12px; background:var(--surface); border:1px solid var(--line); }
+.si-bloc h3{ margin:0 0 8px; font-family:'Oswald', sans-serif; font-weight:500; font-size:18px; text-transform:uppercase; }
+.si-bloc h3 small{ font-family:'IBM Plex Sans', sans-serif; font-size:13px; text-transform:none; color:var(--ink-muted); margin-left:6px; }
+.si-colonnes{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.si-colonne{ display:inline-flex; align-items:center; gap:7px; padding:8px 12px; border-radius:10px; border:1px solid var(--line); cursor:pointer; font-size:14px; }
+.si-colonne input{ width:17px; height:17px; accent-color:var(--accent); }
+.si-colonne small{ color:var(--ink-muted); font-size:12px; }
+.si-colonne.is-incoherente{ border-color:#e03131; background:color-mix(in srgb, #e03131 10%, transparent); }
+.si-colonne.is-incoherente small{ color:#e03131; font-weight:700; }
+.si-nom{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:8px 0; border-top:1px solid var(--line); font-size:14px; }
+.si-nom:first-child{ border-top:none; }
+.si-nom b{ min-width:130px; }
+.si-nom span{ color:var(--ink-muted); min-width:40px; }
+.si-nom select{ min-height:38px; padding:0 8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; max-width:100%; }
+.si-nom small{ color:#c92a2a; font-size:12.5px; }
+.si-groupe h4{ margin:8px 0 4px; font-size:14px; }
+.si-groupe ul{ margin:0; padding-left:20px; font-size:13.5px; line-height:1.55; }
+.si-table-wrap{ overflow:auto; max-height:60vh; border:1px solid var(--line); border-radius:10px; }
+.si-table{ width:100%; border-collapse:collapse; font-size:13.5px; white-space:nowrap; }
+.si-table th{ position:sticky; top:0; z-index:1; background:var(--stripe); text-align:left; padding:7px 9px; font-size:12px; text-transform:uppercase; letter-spacing:0.03em; }
+.si-table td{ padding:6px 9px; border-top:1px solid var(--line); }
+.si-table td.num{ text-align:right; font-family:'IBM Plex Mono', monospace; }
+.si-table td.etat{ text-align:center; color:#2f9e44; cursor:help; }
+.si-table tr.is-alerte td{ background:color-mix(in srgb, #e0a800 10%, transparent); }
+.si-table tr.is-alerte td.etat{ color:#d9480f; font-weight:900; }
+.si-logo{ width:20px; height:20px; object-fit:contain; vertical-align:middle; margin-right:5px; }
+.si-actions{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+@media (max-width:600px){ .si-nom b{ min-width:0; } .si-actions .si-bouton{ width:100%; } }

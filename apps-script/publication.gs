@@ -126,6 +126,7 @@ function traiter(p, corps) {
   if (p.action === 'annulerTransaction') return annulerTransaction(JSON.parse(corps || '{}'), membre);
   if (p.action === 'deciderTransaction') return deciderTransaction(JSON.parse(corps || '{}'), membre);
   if (p.action === 'enregistrerTransaction') return enregistrerTransaction(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'importerStats') return importerStats(JSON.parse(corps || '{}'), membre);
   return { ok: false, erreur: 'action' };
 }
 
@@ -2567,4 +2568,59 @@ function deplacerTransactionsVersFil() {
     deplacees++;
   });
   console.log(deplacees + ' transaction(s) déplacée(s) vers le fil TRANSACTIONS.');
+}
+
+/* =========================================================================
+   STATS DES JOUEURS (import des dirigeants : publier.lnhq.ca/stats-import.html,
+   bientôt dans la page « Gestion Admin »). L'export du jeu est vérifié dans le
+   navigateur (incohérences affichées avant l'import) ; ici, on revérifie la forme
+   et on remplace tout l'onglet public STATS_JOUEURS, lu par lnhq.ca/stats.html.
+   ========================================================================= */
+const ONGLET_STATS = 'STATS_JOUEURS';
+const STATS_ENTETES = ['Joueur', 'Nom', 'Équipe', 'PO', 'PJ', 'B', 'A', 'P', '+/-', 'PUN', 'T', '%T', 'BG', 'BAN', 'BIN', 'Importé le'];
+const MAX_LIGNES_STATS = 1500;
+
+function importerStats(d, membre) {
+  if (!peutModifier(membre)) return { ok: false, erreur: 'admin' };
+  const lignes = Array.isArray(d.lignes) ? d.lignes : [];
+  if (!lignes.length) return { ok: false, erreur: 'vide' };
+  if (lignes.length > MAX_LIGNES_STATS) return { ok: false, erreur: 'trop' };
+  const codes = new Set(codesValides());
+  const nombre = v => (v === '' || v == null) ? '' : (isNaN(Number(v)) ? null : String(Number(v)));
+  const quand = new Date().toISOString();
+  const valeurs = [];
+  for (const l of lignes) {
+    const joueur = String(l.joueur || '').trim().slice(0, 80);
+    if (!joueur) return { ok: false, erreur: 'ligne' };
+    const equipe = String(l.equipe || '').trim().toUpperCase();
+    const ligne = [joueur, String(l.nom || '').trim().slice(0, 80), codes.has(equipe) ? equipe : '', String(l.po || '').trim().toUpperCase().slice(0, 12)];
+    for (const c of ['pj', 'b', 'a', 'p', 'pm', 'pun', 't']) {
+      const n = nombre(l[c]);
+      if (n === null) return { ok: false, erreur: 'nombre', joueur: joueur, colonne: c };
+      ligne.push(n);
+    }
+    ligne.push(String(l.pct == null ? '' : l.pct).trim().slice(0, 8));
+    for (const c of ['bg', 'ban', 'bin']) {
+      const n = nombre(l[c]);
+      if (n === null) return { ok: false, erreur: 'nombre', joueur: joueur, colonne: c };
+      ligne.push(n);
+    }
+    ligne.push(quand);
+    valeurs.push(ligne);
+  }
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const classeur = SpreadsheetApp.openById(SHEET_ID);
+    const o = classeur.getSheetByName(ONGLET_STATS) || classeur.insertSheet(ONGLET_STATS);
+    o.clearContents();
+    // Texte forcé : « 12.5% », « -3 » ou « LD/RD » ne doivent pas être convertis.
+    const tout = [STATS_ENTETES].concat(valeurs);
+    o.getRange(1, 1, tout.length, STATS_ENTETES.length).setNumberFormat('@').setValues(tout);
+    o.setFrozenRows(1);
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).appendRow([new Date(), membre.courriel, ONGLET_STATS, 'Import de ' + valeurs.length + ' joueurs', '', '']);
+    return { ok: true, joueurs: valeurs.length, importe: quand };
+  } finally {
+    verrou.releaseLock();
+  }
 }

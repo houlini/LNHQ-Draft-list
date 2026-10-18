@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import des stats — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=7">
+<link rel="stylesheet" href="stats-import.css">
+<script src="stats-import.js" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">LNHQ</h1>
+      </a>
+      <nav class="site-nav">
+        <a class="nav-btn" href="https://lnhq.ca/stats.html">Voir les stats sur le site</a>
+      </nav>
+    </div>
+    <div class="meta-row"><span id="qui">Vérification de ton accès…</span></div>
+  </header>
+
+  <main class="si-page">
+    <div id="refus" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div id="refusTexte"></div>
+    </div>
+
+    <section id="contenu" hidden>
+      <h2 class="si-titre">Import des stats de joueurs <small>Gestion admin</small></h2>
+      <p class="si-aide">Dépose l'export CSV (colonnes PLAYER, POS, GP, G, A, P, +/-, PIM, S, S%, GWG, PPG, SHG). Tout est vérifié avant l'import ;
+        rien n'est enregistré tant que tu n'as pas cliqué « Importer ». Chaque import remplace la liste précédente.</p>
+
+      <label class="si-depot" id="depot">
+        <input type="file" id="fichier" accept=".csv,text/csv">
+        <b>Dépose le fichier CSV ici</b>
+        <span>ou clique pour le choisir</span>
+      </label>
+      <details class="si-coller">
+        <summary>… ou colle le contenu du CSV</summary>
+        <textarea id="texte" rows="6" placeholder="PLAYER,POS,GP,G,A,P,+/-,PIM,S,S%,GWG,PPG,SHG"></textarea>
+        <button type="button" class="si-bouton" id="verifierTexte">Vérifier</button>
+      </details>
+
+      <p id="message" class="si-message" role="status" hidden></p>
+
+      <div id="rapport" hidden>
+        <div class="si-tuiles" id="tuiles"></div>
+        <section class="si-bloc">
+          <h3>Colonnes à importer</h3>
+          <p class="si-aide">Une colonne incohérente est décochée d'office : elle ne sera pas publiée (elle reste vide sur le site).</p>
+          <div class="si-colonnes" id="colonnes"></div>
+        </section>
+        <section class="si-bloc" id="blocNoms" hidden>
+          <h3>Joueurs à rattacher</h3>
+          <p class="si-aide">Nom introuvable dans PLAYERSDATABASE avec cette initiale : choisis le bon joueur (son équipe sera affichée), ou garde-le sans équipe.</p>
+          <div id="noms"></div>
+        </section>
+        <section class="si-bloc" id="blocProblemes" hidden>
+          <h3>Incohérences</h3>
+          <div id="problemes"></div>
+        </section>
+        <section class="si-bloc">
+          <h3>Aperçu <small id="compteApercu"></small></h3>
+          <div class="si-table-wrap"><table class="si-table" id="apercu"></table></div>
+        </section>
+        <div class="si-actions">
+          <button type="button" class="si-bouton is-principal" id="importer">Importer</button>
+          <span class="si-aide" id="aideImporter"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+</body>
+</html>

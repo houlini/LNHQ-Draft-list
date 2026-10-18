@@ -51,6 +51,11 @@ export default {
     if (enchere && request.method === 'POST') {
       return actionEnchere(env, enchere, courriel, await request.text());
     }
+    if (url.pathname === '/api/stats/importer' && request.method === 'POST') {
+      const taille = Number(request.headers.get('Content-Length') || 0);
+      if (!taille || taille > 2 * 1024 * 1024) return json({ ok: false, erreur: 'taille' }, 413);
+      return appelerScript(env, 'importerStats', courriel, await request.text());
+    }
     if (url.pathname === '/api/transactions' && request.method === 'GET') {
       return appelerScript(env, 'transactions', courriel);
     }

@@ -100,6 +100,7 @@
                 ${menuItem('Calendrier', 'calendrier.html', currentPage === 'calendrier')}
                 ${menuItem('Résultats', 'resultats.html', currentPage === 'resultats')}
                 ${menuItem('Classement', 'classement.html', currentPage === 'classement')}
+                ${menuItem('Stats des joueurs', 'stats.html', currentPage === 'stats')}
                 ${menuItem('DGs', 'dgs.html', currentPage === 'dgs')}
                 ${menuItem('Règlements', 'reglements.html', currentPage === 'reglements')}
                 ${menuItem('Masse salariale', 'masse.html', currentPage === 'masse')}
