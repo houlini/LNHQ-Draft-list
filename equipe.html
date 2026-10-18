@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Équipe</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=7">
-<script src="site-nav.js?v=6"></script>
+<link rel="stylesheet" href="site.css?v=8">
+<script src="site-nav.js?v=7"></script>
 <script src="sans-contrat.js"></script>
 <link rel="stylesheet" href="alignement.css?v=5">
-<script src="alignement.js?v=6"></script>
+<script src="alignement.js?v=7"></script>
+<script src="stats-joueur.js?v=1" defer></script>
 <style>
   /* ---------- Vues : Salaires (par défaut) / Alignement ---------- */
   .eq-vues{ display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:rgba(0,0,0,0.14); margin-left:auto; }
@@ -908,6 +909,7 @@ function renderSections(){
       if(idx < 20) tr.classList.add('row-in');
       if(joueurCherche && (p[1] || '').trim() === joueurCherche) tr.classList.add('is-cherche');
       buildPlayerCells(tr, p, 'td');
+      if((p[1] || '').includes(',')) tr.children[0].dataset.joueur = p[1].trim();   // carte de stats au survol
       tbody.appendChild(tr);
     });
     if(section.totalRow){

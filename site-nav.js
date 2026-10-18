@@ -6,9 +6,9 @@
    exactement comme avant.
 
    Attributs :
-   - current-page : "joueurs" | "ordre" | "calendrier" | "classement" | "masse" | "dgs" | "reglements" | "tv" | "encheres" | "inscription" (marque
-     l'élément courant dans les menus Ligue/Agent libre). Absent pour les
-     pages d'équipe.
+   - current-page : une page de SECTIONS (ex. "calendrier", "stats", "encheres", "masse")
+     ou "accueil" / "tv" : marque l'élément courant et souligne son menu. Absent pour
+     les pages d'équipe.
    - current-team : slug de l'équipe active (ex: "boston"), pour marquer
      l'équipe courante dans le menu Équipes. Peut être posé après coup
      (ex: une fois l'URL ?team=... lue) : le composant se met à jour.
@@ -45,6 +45,48 @@
     return isCurrent
       ? `<span class="nav-dropdown-current" aria-current="page">${escapeHtml(label)}</span>`
       : `<a href="${href}">${escapeHtml(label)}</a>`;
+  }
+
+  /* Menus déroulants : [titre, [[libellé, adresse, current-page], ...]].
+     L'accueil EST le fil des annonces : pas de bouton « Accueil » séparé (le logo y mène aussi). */
+  const SECTIONS = [
+    ['Nouvelles', [
+      ['Annonces', './?fil=annonces', 'accueil'],
+      ['Nouvelles', './?fil=nouvelles'],
+      ['Transactions', './?fil=transactions'],
+    ]],
+    ['Saison', [
+      ['Calendrier', 'calendrier.html', 'calendrier'],
+      ['Résultats', 'resultats.html', 'resultats'],
+      ['Classement', 'classement.html', 'classement'],
+      ['Stats des joueurs', 'stats.html', 'stats'],
+    ]],
+    ['Marché', [
+      ['Agents libres', 'joueurs.html', 'joueurs'],
+      ['Enchères', 'encheres.html', 'encheres'],
+      ['Proposer une transaction (DG)', 'https://publier.lnhq.ca/transactions.html'],
+      ['Draft 2026', 'ordre.html', 'ordre'],
+    ]],
+    ['Ligue', [
+      ['Masse salariale', 'masse.html', 'masse'],
+      ['DGs', 'dgs.html', 'dgs'],
+      ['Règlements', 'reglements.html', 'reglements'],
+      ['Inscription DG', 'inscription.html', 'inscription'],
+    ]],
+  ];
+  const CARET = '<svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  // Un menu déroulant ; son bouton est souligné quand la page courante en fait partie.
+  function sousMenu(titre, items, currentPage){
+    const ici = items.some(([, , page]) => page && page === currentPage);
+    return `
+            <div class="nav-item">
+              <button class="nav-btn${ici ? ' is-section' : ''}" aria-haspopup="true" aria-expanded="false">
+                <span>${escapeHtml(titre)}</span>${CARET}
+              </button>
+              <div class="nav-dropdown" hidden>
+                ${items.map(([libelle, href, page]) => menuItem(libelle, href, !!page && page === currentPage && page !== 'accueil')).join('')}
+              </div>
+            </div>`;
   }
 
   class SiteHeader extends HTMLElement{
@@ -88,56 +130,15 @@
           <img class="entete-saison" src="bandeau-centre.jpg" alt="Saison 2026-2027">
           <a class="alerte-dg" href="${URL_RESULTAT}" title="Soumettre le résultat d'un match"><svg class="alerte-dg-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="alerte-dg-long">Soumettre un résultat</span><span class="alerte-dg-court">Résultat</span></a>
           <nav class="site-nav" id="siteNav">
-            <a class="nav-btn" href="./"><span>Accueil</span></a>
-            <a class="nav-btn" href="tv.html"${currentPage === 'tv' ? ' aria-current="page"' : ''}><span>TV</span></a>
-
+            ${SECTIONS.slice(0, 2).map(([titre, items]) => sousMenu(titre, items, currentPage)).join('')}
             <div class="nav-item">
-              <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-                <span>Ligue</span>
-                <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div class="nav-dropdown" hidden>
-                ${menuItem('Calendrier', 'calendrier.html', currentPage === 'calendrier')}
-                ${menuItem('Résultats', 'resultats.html', currentPage === 'resultats')}
-                ${menuItem('Classement', 'classement.html', currentPage === 'classement')}
-                ${menuItem('Stats des joueurs', 'stats.html', currentPage === 'stats')}
-                ${menuItem('DGs', 'dgs.html', currentPage === 'dgs')}
-                ${menuItem('Règlements', 'reglements.html', currentPage === 'reglements')}
-                ${menuItem('Masse salariale', 'masse.html', currentPage === 'masse')}
-                ${menuItem('Draft 2026', 'ordre.html', currentPage === 'ordre')}
-                ${menuItem('Transactions (DG)', 'https://publier.lnhq.ca/transactions.html', false)}
-                ${menuItem('Inscription DG', 'inscription.html', currentPage === 'inscription')}
-              </div>
-            </div>
-
-            <div class="nav-item">
-              <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-                <span>Agent libre</span>
-                <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div class="nav-dropdown" hidden>
-                ${menuItem('Joueurs', 'joueurs.html', currentPage === 'joueurs')}
-                ${menuItem('Enchères', 'encheres.html', currentPage === 'encheres')}
-              </div>
-            </div>
-
-            <div class="nav-item">
-              <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-                <span>Équipes</span>
-                <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              <button class="nav-btn${currentTeam ? ' is-section' : ''}" aria-haspopup="true" aria-expanded="false">
+                <span>Équipes</span>${CARET}
               </button>
               <div class="nav-dropdown teams-grid" id="teamsDropdown" hidden>${teamsHtml}</div>
             </div>
-
-            <div class="nav-item">
-              <button class="nav-btn" aria-haspopup="true" aria-expanded="false">
-                <span>Nouvelles</span>
-                <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div class="nav-dropdown" hidden>
-                <a href="./?fil=annonces">Annonces</a>
-                <a href="./?fil=nouvelles">Nouvelles</a>              </div>
-            </div>
+            ${SECTIONS.slice(2).map(([titre, items]) => sousMenu(titre, items, currentPage)).join('')}
+            <a class="nav-btn" href="tv.html"${currentPage === 'tv' ? ' aria-current="page"' : ''}><span>TV</span></a>
           </nav>
         </div>
         <div class="meta-row">

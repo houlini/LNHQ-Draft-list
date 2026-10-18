@@ -322,6 +322,7 @@
       infos.prepend(el('span', 'ech-salaire' + (m.type === 'espoir' ? ' is-espoir' : ''), m.type === 'espoir' ? 'Hors masse' : m.salaire ? millions(m.salaire) : '—'));
     }else{
       c = el('div', 'al-carte', m.joueur);
+      c.dataset.joueur = m.joueur;
     }
     // 3 équipes : d'où vient l'élément.
     if(plusieurs){

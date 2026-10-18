@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stats des joueurs</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=7">
-<script src="site-nav.js?v=6"></script>
+<link rel="stylesheet" href="site.css?v=8">
+<script src="site-nav.js?v=7"></script>
 <style>
   .st-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:1400px; margin:0 auto; width:100%; box-sizing:border-box; display:flex; flex-direction:column; gap:18px; }
   .st-filtres{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
@@ -258,6 +258,9 @@ function rendre(){
   if(els.rowCount) els.rowCount.textContent = `Stats des joueurs — ${tries.length} joueur${tries.length > 1 ? 's' : ''}`;
 }
 
+// Arrivée depuis la carte d'un joueur (stats.html?joueur=Nom, Prénom) : recherche préremplie.
+const joueurDemande = new URLSearchParams(location.search).get('joueur');
+if(joueurDemande){ $('recherche').value = joueurDemande; filtre.texte = joueurDemande; }
 $('recherche').addEventListener('input', () => { filtre.texte = $('recherche').value; rendre(); });
 $('equipe').addEventListener('change', () => { filtre.equipe = $('equipe').value; rendre(); });
 document.querySelectorAll('[data-po]').forEach(b => b.addEventListener('click', () => {

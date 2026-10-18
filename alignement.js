@@ -200,7 +200,7 @@
     infos.append(...[joueur.ht, joueur.wt && joueur.wt + ' lb'].filter(Boolean).map(t => el('span', null, t)));
     c.append(nom, infos);
     if(joueur.espoir) c.append(el('span', 'al-badge', 'Espoir'));
-    c.title = `${joueur.nom} · ${joueur.poTexte}${joueur.ov ? ' · ' + joueur.ov + ' OV' : ''}`;
+    c.dataset.joueur = joueur.id;   // carte de stats au survol (stats-joueur.js)
     return c;
   }
 
