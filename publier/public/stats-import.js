@@ -89,6 +89,19 @@
     return lignes;
   }
 
+  // Nom du CSV (« Z. Werenski ») → PLAYERSDATABASE (nom de famille + initiale du prénom).
+  function rattacher(j){
+    const point = j.joueur.indexOf('.');
+    const ini = point > 0 ? sansAccents(j.joueur.slice(0, point)) : '';
+    const famille = sansAccents(point > 0 ? j.joueur.slice(point + 1) : j.joueur);
+    const memeNom = roster.filter(r => sansAccents(r.b.split(',')[0]) === famille);
+    const exacts = memeNom.filter(r => !ini || sansAccents(r.b.split(',')[1]).startsWith(ini));
+    j.suggestions = exacts.length === 1 ? exacts : memeNom;
+    j.choix = exacts.length === 1 ? exacts[0] : null;
+  }
+  let modeCorrection = false;   // true : on corrige la liste déjà publiée
+  const libelleBouton = () => modeCorrection ? `Enregistrer les corrections (${joueurs.length} joueurs)` : `Importer ${joueurs.length} joueurs`;
+
   /* ---------- Vérification ---------- */
   function analyser(texte){
     const lignes = lireCsv(texte);
@@ -105,16 +118,7 @@
       NOMBRES.forEach(k => { if(j[k] !== '' && isNaN(Number(j[k]))) j.erreurs.push(`${k.toUpperCase()} « ${j[k]} » n’est pas un nombre`); });
       return j;
     }).filter(j => j.joueur);
-    // Noms → PLAYERSDATABASE (nom de famille + initiale du prénom).
-    joueurs.forEach(j => {
-      const point = j.joueur.indexOf('.');
-      const ini = point > 0 ? sansAccents(j.joueur.slice(0, point)) : '';
-      const famille = sansAccents(point > 0 ? j.joueur.slice(point + 1) : j.joueur);
-      const memeNom = roster.filter(r => sansAccents(r.b.split(',')[0]) === famille);
-      const exacts = memeNom.filter(r => !ini || sansAccents(r.b.split(',')[1]).startsWith(ini));
-      j.suggestions = exacts.length === 1 ? exacts : memeNom;
-      j.choix = exacts.length === 1 ? exacts[0] : null;
-    });
+    joueurs.forEach(rattacher);
     const doublons = joueurs.map(j => sansAccents(j.joueur)).filter((n, i, a) => a.indexOf(n) !== i);
     // Colonnes incohérentes : décochées d'office.
     inclure = {};
@@ -126,15 +130,18 @@
   function verifier(){
     const pb = { ligne: [], equipe: [], colonnes: {} };
     const note = (cle, txt) => { (pb.colonnes[cle] ??= []).push(txt); };
+    // Une colonne décochée n'est pas publiée : on note son problème (pour l'étiquette « incohérente »)
+    // sans en faire une alerte de joueur ou d'équipe.
+    const alerte = (j, cle, txt) => { note(cle, j.joueur); if(inclure[cle] !== false) j.alertes.push(txt); };
     joueurs.forEach(j => {
       j.alertes = [...j.erreurs];
       const n = k => Number(j[k]) || 0;
-      if(j.b !== '' && j.a !== '' && j.p !== '' && n('b') + n('a') !== n('p')){ j.alertes.push(`B ${j.b} + A ${j.a} ≠ P ${j.p}`); note('p', j.joueur); }
-      if(j.t !== '' && j.pct !== '' && n('t') > 0){ const calc = Math.round(1000 * n('b') / n('t')) / 10; if(Math.abs(calc - parseFloat(j.pct)) > 0.15){ j.alertes.push(`%T ${j.pct} ≠ ${j.b}/${j.t} = ${calc}%`); note('pct', j.joueur); } }
-      if(n('ban') > n('b')){ j.alertes.push(`BAN ${j.ban} > B ${j.b}`); note('ban', j.joueur); }
-      if(n('bin') > n('b')){ j.alertes.push(`BIN ${j.bin} > B ${j.b}`); note('bin', j.joueur); }
-      if(n('ban') + n('bin') > n('b') && n('ban') <= n('b') && n('bin') <= n('b')){ j.alertes.push(`BAN + BIN > B`); note('bin', j.joueur); }
-      if(n('bg') > n('b')){ j.alertes.push(`BG ${j.bg} > B ${j.b}`); note('bg', j.joueur); }
+      if(j.b !== '' && j.a !== '' && j.p !== '' && n('b') + n('a') !== n('p')) alerte(j, 'p', `B ${j.b} + A ${j.a} ≠ P ${j.p}`);
+      if(j.t !== '' && j.pct !== '' && n('t') > 0){ const calc = Math.round(1000 * n('b') / n('t')) / 10; if(Math.abs(calc - parseFloat(j.pct)) > 0.15) alerte(j, 'pct', `%T ${j.pct} ≠ ${j.b}/${j.t} = ${calc}%`); }
+      if(n('ban') > n('b')) alerte(j, 'ban', `BAN ${j.ban} > B ${j.b}`);
+      if(n('bin') > n('b')) alerte(j, 'bin', `BIN ${j.bin} > B ${j.b}`);
+      if(n('ban') + n('bin') > n('b') && n('ban') <= n('b') && n('bin') <= n('b')) alerte(j, 'bin', `BAN + BIN > B`);
+      if(n('bg') > n('b')) alerte(j, 'bg', `BG ${j.bg} > B ${j.b}`);
       const e = j.choix && equipes[j.choix.equipe];
       if(e && n('pj') > e.pj) j.alertes.push(`PJ ${j.pj} > matchs de ${j.choix.equipe} au classeur (${e.pj})`);
       if(!j.choix) j.alertes.push(j.suggestions.length ? 'Nom à rattacher' : 'Introuvable dans PLAYERSDATABASE');
@@ -143,7 +150,7 @@
     joueurs.forEach(j => { if(j.choix && equipes[j.choix.equipe]) (parEquipe[j.choix.equipe] ??= []).push(j); });
     Object.entries(parEquipe).sort().forEach(([c, js]) => {
       const s = k => js.reduce((t, j) => t + (Number(j[k]) || 0), 0), r = equipes[c];
-      const ajout = (cle, txt) => { pb.equipe.push(c + ' : ' + txt); note(cle, c); };
+      const ajout = (cle, txt) => { note(cle, c); if(inclure[cle] !== false) pb.equipe.push(c + ' : ' + txt); };
       const pl = (n, mot) => n + ' ' + mot + (n > 1 ? 's' : '');
       if(s('b') > r.bp) ajout('b', `${pl(s('b'), 'but')} au CSV > ${pl(r.bp, 'but')} de l’équipe (hors fusillade)`);
       if(s('ban') > r.ban) ajout('ban', `${pl(s('ban'), 'but')} en avantage > ${r.ban}`);
@@ -211,12 +218,34 @@
       const r = el('tr', j.alertes.length ? 'is-alerte' : '');
       const etat = el('td', 'etat', j.alertes.length ? '⚠' : '✓'); etat.title = j.alertes.join('\n') || 'Aucune alerte';
       const eqTd = el('td'); if(j.choix && j.choix.equipe && j.choix.equipe !== 'UFA') eqTd.append(logo(j.choix.equipe), document.createTextNode(j.choix.equipe)); else eqTd.textContent = j.choix ? 'UFA' : '—';
-      r.append(etat, eqTd, ...cols.map(c => el('td', NOMBRES.includes(c.cle) ? 'num' : '', j[c.cle])));
+      r.append(etat, eqTd, ...cols.map(c => {
+        const td = el('td', (NOMBRES.includes(c.cle) ? 'num' : '') + (j.corriges && j.corriges[c.cle] != null ? ' is-corrige' : ''), j[c.cle]);
+        // Correction à la main (sauf le nom du CSV) : revérifiée dès qu'on quitte la cellule.
+        if(c.cle !== 'joueur'){
+          td.contentEditable = 'plaintext-only';
+          if(j.corriges && j.corriges[c.cle] != null) td.title = 'Valeur d’origine : ' + (j.corriges[c.cle] || '(vide)');
+          td.addEventListener('keydown', ev => { if(ev.key === 'Enter'){ ev.preventDefault(); td.blur(); } if(ev.key === 'Escape'){ td.textContent = j[c.cle]; td.blur(); } });
+          td.addEventListener('blur', () => {
+            const v = td.textContent.trim().replace(',', '.');
+            if(v === j[c.cle]) return;
+            j.corriges ??= {};
+            if(j.corriges[c.cle] == null) j.corriges[c.cle] = j[c.cle];
+            if(j.corriges[c.cle] === v) delete j.corriges[c.cle];
+            j[c.cle] = v;
+            j.erreurs = j.erreurs.filter(e => !e.startsWith(c.cle.toUpperCase() + ' '));
+            if(NOMBRES.includes(c.cle) && v !== '' && isNaN(Number(v))) j.erreurs.push(`${c.cle.toUpperCase()} « ${v} » n’est pas un nombre`);
+            const zone = $('apercu').parentElement, haut = zone.scrollTop, gauche = zone.scrollLeft;
+            rendre(false);
+            zone.scrollTop = haut; zone.scrollLeft = gauche;
+          });
+        }
+        return td;
+      }));
       tbody.append(r);
     });
     $('apercu').replaceChildren(thead, tbody);
     $('compteApercu').textContent = `${joueurs.length} joueurs · ${cols.length - 2} colonnes de stats`;
-    $('importer').textContent = `Importer ${joueurs.length} joueurs`;
+    $('importer').textContent = libelleBouton();
     $('aideImporter').textContent = (pb.incoherentes.some(k => inclure[k]) ? '⚠ Une colonne incohérente est cochée. ' : '') + 'L’import remplace la liste publiée sur lnhq.ca/stats.html.';
     $('rapport').hidden = false;
   }
@@ -226,6 +255,7 @@
     try{
       if(!roster.length) await chargerReferences();
       const info = analyser(texte);
+      modeCorrection = false;
       rendre(true);
       const msgs = [];
       if(info.absentes.length) msgs.push('Colonnes absentes : ' + info.absentes.join(', '));
@@ -235,6 +265,49 @@
       $('rapport').hidden = true;
       afficher(err.message || 'Impossible de lire ce fichier.', 'is-erreur');
     }
+  }
+
+  // Corriger après coup : la liste publiée (onglet STATS_JOUEURS) revient dans l'éditeur.
+  async function chargerPublie(){
+    afficher('Chargement des stats publiées…', '');
+    try{
+      if(!roster.length) await chargerReferences();
+      const t = await gviz('sheet=STATS_JOUEURS');
+      if(((t.cols[0] || {}).label || '') !== 'Joueur'){ afficher('Aucune stat publiée pour l’instant : importe d’abord un CSV.', 'is-alerte'); return; }
+      const ordre = ['joueur', 'nom', 'equipe', 'po', 'pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'pct', 'bg', 'ban', 'bin'];
+      joueurs = t.rows.map((r, n) => {
+        const j = { ligne: n + 2, erreurs: [] };
+        ordre.forEach((k, i) => { j[k] = val((r.c || [])[i]).trim(); });
+        const publie = j.nom ? roster.find(x => x.b === j.nom) : null;
+        if(publie){ j.choix = publie; j.suggestions = [publie]; } else rattacher(j);
+        return j;
+      }).filter(j => j.joueur);
+      inclure = {};
+      COLONNES.forEach(c => { inclure[c.cle] = c.fixe || joueurs.some(j => j[c.cle] !== ''); });
+      modeCorrection = true;
+      rendre(false);
+      afficher(`${joueurs.length} joueurs publiés chargés. Corrige les valeurs, puis enregistre.`, 'is-ok');
+    }catch(err){
+      afficher('Impossible de charger les stats publiées.', 'is-erreur');
+    }
+  }
+
+  // Rapport en texte (à coller dans Discord ou ailleurs).
+  function rapportTexte(){
+    const pb = dernierPb || verifier();
+    const l = [`Rapport d’import des stats — ${new Date().toLocaleString('fr-CA')}`, `${joueurs.length} joueurs`];
+    const exclues = COLONNES.filter(c => !c.fixe && !inclure[c.cle] && joueurs.some(j => j[c.cle] !== '')).map(c => c.nom);
+    if(exclues.length) l.push('Colonnes non publiées : ' + exclues.join(', ') + (pb.incoherentes.length ? ' (incohérentes : ' + pb.incoherentes.map(k => COLONNES.find(c => c.cle === k).nom).join(', ') + ')' : ''));
+    const rattaches = joueurs.filter(j => j.choixManuel && j.choix);
+    if(rattaches.length) l.push('Rattachés à la main : ' + rattaches.map(j => `${j.joueur} → ${j.choix.b.split(',').reverse().join(' ').trim()} (${j.choix.equipe})`).join(' ; '));
+    const sansEq = joueurs.filter(j => !j.choix);
+    if(sansEq.length) l.push('Sans équipe : ' + sansEq.map(j => j.joueur).join(', '));
+    const corr = joueurs.filter(j => j.corriges && Object.keys(j.corriges).length);
+    if(corr.length) l.push('Corrigés à la main : ' + corr.map(j => j.joueur + ' (' + Object.entries(j.corriges).map(([k, v]) => `${COLONNES.find(c => c.cle === k).nom} ${v || '∅'} → ${j[k] || '∅'}`).join(', ') + ')').join(' ; '));
+    if(pb.equipe.length){ l.push('', 'Totaux d’équipe impossibles :'); pb.equipe.forEach(t => l.push('- ' + t)); }
+    const alertes = joueurs.filter(j => j.alertes.some(a => !/rattacher|Introuvable/.test(a)));
+    if(alertes.length){ l.push('', 'Alertes par joueur :'); alertes.forEach(j => l.push(`- ${j.joueur} : ${j.alertes.filter(a => !/rattacher|Introuvable/.test(a)).join(' · ')}`)); }
+    return l.join('\n');
   }
 
   async function importer(){
@@ -251,7 +324,7 @@
     let r;
     try{ r = await (await fetch('/api/stats/importer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lignes }) })).json(); }
     catch(e){ r = { ok: false, erreur: 'session' }; }
-    envoi = false; b.disabled = false; b.textContent = `Importer ${joueurs.length} joueurs`;
+    envoi = false; b.disabled = false; b.textContent = libelleBouton();
     if(r.ok) afficher(`✓ ${r.joueurs} joueurs importés. Ils sont sur lnhq.ca/stats.html (une minute peut être nécessaire).`, 'is-ok');
     else afficher({ admin: 'Seul un dirigeant peut importer les stats.', nombre: `Valeur non numérique pour ${r.joueur} (${r.colonne}).`, session: 'Ta session a peut-être expiré : recharge la page.' }[r.erreur] || 'L’import a échoué. Réessaie dans un instant.', 'is-erreur');
   }
@@ -275,6 +348,11 @@
     depot.addEventListener('drop', ev => { const f = ev.dataTransfer.files[0]; if(f) lireFichier(f); });
     $('verifierTexte').addEventListener('click', () => traiter($('texte').value));
     $('importer').addEventListener('click', importer);
+    $('chargerPublie').addEventListener('click', chargerPublie);
+    $('copierRapport').addEventListener('click', async () => {
+      try{ await navigator.clipboard.writeText(rapportTexte()); afficher('Rapport copié : colle-le où tu veux (Discord, courriel…).', 'is-ok'); }
+      catch(e){ afficher('Copie impossible : ' + rapportTexte(), 'is-alerte'); }
+    });
   }
   demarrer();
 })();

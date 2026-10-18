@@ -43,6 +43,7 @@
         <b>Dépose le fichier CSV ici</b>
         <span>ou clique pour le choisir</span>
       </label>
+      <p class="si-ou"><button type="button" class="si-bouton" id="chargerPublie">✎ Corriger les stats déjà publiées</button></p>
       <details class="si-coller">
         <summary>… ou colle le contenu du CSV</summary>
         <textarea id="texte" rows="6" placeholder="PLAYER,POS,GP,G,A,P,+/-,PIM,S,S%,GWG,PPG,SHG"></textarea>
@@ -69,10 +70,12 @@
         </section>
         <section class="si-bloc">
           <h3>Aperçu <small id="compteApercu"></small></h3>
+          <p class="si-aide">Clique sur une valeur pour la corriger à la main ; la vérification se refait aussitôt. Les cellules corrigées sont surlignées.</p>
           <div class="si-table-wrap"><table class="si-table" id="apercu"></table></div>
         </section>
         <div class="si-actions">
           <button type="button" class="si-bouton is-principal" id="importer">Importer</button>
+          <button type="button" class="si-bouton" id="copierRapport">📋 Copier le rapport</button>
           <span class="si-aide" id="aideImporter"></span>
         </div>
       </div>
