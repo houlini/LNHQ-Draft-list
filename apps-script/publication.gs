@@ -2588,31 +2588,39 @@ function importerStats(d, membre) {
   const codes = new Set(codesValides());
   const nombre = v => (v === '' || v == null) ? '' : (isNaN(Number(v)) ? null : String(Number(v)));
   const quand = new Date().toISOString();
-  const valeurs = [];
-  for (const l of lignes) {
-    const joueur = String(l.joueur || '').trim().slice(0, 80);
-    if (!joueur) return { ok: false, erreur: 'ligne' };
-    const equipe = String(l.equipe || '').trim().toUpperCase();
-    const ligne = [joueur, String(l.nom || '').trim().slice(0, 80), codes.has(equipe) ? equipe : '', String(l.po || '').trim().toUpperCase().slice(0, 12)];
-    for (const c of ['pj', 'b', 'a', 'p', 'pm', 'pun', 't']) {
-      const n = nombre(l[c]);
-      if (n === null) return { ok: false, erreur: 'nombre', joueur: joueur, colonne: c };
-      ligne.push(n);
-    }
-    ligne.push(String(l.pct == null ? '' : l.pct).trim().slice(0, 8));
-    for (const c of ['bg', 'ban', 'bin']) {
-      const n = nombre(l[c]);
-      if (n === null) return { ok: false, erreur: 'nombre', joueur: joueur, colonne: c };
-      ligne.push(n);
-    }
-    ligne.push(quand);
-    valeurs.push(ligne);
-  }
+  // Ordre des colonnes de STATS_ENTETES (sans « Importé le »).
+  const CLES = ['joueur', 'nom', 'equipe', 'po', 'pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'pct', 'bg', 'ban', 'bin'];
+  const NUM = new Set(['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'bin']);
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
     const classeur = SpreadsheetApp.openById(SHEET_ID);
     const o = classeur.getSheetByName(ONGLET_STATS) || classeur.insertSheet(ONGLET_STATS);
+    // Il y a deux types d'export (ex. le 2e apporte les buts en infériorité) : une colonne
+    // absente de cet import (clé non envoyée) garde la valeur déjà publiée pour ce joueur.
+    const avant = new Map();
+    if (o.getLastRow() > 1) o.getRange(2, 1, o.getLastRow() - 1, STATS_ENTETES.length).getDisplayValues().forEach(r => { if (r[0]) avant.set(r[0].trim(), r); });
+    const valeurs = [];
+    for (const l of lignes) {
+      const joueur = String(l.joueur || '').trim().slice(0, 80);
+      if (!joueur) return { ok: false, erreur: 'ligne' };
+      const ancien = avant.get(joueur) || [];
+      const ligne = [];
+      for (let i = 0; i < CLES.length; i++) {
+        const c = CLES[i];
+        if (!(c in l)) { ligne.push(ancien[i] != null ? String(ancien[i]) : ''); continue; }
+        if (NUM.has(c)) {
+          const n = nombre(l[c]);
+          if (n === null) return { ok: false, erreur: 'nombre', joueur: joueur, colonne: c };
+          ligne.push(n);
+        } else if (c === 'joueur') ligne.push(joueur);
+        else if (c === 'equipe') { const e = String(l.equipe || '').trim().toUpperCase(); ligne.push(codes.has(e) ? e : ''); }
+        else if (c === 'po') ligne.push(String(l.po || '').trim().toUpperCase().slice(0, 12));
+        else ligne.push(String(l[c] == null ? '' : l[c]).trim().slice(0, c === 'pct' ? 8 : 80));
+      }
+      ligne.push(quand);
+      valeurs.push(ligne);
+    }
     o.clearContents();
     // Texte forcé : « 12.5% », « -3 » ou « LD/RD » ne doivent pas être convertis.
     const tout = [STATS_ENTETES].concat(valeurs);

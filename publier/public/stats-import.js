@@ -26,12 +26,14 @@
     { cle: 'pct', entetes: ['S%', '%T', 'SH%'], nom: '%T' },
     { cle: 'bg', entetes: ['GWG', 'BG'], nom: 'BG' },
     { cle: 'ban', entetes: ['PPG', 'BAN'], nom: 'BAN' },
-    { cle: 'bin', entetes: ['SHG', 'BIN'], nom: 'BIN' },
+    // SHG (buts en infériorité) : ignorée ici, elle vient du 2e type d'export ; une colonne
+    // absente de l'import garde la valeur déjà publiée.
   ];
-  const NOMBRES = ['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'bin'];
+  const NOMBRES = ['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban'];
 
   let roster = [];            // { b: 'Nom, Prénom', po, equipe }
-  let equipes = {};           // code → { pj, bp, v, ban, binf, tb }
+  let equipes = {};           // code → { pj, bp, v, ban, binf, tb, retard }
+  let echanges = new Map();   // « Nom, Prénom » → équipes du joueur cette saison (fil TRANSACTIONS)
   let joueurs = [];           // lignes du CSV (+ correspondance)
   let inclure = {};           // cle → bool (colonne importée)
   let envoi = false;
@@ -48,9 +50,11 @@
   const val = c => c && c.v != null ? String(c.v) : '';
 
   async function chargerReferences(){
-    const [pdb, res] = await Promise.all([
+    const [pdb, res, cal, tx] = await Promise.all([
       gviz('sheet=PLAYERSDATABASE&tq=' + encodeURIComponent("select B, H, Z where Z <> '' and H <> 'CHOIX'")),
       gviz('sheet=RESULTATS'),
+      fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=0&gid=1528349633&t=${Date.now()}`).then(r => r.text()).then(t => JSON.parse(t.match(/setResponse\(([\s\S]*)\);\s*$/)[1]).table),
+      gviz('sheet=TRANSACTIONS').catch(() => null),
     ]);
     roster = pdb.rows.map(r => ({ b: val(r.c[0]).trim(), po: val(r.c[1]), equipe: val(r.c[2]).toUpperCase() })).filter(x => x.b && x.b.includes(','));
     const lab = res.cols.map(c => c.label);
@@ -70,7 +74,30 @@
       if(iAN >= 0){ ajout(V, 'ban', an(val(c[iAN]))); ajout(D, 'ban', an(val(c[iAN + 1]))); }
       if(iBin >= 0){ ajout(V, 'binf', Number(val(c[iBin])) || 0); ajout(D, 'binf', Number(val(c[iBin + 1])) || 0); }
     });
+    // Matchs en retard (date passée, pas de score) : peuvent avoir été joués sans être soumis.
+    const auj = new Date(); const jour = auj.getFullYear() + '-' + String(auj.getMonth() + 1).padStart(2, '0') + '-' + String(auj.getDate()).padStart(2, '0');
+    const brut = c => c ? String(c.f != null ? c.f : c.v != null ? c.v : '').trim() : '';
+    cal.rows.forEach(r => {
+      const c = r.c || [], d = brut(c[1]).slice(0, 10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d) || d >= jour || (brut(c[5]) !== '' && brut(c[6]) !== '')) return;
+      [CODES_NOMS[brut(c[3]).toLowerCase()], CODES_NOMS[brut(c[8]).toLowerCase()]].forEach(x => { if(x) ajout(x, 'retard', 1); });
+    });
+    Object.values(equipes).forEach(e => { e.retard ??= 0; });
+    // Joueurs échangés cette saison : toutes leurs équipes (leurs stats sont réparties).
+    echanges = new Map();
+    if(tx && ((tx.cols[0] || {}).label || '') === 'Date') tx.rows.forEach(r => {
+      let d = []; try{ d = JSON.parse(val((r.c || [])[10]) || '[]'); }catch(e){}
+      d.forEach(m => { if(!m.joueur || m.type === 'choix') return; const s = echanges.get(m.joueur) || new Set(); s.add(m.de); s.add(m.vers); echanges.set(m.joueur, s); });
+    });
   }
+  const CODES_NOMS = {
+    'anaheim ducks':'ANA', 'boston bruins':'BOS', 'buffalo sabres':'BUF', 'calgary flames':'CGY', 'carolina hurricanes':'CAR', 'chicago blackhawks':'CHI',
+    'colorado avalanche':'COL', 'columbus blue jackets':'CBJ', 'dallas stars':'DAL', 'detroit red wings':'DET', 'edmonton oilers':'EDM', 'florida panthers':'FLA',
+    'los angeles kings':'LAK', 'minnesota wild':'MIN', 'montréal canadiens':'MTL', 'montreal canadiens':'MTL', 'nashville predators':'NSH', 'new jersey devils':'NJD',
+    'new york islanders':'NYI', 'new york rangers':'NYR', 'ottawa senators':'OTT', 'philadelphia flyers':'PHI', 'pittsburgh penguins':'PIT', 'san jose sharks':'SJS',
+    'seattle kraken':'SEA', 'st. louis blues':'STL', 'st louis blues':'STL', 'tampa bay lightning':'TBL', 'toronto maple leafs':'TOR', 'utah mammoth':'UTA',
+    'utah hockey club':'UTA', 'vancouver canucks':'VAN', 'vegas golden knights':'VGK', 'washington capitals':'WSH', 'winnipeg jets':'WPG',
+  };
 
   // CSV simple (virgules, guillemets possibles).
   function lireCsv(texte){
@@ -139,22 +166,30 @@
       if(j.b !== '' && j.a !== '' && j.p !== '' && n('b') + n('a') !== n('p')) alerte(j, 'p', `B ${j.b} + A ${j.a} ≠ P ${j.p}`);
       if(j.t !== '' && j.pct !== '' && n('t') > 0){ const calc = Math.round(1000 * n('b') / n('t')) / 10; if(Math.abs(calc - parseFloat(j.pct)) > 0.15) alerte(j, 'pct', `%T ${j.pct} ≠ ${j.b}/${j.t} = ${calc}%`); }
       if(n('ban') > n('b')) alerte(j, 'ban', `BAN ${j.ban} > B ${j.b}`);
-      if(n('bin') > n('b')) alerte(j, 'bin', `BIN ${j.bin} > B ${j.b}`);
-      if(n('ban') + n('bin') > n('b') && n('ban') <= n('b') && n('bin') <= n('b')) alerte(j, 'bin', `BAN + BIN > B`);
       if(n('bg') > n('b')) alerte(j, 'bg', `BG ${j.bg} > B ${j.b}`);
-      const e = j.choix && equipes[j.choix.equipe];
-      if(e && n('pj') > e.pj) j.alertes.push(`PJ ${j.pj} > matchs de ${j.choix.equipe} au classeur (${e.pj})`);
+      // Matchs joués : au plus les matchs de ses équipes (toutes, s'il a été échangé),
+      // en comptant les matchs en retard (joués dans le jeu, pas encore soumis).
+      if(j.choix && j.pj !== ''){
+        const siennes = [...(echanges.get(j.choix.b) || new Set([j.choix.equipe]))].filter(c => equipes[c]);
+        const joues = siennes.reduce((t, c) => t + equipes[c].pj, 0), retard = siennes.reduce((t, c) => t + equipes[c].retard, 0);
+        j.echange = siennes.length > 1;
+        const ou = siennes.join(' + ');
+        if(n('pj') > joues + retard) j.alertes.push(`PJ ${j.pj} > ${joues + retard} possibles (${ou} : ${joues} joués + ${retard} en retard)`);
+        else if(n('pj') > joues) j.notes = [`PJ ${j.pj} : ${n('pj') - joues} match(s) en retard pas encore soumis (${ou})`];
+        else j.notes = [];
+        if(j.echange) j.notes.push('Échangé cette saison (' + ou + ') : exclu des totaux d’équipe');
+      }
       if(!j.choix) j.alertes.push(j.suggestions.length ? 'Nom à rattacher' : 'Introuvable dans PLAYERSDATABASE');
     });
+    // Totaux d'équipe : sans les joueurs échangés (leurs stats sont réparties entre leurs équipes).
     const parEquipe = {};
-    joueurs.forEach(j => { if(j.choix && equipes[j.choix.equipe]) (parEquipe[j.choix.equipe] ??= []).push(j); });
+    joueurs.forEach(j => { if(j.choix && !j.echange && equipes[j.choix.equipe]) (parEquipe[j.choix.equipe] ??= []).push(j); });
     Object.entries(parEquipe).sort().forEach(([c, js]) => {
       const s = k => js.reduce((t, j) => t + (Number(j[k]) || 0), 0), r = equipes[c];
       const ajout = (cle, txt) => { note(cle, c); if(inclure[cle] !== false) pb.equipe.push(c + ' : ' + txt); };
       const pl = (n, mot) => n + ' ' + mot + (n > 1 ? 's' : '');
       if(s('b') > r.bp) ajout('b', `${pl(s('b'), 'but')} au CSV > ${pl(r.bp, 'but')} de l’équipe (hors fusillade)`);
       if(s('ban') > r.ban) ajout('ban', `${pl(s('ban'), 'but')} en avantage > ${r.ban}`);
-      if(s('bin') > r.binf) ajout('bin', `${pl(s('bin'), 'but')} en infériorité > ${r.binf}`);
       if(s('bg') > r.v) ajout('bg', `${pl(s('bg'), 'but')} gagnant${s('bg') > 1 ? 's' : ''} > ${pl(r.v, 'victoire')} hors TB`);
     });
     // Une colonne est « incohérente » si elle échoue pour plus de 10 % des joueurs ou pour au moins
@@ -206,6 +241,8 @@
     if(pb.equipe.length){ const d = el('div', 'si-groupe'); d.append(el('h4', null, 'Totaux d’équipe impossibles (comparés aux résultats)')); const ul = el('ul'); pb.equipe.forEach(t => ul.append(el('li', null, t))); d.append(ul); blocs.push(d); }
     const lignesPb = joueurs.filter(j => j.alertes.some(a => a !== 'Nom à rattacher' && a !== 'Introuvable dans PLAYERSDATABASE'));
     if(lignesPb.length){ const d = el('div', 'si-groupe'); d.append(el('h4', null, `Joueurs avec une alerte (${lignesPb.length})`)); const ul = el('ul'); lignesPb.forEach(j => ul.append(el('li', null, `L${j.ligne} ${j.joueur} : ${j.alertes.filter(a => !/rattacher|Introuvable/.test(a)).join(' · ')}`))); d.append(ul); blocs.push(d); }
+    const expliques = joueurs.filter(j => (j.notes || []).length);
+    if(expliques.length){ const d = el('div', 'si-groupe'); d.append(el('h4', null, `Explications (${expliques.length}) : pas une erreur`)); const ul = el('ul'); expliques.forEach(j => ul.append(el('li', null, `L${j.ligne} ${j.joueur} : ${j.notes.join(' · ')}`))); d.append(ul); blocs.push(d); }
     $('blocProblemes').hidden = !blocs.length;
     $('problemes').replaceChildren(...blocs);
     // Aperçu
@@ -216,7 +253,8 @@
     const tbody = el('tbody');
     joueurs.forEach(j => {
       const r = el('tr', j.alertes.length ? 'is-alerte' : '');
-      const etat = el('td', 'etat', j.alertes.length ? '⚠' : '✓'); etat.title = j.alertes.join('\n') || 'Aucune alerte';
+      const infos = j.notes || [];
+      const etat = el('td', 'etat', j.alertes.length ? '⚠' : infos.length ? 'ℹ' : '✓'); etat.title = j.alertes.concat(infos).join('\n') || 'Aucune alerte';
       const eqTd = el('td'); if(j.choix && j.choix.equipe && j.choix.equipe !== 'UFA') eqTd.append(logo(j.choix.equipe), document.createTextNode(j.choix.equipe)); else eqTd.textContent = j.choix ? 'UFA' : '—';
       r.append(etat, eqTd, ...cols.map(c => {
         const td = el('td', (NOMBRES.includes(c.cle) ? 'num' : '') + (j.corriges && j.corriges[c.cle] != null ? ' is-corrige' : ''), j[c.cle]);
@@ -307,6 +345,8 @@
     if(pb.equipe.length){ l.push('', 'Totaux d’équipe impossibles :'); pb.equipe.forEach(t => l.push('- ' + t)); }
     const alertes = joueurs.filter(j => j.alertes.some(a => !/rattacher|Introuvable/.test(a)));
     if(alertes.length){ l.push('', 'Alertes par joueur :'); alertes.forEach(j => l.push(`- ${j.joueur} : ${j.alertes.filter(a => !/rattacher|Introuvable/.test(a)).join(' · ')}`)); }
+    const expliques = joueurs.filter(j => (j.notes || []).length);
+    if(expliques.length){ l.push('', 'Explications (pas des erreurs) :'); expliques.forEach(j => l.push(`- ${j.joueur} : ${j.notes.join(' · ')}`)); }
     return l.join('\n');
   }
 
@@ -318,7 +358,9 @@
     const b = $('importer'); b.disabled = true; b.textContent = 'Import…';
     const lignes = joueurs.map(j => {
       const o = { joueur: j.joueur, nom: j.choix ? j.choix.b : '', equipe: j.choix && j.choix.equipe !== 'UFA' ? j.choix.equipe : '', po: j.po };
-      COLONNES.filter(c => !c.fixe).forEach(c => { o[c.cle] = inclure[c.cle] ? j[c.cle] : ''; });
+      // Colonne décochée ou absente : non envoyée, le serveur garde la valeur déjà publiée
+      // (l'autre type d'export, ou un import précédent).
+      COLONNES.filter(c => !c.fixe && inclure[c.cle]).forEach(c => { o[c.cle] = j[c.cle]; });
       return o;
     });
     let r;

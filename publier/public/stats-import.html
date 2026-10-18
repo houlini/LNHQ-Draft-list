@@ -35,8 +35,9 @@
 
     <section id="contenu" hidden>
       <h2 class="si-titre">Import des stats de joueurs <small>Gestion admin</small></h2>
-      <p class="si-aide">Dépose l'export CSV (colonnes PLAYER, POS, GP, G, A, P, +/-, PIM, S, S%, GWG, PPG, SHG). Tout est vérifié avant l'import ;
-        rien n'est enregistré tant que tu n'as pas cliqué « Importer ». Chaque import remplace la liste précédente.</p>
+      <p class="si-aide">Dépose l'export CSV (colonnes PLAYER, POS, GP, G, A, P, +/-, PIM, S, S%, GWG, PPG). Tout est vérifié avant l'import ;
+        rien n'est enregistré tant que tu n'as pas cliqué « Importer ». Seules les colonnes cochées sont remplacées :
+        les autres (ex. SHG, qui vient du 2e export) gardent la valeur déjà publiée.</p>
 
       <label class="si-depot" id="depot">
         <input type="file" id="fichier" accept=".csv,text/csv">
@@ -46,7 +47,7 @@
       <p class="si-ou"><button type="button" class="si-bouton" id="chargerPublie">✎ Corriger les stats déjà publiées</button></p>
       <details class="si-coller">
         <summary>… ou colle le contenu du CSV</summary>
-        <textarea id="texte" rows="6" placeholder="PLAYER,POS,GP,G,A,P,+/-,PIM,S,S%,GWG,PPG,SHG"></textarea>
+        <textarea id="texte" rows="6" placeholder="PLAYER,POS,GP,G,A,P,+/-,PIM,S,S%,GWG,PPG"></textarea>
         <button type="button" class="si-bouton" id="verifierTexte">Vérifier</button>
       </details>
 
@@ -56,7 +57,7 @@
         <div class="si-tuiles" id="tuiles"></div>
         <section class="si-bloc">
           <h3>Colonnes à importer</h3>
-          <p class="si-aide">Une colonne incohérente est décochée d'office : elle ne sera pas publiée (elle reste vide sur le site).</p>
+          <p class="si-aide">Une colonne incohérente est décochée d'office : elle ne sera pas publiée (la valeur déjà sur le site est conservée).</p>
           <div class="si-colonnes" id="colonnes"></div>
         </section>
         <section class="si-bloc" id="blocNoms" hidden>
