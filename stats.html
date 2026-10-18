@@ -120,8 +120,21 @@ const COLS = [
   { cle: 'pct', titre: '%T', aide: '% de tirs convertis' },
   { cle: 'bg', titre: 'BG', aide: 'Buts gagnants' },
   { cle: 'ban', titre: 'BAN', aide: 'Buts en avantage numérique' },
+  { cle: 'pan', titre: 'PAN', aide: 'Points en avantage numérique' },
   { cle: 'bin', titre: 'BIN', aide: 'Buts en infériorité numérique' },
+  { cle: 'pin', titre: 'PIN', aide: 'Points en infériorité numérique' },
+  { cle: 'tgm', titre: 'TG/M', aide: 'Temps de glace moyen par match' },
+  { cle: 'mjg', titre: 'MJG', aide: 'Mises au jeu gagnées' },
+  { cle: 'mjt', titre: 'MJ', aide: 'Mises au jeu prises' },
+  { cle: 'pmj', titre: '%MJ', aide: '% de mises au jeu gagnées' },
+  { cle: 'me', titre: 'MÉ', aide: 'Mises en échec' },
+  { cle: 'tbl', titre: 'TBL', aide: 'Tirs bloqués' },
+  { cle: 'rev', titre: 'REV', aide: 'Revirements (rondelles perdues)' },
+  { cle: 'rec', titre: 'REC', aide: 'Récupérations (rondelles volées)' },
 ];
+// Entête de l'onglet → clé (les colonnes sont lues par leur nom, l'ordre peut changer).
+const ENTETES = Object.assign({ 'Joueur': 'joueur', 'Nom': 'nom', 'Équipe': 'equipe', 'PO': 'po', 'P': 'p', 'Importé le': 'importe' },
+  Object.fromEntries(COLS.filter(c => c.cle !== 'p').map(c => [c.titre, c.cle])));
 const MENEURS = [['p', 'Points'], ['b', 'Buts'], ['a', 'Passes'], ['pm', 'Plus/moins']];
 let joueurs = [], ids = new Map(), tri = { cle: 'p', sens: -1 }, filtre = { texte: '', equipe: '', po: '' };
 
@@ -130,7 +143,11 @@ const logo = c => { const i = el('img'); i.src = 'Logos/' + c + '.png'; i.alt = 
 const sansAccents = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const groupe = po => { const p = String(po || '').split('/')[0].toUpperCase(); return /^(LD|RD|D)$/.test(p) ? 'D' : p === 'G' ? 'G' : 'A'; };
 const nomAffiche = j => { if(!j.nom) return j.joueur; const v = j.nom.indexOf(','); return v > 0 ? j.nom.slice(v + 1).trim() + ' ' + j.nom.slice(0, v).trim() : j.nom; };
-const num = v => { const n = parseFloat(String(v).replace('%', '').replace(',', '.')); return isNaN(n) ? null : n; };
+const num = v => {
+  const s = String(v), t = /^(\d+):(\d{2})$/.exec(s);   // « 21:12 » (temps de glace) → minutes
+  if(t) return +t[1] + t[2] / 60;
+  const n = parseFloat(s.replace('%', '').replace(',', '.')); return isNaN(n) ? null : n;
+};
 
 async function gviz(params){
   const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&${params}&t=${Date.now()}`);
@@ -145,12 +162,14 @@ async function charger(){
     if(lab[0] !== 'Joueur' || lab[1] !== 'Nom'){ $('loader').hidden = true; $('vide').hidden = false; return; }
     const v = (c, i) => c[i] && c[i].v != null ? String(c[i].v).trim() : '';
     let importe = '';
+    const cles = lab.map(l => l === 'PTS' ? 'p' : ENTETES[l]);
     joueurs = t.rows.map(r => {
-      const c = r.c || [];
-      importe = importe || v(c, 15);
-      return { joueur: v(c, 0), nom: v(c, 1), equipe: v(c, 2), po: v(c, 3), pj: v(c, 4), b: v(c, 5), a: v(c, 6), p: v(c, 7), pm: v(c, 8),
-        pun: v(c, 9), t: v(c, 10), pct: v(c, 11), bg: v(c, 12), ban: v(c, 13), bin: v(c, 14) };
-    }).filter(j => j.joueur);
+      const c = r.c || [], j = {};
+      COLS.forEach(x => { j[x.cle] = ''; });
+      cles.forEach((k, i) => { if(k) j[k] = v(c, i); });
+      importe = importe || j.importe;
+      return j;
+    }).filter(j => j.joueur && j.pj !== '0');   // 0 match joué : rien à montrer
     if(idsT && (idsT.cols[0] || {}).label === 'Joueur') idsT.rows.forEach(r => { const c = r.c || []; const n = c[0] && c[0].v, i = c[1] && c[1].v; if(n && /^\d{6,8}$/.test(String(i))) ids.set(String(n), String(i)); });
     // Équipes présentes
     const codes = [...new Set(joueurs.map(j => j.equipe).filter(Boolean))].sort((a, b) => ((EQUIPES.get(a) || {}).name || a).localeCompare((EQUIPES.get(b) || {}).name || b, 'fr'));

@@ -2577,7 +2577,7 @@ function deplacerTransactionsVersFil() {
    et on remplace tout l'onglet public STATS_JOUEURS, lu par lnhq.ca/stats.html.
    ========================================================================= */
 const ONGLET_STATS = 'STATS_JOUEURS';
-const STATS_ENTETES = ['Joueur', 'Nom', 'Équipe', 'PO', 'PJ', 'B', 'A', 'P', '+/-', 'PUN', 'T', '%T', 'BG', 'BAN', 'BIN', 'Importé le'];
+const STATS_ENTETES = ['Joueur', 'Nom', 'Équipe', 'PO', 'PJ', 'B', 'A', 'P', '+/-', 'PUN', 'T', '%T', 'BG', 'BAN', 'PAN', 'BIN', 'PIN', 'TG/M', 'MJG', 'MJ', '%MJ', 'MÉ', 'TBL', 'REV', 'REC', 'Importé le'];
 const MAX_LIGNES_STATS = 1500;
 
 function importerStats(d, membre) {
@@ -2589,17 +2589,21 @@ function importerStats(d, membre) {
   const nombre = v => (v === '' || v == null) ? '' : (isNaN(Number(v)) ? null : String(Number(v)));
   const quand = new Date().toISOString();
   // Ordre des colonnes de STATS_ENTETES (sans « Importé le »).
-  const CLES = ['joueur', 'nom', 'equipe', 'po', 'pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'pct', 'bg', 'ban', 'bin'];
-  const NUM = new Set(['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'bin']);
+  const CLES = ['joueur', 'nom', 'equipe', 'po', 'pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'pct', 'bg', 'ban', 'pan', 'bin', 'pin', 'tgm', 'mjg', 'mjt', 'pmj', 'me', 'tbl', 'rev', 'rec'];
+  const NUM = new Set(['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'pan', 'bin', 'pin', 'mjg', 'mjt', 'me', 'tbl', 'rev', 'rec']);
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
     const classeur = SpreadsheetApp.openById(SHEET_ID);
     const o = classeur.getSheetByName(ONGLET_STATS) || classeur.insertSheet(ONGLET_STATS);
-    // Il y a deux types d'export (ex. le 2e apporte les buts en infériorité) : une colonne
-    // absente de cet import (clé non envoyée) garde la valeur déjà publiée pour ce joueur.
+    // Une colonne absente de cet import (clé non envoyée) garde la valeur déjà publiée pour
+    // ce joueur. Les anciennes lignes sont lues par entête : l'ordre de l'onglet peut avoir changé.
     const avant = new Map();
-    if (o.getLastRow() > 1) o.getRange(2, 1, o.getLastRow() - 1, STATS_ENTETES.length).getDisplayValues().forEach(r => { if (r[0]) avant.set(r[0].trim(), r); });
+    if (o.getLastRow() > 1 && o.getLastColumn() > 0) {
+      const tout = o.getRange(1, 1, o.getLastRow(), o.getLastColumn()).getDisplayValues();
+      const ou = STATS_ENTETES.map(h => tout[0].indexOf(h));
+      tout.slice(1).forEach(r => { if (r[0]) avant.set(r[0].trim(), ou.map(i => i >= 0 ? r[i] : '')); });
+    }
     const valeurs = [];
     for (const l of lignes) {
       const joueur = String(l.joueur || '').trim().slice(0, 80);
@@ -2616,7 +2620,8 @@ function importerStats(d, membre) {
         } else if (c === 'joueur') ligne.push(joueur);
         else if (c === 'equipe') { const e = String(l.equipe || '').trim().toUpperCase(); ligne.push(codes.has(e) ? e : ''); }
         else if (c === 'po') ligne.push(String(l.po || '').trim().toUpperCase().slice(0, 12));
-        else ligne.push(String(l[c] == null ? '' : l[c]).trim().slice(0, c === 'pct' ? 8 : 80));
+        else if (c === 'tgm') { const v = String(l.tgm == null ? '' : l.tgm).trim(); if (v && !/^\d{1,2}:\d{2}$/.test(v)) return { ok: false, erreur: 'nombre', joueur: joueur, colonne: c }; ligne.push(v); }
+        else ligne.push(String(l[c] == null ? '' : l[c]).trim().slice(0, c === 'pct' || c === 'pmj' ? 8 : 80));
       }
       ligne.push(quand);
       valeurs.push(ligne);

@@ -1,7 +1,8 @@
 /* LNHQ — import des stats de joueurs (publier.lnhq.ca/stats-import.html, dirigeants).
    Bientôt une section de la page « Gestion Admin ». Le CSV (export du jeu, lu par Google)
    est vérifié ici avant l'import :
-     - arithmétique : P = B + A, %T = B / T, BAN + BIN ≤ B, BG ≤ B ;
+     - arithmétique : P = B + A, %T = B / T, BAN + BIN ≤ B, BG ≤ B, BAN ≤ PAN, BIN ≤ PIN,
+       %MJ = MJG / MJ, TG/M × PJ ≈ MIN ; la colonne A_VERIFIER de l'export devient une remarque ;
      - noms : « Z. Werenski » doit exister dans PLAYERSDATABASE (nom + initiale) ; sinon,
        suggestions par nom de famille ;
      - équipes : PJ ≤ matchs de l'équipe ; totaux du CSV ≤ résultats réels (onglet RESULTATS),
@@ -21,15 +22,27 @@
     { cle: 'a', entetes: ['A', 'PASSES'], nom: 'A' },
     { cle: 'p', entetes: ['P', 'PTS', 'POINTS'], nom: 'P' },
     { cle: 'pm', entetes: ['+/-', 'PM', 'DIFF'], nom: '+/-' },
-    { cle: 'pun', entetes: ['PIM', 'PUN', 'MIN'], nom: 'PUN' },
+    { cle: 'pun', entetes: ['PIM', 'PUN'], nom: 'PUN' },
     { cle: 't', entetes: ['S', 'SOG', 'T', 'TIRS'], nom: 'T' },
     { cle: 'pct', entetes: ['S%', '%T', 'SH%'], nom: '%T' },
     { cle: 'bg', entetes: ['GWG', 'BG'], nom: 'BG' },
     { cle: 'ban', entetes: ['PPG', 'BAN'], nom: 'BAN' },
-    // SHG (buts en infériorité) : ignorée ici, elle vient du 2e type d'export ; une colonne
-    // absente de l'import garde la valeur déjà publiée.
+    { cle: 'pan', entetes: ['PPP', 'PAN'], nom: 'PAN' },
+    { cle: 'bin', entetes: ['SHG', 'BIN'], nom: 'BIN' },
+    { cle: 'pin', entetes: ['SHP', 'PIN'], nom: 'PIN' },
+    { cle: 'tgm', entetes: ['TOI/G', 'TOI/GP', 'TG/M'], nom: 'TG/M' },
+    { cle: 'mjg', entetes: ['FOW', 'MJG'], nom: 'MJG' },
+    { cle: 'mjt', entetes: ['FOT', 'MJ'], nom: 'MJ' },
+    { cle: 'pmj', entetes: ['FO%', '%MJ'], nom: '%MJ' },
+    { cle: 'me', entetes: ['HITS', 'HIT', 'MÉ', 'ME'], nom: 'MÉ' },
+    { cle: 'tbl', entetes: ['BKS', 'BLK', 'TBL'], nom: 'TBL' },
+    { cle: 'rev', entetes: ['GV', 'GIVEAWAYS', 'REV'], nom: 'REV' },
+    { cle: 'rec', entetes: ['TK', 'TAKEAWAYS', 'REC'], nom: 'REC' },
+    // MIN (minutes totales) n'est pas publiée : elle sert seulement à vérifier TG/M.
+    // Une colonne absente ou décochée garde la valeur déjà publiée.
   ];
-  const NOMBRES = ['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban'];
+  const NOMBRES = ['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'pan', 'bin', 'pin', 'mjg', 'mjt', 'me', 'tbl', 'rev', 'rec'];
+  const POURCENTS = ['pct', 'pmj'];
 
   let roster = [];            // { b: 'Nom, Prénom', po, equipe }
   let equipes = {};           // code → { pj, bp, v, ban, binf, tb, retard }
@@ -120,8 +133,10 @@
   function rattacher(j){
     const point = j.joueur.indexOf('.');
     const ini = point > 0 ? sansAccents(j.joueur.slice(0, point)) : '';
-    const famille = sansAccents(point > 0 ? j.joueur.slice(point + 1) : j.joueur);
-    const memeNom = roster.filter(r => sansAccents(r.b.split(',')[0]) === famille);
+    // Espaces, traits d'union et apostrophes ignorés : « Mc Tavish » = McTavish, « Sandin-Pellikka » = Sandin Pellikka.
+    const compact = s => sansAccents(s).replace(/[^a-z]/g, '');
+    const famille = compact(point > 0 ? j.joueur.slice(point + 1) : j.joueur);
+    const memeNom = roster.filter(r => compact(r.b.split(',')[0]) === famille);
     const exacts = memeNom.filter(r => !ini || sansAccents(r.b.split(',')[1]).startsWith(ini));
     j.suggestions = exacts.length === 1 ? exacts : memeNom;
     j.choix = exacts.length === 1 ? exacts[0] : null;
@@ -138,11 +153,16 @@
     COLONNES.forEach(c => { const i = entetes.findIndex(h => c.entetes.includes(h)); if(i >= 0) index[c.cle] = i; });
     if(index.joueur == null) throw new Error('Colonne PLAYER (joueur) introuvable dans les entêtes.');
     const absentes = COLONNES.filter(c => index[c.cle] == null).map(c => c.nom);
+    // Colonnes utiles à la vérification seulement (non publiées).
+    const iMin = entetes.indexOf('MIN'), iRem = entetes.findIndex(h => /^(A_VERIFIER|À_VÉRIFIER|REMARQUES?)$/.test(h));
     joueurs = lignes.slice(1).map((v, n) => {
       const j = { ligne: n + 2, erreurs: [] };
       COLONNES.forEach(c => { j[c.cle] = index[c.cle] != null ? (v[index[c.cle]] || '') : ''; });
-      j.pct = j.pct.replace(',', '.');
+      POURCENTS.forEach(k => { j[k] = j[k].replace(',', '.'); });
+      j.min = iMin >= 0 ? (v[iMin] || '') : '';
+      j.remarque = iRem >= 0 ? (v[iRem] || '').replace(/^"|"$/g, '').trim() : '';
       NOMBRES.forEach(k => { if(j[k] !== '' && isNaN(Number(j[k]))) j.erreurs.push(`${k.toUpperCase()} « ${j[k]} » n’est pas un nombre`); });
+      if(j.tgm !== '' && !/^\d{1,2}:\d{2}$/.test(j.tgm)) j.erreurs.push(`TGM « ${j.tgm} » n’est pas un temps (mm:ss)`);
       return j;
     }).filter(j => j.joueur);
     joueurs.forEach(rattacher);
@@ -162,11 +182,23 @@
     const alerte = (j, cle, txt) => { note(cle, j.joueur); if(inclure[cle] !== false) j.alertes.push(txt); };
     joueurs.forEach(j => {
       j.alertes = [...j.erreurs];
+      j.notes = j.remarque ? ['Remarque de l’export : ' + j.remarque] : [];
       const n = k => Number(j[k]) || 0;
       if(j.b !== '' && j.a !== '' && j.p !== '' && n('b') + n('a') !== n('p')) alerte(j, 'p', `B ${j.b} + A ${j.a} ≠ P ${j.p}`);
       if(j.t !== '' && j.pct !== '' && n('t') > 0){ const calc = Math.round(1000 * n('b') / n('t')) / 10; if(Math.abs(calc - parseFloat(j.pct)) > 0.15) alerte(j, 'pct', `%T ${j.pct} ≠ ${j.b}/${j.t} = ${calc}%`); }
-      if(n('ban') > n('b')) alerte(j, 'ban', `BAN ${j.ban} > B ${j.b}`);
+      if(n('ban') + n('bin') > n('b')) alerte(j, n('bin') ? 'bin' : 'ban', `BAN ${j.ban || 0} + BIN ${j.bin || 0} > B ${j.b}`);
       if(n('bg') > n('b')) alerte(j, 'bg', `BG ${j.bg} > B ${j.b}`);
+      if(j.pan !== '' && n('ban') > n('pan')) alerte(j, 'pan', `BAN ${j.ban} > PAN ${j.pan}`);
+      if(j.pin !== '' && n('bin') > n('pin')) alerte(j, 'pin', `BIN ${j.bin} > PIN ${j.pin}`);
+      if(n('pan') + n('pin') > n('p')) alerte(j, 'pan', `PAN ${j.pan} + PIN ${j.pin || 0} > P ${j.p}`);
+      if(n('b') > n('t') && j.t !== '') alerte(j, 't', `B ${j.b} > T ${j.t}`);
+      if(n('mjg') > n('mjt')) alerte(j, 'mjg', `MJG ${j.mjg} > MJ ${j.mjt}`);
+      if(n('mjt') > 0 && j.pmj !== ''){ const calc = Math.round(1000 * n('mjg') / n('mjt')) / 10; if(Math.abs(calc - parseFloat(j.pmj)) > 0.15) alerte(j, 'pmj', `%MJ ${j.pmj} ≠ ${j.mjg}/${j.mjt} = ${calc}%`); }
+      // TG/M × PJ ≈ minutes totales (à une minute par match près : secondes arrondies).
+      if(j.tgm !== '' && j.min !== '' && n('pj') > 0){
+        const [m, s] = j.tgm.split(':').map(Number), total = (m + s / 60) * n('pj');
+        if(Math.abs(total - Number(j.min)) > n('pj')) alerte(j, 'tgm', `TG/M ${j.tgm} × ${j.pj} PJ = ${Math.round(total)} min ≠ ${j.min} min`);
+      }
       // Matchs joués : au plus les matchs de ses équipes (toutes, s'il a été échangé),
       // en comptant les matchs en retard (joués dans le jeu, pas encore soumis).
       if(j.choix && j.pj !== ''){
@@ -175,8 +207,7 @@
         j.echange = siennes.length > 1;
         const ou = siennes.join(' + ');
         if(n('pj') > joues + retard) j.alertes.push(`PJ ${j.pj} > ${joues + retard} possibles (${ou} : ${joues} joués + ${retard} en retard)`);
-        else if(n('pj') > joues) j.notes = [`PJ ${j.pj} : ${n('pj') - joues} match(s) en retard pas encore soumis (${ou})`];
-        else j.notes = [];
+        else if(n('pj') > joues) j.notes.push(`PJ ${j.pj} : ${n('pj') - joues} match(s) en retard pas encore soumis (${ou})`);
         if(j.echange) j.notes.push('Échangé cette saison (' + ou + ') : exclu des totaux d’équipe');
       }
       if(!j.choix) j.alertes.push(j.suggestions.length ? 'Nom à rattacher' : 'Introuvable dans PLAYERSDATABASE');
@@ -190,6 +221,7 @@
       const pl = (n, mot) => n + ' ' + mot + (n > 1 ? 's' : '');
       if(s('b') > r.bp) ajout('b', `${pl(s('b'), 'but')} au CSV > ${pl(r.bp, 'but')} de l’équipe (hors fusillade)`);
       if(s('ban') > r.ban) ajout('ban', `${pl(s('ban'), 'but')} en avantage > ${r.ban}`);
+      if(s('bin') > r.binf) ajout('bin', `${pl(s('bin'), 'but')} en infériorité > ${r.binf}`);
       if(s('bg') > r.v) ajout('bg', `${pl(s('bg'), 'but')} gagnant${s('bg') > 1 ? 's' : ''} > ${pl(r.v, 'victoire')} hors TB`);
     });
     // Une colonne est « incohérente » si elle échoue pour plus de 10 % des joueurs ou pour au moins
@@ -272,6 +304,7 @@
             j[c.cle] = v;
             j.erreurs = j.erreurs.filter(e => !e.startsWith(c.cle.toUpperCase() + ' '));
             if(NOMBRES.includes(c.cle) && v !== '' && isNaN(Number(v))) j.erreurs.push(`${c.cle.toUpperCase()} « ${v} » n’est pas un nombre`);
+            if(c.cle === 'tgm' && v !== '' && !/^\d{1,2}:\d{2}$/.test(v)) j.erreurs.push(`TGM « ${v} » n’est pas un temps (mm:ss)`);
             const zone = $('apercu').parentElement, haut = zone.scrollTop, gauche = zone.scrollLeft;
             rendre(false);
             zone.scrollTop = haut; zone.scrollLeft = gauche;
@@ -312,10 +345,14 @@
       if(!roster.length) await chargerReferences();
       const t = await gviz('sheet=STATS_JOUEURS');
       if(((t.cols[0] || {}).label || '') !== 'Joueur'){ afficher('Aucune stat publiée pour l’instant : importe d’abord un CSV.', 'is-alerte'); return; }
-      const ordre = ['joueur', 'nom', 'equipe', 'po', 'pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'pct', 'bg', 'ban', 'bin'];
+      // Colonnes repérées par leur entête (l'ordre de l'onglet peut changer).
+      const parEntete = { 'Joueur': 'joueur', 'Nom': 'nom', 'Équipe': 'equipe' };
+      COLONNES.forEach(c => { parEntete[c.nom] ??= c.cle; });
+      const ordre = t.cols.map(c => parEntete[(c.label || '').trim()]);
       joueurs = t.rows.map((r, n) => {
         const j = { ligne: n + 2, erreurs: [] };
-        ordre.forEach((k, i) => { j[k] = val((r.c || [])[i]).trim(); });
+        COLONNES.forEach(c => { j[c.cle] = ''; });
+        ordre.forEach((k, i) => { if(k) j[k] = val((r.c || [])[i]).trim(); });
         const publie = j.nom ? roster.find(x => x.b === j.nom) : null;
         if(publie){ j.choix = publie; j.suggestions = [publie]; } else rattacher(j);
         return j;

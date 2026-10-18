@@ -35,9 +35,9 @@
 
     <section id="contenu" hidden>
       <h2 class="si-titre">Import des stats de joueurs <small>Gestion admin</small></h2>
-      <p class="si-aide">Dépose l'export CSV (colonnes PLAYER, POS, GP, G, A, P, +/-, PIM, S, S%, GWG, PPG). Tout est vérifié avant l'import ;
-        rien n'est enregistré tant que tu n'as pas cliqué « Importer ». Seules les colonnes cochées sont remplacées :
-        les autres (ex. SHG, qui vient du 2e export) gardent la valeur déjà publiée.</p>
+      <p class="si-aide">Dépose l'export CSV (PLAYER, POS, GP, G, A, P, +/-, PIM, S, S%, GWG, PPG, PPP, SHG, SHP, TOI/G, MIN, FOW, FOT, FO%, HITS, BKS, GV, TK ;
+        l'ordre n'importe pas). Tout est vérifié avant l'import ; rien n'est enregistré tant que tu n'as pas cliqué « Importer ».
+        Seules les colonnes cochées sont remplacées : les autres gardent la valeur déjà publiée.</p>
 
       <label class="si-depot" id="depot">
         <input type="file" id="fichier" accept=".csv,text/csv">
@@ -47,7 +47,7 @@
       <p class="si-ou"><button type="button" class="si-bouton" id="chargerPublie">✎ Corriger les stats déjà publiées</button></p>
       <details class="si-coller">
         <summary>… ou colle le contenu du CSV</summary>
-        <textarea id="texte" rows="6" placeholder="PLAYER,POS,GP,G,A,P,+/-,PIM,S,S%,GWG,PPG"></textarea>
+        <textarea id="texte" rows="6" placeholder="POS,PLAYER,GP,G,A,P,+/-,PIM,S,S%,GWG,PPG,PPP,SHG,SHP,TOI/G,MIN,FOW,FOT,FO%,HITS,BKS,GV,TK"></textarea>
         <button type="button" class="si-bouton" id="verifierTexte">Vérifier</button>
       </details>
 
