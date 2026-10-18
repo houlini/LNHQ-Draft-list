@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/">
+<title>Bureau du DG — maquette</title>
+<link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css?v=7">
+<link rel="stylesheet" href="alignement.css?v=5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@400;700&family=Orbitron:wght@500;800&display=swap">
+<script src="site-nav.js?v=5"></script>
+<script src="resultats-donnees.js?v=6"></script>
+<script src="gardiens-donnees.js"></script>
+<script src="alignement.js?v=6"></script>
+<script src="encheres-donnees.js?v=6"></script>
+<style>
+/* =========================================================================
+   MAQUETTE — Centre de l'équipe (calendrier + résultats + 2e gardien + soumission).
+   Deux directions : « Planchette de vestiaire » et « Tableau tactique ».
+   Données réelles en lecture seule ; les actions sont simulées.
+   ========================================================================= */
+:root{
+  --ce-couleur:var(--accent); --ce-sombre:#1b1f24;
+  --marqueur:'Permanent Marker', 'Comic Sans MS', cursive;
+  --ecrit:'Kalam', 'Comic Sans MS', cursive;
+}
+body{ overflow-x:hidden; }
+.ce-maquette{
+  display:flex; align-items:center; justify-content:center; gap:8px; padding:6px 12px;
+  background:repeating-linear-gradient(135deg, #FFD43B 0 14px, #12181F 14px 28px); color:#12181F;
+  font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;
+}
+.ce-maquette span{ background:#FFD43B; padding:2px 10px; border-radius:4px; white-space:nowrap; }
+
+/* ---------- Bande ---------- */
+.ce-bande{ gap:10px; }
+.ce-equipe-btn{
+  display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:0 16px 0 10px; border-radius:10px; border:none; cursor:pointer;
+  background:var(--surface); color:var(--ink); font:inherit; font-weight:700; font-size:16px;
+}
+.ce-equipe-btn img{ width:30px; height:30px; object-fit:contain; }
+.ce-seg{ display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:rgba(0,0,0,0.16); }
+.ce-seg button{
+  min-height:36px; padding:0 14px; border:none; border-radius:9px; cursor:pointer; background:transparent;
+  color:var(--accent-ink); font:inherit; font-weight:700; font-size:12.5px; text-transform:uppercase; letter-spacing:0.04em;
+}
+.ce-seg button[aria-pressed="true"]{ background:var(--nav-dark); color:var(--nav-ink); }
+.ce-theme{ margin-left:auto; }
+
+.ce{ padding:18px clamp(12px,3vw,40px) 60px; display:flex; flex-direction:column; gap:22px; max-width:1500px; margin:0 auto; box-sizing:border-box; width:100%; }
+.ce > *{ flex-shrink:0; }
+.ce{ overflow-x:clip; }   /* la feuille arrachée qui tombe ne crée pas de défilement horizontal */   /* la zone principale du site a une hauteur fixe : aucun bloc ne s'écrase */
+.ce-chargement{ padding:60px 0; text-align:center; color:var(--ink-muted); font-family:var(--ecrit); font-size:22px; }
+
+/* =========================================================================
+   1. PROCHAIN MATCH (face-off)
+   ========================================================================= */
+.ce-hero{
+  position:relative; overflow:hidden; border-radius:18px; color:#fff; isolation:isolate;
+  background:
+    radial-gradient(60% 120% at 0% 50%, color-mix(in srgb, var(--ce-couleur) 70%, transparent), transparent 70%),
+    radial-gradient(60% 120% at 100% 50%, color-mix(in srgb, var(--adv-couleur, #555) 65%, transparent), transparent 70%),
+    linear-gradient(180deg, #0f1317, #171c21);
+  box-shadow:0 18px 50px rgba(0,0,0,0.35);
+}
+/* Glace : ligne rouge centrale et cercle de mise au jeu. */
+.ce-hero::before{
+  content:''; position:absolute; inset:0; z-index:-1; opacity:0.22;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 3px), #E03131 calc(50% - 3px), #E03131 calc(50% + 3px), transparent calc(50% + 3px)),
+    radial-gradient(circle at 50% 50%, transparent 92px, #4DABF7 93px, #4DABF7 97px, transparent 98px);
+}
+.ce-hero-etiquette{
+  position:absolute; top:14px; left:50%; transform:translateX(-50%); padding:4px 14px; border-radius:999px;
+  background:rgba(255,255,255,0.12); font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; white-space:nowrap;
+}
+.ce-hero-corps{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; padding:54px clamp(12px,4vw,48px) 22px; }
+.ce-cote{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; min-width:0; }
+.ce-cote img{ width:clamp(74px, 13vw, 132px); height:clamp(74px, 13vw, 132px); object-fit:contain; filter:drop-shadow(0 10px 18px rgba(0,0,0,0.5)); }
+.ce-cote b{ font-family:'Oswald', sans-serif; font-weight:500; font-size:clamp(18px, 2.6vw, 28px); text-transform:uppercase; letter-spacing:0.02em; }
+.ce-cote small{ font-family:'IBM Plex Mono', monospace; font-size:13px; opacity:0.8; }
+.ce-cote.is-gauche{ animation:entre-gauche .7s cubic-bezier(.2,.9,.25,1.15) both; }
+.ce-cote.is-droite{ animation:entre-droite .7s cubic-bezier(.2,.9,.25,1.15) both; }
+@keyframes entre-gauche{ from{ transform:translateX(-60px); opacity:0; } }
+@keyframes entre-droite{ from{ transform:translateX(60px); opacity:0; } }
+.ce-milieu{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+.ce-rondelle{
+  width:64px; height:24px; border-radius:50%; background:radial-gradient(ellipse at 50% 35%, #3a3f45, #0b0d0f 70%);
+  box-shadow:0 6px 0 #050607, 0 14px 18px rgba(0,0,0,0.6); animation:rondelle 1s .35s cubic-bezier(.3,1.6,.5,1) both;
+}
+@keyframes rondelle{ from{ transform:translateY(-80px) scale(.6); opacity:0; } 60%{ opacity:1; } }
+.ce-quand{ font-family:'Oswald', sans-serif; font-size:clamp(20px, 3vw, 30px); text-transform:uppercase; text-align:center; line-height:1.05; }
+.ce-quand small{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:13px; text-transform:none; opacity:0.8; margin-top:4px; }
+.ce-hero-pied{
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 14px;
+  padding:14px 18px 18px; background:rgba(0,0,0,0.25); border-top:1px solid rgba(255,255,255,0.08);
+}
+.ce-serie{ font-size:13.5px; opacity:0.9; }
+.ce-btn{
+  display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 18px; border-radius:11px; cursor:pointer;
+  border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.08); color:#fff; font:inherit; font-weight:800; font-size:14px; text-decoration:none;
+  transition:transform .12s, background .12s;
+}
+.ce-btn:hover{ transform:translateY(-1px); background:rgba(255,255,255,0.16); }
+.ce-btn.is-principal{ background:#E03131; border-color:#E03131; box-shadow:0 6px 18px rgba(224,49,49,0.45); }
+.ce-btn.is-principal:hover{ background:#f03e3e; }
+
+/* =========================================================================
+   2. GRILLE : semaine (planchette / tableau) + colonne de droite
+   ========================================================================= */
+/* Aperçu : semaine au centre ; tableau indicateur + 2e gardien à gauche ; babillard à droite. */
+.ce-grille{ display:grid; grid-template-columns:minmax(0, 1fr); gap:20px; align-items:start; grid-template-areas:"semaine" "gauche" "droite"; }
+.ce-semaine{ grid-area:semaine; min-width:0; }
+.ce-gauche{ grid-area:gauche; display:flex; flex-direction:column; gap:18px; min-width:0; }
+.ce-droite{ grid-area:droite; min-width:0; }
+@media (min-width:640px) and (max-width:899px){
+  .ce-grille{ grid-template-columns:1fr 1fr; grid-template-areas:"semaine semaine" "gauche droite"; }
+}
+@media (min-width:900px){ .ce-grille{ grid-template-columns:minmax(0, 1fr) 300px; grid-template-areas:"semaine gauche" "semaine droite"; } }
+/* 1080p : menu | planchette | tableau indicateur + 2e gardien | babillard, sans défilement. */
+@media (min-width:1560px){
+  .ce-grille{ grid-template-columns:minmax(0, 1fr) 300px 320px; grid-template-areas:"semaine gauche droite"; }
+  /* Une vraie planchette est en hauteur (environ 5 × 6) : la colonne prend sa largeur. */
+  #ce[data-theme="planchette"] .ce-grille:not(.is-ligue){ grid-template-columns:clamp(420px, calc((100vh - 330px) * 5 / 6), 560px) minmax(300px, 380px) minmax(320px, 1fr); }
+  #ce[data-theme="planchette"] .ce-grille:not(.is-ligue) .ce-support{ aspect-ratio:5 / 6; display:flex; flex-direction:column; }
+  #ce[data-theme="planchette"] .ce-grille:not(.is-ligue) .ce-feuilles{ flex:1; grid-template-rows:1fr; }
+}
+.ce-grille.is-ligue{ grid-template-columns:minmax(0, 1fr); grid-template-areas:"semaine"; }
+
+/* ---------- Menu des sections : à gauche sur ordinateur, barre en haut sur téléphone ---------- */
+.ce-cadre{ display:flex; flex-direction:column; gap:16px; min-width:0; }
+.ce-contenu{ min-width:0; display:flex; flex-direction:column; gap:18px; }
+.ce-onglets i{ font-style:normal; margin-right:6px; }
+@media (min-width:1100px){
+  .ce{ max-width:1880px; padding-top:14px; padding-bottom:16px; }
+  .ce-cadre{ display:grid; grid-template-columns:190px minmax(0, 1fr); gap:20px; align-items:start; }
+  .ce-cadre:has(> .ce-onglets[hidden]){ grid-template-columns:minmax(0, 1fr); }
+  .ce-onglets{ position:sticky; top:12px; flex-direction:column; gap:4px; padding:8px; overflow:visible; }
+  .ce-onglets button{ flex:none; display:flex; align-items:center; justify-content:flex-start; gap:4px; min-height:46px; padding:0 14px; text-align:left; font-size:12.5px; }
+  .ce-onglets button[aria-pressed="true"]{ transform:translateX(4px); }
+  .ce-onglets i{ width:26px; font-size:17px; }
+}
+
+.ce-nav-semaine{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.ce-nav-semaine h2{ flex:1; margin:0; font-family:'Oswald', sans-serif; font-weight:500; font-size:21px; text-transform:uppercase; letter-spacing:0.02em; text-align:center; }
+.ce-nav-semaine h2 small{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:13px; text-transform:none; letter-spacing:0; color:var(--ink-muted); }
+.ce-fleche{
+  width:46px; height:46px; border-radius:50%; cursor:pointer; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  font-size:22px; font-weight:700; transition:transform .12s, border-color .12s;
+}
+.ce-fleche:hover:not(:disabled){ transform:scale(1.06); border-color:var(--accent); }
+.ce-fleche:disabled{ opacity:0.35; cursor:default; }
+.ce-auj{ border:none; background:none; color:var(--accent); font:inherit; font-weight:700; cursor:pointer; text-decoration:underline; }
+
+/* Support des feuilles : la planchette ou le tableau. */
+.ce-support{ position:relative; perspective:1600px; }
+.ce-feuilles{ position:relative; display:grid; }
+.ce-feuille{ grid-area:1 / 1; min-width:0; }
+
+/* ---------- Thème PLANCHETTE (réaliste) ----------
+   Panneau rigide (grain + bruit en SVG), pince en métal (SVG, voir .ce-pince), pile de feuilles,
+   papier texturé au coin relevé. Semaine suivante : la feuille s'arrache sous la pince (bord
+   déchiré tiré au hasard) et tombe ; un bout de papier reste coincé. Semaine précédente : la
+   page redescend par-dessus la pince. */
+[data-theme="planchette"] .ce-support{
+  --bois-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.32' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.22  0 0 0 0 0.12  0 0 0 0 0.04  0 0 0 0.55 -0.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --bruit:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.28 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --bruit-papier:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 0 0.3  0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+  position:relative; padding:58px clamp(12px,2.6vw,30px) 30px; border-radius:20px;
+  background:
+    radial-gradient(140% 70% at 15% 0%, rgba(255,226,180,0.22), transparent 55%),
+    radial-gradient(90% 60% at 100% 100%, rgba(0,0,0,0.28), transparent 60%),
+    var(--bruit), var(--bois-grain),
+    linear-gradient(172deg, #9a6838 0%, #7d5129 45%, #6a4220 100%);
+  background-size:auto, auto, 220px 220px, 100% 100%, auto;
+  box-shadow:
+    0 2px 0 #4b2d14, 0 4px 0 #3d240f,                      /* tranche du panneau */
+    0 28px 60px rgba(0,0,0,0.45), 0 10px 18px rgba(0,0,0,0.25),
+    inset 0 2px 1px rgba(255,236,200,0.35), inset 0 -2px 2px rgba(0,0,0,0.35),
+    inset 0 0 0 1px rgba(0,0,0,0.25);
+}
+/* Trou d'accrochage du panneau */
+[data-theme="planchette"] .ce-support::before{
+  content:''; position:absolute; top:12px; left:50%; width:46px; height:16px; transform:translateX(-50%); border-radius:999px; z-index:0;
+  background:#1d1209; box-shadow:inset 0 3px 5px rgba(0,0,0,0.9), 0 1px 0 rgba(255,236,200,0.25);
+}
+.ce-pince{ display:none; }
+[data-theme="planchette"] .ce-pince{
+  display:block; position:absolute; z-index:20; top:4px; left:50%; transform:translateX(-50%); width:min(300px, 62%); pointer-events:none;
+  filter:drop-shadow(0 7px 6px rgba(0,0,0,0.45)) drop-shadow(0 2px 1px rgba(0,0,0,0.35));
+}
+[data-theme="planchette"] .ce-pince svg{ display:block; width:100%; height:auto; }
+/* Pile : quelques feuilles dessous, légèrement décalées. */
+[data-theme="planchette"] .ce-feuilles::before, [data-theme="planchette"] .ce-feuilles::after{
+  content:''; position:absolute; inset:0; border-radius:3px; background:#f4f0e4; z-index:0;
+  box-shadow:0 1px 2px rgba(0,0,0,0.25);
+}
+[data-theme="planchette"] .ce-feuilles::before{ transform:translate(3px, 5px) rotate(0.6deg); }
+[data-theme="planchette"] .ce-feuilles::after{ transform:translate(-2px, 3px) rotate(-0.4deg); background:#f8f5eb; }
+[data-theme="planchette"] .ce-feuille{
+  --marge:clamp(24px,4.2vw,48px);
+  /* Haut de la feuille (sous la pince et la ligne d'arrachage) laissé vide. */
+  position:relative; z-index:1; padding:68px clamp(12px,2.4vw,28px) 30px calc(var(--marge) + 14px); border-radius:2px 2px 3px 3px; color:#1b2a3a;
+  background:
+    var(--bruit-papier),
+    linear-gradient(90deg, transparent var(--marge), rgba(214,51,51,0.55) var(--marge), rgba(214,51,51,0.55) calc(var(--marge) + 1.5px), transparent calc(var(--marge) + 1.5px), transparent calc(var(--marge) + 4px), rgba(214,51,51,0.35) calc(var(--marge) + 4px), rgba(214,51,51,0.35) calc(var(--marge) + 5px), transparent calc(var(--marge) + 5px)),
+    repeating-linear-gradient(180deg, transparent 0 39px, rgba(59,130,196,0.28) 39px 40px),
+    linear-gradient(180deg, rgba(0,0,0,0.05), transparent 40px),          /* ombre de la pince */
+    radial-gradient(130% 90% at 50% 40%, #fffdf6, #f5f0e2);
+  background-size:220px 220px, auto, auto, auto, auto;
+  box-shadow:0 1px 1px rgba(0,0,0,0.2), 0 6px 14px rgba(0,0,0,0.22);
+  transform-origin:50% 0; backface-visibility:hidden; will-change:transform;
+}
+/* Coin inférieur droit légèrement relevé */
+[data-theme="planchette"] .ce-feuille::after{
+  content:''; position:absolute; right:0; bottom:0; width:34px; height:34px; pointer-events:none;
+  background:linear-gradient(315deg, rgba(0,0,0,0) 0 44%, rgba(0,0,0,0.10) 48%, #efe9d8 52%, #fbf8ee 70%, #f3eddc 100%);
+  border-top-left-radius:18px; box-shadow:-3px -3px 6px rgba(0,0,0,0.08);
+}
+[data-theme="planchette"] .ce-feuille-titre{ font-family:var(--ecrit); font-weight:700; font-size:27px; color:#1a3570; margin:0 0 16px; text-shadow:0 0 1px rgba(26,53,112,0.35); }
+/* Page précédente : redescend par-dessus la pince ; l'ancienne s'enfonce dans la pile. */
+[data-theme="planchette"] .ce-feuille.entre-prec{ animation:page-revient .75s cubic-bezier(.2,.75,.25,1) both; z-index:3; }
+[data-theme="planchette"] .ce-feuille.sort-prec{ animation:page-recule .5s ease forwards; }
+[data-theme="planchette"] .ce-feuille.entre-suiv{ animation:page-dessous .6s ease both; }
+@keyframes page-revient{
+  0%{ transform:rotateX(-170deg); filter:brightness(.7); }
+  60%{ transform:rotateX(12deg); filter:brightness(1.05); }
+  80%{ transform:rotateX(-4deg); }
+  100%{ transform:rotateX(0); filter:none; }
+}
+@keyframes page-dessous{ from{ filter:brightness(.88); } }
+@keyframes page-recule{ to{ transform:translateY(3px) scale(.995); filter:brightness(.85); opacity:0; } }
+/* Feuille arrachée (positionnée par le script) et bout resté dans la pince. */
+.ce-arrachee{ position:absolute !important; z-index:15 !important; margin:0 !important; pointer-events:none; }
+.ce-feuille.ce-reste{
+  position:absolute !important; z-index:12 !important; pointer-events:none; box-shadow:none !important;
+  animation:reste-apparait .2s ease both;
+}
+.ce-feuille.ce-reste::after{ display:none; }
+@keyframes reste-apparait{ from{ opacity:0; } }
+/* Matchs : petites fiches collées avec du vrai ruban (bouts dentelés, translucide). */
+[data-theme="planchette"] .ce-aimant{
+  border-radius:3px; transform:rotate(var(--r, 0deg));
+  background:linear-gradient(180deg, #ffffff, #fbf9f2);
+  box-shadow:0 1px 1px rgba(0,0,0,0.18), 0 8px 14px -4px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.04);
+}
+[data-theme="planchette"] .ce-aimant::before{
+  content:''; position:absolute; top:-10px; left:50%; width:64px; height:20px; transform:translateX(-50%) rotate(-4deg);
+  background:linear-gradient(180deg, rgba(255,250,215,0.82), rgba(245,232,170,0.7));
+  box-shadow:0 1px 1px rgba(0,0,0,0.12);
+  clip-path:polygon(0 8%, 6% 0, 11% 10%, 17% 2%, 24% 8%, 100% 0, 96% 12%, 100% 25%, 95% 40%, 100% 55%, 96% 70%, 100% 88%, 94% 100%, 0 100%, 4% 85%, 0 70%, 5% 55%, 0 40%, 4% 25%);
+}
+/* ---------- Thème TABLEAU TACTIQUE ---------- */
+[data-theme="tableau"] .ce-support{
+  padding:22px clamp(10px,2.2vw,24px); border-radius:16px; overflow:hidden;
+  background:linear-gradient(#c9ced4, #aab1b8); box-shadow:0 22px 50px rgba(0,0,0,0.35), inset 0 0 0 10px #dfe3e7, inset 0 0 0 12px #8f979f;
+}
+[data-theme="tableau"] .ce-feuille{
+  position:relative; overflow:hidden; padding:24px clamp(12px,2.4vw,26px); border-radius:8px; color:#1a2b49;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 260' preserveAspectRatio='none'%3E%3Crect x='6' y='6' width='588' height='248' rx='70' fill='none' stroke='%23e03131' stroke-opacity='.18' stroke-width='3'/%3E%3Cline x1='300' y1='6' x2='300' y2='254' stroke='%23e03131' stroke-opacity='.22' stroke-width='5'/%3E%3Cline x1='200' y1='6' x2='200' y2='254' stroke='%231c7ed6' stroke-opacity='.2' stroke-width='5'/%3E%3Cline x1='400' y1='6' x2='400' y2='254' stroke='%231c7ed6' stroke-opacity='.2' stroke-width='5'/%3E%3Ccircle cx='300' cy='130' r='42' fill='none' stroke='%231c7ed6' stroke-opacity='.18' stroke-width='3'/%3E%3Ccircle cx='110' cy='75' r='30' fill='none' stroke='%23e03131' stroke-opacity='.14' stroke-width='3'/%3E%3Ccircle cx='110' cy='185' r='30' fill='none' stroke='%23e03131' stroke-opacity='.14' stroke-width='3'/%3E%3Ccircle cx='490' cy='75' r='30' fill='none' stroke='%23e03131' stroke-opacity='.14' stroke-width='3'/%3E%3Ccircle cx='490' cy='185' r='30' fill='none' stroke='%23e03131' stroke-opacity='.14' stroke-width='3'/%3E%3C/svg%3E") center / 100% 100% no-repeat,
+    radial-gradient(120% 90% at 30% 0%, #ffffff, #eef2f5);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);
+}
+[data-theme="tableau"] .ce-feuille-titre{ font-family:var(--marqueur); font-size:26px; color:#1c3d6e; margin:0 0 14px; transform:rotate(-1deg); }
+/* Changer de semaine : un efface-tout traverse le tableau, puis le nouveau contenu est tracé. */
+[data-theme="tableau"] .ce-feuille.sort-suiv, [data-theme="tableau"] .ce-feuille.sort-prec{ animation:efface .5s ease forwards; }
+[data-theme="tableau"] .ce-feuille.entre-suiv, [data-theme="tableau"] .ce-feuille.entre-prec{ animation:trace .45s .32s ease both; }
+@keyframes efface{ 60%{ opacity:1; filter:blur(0); } to{ opacity:0; filter:blur(3px); } }
+@keyframes trace{ from{ opacity:0; clip-path:inset(0 100% 0 0); } to{ opacity:1; clip-path:inset(0 0 0 0); } }
+.ce-brosse{
+  position:absolute; z-index:10; top:10%; width:120px; height:80%; border-radius:14px; pointer-events:none;
+  background:linear-gradient(90deg, #2b2f33 0 55%, #f1f3f5 55% 100%); box-shadow:0 10px 24px rgba(0,0,0,0.35);
+}
+.ce-brosse.va-droite{ animation:brosse-d .8s cubic-bezier(.45,0,.55,1) forwards; }
+.ce-brosse.va-gauche{ animation:brosse-g .8s cubic-bezier(.45,0,.55,1) forwards; }
+@keyframes brosse-d{ from{ left:-140px; transform:rotate(-4deg); } to{ left:calc(100% + 20px); transform:rotate(4deg); } }
+@keyframes brosse-g{ from{ left:calc(100% + 20px); transform:rotate(4deg); } to{ left:-140px; transform:rotate(-4deg); } }
+
+/* =========================================================================
+   Aimants (matchs)
+   ========================================================================= */
+.ce-matchs{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(190px, 100%), 1fr)); gap:16px; }
+.ce-vide{ font-family:var(--ecrit); font-size:20px; color:#5c6b7a; padding:20px 0; }
+.ce-aimant{
+  position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 12px 12px; border-radius:16px;
+  background:#fff; color:#1a2533; box-shadow:0 2px 0 rgba(0,0,0,0.08), 0 10px 22px rgba(18,24,31,0.18);
+  border:2px solid transparent; transition:transform .18s cubic-bezier(.2,.9,.3,1.3), box-shadow .18s; text-align:center;
+  animation:aimant-pose .5s cubic-bezier(.2,.9,.3,1.25) both; animation-delay:calc(var(--i, 0) * 70ms + .15s);
+}
+@keyframes aimant-pose{ from{ transform:translateY(-14px) rotate(-6deg) scale(.9); opacity:0; } }
+.ce-aimant:hover{ transform:translateY(-3px) rotate(-1deg); box-shadow:0 2px 0 rgba(0,0,0,0.08), 0 16px 30px rgba(18,24,31,0.25); }
+[data-theme="tableau"] .ce-aimant::before{ /* pastille aimantée */
+  content:''; position:absolute; top:-7px; left:50%; width:16px; height:16px; transform:translateX(-50%); border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, #ff8787, #c92a2a 65%); box-shadow:0 3px 5px rgba(0,0,0,0.35);
+}
+.ce-jour{ font-family:var(--ecrit); font-weight:700; font-size:16px; color:#5c6b7a; text-transform:capitalize; }
+[data-theme="tableau"] .ce-jour{ font-family:var(--marqueur); font-weight:400; font-size:15px; }
+.ce-adv{ display:flex; align-items:center; gap:8px; }
+.ce-adv small{ font-family:var(--marqueur); font-size:18px; color:#7a8794; }
+.ce-adv img{ width:62px; height:62px; object-fit:contain; filter:drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
+.ce-adv-nom{ font-weight:800; font-size:14.5px; }
+.ce-heure{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:#5c6b7a; }
+.ce-score{ display:flex; align-items:center; gap:8px; font-family:var(--marqueur); font-size:26px; line-height:1; }
+.ce-badge{ font-family:'IBM Plex Sans', sans-serif; font-size:12px; font-weight:900; letter-spacing:0.05em; padding:3px 8px; border-radius:7px; color:#fff; }
+.ce-badge.v{ background:#2F9E44; } .ce-badge.d{ background:#C92A2A; } .ce-badge.p{ background:#E8590C; }
+.ce-aimant.is-joue .ce-score{ animation:score-flip .6s cubic-bezier(.2,.8,.3,1.2) both; animation-delay:calc(var(--i, 0) * 70ms + .45s); }
+@keyframes score-flip{ from{ transform:rotateX(90deg); opacity:0; } }
+.ce-aimant.is-auj{ border-color:#E03131; }
+.ce-aimant.is-auj::after{
+  content:'Ce soir'; position:absolute; top:8px; right:8px; padding:2px 7px; border-radius:999px; background:#E03131; color:#fff;
+  font-size:10.5px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em;
+}
+/* 2e gardien : masque posé sur le match déclaré ; cible de dépôt pendant le glisser. */
+.ce-masque-pose{ position:absolute; top:6px; left:6px; width:34px; height:34px; animation:masque-pose .5s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes masque-pose{ from{ transform:scale(2.2) rotate(-25deg); opacity:0; } }
+.ce-aimant.is-cible{ border-style:dashed; border-color:#2F9E44; }
+.ce-aimant.is-survol{ transform:scale(1.05); border-color:#2F9E44; box-shadow:0 0 0 6px rgba(47,158,68,0.25), 0 16px 30px rgba(18,24,31,0.25); }
+.ce-aimant .ce-action{
+  margin-top:4px; padding:5px 10px; border-radius:8px; border:none; cursor:pointer; background:#12181F; color:#fff;
+  font:inherit; font-size:12px; font-weight:800;
+}
+
+/* Vue « Toute la ligue » : journées en colonnes, aimants compacts. */
+.ce-jours{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap:16px; }
+.ce-jour-bloc h3{ margin:0 0 8px; font-family:var(--ecrit); font-size:20px; color:#1c3d6e; text-transform:capitalize; }
+[data-theme="tableau"] .ce-jour-bloc h3{ font-family:var(--marqueur); font-weight:400; }
+.ce-ligne-match{
+  display:grid; grid-template-columns:26px minmax(0, 1fr) 28px 14px 28px minmax(0, 1fr) 26px; align-items:center; gap:5px;
+  padding:7px 8px; margin-bottom:6px; border-radius:9px; background:rgba(255,255,255,0.85); color:#1a2533; font-size:13.5px;
+  box-shadow:0 2px 6px rgba(18,24,31,0.12); animation:aimant-pose .4s cubic-bezier(.2,.9,.3,1.25) both; animation-delay:calc(var(--i, 0) * 25ms + .1s);
+}
+.ce-ligne-match img{ width:24px; height:24px; object-fit:contain; }
+.ce-ligne-match .n{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ce-ligne-match .n.r{ text-align:right; }
+.ce-ligne-match .s{ font-family:var(--marqueur); font-size:17px; text-align:center; }
+.ce-ligne-match .s.g{ color:#2F9E44; }
+.ce-ligne-match .a{ text-align:center; color:#8895a1; font-size:11px; }
+.ce-ligne-match.is-mien{ outline:2px solid var(--ce-couleur); }
+
+/* =========================================================================
+   3. Colonne de droite : 2e gardien, forme, derniers résultats
+   ========================================================================= */
+.ce-droite{ display:flex; flex-direction:column; gap:18px; }
+.ce-carte{ position:relative; padding:16px 18px; border-radius:16px; background:var(--surface); border:1px solid var(--line); }
+.ce-carte h3{ display:flex; align-items:center; gap:8px; margin:0 0 12px; font-family:'Oswald', sans-serif; font-weight:500; font-size:18px; text-transform:uppercase; letter-spacing:0.03em; }
+.ce-carte h3 small{ margin-left:auto; font-family:'IBM Plex Sans', sans-serif; font-size:12.5px; text-transform:none; letter-spacing:0; color:var(--ink-muted); }
+/* Jauge de la période */
+.ce-jauge{ position:relative; height:14px; border-radius:999px; background:var(--stripe); overflow:hidden; border:1px solid var(--line); }
+.ce-jauge span{ position:absolute; inset:0 auto 0 0; border-radius:999px; background:linear-gradient(90deg, var(--ce-couleur), color-mix(in srgb, var(--ce-couleur) 60%, #FFD43B)); transform-origin:left; animation:jauge 1.1s .2s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes jauge{ from{ transform:scaleX(0); } }
+.ce-jauge-txt{ display:flex; justify-content:space-between; margin-top:6px; font-size:12px; color:var(--ink-muted); }
+.ce-statut{ display:flex; align-items:center; gap:12px; margin-top:14px; padding:12px; border-radius:12px; background:var(--stripe); }
+.ce-statut.is-fait{ background:color-mix(in srgb, #2F9E44 16%, var(--surface)); }
+.ce-statut.is-urgent{ background:color-mix(in srgb, #E03131 16%, var(--surface)); }
+.ce-statut b{ display:block; font-size:15px; }
+.ce-statut small{ color:var(--ink-muted); font-size:13px; }
+.ce-masque{ width:58px; height:58px; flex-shrink:0; cursor:grab; touch-action:none; filter:drop-shadow(0 6px 10px rgba(0,0,0,0.35)); transition:transform .15s; }
+.ce-masque:hover{ transform:rotate(-8deg) scale(1.06); }
+.ce-masque.is-glisse{ position:fixed; z-index:500; pointer-events:none; cursor:grabbing; transform:rotate(-12deg) scale(1.15); }
+.ce-masque-place{ width:58px; height:58px; flex-shrink:0; border-radius:50%; border:2px dashed var(--line); }
+.ce-ligue-compte{ margin-top:12px; font-size:13px; color:var(--ink-muted); }
+.ce-ligue-compte b{ color:var(--ink); }
+/* Forme */
+.ce-fiche{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+.ce-fiche strong{ font-family:'Oswald', sans-serif; font-size:44px; font-weight:500; line-height:1; letter-spacing:0.02em; }
+.ce-fiche span{ color:var(--ink-muted); font-size:14px; }
+.ce-rang{ margin:6px 0 12px; font-size:14px; }
+.ce-rang b{ color:var(--accent); }
+.ce-pastilles{ display:flex; gap:6px; flex-wrap:wrap; }
+.ce-pastilles i{
+  width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-style:normal;
+  font-size:11.5px; font-weight:900; color:#fff; animation:pastille .35s cubic-bezier(.2,1.4,.4,1) both; animation-delay:calc(var(--i) * 60ms + .3s);
+}
+@keyframes pastille{ from{ transform:scale(0); } }
+.ce-pastilles i.v{ background:#2F9E44; } .ce-pastilles i.d{ background:#C92A2A; } .ce-pastilles i.p{ background:#E8590C; }
+.ce-barres{ display:grid; grid-template-columns:auto 1fr auto; gap:6px 10px; align-items:center; margin-top:14px; font-size:13px; }
+.ce-barres .b{ height:9px; border-radius:999px; background:var(--stripe); overflow:hidden; }
+.ce-barres .b span{ display:block; height:100%; border-radius:999px; transform-origin:left; animation:jauge .9s .3s cubic-bezier(.2,.8,.2,1) both; }
+.ce-derniers{ display:flex; flex-direction:column; gap:8px; }
+.ce-dernier{ display:grid; grid-template-columns:auto 26px 1fr auto; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:var(--stripe); font-size:14px; }
+.ce-dernier img{ width:26px; height:26px; object-fit:contain; }
+.ce-dernier b{ font-family:'IBM Plex Mono', monospace; }
+.ce-dernier small{ color:var(--ink-muted); font-size:12px; }
+
+/* Choix d'équipe */
+.ce-modal{ width:min(720px, calc(100vw - 24px)); padding:0; border:none; border-radius:18px; background:var(--surface); color:var(--ink); }
+.ce-modal::backdrop{ background:rgba(0,0,0,0.6); backdrop-filter:blur(3px); }
+.ce-modal h2{ margin:0; padding:18px 20px 6px; font-family:'Oswald', sans-serif; font-weight:500; text-transform:uppercase; }
+.ce-modal p{ margin:0; padding:0 20px 10px; color:var(--ink-muted); font-size:14px; }
+.ce-modal-grille{ display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:10px; padding:10px 20px 20px; }
+.ce-modal-grille button{
+  display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 6px; border-radius:12px; cursor:pointer;
+  border:1px solid var(--line); background:transparent; color:var(--ink); font:inherit; font-size:12.5px; font-weight:700;
+  animation:aimant-pose .35s cubic-bezier(.2,.9,.3,1.25) both; animation-delay:calc(var(--i) * 18ms);
+}
+.ce-modal-grille button:hover{ border-color:var(--accent); background:var(--accent-soft); transform:translateY(-2px); }
+.ce-modal-grille img{ width:44px; height:44px; object-fit:contain; }
+
+/* =========================================================================
+   Semaine : fiches compactes, matchs en retard (tampon), série contre l'adversaire
+   ========================================================================= */
+.ce-matchs{ grid-template-columns:repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap:14px; }
+.ce-aimant{ padding:12px 10px 10px; gap:4px; }
+.ce-adv img{ width:50px; height:50px; }
+.ce-adv-nom{ font-size:13.5px; }
+.ce-serie-mini{ font-size:11.5px; font-weight:700; color:#7a8794; text-transform:uppercase; letter-spacing:0.04em; }
+.ce-aimant.is-retard{ border-color:rgba(201,42,42,0.45); }
+.ce-tampon{
+  position:absolute; top:8px; right:-4px; z-index:4; padding:1px 7px; transform:rotate(12deg);
+  border:3px double #c92a2a; border-radius:6px; color:#c92a2a; font-family:var(--marqueur); font-size:12.5px; text-transform:uppercase; letter-spacing:0.05em;
+  opacity:0.85; mix-blend-mode:multiply; pointer-events:none; animation:tampon .45s cubic-bezier(.3,1.6,.5,1) both; animation-delay:calc(var(--i, 0) * 70ms + .5s);
+}
+@keyframes tampon{ from{ transform:rotate(12deg) scale(2.4); opacity:0; } }
+.ce-retards{ margin:0 0 18px; padding:12px 12px 14px; border:2px dashed rgba(201,42,42,0.5); border-radius:10px; background:rgba(255,236,236,0.45); }
+.ce-retards h4{ margin:0 0 10px; font-family:var(--ecrit); font-weight:700; font-size:20px; color:#c92a2a; }
+[data-theme="tableau"] .ce-retards h4{ font-family:var(--marqueur); font-weight:400; }
+
+/* =========================================================================
+   Planchette écrite à la main : les matchs sur les lignes du papier
+   (lignes de 32 px : le texte est posé sur la ligne, comme au stylo)
+   ========================================================================= */
+[data-theme="planchette"] .ce-feuille{ padding-top:80px; container:feuille / inline-size; }
+[data-theme="planchette"] .ce-feuille-titre{ height:40px; margin:0; display:flex; align-items:flex-end; padding-bottom:6px; box-sizing:border-box; line-height:1.1; }
+.ce-lignes{ list-style:none; margin:0; padding:0; font-family:var(--ecrit); color:#1a3570; }
+.ce-lignes li{
+  position:relative; display:flex; align-items:flex-end; gap:8px; height:40px; padding-bottom:4px; box-sizing:border-box; font-size:21px; line-height:1;
+  clip-path:inset(0 100% 0 0); animation:ecrit .7s cubic-bezier(.4,.1,.3,1) forwards; animation-delay:calc(var(--i, 0) * 160ms + .25s);
+}
+@keyframes ecrit{ to{ clip-path:inset(0 -40px 0 -140px); } }   /* la note « en retard » est dans la marge, à gauche */
+.ce-lignes .j{ width:72px; flex-shrink:0; font-weight:700; color:#5b6e86; font-size:19px; }
+.ce-lignes .o{ width:26px; flex-shrink:0; color:#7a8794; font-size:17px; text-align:center; }
+.ce-lignes img{ width:32px; height:32px; object-fit:contain; flex-shrink:0; margin-bottom:-4px; transform:rotate(-3deg); filter:saturate(.9); }
+.ce-lignes .n{ flex-shrink:0; font-weight:700; white-space:nowrap; }
+.ce-lignes .pt{ flex-shrink:1; }
+.ce-lignes .pt{ flex:1; min-width:16px; height:2px; margin-bottom:7px; background:radial-gradient(circle, rgba(26,53,112,0.35) 1px, transparent 1.4px) 0 0 / 8px 2px repeat-x; }
+.ce-lignes .sc{ flex-shrink:0; font-family:var(--marqueur); font-size:26px; color:#c92a2a; transform:rotate(-2deg); }
+.ce-lignes .sc.a-faire{ font-family:var(--ecrit); font-size:20px; color:#9aa5b1; letter-spacing:0.05em; transform:none; }
+.ce-lignes .res{
+  flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:34px; height:30px; margin-left:2px; border-radius:50%;
+  border:2.5px solid currentColor; font-family:var(--marqueur); font-size:15px; transform:rotate(-8deg); border-top-color:transparent;
+}
+.ce-lignes .res.v{ color:#2b8a3e; } .ce-lignes .res.d{ color:#c92a2a; } .ce-lignes .res.p{ color:#d9480f; }
+.ce-lignes .x{ flex-shrink:1; min-width:0; overflow:hidden; white-space:nowrap; font-size:14px; color:#7a8794; width:70px; text-align:right; }
+@container feuille (max-width:520px){ .ce-lignes .x, .ce-lignes .pt{ display:none; } .ce-lignes .n{ flex:1; } }
+.ce-lignes .mq{ position:absolute; right:-30px; bottom:6px; width:28px; height:28px; transform:rotate(-12deg); }
+.ce-lignes .note{
+  position:absolute; left:calc(-1 * var(--marge) - 6px); bottom:6px; width:calc(var(--marge) - 4px); text-align:center;
+  font-family:var(--marqueur); font-size:12px; line-height:1; color:#c92a2a; transform:rotate(-14deg);
+}
+.ce-lignes li.is-auj .j{ color:#c92a2a; text-decoration:underline wavy rgba(201,42,42,0.6); text-underline-offset:5px; }
+.ce-lignes li.is-retard .n{ text-decoration:line-through wavy rgba(201,42,42,0.35); text-decoration-thickness:1.5px; }
+.ce-lignes .ecrire{ flex-shrink:0; border:none; background:none; padding:0 0 0 4px; cursor:pointer; color:#1c7ed6; font-family:var(--ecrit); font-size:15px; text-decoration:underline; }
+.ce-lignes li.est-cible{ background:linear-gradient(transparent 60%, rgba(64,192,87,0.25) 60%); }
+.ce-lignes li.is-survol{ background:linear-gradient(transparent 40%, rgba(64,192,87,0.45) 40%); }
+.ce-sous-titre-main{ height:40px; display:flex; align-items:flex-end; padding-bottom:6px; box-sizing:border-box; margin:0; font-family:var(--ecrit); font-weight:700; font-size:21px; color:#c92a2a; }
+.ce-sous-titre-main.is-semaine{ color:#1a3570; font-size:19px; }
+.ce-repos{ height:40px; display:flex; align-items:flex-end; padding-bottom:6px; box-sizing:border-box; margin:0; font-family:var(--ecrit); font-size:22px; color:#5b6e86; }
+
+/* Compact (1080p) : colonnes de droite qui tiennent à l'écran. */
+@media (min-width:1100px){
+  .ce-glace{ height:76px; }
+  .ce-babillard{ gap:10px; padding:12px 12px 14px; }
+  .ce-papier{ padding:12px 12px 10px; }
+  .ce-papier p{ -webkit-line-clamp:2; }
+  [data-theme="planchette"] .ce-support{ padding-top:52px; }
+}
+
+/* =========================================================================
+   Tableau indicateur d'aréna (fiche de l'équipe)
+   ========================================================================= */
+.ce-indicateur{
+  position:relative; padding:12px 12px 14px; border-radius:14px; color:#ffb000;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 1.4px) 0 0 / 6px 6px,
+    linear-gradient(180deg, #121519, #07090b);
+  border:4px solid #2a2f35; box-shadow:inset 0 0 0 2px #000, inset 0 0 24px rgba(0,0,0,0.9), 0 14px 30px rgba(0,0,0,0.4);
+}
+.ce-indicateur::before, .ce-indicateur::after{ /* boulons du cadre */
+  content:''; position:absolute; top:5px; width:7px; height:7px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #cfd4da, #495057);
+}
+.ce-indicateur::before{ left:6px; } .ce-indicateur::after{ right:6px; }
+.ce-indicateur header{ display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #22272d;
+  font-family:'Orbitron', monospace; font-weight:800; font-size:13px; letter-spacing:0.12em; color:#f1f3f5; text-shadow:0 0 6px rgba(255,255,255,0.35); }
+.ce-indicateur header img{ width:26px; height:26px; object-fit:contain; filter:drop-shadow(0 0 4px rgba(255,255,255,0.25)); }
+.ce-led-grille{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
+.ce-led-case{ display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 2px; border-radius:6px; background:#050607; box-shadow:inset 0 2px 6px rgba(0,0,0,0.9); }
+.ce-led-case small{ font-family:'IBM Plex Sans', sans-serif; font-size:9.5px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#868e96; }
+.ce-led{ font-family:'Orbitron', monospace; font-weight:800; font-size:17px; line-height:1.1; color:#ffb000;
+  text-shadow:0 0 4px rgba(255,176,0,0.9), 0 0 12px rgba(255,120,0,0.45); animation:allume .8s ease both; }
+.ce-led-case.is-grand .ce-led{ font-size:28px; }
+.ce-led-case.is-rouge .ce-led{ color:#ff4d4d; text-shadow:0 0 4px rgba(255,77,77,0.9), 0 0 14px rgba(255,40,40,0.5); }
+@keyframes allume{ 0%{ opacity:0; } 30%{ opacity:1; } 45%{ opacity:.3; } 60%{ opacity:1; } }
+.ce-lampes-titre{ display:block; margin:10px 0 6px; text-align:center; font-size:9.5px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:#868e96; }
+.ce-lampes{ display:flex; justify-content:center; gap:6px; flex-wrap:wrap; }
+.ce-lampes i{ width:16px; height:16px; border-radius:50%; background:#1a1d21; box-shadow:inset 0 2px 3px rgba(0,0,0,0.8);
+  animation:lampe .3s ease both; animation-delay:calc(var(--i) * 80ms + .4s); }
+.ce-lampes i.v{ --l:#40c057; } .ce-lampes i.d{ --l:#fa5252; } .ce-lampes i.p{ --l:#fd7e14; }
+.ce-lampes i.v, .ce-lampes i.d, .ce-lampes i.p{ background:radial-gradient(circle at 40% 35%, #fff 0 8%, var(--l) 30%, color-mix(in srgb, var(--l) 55%, #000) 100%); box-shadow:0 0 8px var(--l), 0 0 2px var(--l); }
+@keyframes lampe{ from{ filter:brightness(.2); } }
+
+/* =========================================================================
+   2e gardien : le demi-cercle sur la glace, horloge de période
+   ========================================================================= */
+.ce-creuse{
+  position:relative; overflow:hidden; padding:12px 14px 12px; border-radius:16px; color:#1a2533;
+  background:
+    repeating-linear-gradient(115deg, rgba(255,255,255,0) 0 18px, rgba(255,255,255,0.35) 18px 19px, rgba(255,255,255,0) 19px 40px),
+    linear-gradient(180deg, #f8fbff, #e3eef8);
+  border:1px solid #c5d6e6; box-shadow:0 10px 24px rgba(0,0,0,0.18), inset 0 0 0 4px #fff;
+}
+.ce-creuse-tete{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.ce-creuse-tete b{ display:block; font-family:'Oswald', sans-serif; font-weight:500; font-size:19px; text-transform:uppercase; letter-spacing:0.03em; }
+.ce-creuse-tete small{ font-size:12px; color:#5c6b7a; }
+.ce-horloge{ display:grid; grid-template-columns:auto auto; grid-template-rows:auto auto; align-items:end; column-gap:6px; padding:5px 9px; border-radius:8px; background:#0b0d10; box-shadow:inset 0 0 8px #000; }
+.ce-horloge .p{ grid-column:1 / -1; font-family:'Orbitron', monospace; font-size:9px; letter-spacing:0.12em; color:#adb5bd; text-align:center; }
+.ce-horloge .j{ font-family:'Orbitron', monospace; font-weight:800; font-size:24px; line-height:1; color:#ffb000; text-shadow:0 0 6px rgba(255,176,0,0.8); }
+.ce-horloge .u{ font-size:10px; color:#adb5bd; padding-bottom:2px; }
+.ce-horloge.is-urgent .j{ color:#ff4d4d; text-shadow:0 0 6px rgba(255,77,77,0.9); animation:clignote 1s steps(2) infinite; }
+@keyframes clignote{ 50%{ opacity:.35; } }
+.ce-creuse .ce-jauge{ margin:10px 0 0; height:8px; }
+.ce-glace{ position:relative; height:96px; margin:4px -14px 0; }
+.ce-glace svg.ce-patinoire{ position:absolute; inset:auto 0 0 0; width:100%; height:100%; }
+.ce-masque-glace{ position:absolute; left:50%; bottom:10px; width:54px; height:54px; transform:translateX(-50%); }
+.ce-masque-glace.is-pret{ animation:flotte 2.4s ease-in-out infinite; cursor:grab; }
+@keyframes flotte{ 50%{ transform:translate(-50%, -6px) rotate(-6deg); } }
+.ce-masque-glace.ce-masque{ filter:drop-shadow(0 6px 6px rgba(0,0,0,0.3)); }
+.ce-creuse-statut{ display:flex; flex-direction:column; align-items:center; gap:1px; margin-top:6px; padding:8px; border-radius:10px; background:rgba(255,255,255,0.75); text-align:center; }
+.ce-creuse-statut b{ font-size:15px; }
+.ce-creuse-statut small{ font-size:12.5px; color:#5c6b7a; }
+.ce-creuse-statut.is-fait b{ color:#2b8a3e; }
+.ce-creuse-statut.is-urgent b{ color:#c92a2a; }
+.ce-creuse-ligue{ margin:8px 0 0; text-align:center; font-size:12px; color:#5c6b7a; }
+
+/* =========================================================================
+   Babillard de liège : annonces punaisées, post-it de la dernière nouvelle
+   ========================================================================= */
+.ce-babillard{
+  position:relative; display:flex; flex-direction:column; gap:14px; padding:16px 14px 20px; border-radius:10px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.2  0 0 0 0 0.08  0 0 0 0.9 -0.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 30% 20%, #d2a46b, #b9844b 60%, #a87240);
+  border:10px solid #7a4a22;
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,0.25), inset 0 6px 14px rgba(0,0,0,0.35), 0 14px 30px rgba(0,0,0,0.35);
+  border-image:linear-gradient(160deg, #9a6838, #6a4220 50%, #8a5a2e) 1;
+}
+.ce-babillard-titre{ align-self:center; margin:0; padding:3px 14px; transform:rotate(-1.5deg); background:#fff; color:#1a2533;
+  font-family:var(--marqueur); font-weight:400; font-size:17px; box-shadow:0 3px 6px rgba(0,0,0,0.3); }
+.ce-papier{
+  position:relative; display:block; padding:16px 14px 12px; color:#1a2533; text-decoration:none; transform:rotate(var(--r, 0deg));
+  background:linear-gradient(180deg, #fffef8, #f7f3e6); box-shadow:0 1px 1px rgba(0,0,0,0.2), 0 8px 14px -4px rgba(0,0,0,0.45);
+  transition:transform .18s cubic-bezier(.2,.9,.3,1.3);
+  animation:aimant-pose .5s cubic-bezier(.2,.9,.3,1.25) both;
+}
+.ce-papier:hover{ transform:rotate(0deg) translateY(-3px) scale(1.02); z-index:2; }
+.ce-papier::before{ /* punaise */
+  content:''; position:absolute; top:-6px; left:50%; width:16px; height:16px; margin-left:-8px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fff 0 12%, var(--punaise, #E03131) 35%, color-mix(in srgb, var(--punaise, #E03131) 50%, #000) 100%);
+  box-shadow:2px 4px 4px rgba(0,0,0,0.45);
+}
+.ce-papier.is-nouvelle{ background:linear-gradient(180deg, #fff6a8, #ffe873); }   /* post-it */
+.ce-papier.is-nouvelle.is-nonlu{ box-shadow:0 0 0 3px rgba(224,49,49,0.7), 0 8px 14px -4px rgba(0,0,0,0.45); }
+.ce-papier b{ display:block; font-family:var(--ecrit); font-weight:700; font-size:17px; line-height:1.2; }
+.ce-papier small{ display:block; margin-top:2px; font-size:11.5px; color:#6b7178; }
+.ce-papier p{ margin:6px 0 0; font-size:13px; line-height:1.4; color:#3d4650; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.ce-papier-tag{ display:inline-block; margin-bottom:5px; padding:1px 7px; border-radius:4px; background:#E03131; color:#fff; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; }
+.ce-papier-tag.is-officiel{ background:#12181F; }
+.ce-papier.is-nouvelle:not(.is-nonlu) .ce-papier-tag{ background:#868e96; }
+
+/* =========================================================================
+   Onglets du centre et panneaux
+   ========================================================================= */
+.ce-onglets{
+  position:relative; z-index:5; display:flex; gap:4px; padding:5px; border-radius:14px; overflow-x:auto; scrollbar-width:none;
+  background:color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter:blur(8px); border:1px solid var(--line);
+  box-shadow:0 8px 20px rgba(0,0,0,0.12);
+}
+.ce-onglets button{
+  flex:1 0 auto; min-height:42px; padding:0 16px; border:none; border-radius:10px; cursor:pointer; background:transparent; color:var(--ink-muted);
+  font:inherit; font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:0.04em; white-space:nowrap; position:relative;
+}
+.ce-onglets button[aria-pressed="true"]{ background:var(--ce-couleur); color:var(--accent-ink); box-shadow:0 4px 12px color-mix(in srgb, var(--ce-couleur) 45%, transparent); }
+.ce-onglets .ce-point{ position:absolute; top:7px; right:7px; width:8px; height:8px; border-radius:50%; background:#E03131; box-shadow:0 0 0 2px var(--surface); }
+.ce-panneau{ display:flex; flex-direction:column; gap:18px; animation:panneau .35s cubic-bezier(.2,.8,.3,1) both; }
+@keyframes panneau{ from{ opacity:0; transform:translateY(10px); } }
+.ce-titre-sec{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:0; font-family:'Oswald', sans-serif; font-weight:500; font-size:22px; text-transform:uppercase; letter-spacing:0.02em; }
+.ce-titre-sec small{ font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; text-transform:none; letter-spacing:0; color:var(--ink-muted); }
+.ce-fictif{ display:inline-block; padding:2px 8px; border-radius:6px; background:#FFD43B; color:#12181F; font-family:'IBM Plex Sans', sans-serif; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; }
+.ce-dg-seul{ display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:6px; background:#12181F; color:#FFD43B; font-family:'IBM Plex Sans', sans-serif; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; }
+.ce-cartes2{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(330px, 100%), 1fr)); gap:16px; }
+.ce-mini{ display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px solid var(--line); min-width:0; }
+.ce-mini:first-child{ border-top:none; }
+.ce-ov{ flex-shrink:0; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(160deg, var(--c, var(--ce-couleur)), color-mix(in srgb, var(--c, var(--ce-couleur)) 40%, #000)); color:#fff;
+  font-family:'Oswald', sans-serif; font-size:18px; }
+.ce-mini .n{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.ce-mini .n b{ font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ce-mini .n small{ font-size:12px; color:var(--ink-muted); }
+.ce-mini .x{ flex-shrink:0; font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-muted); }
+.ce-mini img{ width:26px; height:26px; object-fit:contain; flex-shrink:0; }
+.ce-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.ce-bouton{ min-height:38px; padding:0 14px; border-radius:9px; cursor:pointer; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; font-weight:800; font-size:13px; }
+.ce-bouton:hover{ border-color:var(--ce-couleur); }
+.ce-bouton.is-principal{ background:var(--ce-couleur); border-color:var(--ce-couleur); color:var(--accent-ink); }
+.ce-bouton.is-danger{ color:#C92A2A; }
+.ce-note{ margin:10px 0 0; padding:9px 12px; border-left:3px solid var(--ce-couleur); background:var(--stripe); border-radius:0 8px 8px 0; font-family:var(--ecrit); font-size:16px; }
+
+/* Annonces / dernière nouvelle */
+.ce-annonce{ display:block; padding:10px 0; border-top:1px solid var(--line); color:inherit; text-decoration:none; }
+.ce-annonce:first-of-type{ border-top:none; }
+.ce-annonce b{ display:block; font-size:14.5px; }
+.ce-annonce small{ color:var(--ink-muted); font-size:12.5px; }
+.ce-annonce p{ margin:4px 0 0; font-size:13.5px; color:var(--ink-muted); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.ce-annonce:hover b{ color:var(--accent); }
+.ce-nonlu{ position:relative; margin:0 -18px -16px; padding:14px 18px 16px; border-radius:0 0 16px 16px; background:color-mix(in srgb, #E03131 12%, var(--surface)); }
+.ce-nonlu .ce-badge{ background:#E03131; margin-right:6px; animation:pulse 1.6s ease-in-out infinite; }
+@keyframes pulse{ 50%{ box-shadow:0 0 0 6px rgba(224,49,49,0); } 0%{ box-shadow:0 0 0 0 rgba(224,49,49,0.6); } }
+
+/* Face-à-face */
+.ce-duel{ position:relative; overflow:hidden; border-radius:16px; background:var(--surface); border:1px solid var(--line); }
+.ce-duel-tete{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; padding:16px; color:#fff;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--ce-couleur) 80%, #000), #15191d 50%, color-mix(in srgb, var(--adv) 80%, #000)); }
+.ce-duel-tete .c{ display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; }
+.ce-duel-tete img{ width:64px; height:64px; object-fit:contain; filter:drop-shadow(0 6px 10px rgba(0,0,0,0.5)); }
+.ce-duel-tete b{ font-family:'Oswald', sans-serif; font-weight:500; font-size:17px; text-transform:uppercase; }
+.ce-duel-tete small{ font-family:'IBM Plex Mono', monospace; font-size:12px; opacity:0.85; }
+.ce-duel-tete .m{ text-align:center; font-family:'Oswald', sans-serif; font-size:15px; text-transform:uppercase; line-height:1.2; }
+.ce-duel-tete .m span{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:12px; text-transform:none; opacity:0.85; }
+.ce-duel-corps{ padding:14px 16px 16px; display:flex; flex-direction:column; gap:12px; }
+.ce-comp{ display:grid; grid-template-columns:44px 1fr auto 1fr 44px; align-items:center; gap:8px; font-size:12.5px; }
+.ce-comp b{ font-family:'IBM Plex Mono', monospace; font-size:13px; }
+.ce-comp b:last-child{ text-align:right; }
+.ce-comp .l{ text-align:center; color:var(--ink-muted); white-space:nowrap; }
+.ce-comp .bar{ height:8px; border-radius:999px; background:var(--stripe); overflow:hidden; display:flex; }
+.ce-comp .bar.g{ justify-content:flex-end; }
+.ce-comp .bar span{ height:100%; border-radius:999px; animation:jauge .9s .2s cubic-bezier(.2,.8,.2,1) both; }
+.ce-comp .bar.g span{ background:var(--ce-couleur); transform-origin:right; }
+.ce-comp .bar.d span{ background:var(--adv); }
+.ce-comp .is-mieux{ color:#2F9E44; }
+.ce-serie-liste{ display:flex; flex-wrap:wrap; gap:8px; }
+.ce-serie-liste span{ display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:9px; background:var(--stripe); font-size:13px; }
+
+/* Agents libres */
+.ce-tuiles{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
+.ce-tuile{ padding:14px 16px; border-radius:14px; background:var(--surface); border:1px solid var(--line); }
+.ce-tuile small{ display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
+.ce-tuile strong{ display:block; margin-top:4px; font-family:'Oswald', sans-serif; font-weight:500; font-size:30px; line-height:1; }
+.ce-tuile.is-accent strong{ color:var(--accent); }
+.ce-enchere{ display:grid; grid-template-columns:44px 1fr auto; gap:12px; align-items:center; padding:12px 14px; border-radius:12px; background:var(--surface); border:1px solid var(--line); }
+.ce-enchere .mise{ text-align:right; font-family:'Oswald', sans-serif; font-size:24px; line-height:1; }
+.ce-enchere .mise small{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:11.5px; color:var(--ink-muted); }
+.ce-enchere.is-tete{ border-color:#2F9E44; box-shadow:inset 4px 0 0 #2F9E44; }
+.ce-enchere.is-egal{ border-color:#7048E8; box-shadow:inset 4px 0 0 #7048E8; }
+.ce-enchere.is-battu{ border-color:#E03131; box-shadow:inset 4px 0 0 #E03131; }
+.ce-liste{ display:flex; flex-direction:column; gap:10px; }
+
+/* Marché : interrupteur « sur le marché » (mode DG) */
+.ce-interrupteur{ position:relative; width:42px; height:24px; flex-shrink:0; border-radius:999px; border:none; cursor:pointer; background:var(--line); transition:background .2s; }
+.ce-interrupteur::after{ content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.3); transition:transform .25s cubic-bezier(.3,1.4,.5,1); }
+.ce-interrupteur[aria-pressed="true"]{ background:#E8590C; }
+.ce-interrupteur[aria-pressed="true"]::after{ transform:translateX(18px); }
+.ce-marche-tag{ display:inline-block; margin-left:6px; padding:1px 6px; border-radius:5px; background:#E8590C; color:#fff; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.04em; vertical-align:2px; }
+
+/* =========================================================================
+   BUREAU DU DG — scène (mur + bureau), objets cliquables, zoom plein écran.
+   La scène garde ses proportions (2,35 : 1) et tient dans l'écran ; toutes les
+   tailles sont en unités du conteneur (cqw) : elle se met à l'échelle d'un bloc.
+   ========================================================================= */
+.ce:has(> .bu-scene:not([hidden])){ max-width:none; padding:10px clamp(8px, 1.5vw, 24px) 14px; }
+.bu-scene{
+  --bois:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.09' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.12  0 0 0 0 0.06  0 0 0 0 0.02  0 0 0 0.7 -0.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --mur:color-mix(in srgb, var(--ce-couleur) 32%, #2b2e33);
+  position:relative; container-type:inline-size; width:min(100%, calc((100vh - 230px) * 2.35)); aspect-ratio:2.35 / 1;
+  margin:0 auto; border-radius:14px; overflow:hidden; font-size:0.72cqw; isolation:isolate;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+/* Mur de blocs de béton, peint aux couleurs de l'équipe, avec une bande de couleur. */
+.bu-mur{
+  position:absolute; inset:0 0 40% 0; z-index:0;
+  background:
+    linear-gradient(180deg, transparent 0 74%, var(--ce-couleur) 74% 80%, transparent 80% 82%, rgba(255,255,255,0.15) 82% 83%, transparent 83%),
+    repeating-linear-gradient(180deg, transparent 0 4.1cqw, rgba(0,0,0,0.28) 4.1cqw 4.25cqw),
+    repeating-linear-gradient(90deg, transparent 0 7.9cqw, rgba(0,0,0,0.22) 7.9cqw 8.05cqw),
+    radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--mur) 80%, #fff), var(--mur) 55%, color-mix(in srgb, var(--mur) 70%, #000));
+}
+.bu-plinthe{ position:absolute; z-index:1; left:0; right:0; top:58.6%; height:1.6%; background:linear-gradient(#1b1d20, #0e0f11); }
+.bu-lumiere{ position:absolute; inset:0; z-index:30; pointer-events:none;
+  background:radial-gradient(60% 55% at 50% -5%, rgba(255,214,150,0.22), transparent 70%), radial-gradient(140% 120% at 50% 50%, transparent 55%, rgba(0,0,0,0.45)); }
+/* Bureau en noyer */
+.bu-bureau{
+  position:absolute; z-index:2; left:-2%; right:-2%; top:60%; bottom:0;
+  background:var(--bois), linear-gradient(180deg, #6b4021 0%, #4e2c14 40%, #3a200d 100%);
+  box-shadow:inset 0 0.25cqw 0 rgba(255,220,170,0.35), inset 0 0.6cqw 1.2cqw rgba(0,0,0,0.25);
+}
+
+/* ---------- Objets : survol = l'objet se soulève ---------- */
+.bu-objet{
+  position:absolute; z-index:5; padding:0; border:none; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer;
+  transition:translate .25s cubic-bezier(.2,.9,.3,1.3), scale .25s cubic-bezier(.2,.9,.3,1.3), filter .25s;
+}
+.bu-objet:hover, .bu-objet:focus-visible{ translate:0 -0.45cqw; scale:1.03; filter:brightness(1.08) drop-shadow(0 1.2cqw 1.2cqw rgba(0,0,0,0.45)); outline:none; z-index:25; }
+.bu-objet:focus-visible{ filter:brightness(1.08) drop-shadow(0 0 0.3cqw #FFD43B); }
+.bu-etiquette{
+  position:absolute; left:50%; bottom:calc(100% + 0.4cqw); translate:-50% 0.4cqw; opacity:0; pointer-events:none; white-space:nowrap; z-index:40;
+  padding:0.25cqw 0.7cqw; border-radius:0.4cqw; background:#12181F; color:#fff; font:700 0.85cqw 'IBM Plex Sans', sans-serif; transition:opacity .2s, translate .2s;
+}
+.bu-objet:hover .bu-etiquette, .bu-objet:focus-visible .bu-etiquette{ opacity:1; translate:-50% 0; }
+
+/* ---------- Fenêtre sur la patinoire (décor) ---------- */
+.bu-fenetre{ left:21%; top:7%; width:28%; height:37%; pointer-events:none; overflow:hidden; border-radius:0.3cqw;
+  border:0.55cqw solid #9aa3ab; box-shadow:inset 0 0 0 0.15cqw #5f676f, 0 0.6cqw 1cqw rgba(0,0,0,0.35);
+  background:linear-gradient(180deg, #0d1014 0 34%, #1d2733 34% 36%, transparent 36%); }
+.bu-gradins{ position:absolute; inset:0 0 62% 0;
+  background:radial-gradient(circle, rgba(255,255,255,0.55) 0.07cqw, transparent 0.12cqw) 0 0 / 0.55cqw 0.45cqw,
+    radial-gradient(circle, color-mix(in srgb, var(--ce-couleur) 80%, #fff) 0.08cqw, transparent 0.13cqw) 0.27cqw 0.22cqw / 0.55cqw 0.45cqw,
+    linear-gradient(180deg, #151a20, #222a33); }
+.bu-glace{ position:absolute; left:-10%; right:-10%; top:46%; bottom:-10%; transform:perspective(20cqw) rotateX(52deg); transform-origin:top;
+  background:
+    linear-gradient(90deg, transparent 49.2%, rgba(224,49,49,0.85) 49.2% 50.8%, transparent 50.8%),
+    linear-gradient(90deg, transparent 31%, rgba(28,126,214,0.8) 31% 32.6%, transparent 32.6% 67.4%, rgba(28,126,214,0.8) 67.4% 69%, transparent 69%),
+    radial-gradient(ellipse 9% 22% at 50% 45%, transparent 82%, rgba(28,126,214,0.75) 86%, transparent 92%),
+    linear-gradient(180deg, #e9f1f8, #ffffff); }
+.bu-bandes{ position:absolute; left:0; right:0; top:38%; height:9%; background:linear-gradient(180deg, #ffffff 0 70%, #FFD43B 70% 100%); box-shadow:0 0.2cqw 0.3cqw rgba(0,0,0,0.3); }
+.bu-reflet{ position:absolute; inset:0; background:linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.22) 42%, transparent 50%, transparent 62%, rgba(255,255,255,0.1) 66%, transparent 70%); }
+
+/* ---------- Calendrier mural ---------- */
+.bu-calendrier{ left:2.2%; top:5%; width:17%; height:50%; rotate:-1.2deg; }
+.bu-calendrier::before{ content:''; position:absolute; top:-1.4cqw; left:50%; width:0.7cqw; height:0.7cqw; margin-left:-0.35cqw; border-radius:50%; background:radial-gradient(circle at 35% 35%, #ddd, #555); box-shadow:0.1cqw 0.2cqw 0.2cqw rgba(0,0,0,0.6); }
+.bu-calendrier::after{ content:''; position:absolute; top:-1.05cqw; left:30%; right:30%; height:1.3cqw; border:0.12cqw solid #777; border-bottom:none; border-radius:50% 50% 0 0; }
+.bu-calendrier .bu-contenu{ position:absolute; inset:0; display:flex; flex-direction:column; background:#fbfaf6; border-radius:0.2cqw;
+  box-shadow:0 0.5cqw 1cqw rgba(0,0,0,0.45), inset 0 -0.5cqw 0.8cqw rgba(0,0,0,0.06); overflow:hidden; color:#1a2533; }
+.cal-tete{ padding:0.6cqw 0.7cqw 0.5cqw; background:var(--ce-couleur); color:var(--accent-ink); display:flex; align-items:center; gap:0.5cqw; }
+.cal-tete img{ width:2cqw; height:2cqw; object-fit:contain; }
+.cal-tete b{ font:500 1.25cqw 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.05em; }
+.cal-tete small{ display:block; font-size:0.65cqw; opacity:0.85; }
+.cal-grille{ flex:1; display:grid; grid-template-columns:repeat(7, 1fr); grid-auto-rows:1fr; gap:0; padding:0.3cqw; }
+.cal-jsem{ font:800 0.55cqw 'IBM Plex Sans', sans-serif; text-align:center; color:#7a8794; text-transform:uppercase; padding:0.15cqw 0; }
+.cal-case{ position:relative; border-top:0.06cqw solid #e2ded3; border-left:0.06cqw solid #e2ded3; padding:0.12cqw 0.15cqw; min-height:0; display:flex; flex-direction:column; align-items:center; }
+.cal-case > i{ align-self:flex-start; font-style:normal; font-size:0.55cqw; color:#9aa5b1; line-height:1; }
+.cal-case.hors{ opacity:0.3; }
+.cal-case img{ width:1.35cqw; height:1.35cqw; object-fit:contain; margin-top:-0.1cqw; }
+.cal-case b{ font:400 0.7cqw var(--marqueur); line-height:1; }
+.cal-case b.v{ color:#2b8a3e; } .cal-case b.d{ color:#c92a2a; } .cal-case b.p{ color:#d9480f; }
+.cal-case.auj::after{ content:''; position:absolute; inset:-0.05cqw; border:0.16cqw solid #e03131; border-radius:45% 55% 50% 48%; rotate:-6deg; pointer-events:none; }
+.cal-case.retard{ background:rgba(255,212,59,0.55); }
+.cal-case.retard::before{ content:'!'; position:absolute; top:0.05cqw; right:0.12cqw; font:900 0.65cqw 'IBM Plex Sans'; color:#c92a2a; }
+
+/* ---------- Télé murale + console ---------- */
+.bu-tele{ left:52%; top:6%; width:24.5%; height:34%; border-radius:0.5cqw; background:#0a0b0d; padding:0.5cqw;
+  box-shadow:0 0.8cqw 1.6cqw rgba(0,0,0,0.55), inset 0 0 0 0.12cqw #2a2e33; }
+.bu-tele .bu-ecran{ width:100%; height:100%; border-radius:0.2cqw; overflow:hidden; color:#e9ecef;
+  background:radial-gradient(120% 90% at 30% 0%, color-mix(in srgb, var(--ce-couleur) 35%, #0d1b2a), #060a10); position:relative; }
+.tv-bandeau{ display:flex; align-items:center; justify-content:space-between; padding:0.45cqw 0.7cqw; background:rgba(0,0,0,0.45); font:800 0.75cqw 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; }
+.tv-direct{ display:inline-flex; align-items:center; gap:0.3cqw; padding:0.1cqw 0.45cqw; border-radius:0.3cqw; background:#e03131; color:#fff; font-size:0.65cqw; animation:clignote 1.4s steps(2) infinite; }
+.tv-table{ width:100%; border-collapse:collapse; font-size:0.78cqw; }
+.tv-table td{ padding:0.18cqw 0.5cqw; border-bottom:0.05cqw solid rgba(255,255,255,0.06); white-space:nowrap; }
+.tv-table td:first-child{ width:1.4cqw; color:#868e96; text-align:right; }
+.tv-table img{ width:1.15cqw; height:1.15cqw; object-fit:contain; vertical-align:middle; margin-right:0.35cqw; }
+.tv-table td.pts{ text-align:right; font-family:'Orbitron', monospace; color:#ffb000; }
+.tv-table tr.moi td{ background:color-mix(in srgb, var(--ce-couleur) 45%, transparent); color:#fff; font-weight:700; }
+.bu-tablette{ position:absolute; z-index:3; left:54%; top:44.2%; width:20.5%; height:1.4%; background:linear-gradient(#6b4021, #3a200d); box-shadow:0 0.6cqw 0.8cqw rgba(0,0,0,0.5); border-radius:0.1cqw; }
+.bu-console{ left:57%; top:39.2%; width:12%; height:5%; border-radius:0.35cqw 0.35cqw 0.15cqw 0.15cqw;
+  background:linear-gradient(180deg, #2a2e33, #0d0f12 45%, #050607); box-shadow:inset 0 0.08cqw 0 rgba(255,255,255,0.18), 0 0.3cqw 0.4cqw rgba(0,0,0,0.6); }
+.bu-console-del{ position:absolute; left:8%; right:8%; top:46%; height:0.16cqw; border-radius:999px; background:#4dabf7; box-shadow:0 0 0.5cqw #4dabf7, 0 0 1.2cqw rgba(77,171,247,0.6); animation:respire 3s ease-in-out infinite; }
+@keyframes respire{ 50%{ opacity:0.45; } }
+
+/* ---------- Babillard ---------- */
+.bu-babillard{ left:79%; top:5%; width:19%; height:52%; }
+.bu-babillard .bu-contenu{ position:absolute; inset:0; padding:1cqw 0.8cqw; display:flex; flex-direction:column; gap:0.7cqw; overflow:hidden;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.2  0 0 0 0 0.08  0 0 0 0.9 -0.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 30% 20%, #d2a46b, #b9844b 60%, #a87240);
+  border:0.65cqw solid #6a4220; box-shadow:0 0.6cqw 1.2cqw rgba(0,0,0,0.5), inset 0 0.3cqw 0.6cqw rgba(0,0,0,0.35); }
+.bab-papier{ position:relative; padding:0.7cqw 0.6cqw 0.5cqw; background:#fffef6; color:#1a2533; rotate:var(--r, 0deg); box-shadow:0 0.4cqw 0.6cqw rgba(0,0,0,0.4); }
+.bab-papier.post{ background:#fff3a0; }
+.bab-papier::before{ content:''; position:absolute; top:-0.35cqw; left:50%; width:0.75cqw; height:0.75cqw; margin-left:-0.37cqw; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fff 0 12%, var(--p, #e03131) 35%, #600 100%); box-shadow:0.1cqw 0.2cqw 0.2cqw rgba(0,0,0,0.5); }
+.bab-papier b{ display:block; font:700 0.95cqw var(--ecrit); line-height:1.15; }
+.bab-papier small{ display:block; margin-top:0.2cqw; font-size:0.6cqw; color:#6b7178; }
+.bab-papier .tag{ display:inline-block; margin-bottom:0.2cqw; padding:0.05cqw 0.35cqw; border-radius:0.2cqw; background:#e03131; color:#fff; font:900 0.5cqw 'IBM Plex Sans'; text-transform:uppercase; letter-spacing:0.05em; }
+.bab-papier .tag.off{ background:#12181F; }
+
+/* ---------- Cartable ouvert (pochettes plastiques, cartes-photos) ---------- */
+.bu-cartable{ left:2.5%; top:62.5%; width:25%; height:34%; rotate:-2deg; }
+.bu-cartable .bu-contenu{ position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr; gap:1.6cqw; padding:0.7cqw 0.9cqw;
+  background:linear-gradient(90deg, #1d2b4f 0 2%, #f4f1e8 2% 49%, #c9c3b5 49% 51%, #f4f1e8 51% 98%, #1d2b4f 98%); border-radius:0.4cqw;
+  box-shadow:0 0.9cqw 1.4cqw rgba(0,0,0,0.5), inset 0 0 0 0.25cqw color-mix(in srgb, var(--ce-couleur) 70%, #000); }
+.bu-cartable .bu-contenu::before{ /* anneaux */
+  content:''; position:absolute; left:50%; top:12%; bottom:12%; width:1.2cqw; margin-left:-0.6cqw;
+  background:radial-gradient(ellipse 0.55cqw 0.42cqw at 50% 50%, transparent 55%, #b0b6bc 60%, #e9ecef 72%, #868e96 85%, transparent 90%) 0 0 / 1.2cqw 33.3% repeat-y; }
+.car-page{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto 1fr 1fr; gap:0.45cqw; min-height:0; }
+.car-page h4{ grid-column:1 / -1; margin:0; font:700 0.85cqw var(--ecrit); color:#1a3570; }
+.car-poche{ position:relative; min-height:0; border-radius:0.2cqw; overflow:hidden;
+  background:linear-gradient(160deg, color-mix(in srgb, var(--ce-couleur) 35%, #1b1f24), #1b1f24 75%); color:#fff; padding:0.3cqw 0.35cqw; }
+.car-poche::after{ content:''; position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,0.35) 0 12%, transparent 22% 70%, rgba(255,255,255,0.12) 80%); pointer-events:none; }
+.car-poche b{ display:block; font:600 1.1cqw 'Oswald', sans-serif; line-height:1; }
+.car-poche span{ display:block; font:500 0.6cqw 'Oswald', sans-serif; text-transform:uppercase; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.car-poche img{ position:absolute; right:-0.2cqw; bottom:0; height:92%; }
+
+/* ---------- Ordinateur ---------- */
+.bu-moniteur{ left:30.5%; top:28%; width:25%; height:36%; }
+.bu-moniteur .bu-ecran{ position:absolute; inset:0 0 13% 0; border-radius:0.45cqw; border:0.55cqw solid #121417; border-bottom-width:1.1cqw; overflow:hidden;
+  background:#f1f3f5; color:#1a2533; box-shadow:0 0.9cqw 1.6cqw rgba(0,0,0,0.55); }
+.bu-pied{ position:absolute; left:42%; right:42%; bottom:0; height:13%; background:linear-gradient(90deg, #2a2e33, #4a5058, #2a2e33); clip-path:polygon(25% 0, 75% 0, 100% 100%, 0 100%); }
+.bu-clavier{ position:absolute; z-index:4; left:32.5%; top:73%; width:21%; height:7%; border-radius:0.4cqw; rotate:-1deg;
+  background:repeating-linear-gradient(90deg, transparent 0 1.05cqw, rgba(0,0,0,0.5) 1.05cqw 1.2cqw), repeating-linear-gradient(180deg, transparent 0 1.05cqw, rgba(0,0,0,0.5) 1.05cqw 1.2cqw), #2b2f34;
+  box-shadow:0 0.4cqw 0.6cqw rgba(0,0,0,0.5), inset 0 0.1cqw 0 rgba(255,255,255,0.15); }
+.mail{ display:flex; flex-direction:column; height:100%; font-size:0.72cqw; }
+.mail-barre{ display:flex; align-items:center; gap:0.4cqw; padding:0.35cqw 0.6cqw; background:#1c2128; color:#fff; font-weight:800; }
+.mail-barre i{ font-style:normal; opacity:0.6; margin-left:auto; font-weight:500; }
+.mail-ligne{ display:grid; grid-template-columns:1.6cqw 1fr auto; align-items:center; gap:0.45cqw; padding:0.4cqw 0.6cqw; border-bottom:0.05cqw solid #dee2e6; background:#fff; }
+.mail-ligne.nonlu{ font-weight:800; box-shadow:inset 0.2cqw 0 0 var(--ce-couleur); }
+.mail-ligne img{ width:1.5cqw; height:1.5cqw; object-fit:contain; }
+.mail-ligne span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mail-ligne small{ font-size:0.6cqw; color:#868e96; font-weight:500; }
+.verrou{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.3cqw; color:#fff; text-align:center;
+  background:radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--ce-couleur) 70%, #000), #0b0d10); }
+.verrou img{ width:4.5cqw; height:4.5cqw; object-fit:contain; filter:drop-shadow(0 0.4cqw 0.6cqw rgba(0,0,0,0.5)); }
+.verrou b{ font:500 2.4cqw 'Oswald', sans-serif; line-height:1; }
+.verrou small{ font-size:0.75cqw; opacity:0.85; }
+
+/* ---------- Post-it (2e gardien) collé sur l'écran ---------- */
+.bu-postit{ left:53.2%; top:47%; width:6.4%; height:13.5%; rotate:6deg; z-index:8; }
+.bu-postit .bu-contenu{ position:absolute; inset:0; padding:0.5cqw 0.45cqw; background:linear-gradient(180deg, #fff6a8, #ffe873); color:#1a2533;
+  font-family:var(--ecrit); box-shadow:0 0.35cqw 0.5cqw rgba(0,0,0,0.35); clip-path:polygon(0 0, 100% 0, 100% 88%, 88% 100%, 0 100%); }
+.bu-postit b{ display:block; font-size:0.85cqw; line-height:1; color:#c92a2a; }
+.bu-postit span{ display:block; font-size:0.72cqw; line-height:1.15; margin-top:0.25cqw; }
+.bu-postit svg{ width:1.7cqw; height:1.7cqw; float:right; }
+
+/* ---------- Cellulaire ---------- */
+.bu-cell{ left:60%; top:66%; width:5.6%; height:27%; rotate:10deg; }
+.bu-cell .bu-ecran{ position:absolute; inset:0; border-radius:0.9cqw; border:0.35cqw solid #0b0c0e; overflow:hidden; color:#fff;
+  background:linear-gradient(170deg, color-mix(in srgb, var(--ce-couleur) 60%, #000), #0a0d12 70%); box-shadow:0 0.6cqw 1cqw rgba(0,0,0,0.55), inset 0 0 0 0.06cqw #444; padding:0.6cqw 0.35cqw; }
+.cell-heure{ text-align:center; font:300 1.6cqw 'Oswald', sans-serif; line-height:1; }
+.cell-date{ text-align:center; font-size:0.5cqw; opacity:0.8; margin-bottom:0.4cqw; }
+.cell-notif{ margin-top:0.3cqw; padding:0.3cqw; border-radius:0.35cqw; background:rgba(255,255,255,0.16); backdrop-filter:blur(4px); font-size:0.5cqw; line-height:1.2; }
+.cell-notif b{ display:block; font-size:0.52cqw; }
+
+/* ---------- Chemise « Rapport de dépistage » ---------- */
+.bu-chemise{ left:67.5%; top:63.5%; width:16.5%; height:31%; rotate:-4deg; }
+.bu-chemise .bu-contenu{ position:absolute; inset:9% 0 0 0; background:linear-gradient(180deg, #e7c98b, #d8b46f); border-radius:0 0.3cqw 0.3cqw 0.3cqw;
+  box-shadow:0 0.7cqw 1.1cqw rgba(0,0,0,0.5); padding:1cqw 0.9cqw; color:#3b2a10; }
+.bu-chemise .bu-contenu::before{ content:'DÉPISTAGE'; position:absolute; bottom:100%; left:0; padding:0.3cqw 1.2cqw 0.2cqw 0.7cqw; border-radius:0.35cqw 0.35cqw 0 0;
+  background:#e7c98b; font:800 0.65cqw 'IBM Plex Sans'; letter-spacing:0.1em; }
+.che-feuille{ position:absolute; inset:-0.8cqw 0.8cqw 1.2cqw 1.6cqw; background:#fff; rotate:2.5deg; box-shadow:0 0.15cqw 0.3cqw rgba(0,0,0,0.2); padding:0.7cqw; color:#1a2533; }
+.che-feuille b{ display:block; font:800 0.62cqw 'IBM Plex Sans'; letter-spacing:0.12em; color:#c92a2a; }
+.che-feuille .duel{ display:flex; align-items:center; gap:0.5cqw; margin:0.4cqw 0; font:500 1.05cqw 'Oswald', sans-serif; text-transform:uppercase; }
+.che-feuille img{ width:2.4cqw; height:2.4cqw; object-fit:contain; }
+.che-feuille small{ display:block; font-size:0.62cqw; color:#5c6b7a; line-height:1.35; }
+.che-trombone{ position:absolute; top:-1.1cqw; right:2.2cqw; width:1cqw; height:3cqw; border:0.18cqw solid #adb5bd; border-radius:999px; z-index:2; }
+
+/* ---------- Manette, tasse, rondelle ---------- */
+.bu-manette{ left:86.5%; top:74%; width:9.5%; height:14%; rotate:-12deg; }
+.bu-manette span{ position:absolute; inset:0; border-radius:2.2cqw 2.2cqw 3cqw 3cqw / 1.8cqw 1.8cqw 3.4cqw 3.4cqw;
+  background:radial-gradient(circle at 26% 42%, #3a3f45 0 0.7cqw, transparent 0.75cqw), radial-gradient(circle at 74% 42%, #3a3f45 0 0.7cqw, transparent 0.75cqw),
+    radial-gradient(circle at 40% 66%, #2b2f34 0 0.55cqw, transparent 0.6cqw), radial-gradient(circle at 60% 66%, #2b2f34 0 0.55cqw, transparent 0.6cqw),
+    linear-gradient(180deg, #f1f3f5, #c9ced4); box-shadow:0 0.6cqw 0.9cqw rgba(0,0,0,0.5); }
+.bu-manette span::after{ content:''; position:absolute; left:46%; top:30%; width:8%; height:9%; border-radius:999px; background:#4dabf7; box-shadow:0 0 0.4cqw #4dabf7; }
+.bu-tasse{ position:absolute; z-index:5; left:27.6%; top:71%; width:3.6%; height:12%; border-radius:0.3cqw 0.3cqw 0.9cqw 0.9cqw;
+  background:linear-gradient(90deg, #dee2e6, #fff 40%, #ced4da); box-shadow:0 0.5cqw 0.7cqw rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; }
+.bu-tasse::after{ content:''; position:absolute; right:-1.1cqw; top:22%; width:1.2cqw; height:45%; border:0.35cqw solid #e9ecef; border-left:none; border-radius:0 1cqw 1cqw 0; }
+.bu-tasse img{ width:62%; height:auto; }
+.bu-rondelle{ position:absolute; z-index:5; left:56.5%; top:86%; width:3.2%; height:3.2%; border-radius:50%; background:radial-gradient(ellipse at 50% 35%, #3a3f45, #050607 70%); box-shadow:0 0.25cqw 0 #000, 0 0.5cqw 0.6cqw rgba(0,0,0,0.5); }
+
+/* ---------- Zoom : l'objet ouvert en plein écran ---------- */
+.bu-zoom{ position:fixed; inset:0; z-index:400; display:flex; align-items:center; justify-content:center; padding:2vh 2vw; }
+.bu-zoom-fond{ position:absolute; inset:0; background:rgba(5,7,10,0.72); backdrop-filter:blur(5px); animation:fondu .3s ease both; }
+@keyframes fondu{ from{ opacity:0; } }
+.bu-zoom-objet{ position:relative; width:min(1180px, 96vw); max-height:94vh; display:flex; flex-direction:column; border-radius:18px; overflow:hidden; transform-origin:0 0; }
+.bu-zoom-corps{ flex:1; min-height:0; overflow:auto; padding:22px; }
+.bu-fermer{ position:absolute; top:10px; right:12px; z-index:5; width:40px; height:40px; border-radius:50%; border:none; cursor:pointer; background:rgba(0,0,0,0.55); color:#fff; font-size:18px; }
+.bu-zoom-objet.is-ordinateur{ background:#f1f3f5; color:#1a2533; border:14px solid #121417; border-bottom-width:28px; }
+.bu-zoom-objet.is-cellulaire{ width:min(430px, 96vw); background:linear-gradient(170deg, color-mix(in srgb, var(--ce-couleur) 45%, #0b0d12), #0b0d12 60%); color:#fff; border:12px solid #0b0c0e; border-radius:44px; }
+.bu-zoom-objet.is-cellulaire .bu-zoom-corps{ padding:26px 16px; }
+.bu-zoom-objet.is-cartable{ background:linear-gradient(90deg, #f4f1e8 0 49.6%, #c9c3b5 49.6% 50.4%, #f4f1e8 50.4%); border:14px solid #1d2b4f; color:#1a2533; }
+.bu-zoom-objet.is-calendrier{ background:#fbfaf6; color:#1a2533; width:min(1000px, 96vw); }
+.bu-zoom-objet.is-tele{ background:#060a10; color:#e9ecef; border:16px solid #0a0b0d; border-radius:12px; }
+.bu-zoom-objet.is-chemise{ background:linear-gradient(180deg, #e7c98b, #d8b46f); color:#1a2533; }
+.bu-zoom-objet.is-chemise .bu-zoom-corps{ background:#fff; margin:22px; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+.bu-zoom-objet.is-postit{ width:min(560px, 96vw); background:linear-gradient(180deg, #fff6a8, #ffe873); color:#1a2533; border-radius:4px; }
+.bu-zoom-objet.is-babillard{ width:min(880px, 96vw); border:16px solid #6a4220; border-radius:8px;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.2  0 0 0 0 0.08  0 0 0 0.9 -0.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 30% 20%, #d2a46b, #b9844b 60%, #a87240); }
+.bu-zoom-objet.is-console{ background:radial-gradient(120% 100% at 50% 0%, #1b2a4a, #05070b 70%); color:#fff; border-radius:14px; }
+.bu-zoom-objet.is-cellulaire .ce-carte, .bu-zoom-objet.is-tele .ce-carte{ background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.12); color:inherit; }
+.bu-zoom-titre{ display:flex; align-items:center; gap:12px; margin:0 0 16px; padding-right:48px; font:500 26px 'Oswald', sans-serif; text-transform:uppercase; }
+.bu-zoom-titre img{ width:40px; height:40px; object-fit:contain; }
+.bu-zoom-titre small{ font:400 14px 'IBM Plex Sans', sans-serif; text-transform:none; opacity:0.75; }
+
+/* Grand calendrier (zoom) */
+.gcal{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); border-top:1px solid #e2ded3; border-left:1px solid #e2ded3; }
+.gcal > div{ min-height:92px; border-right:1px solid #e2ded3; border-bottom:1px solid #e2ded3; padding:6px; display:flex; flex-direction:column; gap:2px; align-items:center; position:relative; }
+.gcal .js{ min-height:0; padding:6px 0; font-weight:800; font-size:12px; text-transform:uppercase; color:#7a8794; background:#f3f0e8; }
+.gcal i{ align-self:flex-start; font-style:normal; font-size:12px; color:#9aa5b1; }
+.gcal img{ width:36px; height:36px; object-fit:contain; }
+.gcal b{ font:400 17px var(--marqueur); }
+.gcal b.v{ color:#2b8a3e; } .gcal b.d{ color:#c92a2a; } .gcal b.p{ color:#d9480f; }
+.gcal small{ font-size:11px; color:#7a8794; }
+.gcal .hors{ opacity:0.3; }
+.gcal .auj{ outline:3px solid #e03131; outline-offset:-3px; }
+.gcal .retard{ background:rgba(255,212,59,0.4); }
+.gcal-nav{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.gcal-nav button{ width:40px; height:40px; border-radius:50%; border:1px solid #ced4da; background:#fff; cursor:pointer; font-size:18px; }
+.gcal-nav b{ flex:1; text-align:center; font:500 22px 'Oswald', sans-serif; text-transform:uppercase; }
+/* Console (zoom) : menu de jeu */
+.jeu-tuiles{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; }
+.jeu-tuile{ position:relative; display:flex; flex-direction:column; gap:8px; padding:14px; border-radius:14px; border:2px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#fff; text-align:left; cursor:pointer; font:inherit; transition:transform .15s, border-color .15s; }
+.jeu-tuile:hover, .jeu-tuile:focus-visible{ transform:scale(1.04); border-color:#4dabf7; box-shadow:0 0 24px rgba(77,171,247,0.45); outline:none; }
+.jeu-tuile .logos{ display:flex; align-items:center; gap:8px; font:500 18px 'Oswald', sans-serif; }
+.jeu-tuile img{ width:42px; height:42px; object-fit:contain; }
+.jeu-tuile small{ opacity:0.75; }
+.jeu-tuile .etat{ position:absolute; top:10px; right:10px; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:900; text-transform:uppercase; background:#e03131; }
+.jeu-tuile .etat.ok{ background:#2f9e44; }
+/* Courriel (zoom) */
+.bmail{ display:grid; grid-template-columns:minmax(220px, 320px) minmax(0, 1fr); gap:0; min-height:60vh; border:1px solid #dee2e6; border-radius:10px; overflow:hidden; background:#fff; }
+.bmail-liste{ border-right:1px solid #dee2e6; overflow:auto; }
+.bmail-liste button{ display:grid; grid-template-columns:34px 1fr; gap:10px; width:100%; padding:12px; border:none; border-bottom:1px solid #f1f3f5; background:#fff; text-align:left; cursor:pointer; font:inherit; color:#1a2533; }
+.bmail-liste button.actif{ background:#e7f5ff; }
+.bmail-liste button.nonlu b{ font-weight:900; }
+.bmail-liste img{ width:32px; height:32px; object-fit:contain; }
+.bmail-liste b{ display:block; font-weight:600; font-size:14px; }
+.bmail-liste small{ display:block; color:#868e96; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bmail-lecture{ padding:18px 22px; overflow:auto; }
+.bmail-onglets{ display:flex; gap:6px; margin-bottom:12px; }
+.bmail-onglets button{ padding:8px 14px; border-radius:8px 8px 0 0; border:1px solid #dee2e6; border-bottom:none; background:#e9ecef; cursor:pointer; font:inherit; font-weight:700; }
+.bmail-onglets button.actif{ background:#fff; }
+
+/* Téléphone : la scène devient une pile d'objets. */
+.bu-pile{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
+.bu-tuile{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:14px; border-radius:14px; border:1px solid var(--line); background:var(--surface); color:var(--ink); text-align:left; cursor:pointer; font:inherit; }
+.bu-tuile i{ font-style:normal; font-size:30px; }
+.bu-tuile b{ font:500 17px 'Oswald', sans-serif; text-transform:uppercase; }
+.bu-tuile small{ color:var(--ink-muted); font-size:12.5px; }
+@media (max-width:600px){ .bu-zoom-objet.is-cartable{ background:#f4f1e8; } .bu-zoom{ padding:0; } .bu-zoom-objet{ width:100vw !important; max-height:100vh; height:100vh; border-radius:0 !important; } .bmail{ grid-template-columns:1fr; } .bu-zoom-corps{ padding:16px; } }
+
+.ce-toast{
+  position:fixed; z-index:600; left:50%; bottom:22px; transform:translate(-50%, 140%); max-width:calc(100vw - 24px);
+  padding:12px 18px; border-radius:12px; background:#12181F; color:#fff; font-size:14.5px; box-shadow:0 14px 30px rgba(0,0,0,0.4);
+  transition:transform .35s cubic-bezier(.2,.9,.3,1.2);
+}
+.ce-toast.is-visible{ transform:translate(-50%, 0); }
+
+@media (max-width:600px){
+  .ce-theme{ margin-left:0; }
+  .ce-bande .ce-seg{ flex:1 1 auto; }
+  .ce-seg button{ flex:1; padding:0 8px; font-size:11.5px; }
+  .ce-equipe-btn{ flex:1 1 100%; }
+  .ce-maquette{ font-size:10.5px; letter-spacing:0.02em; }
+  /* Les deux équipes côte à côte, la rondelle et la date dessous. */
+  .ce-hero-corps{ grid-template-columns:1fr 1fr; padding-top:48px; gap:14px 8px; }
+  .ce-milieu{ grid-column:1 / -1; grid-row:2; }
+  .ce-cote b{ font-size:17px; }
+  .ce-rondelle{ width:44px; height:17px; }
+  .ce-matchs{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+  .ce-adv img{ width:48px; height:48px; }
+  [data-theme="planchette"] .ce-feuille-titre, [data-theme="tableau"] .ce-feuille-titre{ font-size:21px; }
+}
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation-duration:1ms !important; animation-delay:0ms !important; transition-duration:1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="ce-maquette"><span>Maquette · données réelles · rien n'est enregistré</span></div>
+  <site-header class="app-header" current-page="calendrier"></site-header>
+
+  <div class="filter-band ce-bande">
+    <button type="button" class="ce-equipe-btn" id="equipeBtn"><img id="equipeLogo" alt=""><span id="equipeNom">Choisir mon équipe</span> ▾</button>
+    <div class="ce-seg ce-mode" role="group" aria-label="Accès">
+      <button type="button" data-mode="public" aria-pressed="true">👁 Public</button>
+      <button type="button" data-mode="dg" aria-pressed="false">🔑 Mode DG</button>
+    </div>
+  </div>
+
+  <main class="ce" id="ce" data-theme="planchette">
+    <p class="ce-chargement" id="chargement">On allume les lumières du bureau…</p>
+
+    <!-- La scène : le bureau du DG (mur + bureau). Chaque objet s'ouvre en plein écran. -->
+    <div class="bu-scene" id="scene" hidden>
+      <div class="bu-mur"></div>
+      <div class="bu-plinthe"></div>
+      <div class="bu-lumiere"></div>
+
+      <button type="button" class="bu-objet bu-fenetre" data-objet="fenetre" aria-label="Fenêtre sur la patinoire" tabindex="-1">
+        <span class="bu-gradins"></span><span class="bu-glace"></span><span class="bu-bandes"></span><span class="bu-reflet"></span>
+      </button>
+      <button type="button" class="bu-objet bu-calendrier" data-objet="calendrier" aria-label="Calendrier mural"><div class="bu-contenu" id="o-calendrier"></div></button>
+      <button type="button" class="bu-objet bu-tele" data-objet="tele" aria-label="Télé : classement et LNHQ TV"><div class="bu-ecran" id="o-tele"></div></button>
+      <div class="bu-tablette"></div>
+      <button type="button" class="bu-objet bu-console" data-objet="console" aria-label="Console : soumettre un résultat"><span class="bu-console-del"></span></button>
+      <button type="button" class="bu-objet bu-babillard" data-objet="babillard" aria-label="Babillard : annonces et nouvelles"><div class="bu-contenu" id="o-babillard"></div></button>
+
+      <div class="bu-bureau"></div>
+      <button type="button" class="bu-objet bu-cartable" data-objet="cartable" aria-label="Cartable : alignement"><div class="bu-contenu" id="o-cartable"></div></button>
+      <button type="button" class="bu-objet bu-moniteur" data-objet="ordinateur" aria-label="Ordinateur : courriel et marché des transactions">
+        <div class="bu-ecran" id="o-ordinateur"></div><span class="bu-pied"></span>
+      </button>
+      <span class="bu-clavier"></span>
+      <button type="button" class="bu-objet bu-postit" data-objet="postit" aria-label="Post-it : 2e gardien"><div class="bu-contenu" id="o-postit"></div></button>
+      <button type="button" class="bu-objet bu-cell" data-objet="cellulaire" aria-label="Cellulaire : enchères des agents libres"><div class="bu-ecran" id="o-cellulaire"></div></button>
+      <button type="button" class="bu-objet bu-chemise" data-objet="chemise" aria-label="Chemise : rapport de dépistage"><div class="bu-contenu" id="o-chemise"></div></button>
+      <button type="button" class="bu-objet bu-manette" data-objet="console" aria-label="Manette : soumettre un résultat"><span></span></button>
+      <span class="bu-tasse" id="o-tasse"></span>
+      <span class="bu-rondelle"></span>
+    </div>
+
+    <!-- Téléphone : les objets en pile (la scène ne tiendrait pas). -->
+    <div class="bu-pile" id="pile" hidden></div>
+
+    <!-- Objet ouvert en plein écran. -->
+    <div class="bu-zoom" id="zoom" hidden>
+      <div class="bu-zoom-fond" id="zoomFond"></div>
+      <div class="bu-zoom-objet" id="zoomObjet" role="dialog" aria-modal="true">
+        <button type="button" class="bu-fermer" id="zoomFermer" aria-label="Revenir au bureau">✕</button>
+        <div class="bu-zoom-corps" id="zoomCorps"></div>
+      </div>
+    </div>
+
+    <!-- Contenus détaillés (réutilisés de la maquette du centre d'équipe). -->
+    <div id="reserve" hidden>
+      <section class="ce-panneau" id="p-alignement"></section>
+      <section class="ce-panneau" id="p-affrontements"></section>
+      <section class="ce-panneau" id="p-transactions"></section>
+      <section class="ce-panneau" id="p-agents"></section>
+      <aside id="gauche"></aside><aside id="droite"></aside>
+    </div>
+  </main>
+</div>
+
+<dialog class="ce-modal" id="modal">
+  <h2>C'est quoi ton équipe ?</h2>
+  <p>Le centre s'ouvrira sur elle à chaque visite (gardé dans ce navigateur).</p>
+  <div class="ce-modal-grille" id="grilleEquipes"></div>
+</dialog>
+<div class="ce-toast" id="toast" role="status"></div>
+
+<!-- Masque de gardien (aimant du 2e gardien) -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="masque" viewBox="0 0 64 64">
+    <path d="M32 3C18 3 10 13 10 27c0 15 9 30 22 34 13-4 22-19 22-34C54 13 46 3 32 3z" fill="#f8f9fa" stroke="#212529" stroke-width="2.5"/>
+    <path d="M32 3C24 3 17 7 14 14l36 0C47 7 40 3 32 3z" fill="var(--ce-couleur, #E8590C)"/>
+    <path d="M17 27h30M17 35h30M17 43h30M24 24v26M32 24v30M40 24v26" stroke="#343a40" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M14 22l8-2M50 22l-8-2" stroke="#212529" stroke-width="2"/>
+  </symbol>
+</svg>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const R = window.LNHQ_RESULTATS, G = window.LNHQ_GARDIENS;
+  const EQUIPES = new Map((window.LNHQ_TEAMS || []).map(t => [t.code, t]));
+  const nom = c => (EQUIPES.get(c) || {}).name || c;
+  const logoSrc = c => 'Logos/' + c + '.png';
+  const COULEURS = {
+    ANA: ['#F47A38', '#0D0D0D'], BOS: ['#FFB81C', '#000000'], BUF: ['#FCB514', '#002654'], CGY: ['#C8102E', '#4B0009'],
+    CAR: ['#CC0000', '#000000'], CHI: ['#CF0A2C', '#000000'], COL: ['#6F263D', '#041E42'], CBJ: ['#CE1126', '#002654'],
+    DAL: ['#006847', '#111111'], DET: ['#CE1126', '#000000'], EDM: ['#FF4C00', '#041E42'], FLA: ['#C8102E', '#041E42'],
+    LAK: ['#8C9396', '#000000'], MIN: ['#A6192E', '#154734'], MTL: ['#AF1E2D', '#192168'], NSH: ['#FFB81C', '#041E42'],
+    NJD: ['#CE1126', '#000000'], NYI: ['#F47D30', '#00539B'], NYR: ['#CE1126', '#001E60'], OTT: ['#C52032', '#000000'],
+    PHI: ['#F74902', '#000000'], PIT: ['#FCB514', '#000000'], SJS: ['#006D75', '#000000'], SEA: ['#99D9D9', '#001628'],
+    STL: ['#FCB514', '#002F87'], TBL: ['#0057B8', '#000000'], TOR: ['#003E7E', '#000000'], UTA: ['#69B3E7', '#000000'],
+    VAN: ['#00843D', '#041C2C'], VGK: ['#B4975A', '#101820'], WSH: ['#C8102E', '#041E42'], WPG: ['#004C97', '#041E42'],
+  };
+  const canaux = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const texteSur = hex => { const [r, g, b] = canaux(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#12181F' : '#FFFFFF'; };
+  const melange = (hex, t, vers) => '#' + canaux(hex).map(v => Math.round(v + ((vers === 'blanc' ? 255 : 0) - v) * t).toString(16).padStart(2, '0')).join('');
+
+  function el(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
+  function logo(c, cls){ const i = el('img', cls); i.src = logoSrc(c); i.alt = ''; i.onerror = () => { i.style.visibility = 'hidden'; }; return i; }
+  function masque(cls){ const ns = 'http://www.w3.org/2000/svg'; const s = document.createElementNS(ns, 'svg'); s.setAttribute('class', cls); s.setAttribute('viewBox', '0 0 64 64'); const u = document.createElementNS(ns, 'use'); u.setAttribute('href', '#masque'); s.append(u); return s; }
+  function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('is-visible'); clearTimeout(toast.m); toast.m = setTimeout(() => e.classList.remove('is-visible'), 3600); }
+
+  /* ---------- Dates ---------- */
+  const parse = s => { const [a, m, j] = String(s).slice(0, 10).split('-').map(Number); return new Date(a, m - 1, j); };
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const lundi = s => { const d = parse(s); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return iso(d); };
+  const AUJ = iso(new Date());
+  const fJour = new Intl.DateTimeFormat('fr-CA', { weekday: 'long', day: 'numeric', month: 'short' });
+  const fCourt = new Intl.DateTimeFormat('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' });
+  const fMois = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short' });
+  const ecartJours = (a, b) => Math.round((parse(b) - parse(a)) / 86400000);
+  function heureTexte(h){ const m = /(\d{1,2}):(\d{2})\s*(AM|PM)?/i.exec(h || ''); if(!m) return h || ''; let H = Number(m[1]) % 12; if(/pm/i.test(m[3] || '')) H += 12; else if(!m[3]) H = Number(m[1]); return H + ' h ' + m[2]; }
+
+  /* ---------- État ---------- */
+  let matchs = [], resultats = {}, decl = {}, periodes = [], classement = [];
+  let equipe = (new URLSearchParams(location.search).get('equipe') || '').toUpperCase();
+  try{ if(!EQUIPES.has(equipe)) equipe = localStorage.getItem('ce_equipe') || ''; }catch(e){}
+  let vue = 'equipe', semaines = [], semaine = '';
+  let theme = 'planchette';
+  try{ theme = localStorage.getItem('ce_theme') || 'planchette'; }catch(e){}
+  const simulees = {};   // déclarations simulées : 'MTL|2' → numéro du match
+  let mode = 'public';   // 'public' (visiteur, n'importe quelle équipe) ou 'dg' (DG connecté de cette équipe)
+  let onglet = 'apercu';
+  const estDG = () => mode === 'dg' && !!equipe;
+
+  async function charger(){
+    const url = 'https://docs.google.com/spreadsheets/d/1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A/gviz/tq?tqx=out:json&gid=1528349633&headers=0&t=' + Date.now();
+    const [texte, res, d] = await Promise.all([fetch(url).then(r => r.text()), R.chargerResultats(), G.chargerDeclarations()]);
+    const table = JSON.parse(texte.match(/setResponse\(([\s\S]*)\);\s*$/)[1]).table;
+    const lignes = table.rows.map(r => (r.c || []).map(c => c ? (c.f != null ? c.f : (c.v != null ? String(c.v) : '')) : ''));
+    resultats = res; decl = d;
+    const mg = G.lireCalendrier(lignes);
+    periodes = G.periodes(mg);
+    matchs = mg.map(m => {
+      const r = res[m.num];
+      const ligne = lignes.find(l => String(l[0]).trim() === m.num) || [];
+      const sv = r ? r.butsV : Number(ligne[5]), sd = r ? r.butsD : Number(ligne[6]);
+      const joue = r ? true : (String(ligne[5]).trim() !== '' && String(ligne[6]).trim() !== '' && !isNaN(sv) && !isNaN(sd));
+      return { num: m.num, date: m.date, heure: m.heure, v: m.codeVisiteur, d: m.codeDomicile, periode: m.periode, semaine: lundi(m.date),
+        joue, bv: joue ? sv : null, bd: joue ? sd : null, fin: r ? r.fin : '' };
+    }).filter(m => m.v && m.d);
+    classement = R.classement(res, [...EQUIPES.keys()]);
+    semaines = [...new Set(matchs.map(m => m.semaine))].sort();
+  }
+
+  /* ---------- Équipe ---------- */
+  function appliquerCouleurs(){
+    const [p, f] = COULEURS[equipe] || ['#E8590C', '#2D333B'];
+    const r = document.documentElement.style;
+    const sombre = matchMedia('(prefers-color-scheme: dark)').matches;
+    r.setProperty('--accent', p); r.setProperty('--accent-ink', texteSur(p));
+    r.setProperty('--accent-soft', sombre ? melange(p, 0.75, 'noir') : melange(p, 0.85, 'blanc'));
+    r.setProperty('--nav-dark', f); r.setProperty('--nav-ink', texteSur(f));
+    r.setProperty('--ce-couleur', p); r.setProperty('--ce-sombre', f);
+    $('equipeLogo').src = logoSrc(equipe); $('equipeLogo').hidden = !equipe;
+    $('equipeNom').textContent = equipe ? nom(equipe) : 'Choisir mon équipe';
+  }
+  function choisirEquipe(c){
+    equipe = c;
+    try{ localStorage.setItem('ce_equipe', c); }catch(e){}
+    $('modal').close();
+    // Choisir une équipe ouvre son centre (et non la vue « Toute la ligue »).
+    vue = 'equipe';
+    alignement = null;
+    document.querySelectorAll('[data-vue]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.vue === 'equipe')));
+    appliquerCouleurs();
+    semaine = semaineCourante();
+    rendreTout();
+  }
+  function ouvrirModal(){
+    const g = $('grilleEquipes');
+    g.replaceChildren(...[...EQUIPES.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr')).map((t, i) => {
+      const b = el('button'); b.type = 'button'; b.style.setProperty('--i', i);
+      b.append(logo(t.code), el('span', null, t.name));
+      b.addEventListener('click', () => choisirEquipe(t.code));
+      return b;
+    }));
+    $('modal').showModal();
+  }
+
+  /* ---------- Calculs ---------- */
+  const mesMatchs = () => matchs.filter(m => m.v === equipe || m.d === equipe);
+  const resultatPour = m => { const pour = m.v === equipe ? m.bv : m.bd, contre = m.v === equipe ? m.bd : m.bv; return pour > contre ? 'v' : m.fin ? 'p' : 'd'; };
+  function semaineCourante(){
+    const l = lundi(AUJ);
+    const liste = vue === 'equipe' && equipe ? [...new Set(mesMatchs().map(m => m.semaine))].sort() : semaines;
+    return liste.find(s => s >= l) || liste[liste.length - 1] || l;
+  }
+  function declaration(code, periode){
+    if(simulees[code + '|' + periode]) return { match: simulees[code + '|' + periode], simulee: true };
+    return decl[code + '|' + periode] || null;
+  }
+
+  /* =========================================================================
+     Rendu
+     ========================================================================= */
+  function rendreTout(){
+    $('chargement').hidden = true;
+    const avecEquipe = vue === 'equipe' && equipe;
+    $('hero').hidden = !avecEquipe;
+    $('onglets').hidden = !avecEquipe;
+    if(!avecEquipe) onglet = 'apercu';
+    document.querySelectorAll('[data-onglet]').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.onglet === onglet));
+      // Barre défilante sur téléphone : l'onglet actif reste visible.
+      if(b.dataset.onglet === onglet){ const barre = $('onglets'); barre.scrollTo({ left: b.offsetLeft - (barre.clientWidth - b.offsetWidth) / 2, behavior: 'smooth' }); }
+    });
+    $('grille').hidden = onglet !== 'apercu';
+    ['alignement', 'affrontements', 'transactions', 'agents'].forEach(o => { $('p-' + o).hidden = onglet !== o; });
+    $('droite').hidden = !avecEquipe;
+    $('gauche').hidden = !avecEquipe;
+    $('grille').classList.toggle('is-ligue', !avecEquipe);
+    // Plus de gros « prochain match » : la semaine (et les matchs en retard) est au centre.
+    $('hero').hidden = true;
+    if(onglet === 'apercu'){
+      if(avecEquipe) rendreDroite();
+      rendreSemaine(null);
+    }else{
+      ({ alignement: rendreAlignement, affrontements: rendreAffrontements, transactions: rendreTransactions, agents: rendreAgents })[onglet]();
+    }
+  }
+
+  /* =========================================================================
+     Données supplémentaires (lecture seule) : chargées une fois, au besoin.
+     ========================================================================= */
+  const memo = {};
+  const unefois = (cle, fn) => memo[cle] || (memo[cle] = fn().catch(e => { delete memo[cle]; throw e; }));
+  async function gvizTable(params){
+    const res = await fetch('https://docs.google.com/spreadsheets/d/1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A/gviz/tq?tqx=out:json&headers=1&' + params + '&t=' + Date.now());
+    return JSON.parse((await res.text()).match(/setResponse\(([\s\S]*)\);\s*$/)[1]).table;
+  }
+  const cellules = t => t.rows.map(r => (r.c || []).map(c => c ? (c.f != null ? String(c.f) : c.v != null ? String(c.v) : '') : ''));
+  const dateGviz = v => { const m = /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+))?/.exec(v || ''); return m ? new Date(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0)) : null; };
+  const millions = n => (n / 1e6).toLocaleString('fr-CA', { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + ' M$';
+  const prenomNom = b => { const v = b.indexOf(','); return v > 0 ? b.slice(v + 1).trim() + ' ' + b.slice(0, v).trim() : b; };
+  // Tous les joueurs sous contrat d'une équipe (pour le marché et les offres fictives).
+  const tousLesJoueurs = () => unefois('joueurs', async () => {
+    const t = await gvizTable('sheet=PLAYERSDATABASE&tq=' + encodeURIComponent("select B, C, H, Z, AB, N where Z <> '' and Z <> 'UFA' and H <> 'CHOIX'"));
+    return t.rows.map(r => (r.c || [])).map(c => ({ id: c[0] ? String(c[0].v) : '', ov: c[1] ? Number(c[1].v) || 0 : 0, po: c[2] ? String(c[2].v) : '',
+      equipe: c[3] ? String(c[3].v).toUpperCase() : '', espoir: c[4] ? c[4].v === true : false, salaire: c[5] ? Number(c[5].v) || 0 : 0 }))
+      .filter(j => j.id && EQUIPES.has(j.equipe));
+  });
+  // Tirage « au hasard » mais stable (la maquette montre toujours les mêmes exemples).
+  const graine = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  function exemplesMarche(joueurs){
+    return [...EQUIPES.keys()].filter(c => graine(c) % 3 !== 0).flatMap(c => {
+      const liste = joueurs.filter(j => j.equipe === c && !j.espoir).sort((a, b) => b.ov - a.ov);
+      if(liste.length < 8) return [];
+      const j = liste[4 + graine(c) % Math.max(1, liste.length - 8)];
+      return [{ ...j, note: ['Ouvert à toute offre', 'Cherche un défenseur droitier', 'Contre un choix de 1re ronde', 'Pour libérer de l’espace', 'Cherche un centre'][graine(c + j.id) % 5] }];
+    });
+  }
+  const miniJoueur = (j, droite) => {
+    const r = el('div', 'ce-mini');
+    const ov = el('span', 'ce-ov', String(j.ov || '–'));
+    ov.style.setProperty('--c', (COULEURS[j.equipe] || ['#555'])[0]);
+    const n = el('span', 'n'); n.append(el('b', null, prenomNom(j.id)), el('small', null, [j.po, j.espoir ? 'espoir' : j.salaire ? millions(j.salaire) : ''].filter(Boolean).join(' · ')));
+    r.append(ov, n);
+    if(droite) r.append(droite);
+    return r;
+  };
+
+  /* ---------- Annonces de la ligue + dernière nouvelle (non lue) ---------- */
+  async function carteAnnonces(){
+    const [ann, nouv] = await unefois('fils', () => Promise.all(['ANNONCES', 'NOUVELLES'].map(async s => {
+      const t = await gvizTable('sheet=' + s);
+      return t.rows.map(r => r.c || []).map(c => ({ date: dateGviz(c[0] && c[0].v), titre: c[3] ? String(c[3].v) : '', texte: c[4] ? String(c[4].v) : '',
+        visible: c[6] ? c[6].v === true : false, id: c[9] ? String(c[9].v) : '', equipe: c[1] ? String(c[1].v) : '', type: c[2] ? String(c[2].v) : '' }))
+        .filter(x => x.visible && x.titre).sort((a, b) => (b.date || 0) - (a.date || 0));
+    })));
+    // Babillard de liège du vestiaire : feuilles punaisées (annonces) et un post-it (nouvelle non lue).
+    const c = el('section', 'ce-babillard');
+    c.append(el('h3', 'ce-babillard-titre', 'Babillard de la ligue'));
+    const extrait = t => t.split('\n').filter(l => !/^\s*\|/.test(l)).join(' ').replace(/!\[[^\]]*\]\([^)]*\)|[#*_>`~\\]|<[^>]+>|\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\s+/g, ' ').trim().slice(0, 150);
+    const punaises = ['#E03131', '#1C7ED6', '#2F9E44', '#E0A800'];
+    const papier = (x, cls, i, etiquette) => {
+      const l = el('a', 'ce-papier ' + cls); l.href = (cls.includes('nouvelle') ? '?fil=nouvelles' : '?fil=annonces') + '#n-' + x.id; l.target = '_blank';
+      l.style.setProperty('--r', [-2.2, 1.6, -0.8, 2.4][i % 4] + 'deg');
+      l.style.setProperty('--punaise', punaises[i % 4]);
+      if(etiquette) l.append(etiquette);
+      l.append(el('b', null, x.titre), el('small', null, [x.equipe, x.date ? fCourt.format(x.date) : ''].filter(Boolean).join(' · ')), el('p', null, extrait(x.texte)));
+      return l;
+    };
+    const derniere = nouv[0];
+    if(derniere){
+      let lu = ''; try{ lu = localStorage.getItem('ce_nouvelle_lue') || ''; }catch(e){}
+      const nonLu = lu !== derniere.id;
+      const etiquette = el('span', 'ce-papier-tag', nonLu ? 'Nouveau · non lu' : 'Dernière nouvelle');
+      const p = papier(derniere, 'is-nouvelle' + (nonLu ? ' is-nonlu' : ''), 1, etiquette);
+      p.addEventListener('click', () => { try{ localStorage.setItem('ce_nouvelle_lue', derniere.id); }catch(e){} setTimeout(rendreDroite, 300); });
+      c.append(p);
+    }
+    ann.slice(0, 2).forEach((a, i) => c.append(papier(a, 'is-annonce', i === 0 ? 0 : 2, i === 0 ? el('span', 'ce-papier-tag is-officiel', 'Annonce officielle') : null)));
+    return c;
+  }
+
+  /* ---------- Alignement (Daily Faceoff) : lecture ; DG : échanger deux cartes ---------- */
+  let alignement = null;   // { code, compo, choisie }
+  async function rendreAlignement(){
+    const p = $('p-alignement');
+    const A = window.LNHQ_ALIGNEMENT;
+    if(!alignement || alignement.code !== equipe){
+      p.replaceChildren(el('p', 'ce-chargement', 'On place les joueurs sur la glace…'));
+      const [joueurs, sauvegarde] = await Promise.all([A.chargerJoueurs(equipe), A.chargerSauvegarde(equipe)]);
+      alignement = { code: equipe, compo: A.composer(joueurs, sauvegarde), choisie: '', modifie: sauvegarde ? sauvegarde.modifie : '' };
+    }
+    const titre = el('h2', 'ce-titre-sec', 'Alignement · ' + nom(equipe));
+    titre.append(el('small', null, estDG() ? 'Touche un joueur puis un autre pour les échanger.' : (alignement.modifie ? 'Enregistré par le DG' : 'Alignement automatique (par position et overall)')));
+    if(estDG()) titre.append(el('span', 'ce-dg-seul', '🔑 Mode DG'));
+    const zone = el('div', 'al-zone' + (estDG() ? ' al-modifiable' : ''));
+    zone.style.padding = '0';
+    const [p1, f1] = COULEURS[equipe] || ['#E8590C', '#1b1f24'];
+    zone.style.setProperty('--al-couleur', p1); zone.style.setProperty('--al-sombre', melange(f1, 0.35, 'noir'));
+    const contenu = el('div');
+    zone.append(contenu);
+    const dessiner = () => A.rendre(contenu, alignement.compo, estDG() ? { surCarte: (cle, carte) => {
+      carte.tabIndex = 0; carte.setAttribute('role', 'button');
+      carte.classList.toggle('is-choisie', cle === alignement.choisie);
+      carte.addEventListener('click', () => toucher(cle));
+    } } : {});
+    const joueurDe = cle => cle.startsWith('R:') ? alignement.compo.reservistes.find(j => 'R:' + j.id === cle) : alignement.compo.places[cle];
+    function toucher(cle){
+      const a = alignement.choisie;
+      if(!a){ if(joueurDe(cle)) alignement.choisie = cle; dessiner(); return; }
+      if(a === cle){ alignement.choisie = ''; dessiner(); return; }
+      const ra = a.startsWith('R:'), rb = cle.startsWith('R:');
+      const c = alignement.compo;
+      if(ra && rb){ alignement.choisie = cle; dessiner(); return; }
+      if(!ra && !rb){ [c.places[a], c.places[cle]] = [c.places[cle], c.places[a]]; }
+      else{
+        const place = ra ? cle : a, res = ra ? a : cle;
+        const entrant = joueurDe(res), sortant = c.places[place];
+        c.reservistes = c.reservistes.filter(j => j !== entrant);
+        if(sortant) c.reservistes.push(sortant);
+        c.places[place] = entrant;
+        A.trierReservistes(c.reservistes);
+      }
+      alignement.choisie = '';
+      dessiner();
+      toast('Maquette : échange fait (sur le vrai site, bouton « Enregistrer »).');
+    }
+    dessiner();
+    p.replaceChildren(titre, zone);
+  }
+
+  /* ---------- Face-à-face : les 3 prochains adversaires ---------- */
+  function rendreAffrontements(){
+    const p = $('p-affrontements');
+    const prochains = mesMatchs().filter(m => !m.joue).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num)).slice(0, 3);
+    const titre = el('h2', 'ce-titre-sec', 'Face-à-face'); titre.append(el('small', null, 'Les prochains adversaires, la série et la comparaison de la saison'));
+    const grille = el('div', 'ce-cartes2');
+    const stats = R.statsEquipes(resultats, [...EQUIPES.keys()]);
+    const st = c => stats.find(s => s.code === c) || {};
+    const fiche = c => { const t = classement.find(x => x.code === c); return t ? `${t.v}-${t.d}-${t.dp} · ${t.pts} pts` : ''; };
+    prochains.forEach((m, i) => {
+      const adv = m.v === equipe ? m.d : m.v;
+      const c = el('article', 'ce-duel');
+      c.style.setProperty('--adv', (COULEURS[adv] || ['#555'])[0]);
+      c.style.animation = `aimant-pose .5s ${i * 0.12}s cubic-bezier(.2,.9,.3,1.25) both`;
+      const tete = el('div', 'ce-duel-tete');
+      const cote = code => { const d = el('div', 'c'); d.append(logo(code), el('b', null, nom(code)), el('small', null, fiche(code))); return d; };
+      const mil = el('div', 'm', m.v === equipe ? '@' : 'vs'); mil.append(el('span', null, fCourt.format(parse(m.date))), el('span', null, heureTexte(m.heure)));
+      tete.append(cote(equipe), mil, cote(adv));
+      const corps = el('div', 'ce-duel-corps');
+      const entre = matchs.filter(x => x.joue && ((x.v === equipe && x.d === adv) || (x.d === equipe && x.v === adv)));
+      const serie = el('div', 'ce-serie-liste');
+      if(!entre.length) serie.append(el('span', null, 'Premier duel de la saison'));
+      entre.forEach(x => { const r = resultatPour(x); const s = el('span'); s.append(el('span', 'ce-badge ' + r, r === 'v' ? 'V' : r === 'p' ? 'DP' : 'D'), document.createTextNode(` ${x.v === equipe ? x.bv : x.bd}-${x.v === equipe ? x.bd : x.bv} · ${fMois.format(parse(x.date))}`)); serie.append(s); });
+      corps.append(serie);
+      const a = st(equipe), b = st(adv);
+      const ligne = (lib, va, vb, fmt, plusHautMieux = true) => {
+        if(va == null || vb == null) return;
+        const max = Math.max(va, vb) || 1;
+        const r = el('div', 'ce-comp');
+        const mieuxA = plusHautMieux ? va > vb : va < vb, mieuxB = plusHautMieux ? vb > va : vb < va;
+        const g = el('div', 'bar g'), s1 = el('span'); s1.style.width = (100 * va / max) + '%'; g.append(s1);
+        const d = el('div', 'bar d'), s2 = el('span'); s2.style.width = (100 * vb / max) + '%'; d.append(s2);
+        r.append(el('b', mieuxA ? 'is-mieux' : '', fmt(va)), g, el('span', 'l', lib), d, el('b', mieuxB ? 'is-mieux' : '', fmt(vb)));
+        corps.append(r);
+      };
+      const un = v => v.toFixed(1), pct = v => Math.round(v) + '%';
+      ligne('Buts pour', a.bpMoy, b.bpMoy, un);
+      ligne('Buts contre', a.bcMoy, b.bcMoy, un, false);
+      ligne('Tirs', a.tirsMoy, b.tirsMoy, un);
+      ligne('Avantage num.', a.anPct, b.anPct, pct);
+      ligne('Désavantage', a.dnPct, b.dnPct, pct);
+      ligne('Mises au jeu', a.mjPct, b.mjPct, pct);
+      c.append(tete, corps);
+      grille.append(c);
+    });
+    if(!prochains.length) grille.append(el('p', 'ce-vide', 'Plus de match à venir.'));
+    p.replaceChildren(titre, grille);
+  }
+
+  /* ---------- Transactions : offres (DG), marché, historique ---------- */
+  const marche = {};          // joueurs mis sur le marché par le DG (simulation) : id → true
+  async function rendreTransactions(){
+    const p = $('p-transactions');
+    p.replaceChildren(el('p', 'ce-chargement', 'On consulte le marché…'));
+    const [joueurs, fil] = await Promise.all([tousLesJoueurs(), unefois('filTx', () => gvizTable('sheet=TRANSACTIONS').catch(() => ({ rows: [] })))]);
+    const exemples = exemplesMarche(joueurs);
+    const blocs = [];
+    // Offres (DG seulement, privées) — exemples fictifs.
+    if(estDG()){
+      const t = el('h2', 'ce-titre-sec', 'Offres'); t.append(el('span', 'ce-dg-seul', '🔑 Privé'), el('span', 'ce-fictif', 'Exemple fictif'));
+      const prochain = mesMatchs().find(m => !m.joue);
+      const autre = prochain ? (prochain.v === equipe ? prochain.d : prochain.v) : [...EQUIPES.keys()].find(c => c !== equipe);
+      const leurs = joueurs.filter(j => j.equipe === autre && !j.espoir).sort((a, b) => b.ov - a.ov);
+      const miens = joueurs.filter(j => j.equipe === equipe && !j.espoir).sort((a, b) => b.ov - a.ov);
+      const grille = el('div', 'ce-cartes2');
+      if(leurs.length > 6 && miens.length > 6){
+        const offre = (titreO, de, recois, donnes, actions) => {
+          const c = el('section', 'ce-carte');
+          const h = el('h3'); h.append(logo(de, ''), el('span', null, titreO), el('small', null, 'expire dans 41 h'));
+          h.querySelector('img').style.cssText = 'width:30px;height:30px;object-fit:contain';
+          const tu = el('div'); tu.append(el('small', null, 'Tu reçois')); recois.forEach(j => tu.append(miniJoueur(j)));
+          const tud = el('div'); tud.style.marginTop = '8px'; tud.append(el('small', null, 'Tu cèdes')); donnes.forEach(j => tud.append(miniJoueur(j)));
+          [tu, tud].forEach(b => { b.firstChild.style.cssText = 'font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted)'; });
+          c.append(h, tu, tud, el('p', 'ce-note', '« ' + (de === equipe ? 'Je pense que ça aide les deux clubs.' : 'Tu cherchais de la profondeur, non ?') + ' »'));
+          const act = el('div', 'ce-actions');
+          actions.forEach(([texte, cls, msg]) => { const b = el('button', 'ce-bouton ' + cls, texte); b.type = 'button'; b.addEventListener('click', () => toast('Maquette : ' + msg)); act.append(b); });
+          c.append(act);
+          return c;
+        };
+        grille.append(
+          offre('Offre reçue de ' + nom(autre), autre, [leurs[3]], [miens[5]], [['Accepter', 'is-principal', 'offre acceptée, elle irait à un dirigeant.'], ['Contre-offre', '', 'ouvrirait l’offre, modifiable.'], ['Refuser', 'is-danger', 'offre refusée.']]),
+          offre('Offre envoyée à ' + nom(leurs[0] ? autre : autre), equipe, [leurs[6]], [miens[7], miens[9]].filter(Boolean), [['Retirer l’offre', 'is-danger', 'offre retirée.']]));
+      }
+      blocs.push(t, grille);
+    }
+    // Sur le marché : cette équipe.
+    const t2 = el('h2', 'ce-titre-sec', 'Sur le marché · ' + nom(equipe)); t2.append(el('span', 'ce-fictif', 'Exemple fictif'));
+    const carteMarche = el('section', 'ce-carte');
+    const miensTous = joueurs.filter(j => j.equipe === equipe).sort((a, b) => b.ov - a.ov);
+    exemples.filter(j => j.equipe === equipe).forEach(j => { if(marche[j.id] === undefined) marche[j.id] = true; });
+    if(estDG()){
+      carteMarche.append(el('p', null, 'Coche les joueurs que tu es prêt à échanger : ils apparaissent sur le marché de la ligue.'));
+      carteMarche.firstChild.style.cssText = 'margin:0 0 6px;font-size:13.5px;color:var(--ink-muted)';
+      miensTous.forEach(j => {
+        const b = el('button', 'ce-interrupteur'); b.type = 'button'; b.setAttribute('aria-pressed', String(!!marche[j.id]));
+        b.setAttribute('aria-label', 'Mettre ' + prenomNom(j.id) + ' sur le marché');
+        b.addEventListener('click', () => { marche[j.id] = !marche[j.id]; b.setAttribute('aria-pressed', String(marche[j.id])); toast('Maquette : ' + prenomNom(j.id) + (marche[j.id] ? ' est sur le marché.' : ' est retiré du marché.')); });
+        carteMarche.append(miniJoueur(j, b));
+      });
+    }else{
+      const sur = miensTous.filter(j => marche[j.id]);
+      if(!sur.length) carteMarche.append(el('p', 'ce-vide', 'Aucun joueur sur le marché.'));
+      sur.forEach(j => carteMarche.append(miniJoueur(j, el('span', 'x', (exemples.find(e => e.id === j.id) || {}).note || ''))));
+    }
+    blocs.push(t2, carteMarche);
+    // Marché de la ligue.
+    const t3 = el('h2', 'ce-titre-sec', 'Marché de la ligue'); t3.append(el('small', null, 'Joueurs disponibles dans les autres équipes'), el('span', 'ce-fictif', 'Exemple fictif'));
+    const carteLigue = el('section', 'ce-carte');
+    exemples.filter(j => j.equipe !== equipe).sort((a, b) => b.ov - a.ov).forEach(j => {
+      const droite = el('span', 'x');
+      droite.append(document.createTextNode(j.note + ' '), logo(j.equipe));
+      droite.style.cssText = 'display:flex;align-items:center;gap:8px;text-align:right';
+      const r = miniJoueur(j, droite);
+      if(estDG()){ r.style.cursor = 'pointer'; r.title = 'Proposer un échange'; r.addEventListener('click', () => toast('Maquette : ouvrirait une offre à ' + nom(j.equipe) + ' avec ' + prenomNom(j.id) + ' déjà choisi.')); }
+      carteLigue.append(r);
+    });
+    blocs.push(t3, carteLigue);
+    // Historique des transactions de l'équipe (fil public TRANSACTIONS).
+    const t4 = el('h2', 'ce-titre-sec', 'Transactions de ' + nom(equipe));
+    const hist = el('div', 'ce-liste');
+    cellules(fil).map((l, i) => ({ date: dateGviz(fil.rows[i].c[0] && fil.rows[i].c[0].v), titre: l[3], details: (() => { try{ return JSON.parse(l[10] || '[]'); }catch(e){ return []; } })() }))
+      .filter(x => x.details.some(m => m.de === equipe || m.vers === equipe)).forEach(x => {
+        const c = el('section', 'ce-carte');
+        const h = el('h3'); h.append(el('span', null, x.titre), el('small', null, x.date ? fCourt.format(x.date) : ''));
+        const recu = x.details.filter(m => m.vers === equipe), cede = x.details.filter(m => m.de === equipe);
+        const bloc = (lib, l) => { const d = el('div'); d.append(el('small', null, lib)); d.firstChild.style.cssText = 'font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted)'; l.forEach(m => d.append(miniJoueur({ id: m.joueur, ov: m.ov, po: m.po, salaire: m.salaire, espoir: m.type === 'espoir', equipe: m.vers }))); return d; };
+        c.append(h, bloc('Reçu', recu), bloc('Cédé', cede));
+        hist.append(c);
+      });
+    if(!hist.children.length) hist.append(el('p', 'ce-vide', 'Aucune transaction pour l’instant.'));
+    blocs.push(t4, hist);
+    p.replaceChildren(...blocs);
+  }
+
+  /* ---------- Agents libres : jetons, enchères de l'équipe, à surveiller ---------- */
+  async function rendreAgents(){
+    const p = $('p-agents');
+    const E = window.LNHQ_ENCHERES;
+    p.replaceChildren(el('p', 'ce-chargement', 'On compte les jetons…'));
+    const [d, agents, espaces] = await unefois('encheres', () => Promise.all([E.charger(), E.agentsLibres(), E.espacesPlafond().catch(() => ({}))]));
+    const eq = d.equipes.find(x => x.code === equipe) || { disponibles: 0 };
+    const espace = espaces[equipe] != null ? espaces[equipe] - E.salairesEngages(equipe, d.encheres, agents) : null;
+    const ouvertes = d.encheres.filter(e => e.statut === 'En cours' || e.statut === 'Tirage');
+    const tete = ouvertes.filter(e => e.equipe === equipe && !e.egalite.length);
+    const egal = ouvertes.filter(e => e.equipe === equipe ? e.egalite.length : e.egalite.includes(equipe));
+    const gagnes = d.encheres.filter(e => e.statut === 'Terminée' && e.equipe === equipe);
+    const misees = new Set(d.mises.filter(m => m.equipe === equipe).map(m => m.id));
+    const battues = ouvertes.filter(e => misees.has(e.id) && e.equipe !== equipe && !e.egalite.includes(equipe));
+    const titre = el('h2', 'ce-titre-sec', 'Agents libres · ' + nom(equipe)); titre.append(el('small', null, 'Enchères de la saison ' + (d.saison || '')));
+    const tuiles = el('div', 'ce-tuiles');
+    const tuile = (lib, val, accent) => { const t = el('div', 'ce-tuile' + (accent ? ' is-accent' : '')); t.append(el('small', null, lib), el('strong', null, val)); tuiles.append(t); };
+    tuile('Jetons disponibles', String(eq.disponibles), true);
+    tuile('Espace sous le plafond', espace == null ? '—' : millions(espace));
+    tuile('En tête', String(tete.length + egal.length));
+    tuile('Gagnés', String(gagnes.length));
+    const ligne = (e, etat) => {
+      const r = el('div', 'ce-enchere is-' + etat);
+      const a = agents.find(x => x.nom === e.joueur && x.naissance === e.naissance) || {};
+      const ov = el('span', 'ce-ov', String(e.ov || a.ov || '–')); ov.style.setProperty('--c', (COULEURS[e.equipe] || ['#555'])[0]);
+      const n = el('div', 'n'); n.style.minWidth = '0';
+      n.append(el('b', null, prenomNom(e.joueur)), el('small', null, [e.position, a.salaire ? millions(a.salaire) : '', e.statut === 'Tirage' ? 'tirage au sort' : etat === 'gagne' ? 'remporté' : 'fin dans ' + E.tempsRestant(e.fin)].filter(Boolean).join(' · ')));
+      n.querySelector('b').style.cssText = 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      n.querySelector('small').style.cssText = 'color:var(--ink-muted);font-size:12px';
+      const m = el('div', 'mise', String(e.mise)); m.append(el('small', null, etat === 'battu' ? nom(e.equipe) + ' mène' : 'jetons'));
+      r.append(ov, n, m);
+      if(estDG() && (etat === 'battu' || etat === 'autre')){
+        const b = el('button', 'ce-bouton is-principal', 'Surenchérir'); b.type = 'button';
+        b.style.gridColumn = '1 / -1';
+        b.addEventListener('click', () => toast('Maquette : ouvrirait la mise sur ' + prenomNom(e.joueur) + ' (minimum ' + E.minimum(e) + ' jetons).'));
+        r.append(b);
+      }
+      return r;
+    };
+    const section = (lib, liste, etat, vide) => { const s = el('section', 'ce-carte'); const h = el('h3'); h.append(el('span', null, lib), el('small', null, String(liste.length))); s.append(h); const l = el('div', 'ce-liste'); liste.forEach(e => l.append(ligne(e, etat))); if(!liste.length) l.append(el('p', 'ce-vide', vide)); s.append(l); return s; };
+    const grille = el('div', 'ce-cartes2');
+    grille.append(
+      section('En tête', tete.concat(egal), 'tete', 'Aucune enchère en tête.'),
+      section('Dépassé — à surveiller', battues, 'battu', 'Personne ne t’a dépassé.'),
+      section('Remportés', gagnes, 'gagne', 'Aucun agent libre remporté pour l’instant.'));
+    const blocs = [titre, tuiles, grille];
+    if(estDG()){
+      const autres = ouvertes.filter(e => e.equipe !== equipe && !misees.has(e.id) && !e.egalite.includes(equipe)).sort((a, b) => new Date(a.fin) - new Date(b.fin)).slice(0, 6);
+      const s = section('Se terminent bientôt (ligue)', autres, 'autre', 'Aucune autre enchère en cours.');
+      s.querySelector('h3').append(el('span', 'ce-dg-seul', '🔑 Mode DG'));
+      const lancer = el('button', 'ce-bouton is-principal', '+ Lancer une enchère'); lancer.type = 'button';
+      lancer.addEventListener('click', () => toast('Maquette : ouvrirait la liste des agents libres pour lancer une enchère.'));
+      s.append(lancer);
+      blocs.push(s);
+    }
+    p.replaceChildren(...blocs);
+  }
+
+  function rendreHero(){
+    const h = $('hero');
+    const prochain = mesMatchs().filter(m => !m.joue).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num))[0];
+    h.replaceChildren();
+    if(!prochain){ h.append(el('div', 'ce-hero-etiquette', 'Saison terminée')); return; }
+    const adv = prochain.v === equipe ? prochain.d : prochain.v;
+    h.style.setProperty('--adv-couleur', (COULEURS[adv] || ['#555'])[0]);
+    const fiche = c => { const t = classement.find(x => x.code === c); return t ? `${t.v}-${t.d}-${t.dp} · ${t.pts} pts` : ''; };
+    const cote = (c, cls) => { const d = el('div', 'ce-cote ' + cls); d.append(logo(c), el('b', null, nom(c)), el('small', null, fiche(c))); return d; };
+    const ecart = ecartJours(AUJ, prochain.date);
+    const quand = el('div', 'ce-quand', ecart === 0 ? 'Ce soir' : ecart === 1 ? 'Demain' : ecart < 0 ? 'En retard' : 'Dans ' + ecart + ' jours');
+    quand.append(el('small', null, fJour.format(parse(prochain.date)) + (prochain.heure ? ' · ' + heureTexte(prochain.heure) : '') + ' · ' + (prochain.v === equipe ? 'à l’étranger' : 'à domicile')));
+    const milieu = el('div', 'ce-milieu');
+    milieu.append(el('div', 'ce-rondelle'), quand);
+    const corps = el('div', 'ce-hero-corps');
+    corps.append(cote(equipe, 'is-gauche'), milieu, cote(adv, 'is-droite'));
+    // Série entre les deux équipes cette saison.
+    const entre = matchs.filter(m => m.joue && ((m.v === equipe && m.d === adv) || (m.d === equipe && m.v === adv)));
+    const gagnes = entre.filter(m => resultatPour(m) === 'v').length;
+    const pied = el('div', 'ce-hero-pied');
+    pied.append(el('span', 'ce-serie', entre.length ? `Série cette saison : ${gagnes}-${entre.length - gagnes} ${gagnes >= entre.length - gagnes ? 'pour ' + nom(equipe) : 'pour ' + nom(adv)}` : 'Premier duel de la saison'));
+    const soum = el('a', 'ce-btn is-principal', '📷 Soumettre le résultat');
+    soum.href = '#'; soum.addEventListener('click', ev => { ev.preventDefault(); toast('Maquette : ouvrirait la soumission du match nº ' + prochain.num + ', déjà rempli.'); });
+    const tv = el('a', 'ce-btn', '📺 LNHQ TV'); tv.href = '../tv.html';
+    if(estDG()) pied.append(soum);
+    pied.append(tv);
+    h.append(el('div', 'ce-hero-etiquette', 'Prochain match · nº ' + prochain.num), corps, pied);
+  }
+
+  // Semaine (ou toute la ligue) sur la planchette / le tableau, avec animation de page.
+  function rendreSemaine(sens){
+    const liste = vue === 'equipe' && equipe ? [...new Set(mesMatchs().map(m => m.semaine))].sort() : semaines;
+    if(!liste.includes(semaine)) semaine = semaineCourante();
+    const i = liste.indexOf(semaine);
+    $('prec').disabled = i <= 0; $('suiv').disabled = i >= liste.length - 1;
+    $('blocAuj').hidden = semaine === semaineCourante();
+    const fin = parse(semaine); fin.setDate(fin.getDate() + 6);
+    const titre = $('titreSemaine');
+    titre.textContent = 'Semaine ' + (semaines.indexOf(semaine) + 1);
+    titre.append(el('small', null, fMois.format(parse(semaine)) + ' au ' + fMois.format(fin) + (semaine === lundi(AUJ) ? ' · cette semaine' : '')));
+
+    const feuille = el('div', 'ce-feuille');
+    if(vue === 'equipe' && equipe) feuilleEquipe(feuille); else feuilleLigue(feuille);
+    const pile = $('feuilles');
+    const ancienne = pile.querySelector('.ce-feuille:not(.sort-suiv):not(.sort-prec)');
+    if(!ancienne || !sens){ pile.replaceChildren(feuille); return; }
+    // Planchette, semaine suivante : la feuille du dessus est arrachée sous la pince.
+    if(theme === 'planchette' && sens > 0 && !reduit){
+      arracher(ancienne);
+      feuille.classList.add('entre-suiv');
+      pile.replaceChildren(feuille);
+      return;
+    }
+    if(sens < 0) document.querySelectorAll('.ce-reste').forEach(r => r.remove());   // la page revient : plus de bout déchiré
+    if(theme === 'tableau'){
+      const brosse = el('div', 'ce-brosse ' + (sens > 0 ? 'va-gauche' : 'va-droite'));
+      $('support').append(brosse);
+      brosse.addEventListener('animationend', () => brosse.remove());
+    }
+    ancienne.classList.add(sens > 0 ? 'sort-suiv' : 'sort-prec');
+    feuille.classList.add(sens > 0 ? 'entre-suiv' : 'entre-prec');
+    if(sens > 0) pile.prepend(feuille); else pile.append(feuille);
+    setTimeout(() => ancienne.remove(), 700);
+  }
+
+  /* Arrachage : bord déchiré tiré au hasard sous la pince. La feuille (sans sa bande du haut)
+     tombe en tournoyant ; la bande déchirée reste coincée dans la pince jusqu'au prochain
+     changement. */
+  const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hasard = (a, b) => a + Math.random() * (b - a);
+  function arracher(ancienne){
+    const support = $('support');
+    const s = support.getBoundingClientRect(), a = ancienne.getBoundingClientRect();
+    // Ligne de déchirure : juste sous la pince, irrégulière, avec quelques accrocs.
+    const base = hasard(40, 46), points = [];
+    for(let x = 0; x < 100; x += hasard(1.2, 3.4)){
+      let y = base + hasard(-3.5, 3.5) + Math.sin(x / hasard(5, 9)) * 2.2;
+      if(Math.random() < 0.08) y += hasard(4, 9);   // accroc : la déchirure plonge
+      points.push([x, y]);
+    }
+    points.push([100, base + hasard(-3, 3)]);
+    const ligne = points.map(([x, y]) => `${x.toFixed(1)}% ${y.toFixed(1)}px`);
+    // Bout resté dans la pince (remplace le précédent).
+    support.querySelectorAll('.ce-reste').forEach(r => r.remove());
+    const reste = el('div', 'ce-feuille ce-reste');
+    const hReste = Math.max(...points.map(p => p[1])) + 2;
+    Object.assign(reste.style, { left: (a.left - s.left) + 'px', top: (a.top - s.top) + 'px', width: a.width + 'px', height: hReste + 'px', padding: '0',
+      clipPath: `polygon(0 0, 100% 0, ${ligne.slice().reverse().join(', ')})` });
+    // La feuille arrachée : même place, sans la bande du haut, puis elle tombe.
+    support.append(ancienne);
+    ancienne.classList.add('ce-arrachee');
+    Object.assign(ancienne.style, { left: (a.left - s.left) + 'px', top: (a.top - s.top) + 'px', width: a.width + 'px', height: a.height + 'px',
+      clipPath: `polygon(${ligne.join(', ')}, 100% 100%, 0 100%)` });
+    support.append(reste);
+    const versDroite = Math.random() < 0.6 ? 1 : -1;
+    const chute = ancienne.animate([
+      { transform: 'translate(0, 0) rotate(0deg)', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,.2))' },
+      { transform: `translate(${2 * versDroite}px, 7px) rotate(${0.8 * versDroite}deg)`, offset: 0.1 },          // on tire
+      { transform: `translate(${-2 * versDroite}px, 4px) rotate(${-0.5 * versDroite}deg)`, offset: 0.18 },      // ça résiste
+      { transform: `translate(${22 * versDroite}px, 46px) rotate(${6 * versDroite}deg)`, offset: 0.36, filter: 'drop-shadow(0 18px 18px rgba(0,0,0,.35))' },
+      { transform: `translate(${hasard(120, 220) * versDroite}px, ${a.height + 260}px) rotate(${hasard(22, 38) * versDroite}deg)`, opacity: 0, filter: 'drop-shadow(0 40px 30px rgba(0,0,0,.3))' },
+    ], { duration: 1250 * (window.__ralenti || 1), easing: 'cubic-bezier(.4,0,.75,.55)', fill: 'forwards' });
+    ancienne.style.transformOrigin = versDroite > 0 ? '15% 0' : '85% 0';
+    chute.finished.then(() => ancienne.remove(), () => ancienne.remove());
+  }
+
+  // Série de la saison contre un adversaire (matchs joués).
+  function serieContre(adv){
+    const entre = matchs.filter(x => x.joue && ((x.v === equipe && x.d === adv) || (x.d === equipe && x.v === adv)));
+    if(!entre.length) return '1er duel';
+    const v = entre.filter(x => resultatPour(x) === 'v').length;
+    return `Série ${v}-${entre.length - v}`;
+  }
+
+  function aimantMatch(m, i, per, dejaDecl){
+    const adv = m.v === equipe ? m.d : m.v;
+    const retard = !m.joue && m.date < AUJ;
+    const a = el('article', 'ce-aimant' + (m.joue ? ' is-joue' : '') + (m.date === AUJ && !m.joue ? ' is-auj' : '') + (retard ? ' is-retard' : ''));
+    a.style.setProperty('--i', i);
+    a.style.setProperty('--r', ((i % 3) - 1) * 1.3 + 'deg');
+    a.dataset.num = m.num;
+    const advBloc = el('div', 'ce-adv');
+    advBloc.append(el('small', null, m.v === equipe ? '@' : 'vs'), logo(adv));
+    a.append(el('span', 'ce-jour', fCourt.format(parse(m.date))), advBloc, el('span', 'ce-adv-nom', nom(adv)));
+    if(m.joue){
+      const pour = m.v === equipe ? m.bv : m.bd, contre = m.v === equipe ? m.bd : m.bv, r = resultatPour(m);
+      const s = el('div', 'ce-score');
+      s.append(el('span', null, pour + '-' + contre), el('span', 'ce-badge ' + r, r === 'v' ? 'V' : r === 'p' ? 'DP' : 'D'));
+      if(m.fin) s.append(el('span', 'ce-heure', R.FINS[m.fin]));
+      a.append(s);
+    }else{
+      a.append(el('span', 'ce-heure', heureTexte(m.heure) || 'Heure à venir'));
+      if(estDG()){
+        const b = el('button', 'ce-action', retard ? 'Soumettre (en retard)' : 'Soumettre');
+        b.type = 'button';
+        b.addEventListener('click', () => toast('Maquette : ouvrirait la soumission du match nº ' + m.num + ' (' + nom(m.v) + ' @ ' + nom(m.d) + ').'));
+        a.append(b);
+      }
+    }
+    a.append(el('span', 'ce-serie-mini', serieContre(adv)));
+    if(retard) a.append(el('span', 'ce-tampon', 'En retard'));
+    // 2e gardien : masque posé si ce match est déclaré ; sinon cible de dépôt possible (DG).
+    const d = declaration(equipe, m.periode);
+    if(d && String(d.match) === m.num) a.append(masque('ce-masque-pose'));
+    if(estDG() && per && m.periode === per.num && !m.joue && !dejaDecl) a.classList.add('est-cible');
+    return a;
+  }
+
+  /* Planchette : la semaine écrite au stylo sur les lignes du papier. Score au feutre rouge,
+     résultat encerclé ; match à jouer = « ___ – ___ » au crayon ; retard noté dans la marge. */
+  function ligneManuscrite(m, i, per, dejaDecl){
+    const adv = m.v === equipe ? m.d : m.v;
+    const retard = !m.joue && m.date < AUJ;
+    const li = el('li', (m.date === AUJ && !m.joue ? 'is-auj' : '') + (retard ? ' is-retard' : ''));
+    li.style.setProperty('--i', i);
+    li.dataset.num = m.num;
+    const jour = parse(m.date);
+    li.append(el('span', 'j', ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'][jour.getDay()] + ' ' + jour.getDate()),
+      el('span', 'o', m.v === equipe ? '@' : 'vs'), logo(adv), el('span', 'n', nom(adv)), el('span', 'pt'));
+    if(m.joue){
+      const pour = m.v === equipe ? m.bv : m.bd, contre = m.v === equipe ? m.bd : m.bv, r = resultatPour(m);
+      li.append(el('span', 'sc', pour + ' – ' + contre), el('span', 'res ' + r, r === 'v' ? 'V' : r === 'p' ? 'DP' : 'D'));
+      li.append(el('span', 'x', m.fin ? R.FINS[m.fin] : serieContre(adv)));
+    }else{
+      li.append(el('span', 'sc a-faire', '___ – ___'));
+      if(estDG()){
+        const b = el('button', 'ecrire', '✎ inscrire'); b.type = 'button';
+        b.addEventListener('click', () => toast('Maquette : ouvrirait la soumission du match nº ' + m.num + ' (photo de l’écran de fin).'));
+        li.append(b);
+      }else li.append(el('span', 'x', heureTexte(m.heure)));
+    }
+    if(retard) li.append(el('span', 'note', 'en retard !'));
+    const d = declaration(equipe, m.periode);
+    if(d && String(d.match) === m.num){ const mq = masque('mq'); mq.setAttribute('aria-label', '2e gardien'); li.append(mq); }
+    if(estDG() && per && m.periode === per.num && !m.joue && !dejaDecl) li.classList.add('est-cible');
+    return li;
+  }
+  function feuilleManuscrite(f){
+    const dimanche = parse(semaine); dimanche.setDate(dimanche.getDate() + 6);
+    f.append(el('h3', 'ce-feuille-titre', 'Semaine du ' + parse(semaine).getDate() + ' au ' + fMois.format(dimanche)));
+    const per = periodes.find(p => p.fin >= AUJ);
+    const dejaDecl = per && declaration(equipe, per.num);
+    let i = 0;
+    if(semaine === lundi(AUJ)){
+      const retards = mesMatchs().filter(m => !m.joue && m.date < semaine).sort((a, b) => a.date.localeCompare(b.date));
+      if(retards.length){
+        f.append(el('p', 'ce-sous-titre-main', '⚠ À rattraper (' + retards.length + ')'));
+        const ol = el('ol', 'ce-lignes');
+        retards.forEach(m => ol.append(ligneManuscrite(m, i++, per, dejaDecl)));
+        f.append(ol, el('p', 'ce-sous-titre-main is-semaine', 'Cette semaine'));
+      }
+    }
+    const liste = mesMatchs().filter(m => m.semaine === semaine).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num));
+    if(!liste.length){ f.append(el('p', 'ce-repos', 'Pas de match cette semaine — repos !')); return; }
+    const ol = el('ol', 'ce-lignes');
+    liste.forEach(m => ol.append(ligneManuscrite(m, i++, per, dejaDecl)));
+    f.append(ol);
+  }
+
+  function feuilleEquipe(f){
+    if(theme === 'planchette') return feuilleManuscrite(f);
+    const liste = mesMatchs().filter(m => m.semaine === semaine).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num));
+    const dimanche = parse(semaine); dimanche.setDate(dimanche.getDate() + 6);
+    f.append(el('h3', 'ce-feuille-titre', theme === 'tableau' ? 'Plan de match de la semaine'
+      : 'Semaine du ' + parse(semaine).getDate() + ' au ' + fMois.format(dimanche)));
+    const per = periodes.find(p => p.fin >= AUJ);
+    const dejaDecl = per && declaration(equipe, per.num);
+    // Matchs en retard des semaines passées : rappelés en haut de la semaine en cours.
+    if(semaine === lundi(AUJ)){
+      const retards = mesMatchs().filter(m => !m.joue && m.date < semaine).sort((a, b) => a.date.localeCompare(b.date));
+      if(retards.length){
+        const bloc = el('div', 'ce-retards');
+        bloc.append(el('h4', null, `À rattraper (${retards.length})`));
+        const g = el('div', 'ce-matchs');
+        retards.forEach((m, i) => g.append(aimantMatch(m, i, per, dejaDecl)));
+        bloc.append(g);
+        f.append(bloc);
+      }
+    }
+    if(!liste.length){ f.append(el('p', 'ce-vide', 'Pas de match cette semaine. Repos !')); return; }
+    const grille = el('div', 'ce-matchs');
+    liste.forEach((m, i) => grille.append(aimantMatch(m, i, per, dejaDecl)));
+    f.append(grille);
+  }
+
+  function feuilleLigue(f){
+    const liste = matchs.filter(m => m.semaine === semaine);
+    const dimanche = parse(semaine); dimanche.setDate(dimanche.getDate() + 6);
+    f.append(el('h3', 'ce-feuille-titre', theme === 'tableau' ? 'Toute la ligue'
+      : 'La ligue — semaine du ' + parse(semaine).getDate() + ' au ' + fMois.format(dimanche)));
+    const jours = new Map();
+    liste.forEach(m => { if(!jours.has(m.date)) jours.set(m.date, []); jours.get(m.date).push(m); });
+    const g = el('div', 'ce-jours');
+    let k = 0;
+    [...jours].sort().forEach(([date, ms]) => {
+      const b = el('div', 'ce-jour-bloc');
+      b.append(el('h3', null, fJour.format(parse(date)) + (date === AUJ ? ' · aujourd’hui' : '')));
+      ms.forEach(m => {
+        const l = el('div', 'ce-ligne-match' + (equipe && (m.v === equipe || m.d === equipe) ? ' is-mien' : ''));
+        l.style.setProperty('--i', k++);
+        const sv = el('span', 's' + (m.joue && m.bv > m.bd ? ' g' : ''), m.joue ? String(m.bv) : '');
+        const sd = el('span', 's' + (m.joue && m.bd > m.bv ? ' g' : ''), m.joue ? String(m.bd) : '');
+        const dv = declaration(m.v, m.periode), dd = declaration(m.d, m.periode);
+        l.append(logo(m.v), el('span', 'n', nom(m.v)), sv, el('span', 'a', m.joue ? '' : '@'), sd, el('span', 'n r', nom(m.d)), logo(m.d));
+        if((dv && String(dv.match) === m.num) || (dd && String(dd.match) === m.num)) l.title = '2e gardien : ' + [dv && String(dv.match) === m.num ? nom(m.v) : '', dd && String(dd.match) === m.num ? nom(m.d) : ''].filter(Boolean).join(', ');
+        b.append(l);
+      });
+      g.append(b);
+    });
+    if(!liste.length) g.append(el('p', 'ce-vide', 'Aucun match cette semaine.'));
+    f.append(g);
+  }
+
+  // Aperçu : à gauche le tableau indicateur et le 2e gardien ; à droite le babillard.
+  function rendreDroite(){
+    $('gauche').replaceChildren(carteForme(), carteGardien());
+    const d = $('droite');
+    const attente = el('div', 'ce-babillard'); attente.append(el('p', 'ce-vide', 'On punaise les annonces…'));
+    d.replaceChildren(attente);
+    carteAnnonces().then(c => attente.replaceWith(c)).catch(() => attente.remove());
+  }
+
+  /* ---------- 2e gardien : le demi-cercle du gardien, sur la glace ---------- */
+  function carteGardien(){
+    const c = el('section', 'ce-creuse');
+    const per = periodes.find(p => p.fin >= AUJ) || periodes[periodes.length - 1];
+    if(!per){ c.append(el('p', null, 'Aucune période.')); return c; }
+    const total = Math.max(1, ecartJours(per.debut, per.fin) + 1), passe = Math.min(total, Math.max(0, ecartJours(per.debut, AUJ) + 1));
+    const reste = Math.max(0, ecartJours(AUJ, per.fin));
+    // Horloge de période (style tableau d'aréna).
+    const tete = el('header', 'ce-creuse-tete');
+    const titre = el('div'); titre.append(el('b', null, '2e gardien'), el('small', null, fMois.format(parse(per.debut)) + ' → ' + fMois.format(parse(per.fin))));
+    const horloge = el('div', 'ce-horloge');
+    horloge.append(el('span', 'p', 'PÉR. ' + per.num), el('span', 'j', String(reste).padStart(2, '0')), el('span', 'u', reste === 1 ? 'jour' : 'jours'));
+    if(reste <= 3) horloge.classList.add('is-urgent');
+    tete.append(titre, horloge);
+    const jauge = el('div', 'ce-jauge'); const rempli = el('span'); rempli.style.width = (100 * passe / total) + '%'; jauge.append(rempli);
+    // La glace : ligne des buts, demi-cercle bleu, filet ; le masque y est posé si c'est déclaré.
+    const glace = el('div', 'ce-glace');
+    glace.innerHTML = '<svg class="ce-patinoire" viewBox="0 0 300 120" aria-hidden="true" preserveAspectRatio="xMidYMax meet">'
+      + '<line x1="0" y1="112" x2="300" y2="112" stroke="#E03131" stroke-width="3"/>'
+      + '<path d="M95 112 A55 55 0 0 1 205 112 Z" fill="#a5d8ff" fill-opacity=".55" stroke="#E03131" stroke-width="2"/>'
+      + '<path d="M128 112 V122 M172 112 V122" stroke="#E03131" stroke-width="3"/>'
+      + '<rect x="128" y="112" width="44" height="10" fill="url(#filet)"/>'
+      + '<defs><pattern id="filet" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M0 0 L5 5 M5 0 L0 5" stroke="#868e96" stroke-width=".7"/></pattern></defs></svg>';
+    const dcl = declaration(equipe, per.num);
+    const statut = el('div', 'ce-creuse-statut');
+    if(dcl){
+      const m = matchs.find(x => x.num === String(dcl.match));
+      const mq = masque('ce-masque ce-masque-glace'); glace.append(mq);
+      statut.classList.add('is-fait');
+      statut.append(el('b', null, (dcl.simulee ? 'Déclaré (simulation)' : 'Déclaré') + ' ✔'),
+        el('small', null, m ? fCourt.format(parse(m.date)) + ' · ' + (m.v === equipe ? '@ ' + nom(m.d) : 'vs ' + nom(m.v)) : 'Match nº ' + dcl.match));
+    }else if(estDG()){
+      const mq = masque('ce-masque ce-masque-glace is-pret');
+      mq.setAttribute('role', 'button'); mq.setAttribute('tabindex', '0'); mq.setAttribute('aria-label', 'Glisser le masque sur un match pour déclarer le 2e gardien');
+      brancherGlisser(mq, per);
+      glace.append(mq);
+      statut.classList.toggle('is-urgent', reste <= 3);
+      statut.append(el('b', null, 'À déclarer'), el('small', null, 'Glisse le masque sur un match encadré en vert.'));
+    }else{
+      statut.classList.toggle('is-urgent', reste <= 3);
+      statut.append(el('b', null, 'Pas encore déclaré'), el('small', null, 'Le DG le déclare en mode DG.'));
+    }
+    const faites = [...EQUIPES.keys()].filter(code => declaration(code, per.num)).length;
+    const ligue = el('p', 'ce-creuse-ligue'); ligue.append(el('b', null, faites + '/' + EQUIPES.size), document.createTextNode(' équipes ont déclaré'));
+    c.append(tete, jauge, glace, statut, ligue);
+    return c;
+  }
+
+  /* ---------- Fiche : le tableau indicateur de l'aréna ---------- */
+  function carteForme(){
+    const c = el('section', 'ce-indicateur');
+    const t = classement.find(x => x.code === equipe) || { v: 0, d: 0, dp: 0, pts: 0, pj: 0, bp: 0, bc: 0 };
+    const tete = el('header');
+    tete.append(logo(equipe), el('span', null, nom(equipe).toUpperCase()));
+    const div = R.CONFERENCES.flatMap(cf => cf.divisions).find(dv => dv.equipes.includes(equipe));
+    const rang = div ? R.classement(resultats, div.equipes).findIndex(x => x.code === equipe) + 1 : 0;
+    const joues = mesMatchs().filter(m => m.joue).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num));
+    let serie = 0, type = '';
+    for(let i = joues.length - 1; i >= 0; i--){ const r = resultatPour(joues[i]) === 'v' ? 'V' : 'D'; if(!type) type = r; if(r !== type) break; serie++; }
+    const pj = Math.max(1, t.pj);
+    const cases = el('div', 'ce-led-grille');
+    const caseLed = (lib, val, cls) => { const d = el('div', 'ce-led-case' + (cls ? ' ' + cls : '')); d.append(el('span', 'ce-led', String(val)), el('small', null, lib)); cases.append(d); };
+    caseLed('V', t.v, 'is-grand'); caseLed('D', t.d, 'is-grand'); caseLed('DP', t.dp, 'is-grand'); caseLed('PTS', t.pts, 'is-grand is-rouge');
+    caseLed(div ? 'Rang div.' : 'Rang', rang ? rang + (rang === 1 ? 'er' : 'e') : '–');
+    caseLed('Série', serie ? type + serie : '–');
+    caseLed('BP / m', (t.bp / pj).toFixed(1));
+    caseLed('BC / m', (t.bc / pj).toFixed(1));
+    const lampes = el('div', 'ce-lampes');
+    joues.slice(-10).forEach((m, i) => { const r = resultatPour(m); const l = el('i', r); l.style.setProperty('--i', i); l.title = fCourt.format(parse(m.date)) + ' · ' + (r === 'v' ? 'victoire' : r === 'p' ? 'défaite en prol.' : 'défaite'); lampes.append(l); });
+    c.append(tete, cases, el('small', 'ce-lampes-titre', '10 derniers matchs'), lampes);
+    return c;
+  }
+
+  /* ---------- Glisser le masque sur un match (2e gardien) ---------- */
+  function brancherGlisser(m, per){
+    let fantome = null, cible = null;
+    const cibles = () => [...document.querySelectorAll('.est-cible')];
+    m.addEventListener('pointerdown', ev => {
+      ev.preventDefault();
+      if(!cibles().length){ toast('Aucun de tes matchs de la période ' + per.num + ' n’est dans cette semaine : change de semaine.'); return; }
+      cibles().forEach(c => c.classList.add('is-cible'));
+      fantome = masque('ce-masque is-glisse');
+      document.body.append(fantome);
+      bouger(ev);
+      m.style.opacity = '0.25';
+      window.addEventListener('pointermove', bouger);
+      window.addEventListener('pointerup', lacher, { once: true });
+    });
+    m.addEventListener('keydown', ev => {
+      if(ev.key !== 'Enter' && ev.key !== ' ') return;
+      ev.preventDefault();
+      const c = cibles()[0];
+      if(c) declarer(c.dataset.num, per); else toast('Aucun de tes matchs de la période dans cette semaine.');
+    });
+    function bouger(ev){
+      fantome.style.left = (ev.clientX - 34) + 'px'; fantome.style.top = (ev.clientY - 34) + 'px';
+      const sous = document.elementFromPoint(ev.clientX, ev.clientY);
+      const c = sous && sous.closest('.est-cible');
+      if(c !== cible){ if(cible) cible.classList.remove('is-survol'); cible = c; if(cible) cible.classList.add('is-survol'); }
+    }
+    function lacher(){
+      window.removeEventListener('pointermove', bouger);
+      m.style.opacity = '';
+      document.querySelectorAll('.is-cible, .is-survol').forEach(c => c.classList.remove('is-cible', 'is-survol'));
+      if(cible){
+        // Le masque « vole » jusqu'au coin du match.
+        const r = cible.getBoundingClientRect();
+        fantome.animate([{ left: fantome.style.left, top: fantome.style.top }, { left: (r.left + 6) + 'px', top: (r.top + 6) + 'px', transform: 'scale(.6) rotate(0deg)' }], { duration: 280, easing: 'cubic-bezier(.3,1.4,.5,1)' })
+          .finished.then(() => { fantome.remove(); declarer(cible.dataset.num, per); cible = null; });
+      }else{ fantome.remove(); }
+    }
+  }
+  function declarer(num, per){
+    simulees[equipe + '|' + per.num] = num;
+    const m = matchs.find(x => x.num === num);
+    rendreDroite();
+    rendreSemaine(null);
+    toast('Maquette : 2e gardien déclaré pour le match du ' + fCourt.format(parse(m.date)) + ' (rien n’est enregistré).');
+  }
+
+  /* ---------- Contrôles ---------- */
+  function changerSemaine(sens){
+    const liste = vue === 'equipe' && equipe ? [...new Set(mesMatchs().map(m => m.semaine))].sort() : semaines;
+    const i = liste.indexOf(semaine) + sens;
+    if(i < 0 || i >= liste.length) return;
+    semaine = liste[i];
+    rendreSemaine(sens);
+  }
+  // (Bureau : pas de navigation de semaine ; voir le module BUREAU plus bas.)
+
+  document.querySelectorAll('[data-vue]').forEach(b => b.addEventListener('click', () => {
+    vue = b.dataset.vue;
+    document.querySelectorAll('[data-vue]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    if(vue === 'equipe' && !equipe){ ouvrirModal(); return; }
+    semaine = semaineCourante();
+    rendreTout();
+  }));
+  function appliquerTheme(){
+    $('ce').dataset.theme = theme;
+    document.querySelectorAll('[data-theme]').forEach(x => { if(x.tagName === 'BUTTON') x.setAttribute('aria-pressed', String(x.dataset.theme === theme)); });
+    $('chargement').textContent = theme === 'tableau' ? 'On sort les marqueurs…' : 'On sort la planchette du vestiaire…';
+  }
+  document.querySelectorAll('button[data-theme]').forEach(b => b.addEventListener('click', () => {
+    theme = b.dataset.theme;
+    try{ localStorage.setItem('ce_theme', theme); }catch(e){}
+    document.querySelectorAll('.ce-reste, .ce-arrachee').forEach(r => r.remove());
+    appliquerTheme();
+    if(!$('grille').hidden) rendreTout();
+  }));
+  $('equipeBtn').addEventListener('click', ouvrirModal);
+  // Public / Mode DG : simule ce que verrait le DG connecté de l'équipe affichée.
+  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    if(mode === 'dg' && equipe) toast('Mode DG simulé : tu es le DG de ' + nom(equipe) + '. Les actions apparaissent.');
+    rendreTout();
+  }));
+  document.querySelectorAll('[data-onglet]').forEach(b => b.addEventListener('click', () => {
+    onglet = b.dataset.onglet;
+    rendreTout();
+  }));
+
+  /* =========================================================================
+     BUREAU DU DG : la scène (aperçus réels sur chaque objet) et le zoom.
+     Les fonctions ci-dessous remplacent celles de la maquette du centre d'équipe
+     (mêmes noms : la dernière déclaration l'emporte).
+     ========================================================================= */
+  let zoomActuel = '';
+  let moisZoom = '';                 // 'AAAA-MM' du grand calendrier
+  const estPetit = () => matchMedia('(max-width: 899px)').matches;
+  const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  const ETIQUETTES = { calendrier: 'Calendrier', tele: 'Classement · LNHQ TV', console: 'Console · soumettre un résultat', babillard: 'Annonces de la ligue',
+    cartable: 'Alignement', ordinateur: 'Courriel · transactions', postit: '2e gardien', cellulaire: 'Enchères', chemise: 'Dépistage' };
+  const chargerDirect = () => unefois('direct', () => fetch('https://api.lnhq.ca/twitch').then(r => r.json()).catch(() => ({ chaines: [] })));
+  const chargerFils = () => unefois('fils', () => Promise.all(['ANNONCES', 'NOUVELLES'].map(async s => {
+    const t = await gvizTable('sheet=' + s);
+    return t.rows.map(r => r.c || []).map(c => ({ date: dateGviz(c[0] && c[0].v), titre: c[3] ? String(c[3].v) : '', texte: c[4] ? String(c[4].v) : '',
+      visible: c[6] ? c[6].v === true : false, id: c[9] ? String(c[9].v) : '', equipe: c[1] ? String(c[1].v) : '', type: c[2] ? String(c[2].v) : '' }))
+      .filter(x => x.visible && x.titre).sort((a, b) => (b.date || 0) - (a.date || 0));
+  })));
+  const chargerEncheres = () => unefois('encheres', () => Promise.all([LNHQ_ENCHERES.charger(), LNHQ_ENCHERES.agentsLibres(), LNHQ_ENCHERES.espacesPlafond().catch(() => ({}))]));
+  const prochainMatch = () => mesMatchs().filter(m => !m.joue && m.date >= AUJ).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num))[0];
+  const retards = () => mesMatchs().filter(m => !m.joue && m.date < AUJ).sort((a, b) => a.date.localeCompare(b.date));
+  const periodeCourante = () => periodes.find(p => p.fin >= AUJ) || periodes[periodes.length - 1];
+
+  function rendreTout(){
+    if(!equipe){
+      $('chargement').textContent = 'Choisis ton équipe pour entrer dans son bureau.';
+      $('chargement').hidden = false;
+      $('scene').hidden = true; $('pile').hidden = true;
+      if(!$('modal').open) ouvrirModal();
+      return;
+    }
+    $('chargement').hidden = true;
+    const petit = estPetit();
+    $('scene').hidden = petit; $('pile').hidden = !petit;
+    if(petit) rendrePile(); else rendreScene();
+    if(zoomActuel) remplirZoom(zoomActuel);
+  }
+  let etaitPetit = null;
+  window.addEventListener('resize', () => { if(estPetit() !== etaitPetit && equipe){ etaitPetit = estPetit(); rendreTout(); } });
+
+  /* ---------- La scène ---------- */
+  function rendreScene(){
+    document.querySelectorAll('.bu-objet[data-objet]').forEach(o => {
+      if(o.dataset.objet === 'fenetre' || o.querySelector('.bu-etiquette')) return;
+      o.append(el('span', 'bu-etiquette', ETIQUETTES[o.dataset.objet] || ''));
+    });
+    miniCalendrier($('o-calendrier'));
+    apercuTele($('o-tele'));
+    apercuBabillard($('o-babillard'));
+    apercuCartable($('o-cartable'));
+    apercuOrdinateur($('o-ordinateur'));
+    apercuPostit($('o-postit'));
+    apercuCellulaire($('o-cellulaire'));
+    apercuChemise($('o-chemise'));
+    $('o-tasse').replaceChildren(logo(equipe));
+  }
+
+  // Calendrier du mois : logo de l'adversaire et score au marqueur ; aujourd'hui encerclé ; retards surlignés.
+  function grilleMois(annee, mois, grand){
+    const premier = new Date(annee, mois, 1);
+    const debut = new Date(premier); debut.setDate(1 - (premier.getDay() + 6) % 7);
+    const parDate = new Map(mesMatchs().map(m => [m.date, m]));
+    const cases = [];
+    const nbSemaines = Math.ceil(((premier.getDay() + 6) % 7 + new Date(annee, mois + 1, 0).getDate()) / 7);
+    for(let k = 0; k < nbSemaines * 7; k++){
+      const d = new Date(debut); d.setDate(debut.getDate() + k);
+      const cle = iso(d), m = parDate.get(cle);
+      const c = el('div', grand ? '' : 'cal-case');
+      if(d.getMonth() !== mois) c.classList.add('hors');
+      if(cle === AUJ) c.classList.add('auj');
+      c.append(el('i', null, String(d.getDate())));
+      if(m){
+        const adv = m.v === equipe ? m.d : m.v;
+        c.append(logo(adv));
+        if(m.joue){ const r = resultatPour(m); const pour = m.v === equipe ? m.bv : m.bd, contre = m.v === equipe ? m.bd : m.bv; c.append(el('b', r, pour + '-' + contre)); }
+        else if(cle < AUJ) c.classList.add('retard');
+        else if(grand) c.append(el('small', null, (m.v === equipe ? '@ ' : 'vs ') + heureTexte(m.heure)));
+        c.title = fCourt.format(parse(m.date)) + ' · ' + (m.v === equipe ? '@ ' : 'vs ') + nom(adv);
+      }
+      cases.push(c);
+    }
+    return cases;
+  }
+  function miniCalendrier(box){
+    const t = classement.find(x => x.code === equipe) || { v: 0, d: 0, dp: 0 };
+    const auj = parse(AUJ);
+    const tete = el('div', 'cal-tete');
+    const txt = el('div'); txt.append(el('b', null, NOM_MOIS_CAP(auj.getMonth()) + ' ' + auj.getFullYear()), el('small', null, `${nom(equipe)} · ${t.v}-${t.d}-${t.dp}`));
+    tete.append(logo(equipe), txt);
+    const g = el('div', 'cal-grille');
+    ['L', 'M', 'M', 'J', 'V', 'S', 'D'].forEach(j => g.append(el('span', 'cal-jsem', j)));
+    grilleMois(auj.getFullYear(), auj.getMonth(), false).forEach(c => g.append(c));
+    box.replaceChildren(tete, g);
+  }
+  const NOM_MOIS_CAP = m => NOMS_MOIS[m].charAt(0).toUpperCase() + NOMS_MOIS[m].slice(1);
+
+  function divisionDe(code){ return R.CONFERENCES.flatMap(c => c.divisions).find(d => d.equipes.includes(code)); }
+  async function apercuTele(box){
+    const div = divisionDe(equipe);
+    const tete = el('div', 'tv-bandeau'); tete.append(el('span', null, div ? div.nom : 'Classement'));
+    const table = el('table', 'tv-table');
+    R.classement(resultats, div ? div.equipes : null).slice(0, 8).forEach((x, i) => {
+      const tr = el('tr', x.code === equipe ? 'moi' : '');
+      const n = el('td'); n.append(logo(x.code), document.createTextNode(nom(x.code)));
+      tr.append(el('td', null, String(i + 1)), n, el('td', 'pts', String(x.pts)));
+      table.append(tr);
+    });
+    box.replaceChildren(tete, table);
+    const d = await chargerDirect();
+    const live = (d.chaines || []).filter(c => c.live && c.lnhq);
+    if(live.length){ const l = el('span', 'tv-direct', '● EN DIRECT · ' + (live[0].nom || live[0].chaine)); tete.append(l); }
+  }
+
+  async function apercuBabillard(box){
+    const [ann, nouv] = await chargerFils();
+    let lu = ''; try{ lu = localStorage.getItem('ce_nouvelle_lue') || ''; }catch(e){}
+    const papiers = [];
+    if(nouv[0]){
+      const p = el('div', 'bab-papier post'); p.style.setProperty('--r', '2deg'); p.style.setProperty('--p', '#1c7ed6');
+      if(lu !== nouv[0].id) p.append(el('span', 'tag', 'Non lu'));
+      p.append(el('b', null, nouv[0].titre), el('small', null, nouv[0].equipe));
+      papiers.push(p);
+    }
+    ann.slice(0, 2).forEach((a, i) => {
+      const p = el('div', 'bab-papier'); p.style.setProperty('--r', (i ? 1.5 : -2) + 'deg'); p.style.setProperty('--p', i ? '#2f9e44' : '#e03131');
+      if(!i) p.append(el('span', 'tag off', 'Annonce'));
+      p.append(el('b', null, a.titre), el('small', null, a.date ? fCourt.format(a.date) : ''));
+      papiers.push(p);
+    });
+    box.replaceChildren(...papiers);
+  }
+
+  async function apercuCartable(box){
+    const A = window.LNHQ_ALIGNEMENT;
+    if(!alignement || alignement.code !== equipe){
+      const [joueurs, sauvegarde] = await Promise.all([A.chargerJoueurs(equipe), A.chargerSauvegarde(equipe)]);
+      alignement = { code: equipe, compo: A.composer(joueurs, sauvegarde), choisie: '', modifie: sauvegarde ? sauvegarde.modifie : '' };
+    }
+    const poche = id => {
+      const j = alignement.compo.places[id];
+      const p = el('div', 'car-poche');
+      if(!j) return p;
+      p.append(el('b', null, String(j.ov || '')), el('span', null, j.famille));
+      if(j.idLnh){ const img = el('img'); img.src = `https://assets.nhle.com/mugs/nhl/latest/${j.idLnh}.png`; img.alt = ''; img.onerror = () => img.remove(); p.append(img); }
+      return p;
+    };
+    const page = (titre, ids) => { const pg = el('div', 'car-page'); pg.append(el('h4', null, titre), ...ids.map(poche)); return pg; };
+    box.replaceChildren(page('1er trio', ['A1G', 'A1C', 'A1D', 'A2C']), page('Défense · gardien', ['D1G', 'D1D', 'G1', 'G2']));
+  }
+
+  // Courriels du DG (exemples tirés des vraies données).
+  function courriels(){
+    const l = [];
+    const prochain = prochainMatch();
+    const autre = prochain ? (prochain.v === equipe ? prochain.d : prochain.v) : [...EQUIPES.keys()].find(c => c !== equipe);
+    l.push({ de: autre, titre: 'Offre de transaction — ' + nom(autre), apercu: 'Une offre t’attend (expire dans 41 h).', type: 'offre', nonlu: true });
+    retards().forEach(m => l.push({ de: m.v === equipe ? m.d : m.v, titre: 'Match en retard — ' + fCourt.format(parse(m.date)), apercu: (m.v === equipe ? '@ ' : 'vs ') + nom(m.v === equipe ? m.d : m.v) + ' : résultat à soumettre.', type: 'retard', nonlu: true, num: m.num }));
+    const per = periodeCourante();
+    if(per && !declaration(equipe, per.num)) l.push({ de: 'LNHQ', titre: 'Rappel — 2e gardien, période ' + per.num, apercu: 'Aucun match déclaré pour la période (fin le ' + fMois.format(parse(per.fin)) + ').', type: 'gardien', nonlu: true });
+    l.push({ de: 'LNHQ', titre: 'Envoyée — offre à ' + nom(autre), apercu: 'En attente de réponse.', type: 'envoyee', nonlu: false });
+    return l;
+  }
+  function apercuOrdinateur(box){
+    if(!estDG()){
+      const v = el('div', 'verrou');
+      const h = new Date();
+      v.append(logo(equipe), el('b', null, String(h.getHours()).padStart(2, '0') + ':' + String(h.getMinutes()).padStart(2, '0')), el('small', null, '🔒 Bureau de ' + nom(equipe) + ' · verrouillé'));
+      box.replaceChildren(v);
+      return;
+    }
+    const m = el('div', 'mail');
+    const b = el('div', 'mail-barre'); b.append(el('span', null, '📧 Courriel'), el('i', null, courriels().filter(x => x.nonlu).length + ' non lus'));
+    m.append(b);
+    courriels().slice(0, 5).forEach(c => {
+      const r = el('div', 'mail-ligne' + (c.nonlu ? ' nonlu' : ''));
+      r.append(c.de === 'LNHQ' ? Object.assign(el('img'), { src: 'logo-lnhq.png', alt: '' }) : logo(c.de), el('span', null, c.titre), el('small', null, c.type === 'offre' ? '41 h' : ''));
+      m.append(r);
+    });
+    box.replaceChildren(m);
+  }
+
+  function apercuPostit(box){
+    const per = periodeCourante();
+    if(!per){ box.replaceChildren(); return; }
+    const dcl = declaration(equipe, per.num);
+    const parts = [el('b', null, '2e gardien'), el('span', null, 'pér. ' + per.num)];
+    if(dcl){ const m = matchs.find(x => x.num === String(dcl.match)); parts.push(el('span', null, '✔ ' + (m ? fCourt.format(parse(m.date)) : 'fait'))); parts.unshift(masque('')); }
+    else parts.push(el('span', null, '☐ à faire'), el('span', null, Math.max(0, ecartJours(AUJ, per.fin)) + ' j restants'));
+    box.replaceChildren(...parts);
+  }
+
+  async function apercuCellulaire(box){
+    const h = new Date();
+    const parts = [el('div', 'cell-heure', String(h.getHours()).padStart(2, '0') + ':' + String(h.getMinutes()).padStart(2, '0')), el('div', 'cell-date', fJour.format(h))];
+    box.replaceChildren(...parts);
+    if(!estDG()){ const n = el('div', 'cell-notif'); n.append(el('b', null, '🔒'), document.createTextNode('Téléphone du DG')); box.append(n); return; }
+    const [d] = await chargerEncheres();
+    const eq = d.equipes.find(x => x.code === equipe) || { disponibles: 0 };
+    const notif = (titre, texte) => { const n = el('div', 'cell-notif'); n.append(el('b', null, titre), document.createTextNode(texte)); box.append(n); };
+    notif('Enchères LNHQ', eq.disponibles + ' jetons disponibles');
+    const misees = new Set(d.mises.filter(m => m.equipe === equipe).map(m => m.id));
+    const ouvertes = d.encheres.filter(e => e.statut === 'En cours');
+    const battue = ouvertes.find(e => misees.has(e.id) && e.equipe !== equipe && !e.egalite.includes(equipe));
+    if(battue) notif('Tu as été dépassé', prenomNom(battue.joueur) + ' · ' + battue.mise);
+    const tete = ouvertes.find(e => e.equipe === equipe);
+    if(tete) notif('En tête', prenomNom(tete.joueur) + ' · ' + tete.mise);
+  }
+
+  function apercuChemise(box){
+    const m = prochainMatch();
+    const f = el('div', 'che-feuille');
+    f.append(el('b', null, 'Prochain adversaire'));
+    if(m){
+      const adv = m.v === equipe ? m.d : m.v;
+      const duel = el('div', 'duel'); duel.append(logo(adv), el('span', null, nom(adv)));
+      f.append(duel, el('small', null, (m.v === equipe ? '@ ' : 'vs ') + fCourt.format(parse(m.date)) + ' · ' + serieContre(adv)));
+    }else f.append(el('small', null, 'Plus de match à venir.'));
+    box.replaceChildren(el('span', 'che-trombone'), f);
+  }
+
+  /* ---------- Téléphone : la pile d'objets ---------- */
+  function rendrePile(){
+    const t = classement.find(x => x.code === equipe) || { v: 0, d: 0, dp: 0, pts: 0 };
+    const per = periodeCourante(), dcl = per && declaration(equipe, per.num), m = prochainMatch();
+    const tuiles = [
+      ['calendrier', '📅', 'Calendrier', retards().length ? retards().length + ' match(s) en retard' : 'Le mois de ' + nom(equipe)],
+      ['console', '🎮', 'Console', estDG() ? 'Soumettre un résultat' : 'Derniers résultats'],
+      ['tele', '📺', 'Classement', `${t.v}-${t.d}-${t.dp} · ${t.pts} pts`],
+      ['cartable', '🗂️', 'Alignement', 'Les cartes de l’équipe'],
+      ['chemise', '📁', 'Dépistage', m ? 'vs ' + nom(m.v === equipe ? m.d : m.v) : '—'],
+      ['postit', '📝', '2e gardien', dcl ? 'Déclaré ✔' : 'À déclarer'],
+      ['ordinateur', '🖥️', estDG() ? 'Courriel' : 'Transactions', estDG() ? courriels().filter(x => x.nonlu).length + ' non lus' : 'Marché et historique'],
+      ['cellulaire', '📱', 'Enchères', 'Agents libres'],
+      ['babillard', '📌', 'Annonces', 'Babillard de la ligue'],
+    ];
+    $('pile').replaceChildren(...tuiles.map(([type, icone, titre, sous]) => {
+      const b = el('button', 'bu-tuile'); b.type = 'button'; b.dataset.objet = type;
+      b.append(el('i', null, icone), el('b', null, titre), el('small', null, sous));
+      return b;
+    }));
+  }
+
+  /* ---------- Zoom : l'objet ouvert en plein écran ---------- */
+  const reduitZoom = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let origineZoom = null;
+  let generationZoom = 0;   // une fermeture en cours ne doit pas refermer un objet ouvert entre-temps
+  function ouvrirZoom(type, depuis){
+    generationZoom++;
+    zoomActuel = type;
+    origineZoom = depuis || null;
+    const z = $('zoom'), o = $('zoomObjet');
+    o.className = 'bu-zoom-objet is-' + type;
+    z.hidden = false;
+    remplirZoom(type);
+    if(depuis && !reduitZoom){
+      const a = depuis.getBoundingClientRect(), b = o.getBoundingClientRect();
+      o.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})`, opacity: 0.4 }, { transform: 'none', opacity: 1 }],
+        { duration: 450, easing: 'cubic-bezier(.2,.85,.25,1)' });
+    }
+    $('zoomFermer').focus();
+  }
+  function fermerZoom(){
+    if(!zoomActuel) return;
+    const z = $('zoom'), o = $('zoomObjet');
+    const gen = generationZoom;
+    const fin = () => { if(gen !== generationZoom) return; z.hidden = true; zoomActuel = ''; $('reserve').append(...$('zoomCorps').querySelectorAll('.ce-panneau')); if(origineZoom) origineZoom.focus(); };
+    if(origineZoom && !reduitZoom && origineZoom.offsetParent){
+      const a = origineZoom.getBoundingClientRect(), b = o.getBoundingClientRect();
+      o.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})`, opacity: 0.2 }],
+        { duration: 320, easing: 'cubic-bezier(.5,0,.75,0)' }).finished.then(fin, fin);
+    }else fin();
+  }
+  function titreZoom(texte, sous){
+    const h = el('h2', 'bu-zoom-titre'); h.append(logo(equipe), el('span', null, texte));
+    if(sous) h.append(el('small', null, sous));
+    return h;
+  }
+  function panneau(id, rendre){
+    const p = $(id); p.hidden = false;
+    rendre();
+    return p;
+  }
+  function remplirZoom(type){
+    const corps = $('zoomCorps');
+    $('reserve').append(...corps.querySelectorAll('.ce-panneau'));
+    corps.scrollTop = 0;
+    const contenu = ({
+      calendrier: zoomCalendrier,
+      tele: zoomTele,
+      babillard: () => { const w = el('div'); carteAnnonces().then(c => { c.style.cssText = 'background:none;border:none;box-shadow:none;padding:0'; w.replaceWith(c); }); return [w]; },
+      cartable: () => [panneau('p-alignement', rendreAlignement)],
+      ordinateur: zoomOrdinateur,
+      postit: zoomPostit,
+      cellulaire: () => [panneau('p-agents', rendreAgents)],
+      chemise: () => [panneau('p-affrontements', rendreAffrontements)],
+      console: zoomConsole,
+    })[type]();
+    corps.replaceChildren(...contenu);
+  }
+
+  function zoomCalendrier(){
+    if(!moisZoom) moisZoom = AUJ.slice(0, 7);
+    const [a, m] = moisZoom.split('-').map(Number);
+    const nav = el('div', 'gcal-nav');
+    const bouton = (txt, sens) => { const b = el('button', null, txt); b.type = 'button'; b.addEventListener('click', () => { const d = new Date(a, m - 1 + sens, 1); moisZoom = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); remplirZoom('calendrier'); }); return b; };
+    nav.append(bouton('‹', -1), el('b', null, NOM_MOIS_CAP(m - 1) + ' ' + a), bouton('›', 1));
+    const g = el('div', 'gcal');
+    ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach(j => g.append(el('div', 'js', j)));
+    grilleMois(a, m - 1, true).forEach(c => g.append(c));
+    const r = retards();
+    const blocs = [titreZoom('Calendrier', nom(equipe)), nav, g];
+    if(r.length){ const p = el('p', 'ce-note', '⚠ En retard : ' + r.map(x => fCourt.format(parse(x.date)) + ' ' + (x.v === equipe ? '@ ' : 'vs ') + nom(x.v === equipe ? x.d : x.v)).join(' · ')); blocs.push(p); }
+    return blocs;
+  }
+
+  function zoomTele(){
+    const conf = R.CONFERENCES.find(c => c.divisions.some(d => d.equipes.includes(equipe))) || R.CONFERENCES[0];
+    const blocs = [titreZoom('Classement', conf.nom)];
+    const grille = el('div', 'ce-cartes2');
+    conf.divisions.forEach(dv => {
+      const c = el('section', 'ce-carte');
+      c.append(el('h3', null, dv.nom));
+      const t = el('table', 'tv-table'); t.style.fontSize = '14px';
+      const th = el('tr'); ['#', 'Équipe', 'PJ', 'V', 'D', 'DP', 'PTS'].forEach(x => th.append(el('td', null, x))); th.style.opacity = '.6'; t.append(th);
+      R.classement(resultats, dv.equipes).forEach((x, i) => {
+        const tr = el('tr', x.code === equipe ? 'moi' : '');
+        const n = el('td'); const img = logo(x.code); img.style.cssText = 'width:22px;height:22px'; n.append(img, document.createTextNode(nom(x.code)));
+        tr.append(el('td', null, String(i + 1)), n, el('td', null, String(x.pj)), el('td', null, String(x.v)), el('td', null, String(x.d)), el('td', null, String(x.dp)), el('td', 'pts', String(x.pts)));
+        t.append(tr);
+      });
+      c.append(t);
+      grille.append(c);
+    });
+    blocs.push(grille);
+    const tv = el('section', 'ce-carte'); tv.style.marginTop = '16px';
+    tv.append(el('h3', null, '📺 LNHQ TV'));
+    chargerDirect().then(d => {
+      const live = (d.chaines || []).filter(c => c.live && c.lnhq);
+      if(!live.length) tv.append(el('p', 'ce-vide', 'Personne en direct pour l’instant.'));
+      live.forEach(c => { const a = el('a', 'ce-btn', '● ' + (c.nom || c.chaine) + (c.equipe ? ' · ' + c.equipe : '')); a.href = 'tv.html?chaine=' + encodeURIComponent(c.chaine); a.style.cssText = 'color:#fff;margin:4px 8px 0 0'; tv.append(a); });
+    });
+    blocs.push(tv);
+    return blocs;
+  }
+
+  function zoomOrdinateur(){
+    const blocs = [];
+    const onglets = el('div', 'bmail-onglets');
+    const zone = el('div');
+    const montrer = quoi => {
+      onglets.querySelectorAll('button').forEach(b => b.classList.toggle('actif', b.dataset.o === quoi));
+      $('reserve').append(...zone.querySelectorAll('.ce-panneau'));
+      if(quoi === 'marche'){ zone.replaceChildren(panneau('p-transactions', rendreTransactions)); return; }
+      const liste = el('div', 'bmail-liste'), lecture = el('div', 'bmail-lecture');
+      const ouvrir = (c, bouton) => {
+        liste.querySelectorAll('button').forEach(b => b.classList.toggle('actif', b === bouton));
+        const h = el('h3', 'ce-titre-sec', c.titre); h.style.fontSize = '20px';
+        const p = el('p', null, c.apercu);
+        const act = el('div', 'ce-actions');
+        const action = (texte, cls, msg) => { const b = el('button', 'ce-bouton ' + cls, texte); b.type = 'button'; b.addEventListener('click', () => toast('Maquette : ' + msg)); act.append(b); };
+        if(c.type === 'offre'){ action('Ouvrir l’offre', 'is-principal', 'ouvrirait l’offre (Accepter, Contre-offre, Refuser).'); action('Refuser', 'is-danger', 'offre refusée.'); }
+        if(c.type === 'retard') action('Soumettre le résultat', 'is-principal', 'ouvrirait la soumission du match nº ' + c.num + '.');
+        if(c.type === 'gardien') action('Déclarer mon 2e gardien', 'is-principal', 'ouvrirait le post-it du 2e gardien.');
+        lecture.replaceChildren(h, p, act);
+      };
+      courriels().forEach((c, i) => {
+        const b = el('button', c.nonlu ? 'nonlu' : ''); b.type = 'button';
+        const t = el('span'); t.append(el('b', null, c.titre), el('small', null, c.apercu));
+        b.append(c.de === 'LNHQ' ? Object.assign(el('img'), { src: 'logo-lnhq.png', alt: '' }) : logo(c.de), t);
+        b.addEventListener('click', () => ouvrir(c, b));
+        liste.append(b);
+        if(!i) setTimeout(() => ouvrir(c, b));
+      });
+      const boite = el('div', 'bmail'); boite.append(liste, lecture);
+      zone.replaceChildren(boite);
+    };
+    if(estDG()){
+      const b1 = el('button', null, '📧 Courriel'); b1.type = 'button'; b1.dataset.o = 'courriel'; b1.addEventListener('click', () => montrer('courriel'));
+      const b2 = el('button', null, '🔁 Marché et transactions'); b2.type = 'button'; b2.dataset.o = 'marche'; b2.addEventListener('click', () => montrer('marche'));
+      onglets.append(b1, b2);
+      blocs.push(titreZoom('Ordinateur', 'mode DG'), onglets, zone);
+      montrer('courriel');
+    }else{
+      blocs.push(titreZoom('Transactions', 'marché et historique (public)'), zone);
+      montrer('marche');
+    }
+    return blocs;
+  }
+
+  function zoomPostit(){
+    const per = periodeCourante();
+    const blocs = [titreZoom('2e gardien', per ? 'période ' + per.num + ' · ' + fMois.format(parse(per.debut)) + ' → ' + fMois.format(parse(per.fin)) : '')];
+    if(!per) return blocs;
+    blocs.push(carteGardien());
+    const ol = el('ol', 'ce-lignes'); ol.style.marginTop = '14px';
+    const dcl = declaration(equipe, per.num);
+    mesMatchs().filter(m => m.periode === per.num).sort((a, b) => a.date.localeCompare(b.date)).forEach((m, i) => {
+      const li = el('li'); li.style.setProperty('--i', i);
+      const adv = m.v === equipe ? m.d : m.v;
+      li.append(el('span', 'j', (dcl && String(dcl.match) === m.num ? '☑ ' : '☐ ') + fCourt.format(parse(m.date))), el('span', 'o', m.v === equipe ? '@' : 'vs'), logo(adv), el('span', 'n', nom(adv)), el('span', 'pt'));
+      if(estDG() && !dcl && !m.joue){
+        const b = el('button', 'ecrire', 'déclarer celui-ci'); b.type = 'button';
+        b.addEventListener('click', () => declarer(m.num, per));
+        li.append(b);
+      }
+      ol.append(li);
+    });
+    blocs.push(ol);
+    return blocs;
+  }
+
+  function zoomConsole(){
+    const blocs = [titreZoom('Console', estDG() ? 'Soumettre un résultat' : 'Derniers résultats')];
+    const tuiles = el('div', 'jeu-tuiles');
+    const tuile = (m, etat) => {
+      const adv = m.v === equipe ? m.d : m.v;
+      const b = el('button', 'jeu-tuile'); b.type = 'button';
+      const lg = el('div', 'logos'); lg.append(logo(m.v), el('span', null, '@'), logo(m.d));
+      b.append(lg, el('b', null, nom(m.v) + ' @ ' + nom(m.d)), el('small', null, fCourt.format(parse(m.date)) + (m.joue ? ' · ' + m.bv + '-' + m.bd : ' · ' + heureTexte(m.heure))));
+      if(etat) b.append(el('span', 'etat' + (etat === 'Joué' ? ' ok' : ''), etat));
+      b.addEventListener('click', () => toast(m.joue ? 'Maquette : ouvrirait la fiche du match (stats et photo).' : estDG() ? 'Maquette : ouvrirait la soumission du match nº ' + m.num + ' (photo de l’écran de fin).' : 'Seul le DG peut soumettre un résultat.'));
+      tuiles.append(b);
+    };
+    if(estDG()){ retards().forEach(m => tuile(m, 'En retard')); mesMatchs().filter(m => !m.joue && m.date >= AUJ).slice(0, 3).forEach(m => tuile(m, m.date === AUJ ? 'Ce soir' : '')); }
+    mesMatchs().filter(m => m.joue).slice(-4).reverse().forEach(m => tuile(m, 'Joué'));
+    blocs.push(tuiles);
+    return blocs;
+  }
+
+  // 2e gardien déclaré (simulation) depuis le post-it.
+  function declarer(num, per){
+    simulees[equipe + '|' + per.num] = num;
+    const m = matchs.find(x => x.num === num);
+    if(!estPetit()) rendreScene(); else rendrePile();
+    if(zoomActuel) remplirZoom(zoomActuel);
+    toast('Maquette : 2e gardien déclaré pour le ' + fCourt.format(parse(m.date)) + ' (rien n’est enregistré).');
+  }
+
+  // Ouvrir un objet (scène ou pile), fermer le zoom.
+  document.addEventListener('click', ev => {
+    const o = ev.target.closest('[data-objet]');
+    if(o && o.dataset.objet !== 'fenetre' && !ev.target.closest('#zoom')) ouvrirZoom(o.dataset.objet, o);
+  });
+  $('zoomFermer').addEventListener('click', fermerZoom);
+  $('zoomFond').addEventListener('click', fermerZoom);
+  document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && zoomActuel) fermerZoom(); });
+
+  // Fichier ouvert directement (aperçu, double-clic) : les scripts du site ne peuvent pas se charger.
+  if(!/^https?:$/.test(location.protocol) || !window.LNHQ_TEAMS){
+    $('chargement').textContent = 'Ouvre la maquette par le serveur : http://localhost:8766/maquettes/bureau-dg.html';
+    return;
+  }
+  const titreSite = document.getElementById('sheetTitle');
+  if(titreSite) titreSite.textContent = 'LNHQ';
+  document.title = 'Centre d’équipe — maquette';
+  appliquerTheme();
+  appliquerCouleurs();
+  charger().then(() => {
+    if(!equipe){ vue = 'ligue'; document.querySelectorAll('[data-vue]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.vue === 'ligue'))); ouvrirModal(); }
+    semaine = semaineCourante();
+    rendreTout();
+  }).catch(err => { console.error(err); $('chargement').textContent = 'Impossible de lire le calendrier pour le moment.'; });
+})();
+</script>
+</body>
+</html>
