@@ -8,64 +8,97 @@
 <link rel="stylesheet" href="site.css?v=8">
 <script src="site-nav.js?v=7"></script>
 <style>
-  .st-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:1400px; margin:0 auto; width:100%; box-sizing:border-box; display:flex; flex-direction:column; gap:18px; }
+  /* Mise en page inspirée de nhl.com/stats : carte blanche, onglets, blocs de meneurs, tableau complet. */
+  .st-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:1400px; margin:0 auto; width:100%; box-sizing:border-box; }
+  .st-carte{ background:var(--surface); color:var(--ink); border-radius:var(--radius, 12px); border:1px solid var(--line); padding:clamp(14px,2.4vw,28px); display:flex; flex-direction:column; gap:20px; }
+  .st-titre{ margin:0; font-family:'Oswald', sans-serif; font-weight:600; font-size:clamp(28px,4vw,40px); line-height:1; }
+  .st-onglets{ display:flex; gap:clamp(14px,3vw,34px); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; margin-top:-6px; }
+  .st-onglets button, .st-onglets a{ flex-shrink:0; padding:12px 2px; border:none; background:none; cursor:pointer; color:var(--ink-muted); font:inherit; font-size:14.5px; font-weight:600; text-decoration:none; border-bottom:3px solid transparent; margin-bottom:-1px; }
+  .st-onglets button:hover, .st-onglets a:hover{ color:var(--ink); }
+  .st-onglets [aria-selected="true"]{ color:var(--ink); border-bottom-color:var(--accent); }
+
+  /* ---------- Accueil : blocs de meneurs ---------- */
+  .st-blocs{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:28px 40px; }
+  .st-bloc{ display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .st-bloc-tete{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .st-bloc-tete h3{ margin:0; }
+  .st-bloc-tete h3 button{ padding:0; border:none; background:none; cursor:pointer; color:var(--ink); font-family:'Oswald', sans-serif; font-weight:600; font-size:22px; }
+  .st-bloc-tete h3 button::after{ content:' ›'; color:var(--accent); }
+  .st-bloc-tete h3 button:hover{ color:var(--accent); }
+  .st-bloc-tete small{ color:var(--ink-muted); font-size:12.5px; }
+  .st-sous{ display:flex; gap:18px; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; white-space:nowrap; }
+  .st-sous button{ padding:8px 2px; border:none; background:none; cursor:pointer; color:var(--ink-muted); font:inherit; font-size:13.5px; font-weight:600; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .st-sous button[aria-selected="true"]{ color:var(--ink); border-bottom-color:var(--accent); }
+  .st-corps{ display:grid; grid-template-columns:minmax(130px, 0.8fr) minmax(0, 1.4fr); gap:18px; align-items:start; padding-top:6px; }
+  .st-vedette{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:3px; }
+  .st-photo{ width:clamp(84px,9vw,112px); aspect-ratio:1; border-radius:50%; object-fit:cover; object-position:top; background:var(--stripe); margin-bottom:6px; }
+  .st-prenom{ font-size:15px; font-weight:600; line-height:1.15; }
+  .st-famille{ font-family:'Oswald', sans-serif; font-size:22px; font-weight:600; line-height:1.1; overflow-wrap:anywhere; }
+  .st-equipe{ display:flex; align-items:center; gap:5px; color:var(--ink-muted); font-size:12.5px; margin-top:2px; }
+  .st-equipe img{ width:18px; height:18px; object-fit:contain; }
+  .st-lib{ margin-top:8px; font-size:11.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-muted); }
+  .st-val{ font-family:'Oswald', sans-serif; font-size:clamp(36px,4vw,46px); font-weight:600; line-height:1; color:var(--ink); }
+  .st-liste{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .st-liste li{ display:grid; grid-template-columns:30px 20px minmax(0,1fr) auto; align-items:center; gap:8px; padding:6px 10px; border-radius:6px; font-size:14px; cursor:default; }
+  .st-liste li + li{ border-top:1px solid var(--line); }
+  .st-liste li.is-actif{ background:var(--accent); color:var(--accent-ink); border-top-color:transparent; }
+  .st-liste li.is-actif + li{ border-top-color:transparent; }
+  .st-liste .rang{ color:inherit; opacity:0.75; font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  .st-liste img{ width:20px; height:20px; object-fit:contain; }
+  .st-liste .nom{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+  .st-liste .val{ font-family:'IBM Plex Mono', monospace; font-weight:700; }
+  .st-tous{ align-self:flex-start; padding:0; border:none; background:none; cursor:pointer; color:var(--accent); font:inherit; font-size:13.5px; font-weight:700; }
+  .st-tous:hover{ text-decoration:underline; }
+  .st-vide-bloc{ color:var(--ink-muted); font-size:14px; }
+
+  /* ---------- Tableaux complets ---------- */
   .st-filtres{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-  .st-filtres input, .st-filtres select{
-    height:40px; padding:0 12px; border-radius:9px; border:none; font:inherit; font-size:14.5px; background:var(--surface); color:var(--ink);
-  }
-  .st-filtres input{ flex:1 1 200px; min-width:0; }
-  .st-seg{ display:inline-flex; padding:4px; gap:4px; border-radius:11px; background:rgba(0,0,0,0.16); }
-  .st-seg button{ min-height:32px; padding:0 12px; border:none; border-radius:8px; cursor:pointer; background:transparent; color:var(--accent-ink); font:inherit; font-weight:700; font-size:12.5px; text-transform:uppercase; letter-spacing:0.03em; }
-  .st-seg button[aria-pressed="true"]{ background:var(--nav-dark); color:var(--nav-ink); }
-
-  /* Meneurs */
-  .st-meneurs{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px; }
-  .st-meneur{ position:relative; overflow:hidden; padding:14px 16px 12px; border-radius:14px; background:var(--surface); border:1px solid var(--line); }
-  .st-meneur h3{ margin:0 0 10px; font-family:'Oswald', sans-serif; font-weight:500; font-size:15px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
-  .st-premier{ display:flex; align-items:center; gap:12px; min-height:64px; }
-  .st-photo{ width:64px; height:64px; flex-shrink:0; border-radius:50%; object-fit:cover; object-position:top; background:var(--stripe); border:3px solid var(--accent); }
-  .st-premier div{ flex:1; min-width:0; }
-  .st-premier b{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:16px; line-height:1.2; }
-  .st-premier small{ display:flex; align-items:center; gap:5px; margin-top:2px; color:var(--ink-muted); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .st-premier small img{ width:18px; height:18px; object-fit:contain; }
-  .st-valeur{ flex-shrink:0; font-family:'Oswald', sans-serif; font-weight:500; font-size:40px; line-height:1; color:var(--accent); }
-  .st-suivants{ list-style:none; margin:10px 0 0; padding:8px 0 0; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:4px; font-size:13.5px; }
-  .st-suivants li{ display:flex; align-items:center; gap:6px; }
-  .st-suivants img{ width:18px; height:18px; object-fit:contain; }
-  .st-suivants span{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .st-suivants b{ font-family:'IBM Plex Mono', monospace; }
-
-  /* Tableau */
-  .st-table-wrap{ overflow:auto; border-radius:var(--radius); border:1px solid var(--line); background:var(--surface); max-height:calc(100vh - 160px); }
-  .st-table{ width:100%; border-collapse:separate; border-spacing:0; font-size:14px; white-space:nowrap; }
-  .st-table th{ position:sticky; top:0; z-index:2; padding:9px 10px; background:var(--accent); color:var(--accent-ink); font-size:12px; text-transform:uppercase; letter-spacing:0.04em; text-align:right; cursor:pointer; user-select:none; }
+  .st-filtres input, .st-filtres select{ height:40px; padding:0 12px; border-radius:9px; border:1px solid var(--line); font:inherit; font-size:14.5px; background:var(--bg, var(--surface)); color:var(--ink); }
+  .st-filtres input{ flex:1 1 220px; min-width:0; }
+  .st-seg{ display:inline-flex; padding:3px; gap:3px; border-radius:10px; border:1px solid var(--line); }
+  .st-seg button{ min-height:32px; padding:0 12px; border:none; border-radius:7px; cursor:pointer; background:transparent; color:var(--ink-muted); font:inherit; font-weight:700; font-size:12.5px; }
+  .st-seg button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
+  .st-table-wrap{ overflow:auto; border-radius:10px; border:1px solid var(--line); max-height:calc(100vh - 150px); }
+  .st-table{ width:100%; border-collapse:separate; border-spacing:0; font-size:13.5px; white-space:nowrap; }
+  .st-table th{ position:sticky; top:0; z-index:2; padding:10px 9px; background:var(--nav-dark); color:var(--nav-ink); font-size:11.5px; letter-spacing:0.04em; text-align:right; cursor:pointer; user-select:none; }
   .st-table th.g{ text-align:left; }
-  .st-table th[aria-sort]{ background:var(--nav-dark); color:var(--nav-ink); }
-  .st-table th[aria-sort="descending"]::after{ content:' ▼'; font-size:9px; } .st-table th[aria-sort="ascending"]::after{ content:' ▲'; font-size:9px; }
-  .st-table td{ padding:7px 10px; border-top:1px solid var(--line); text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13.5px; }
-  .st-table td.g{ text-align:left; font-family:'IBM Plex Sans', sans-serif; font-size:14px; }
-  .st-table td.tri{ background:color-mix(in srgb, var(--accent) 9%, transparent); font-weight:700; }
-  .st-table tbody tr:nth-child(even) td{ background-color:var(--stripe); }
+  .st-table th[aria-sort]{ background:var(--accent); color:var(--accent-ink); }
+  .st-table th[aria-sort="descending"]::after{ content:' ▼'; font-size:8px; } .st-table th[aria-sort="ascending"]::after{ content:' ▲'; font-size:8px; }
+  .st-table td{ padding:8px 9px; border-top:1px solid var(--line); text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; background:var(--surface); }
+  .st-table td.g{ text-align:left; font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; }
+  .st-table td.tri{ background:color-mix(in srgb, var(--accent) 10%, var(--surface)); font-weight:700; }
+  .st-table tbody tr:nth-child(even) td{ background:var(--stripe); }
   .st-table tbody tr:nth-child(even) td.tri{ background:color-mix(in srgb, var(--accent) 14%, var(--stripe)); }
   .st-table tbody tr:hover td{ background:var(--accent-soft); }
-  /* 1re colonne (rang + joueur) figée pendant le défilement horizontal */
-  .st-table .fixe{ position:sticky; left:0; z-index:1; background:var(--surface); }
-  .st-table th.fixe{ z-index:3; background:var(--accent); }
-  .st-table th.fixe[aria-sort]{ background:var(--nav-dark); }
-  .st-joueur{ display:flex; align-items:center; gap:8px; }
-  .st-rang{ width:24px; text-align:right; color:var(--ink-muted); font-family:'IBM Plex Mono', monospace; font-size:12px; }
-  .st-joueur img{ width:22px; height:22px; object-fit:contain; flex-shrink:0; }
+  .st-table .fixe{ position:sticky; left:0; z-index:1; }
+  .st-table th.fixe{ z-index:3; }
+  .st-table td.rang{ color:var(--ink-muted); font-size:12px; width:1%; }
   .st-joueur a{ color:inherit; text-decoration:none; font-weight:600; }
   .st-joueur a:hover{ color:var(--accent); text-decoration:underline; }
-  .st-pos{ color:var(--ink-muted); font-size:12px; font-family:'IBM Plex Sans', sans-serif; }
+  .st-eq{ display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Sans', sans-serif; }
+  .st-eq img{ width:20px; height:20px; object-fit:contain; }
   .st-pm-pos{ color:var(--positive); } .st-pm-neg{ color:var(--negative); }
+  .st-pages{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; font-size:13.5px; color:var(--ink-muted); }
+  .st-pages div{ display:flex; gap:4px; flex-wrap:wrap; }
+  .st-pages button{ min-width:36px; height:34px; padding:0 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer; font:inherit; font-weight:600; }
+  .st-pages button[aria-current="page"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .st-pages button:disabled{ opacity:0.4; cursor:default; }
   .st-note{ margin:0; color:var(--ink-muted); font-size:13px; }
   .st-vide{ padding:30px; text-align:center; color:var(--ink-muted); }
-  @media (max-width:600px){
-    .st-filtres input, .st-filtres select{ flex:1 1 100%; height:38px; }
-    .st-seg{ width:100%; box-sizing:border-box; } .st-seg button{ flex:1 1 0; min-width:0; padding:0 4px; font-size:11px; letter-spacing:0; }
-    .st-valeur{ font-size:34px; } .st-photo{ width:56px; height:56px; }
-    .st-table{ font-size:13px; } .st-table td{ padding:6px 8px; }
+
+  @media (max-width:900px){
+    .st-blocs{ grid-template-columns:minmax(0, 1fr); }
+  }
+  @media (max-width:520px){
+    .st-corps{ grid-template-columns:minmax(0, 1fr); gap:10px; }
+    .st-vedette{ display:grid; grid-template-columns:72px minmax(0,1fr) auto; grid-template-rows:auto auto auto; text-align:left; align-items:center; column-gap:12px; row-gap:0; }
+    .st-vedette .st-photo{ grid-row:1 / 4; width:72px; margin:0; }
+    .st-vedette .st-lib{ grid-column:3; grid-row:1; margin:0; text-align:right; }
+    .st-vedette .st-val{ grid-column:3; grid-row:2 / 4; text-align:right; font-size:36px; }
+    .st-famille{ font-size:19px; }
+    .st-filtres input, .st-filtres select{ flex:1 1 100%; }
+    .st-seg{ width:100%; box-sizing:border-box; } .st-seg button{ flex:1 1 0; min-width:0; padding:0 4px; }
+    .st-table td{ padding:7px 7px; }
   }
 </style>
 </head>
@@ -73,25 +106,36 @@
 <div class="app">
   <site-header class="app-header" current-page="stats"></site-header>
 
-  <div class="filter-band">
-    <div class="st-filtres">
-      <input type="search" id="recherche" placeholder="Rechercher un joueur…" aria-label="Rechercher un joueur" autocomplete="off">
-      <select id="equipe" aria-label="Équipe"><option value="">Toutes les équipes</option></select>
-      <div class="st-seg" role="group" aria-label="Position">
-        <button type="button" data-po="" aria-pressed="true">Tous</button>
-        <button type="button" data-po="A" aria-pressed="false">Attaquants</button>
-        <button type="button" data-po="D" aria-pressed="false">Défenseurs</button>
-        <button type="button" data-po="G" aria-pressed="false">Gardiens</button>
-      </div>
-    </div>
-  </div>
-
   <main id="content">
     <div id="loader"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
     <div class="st-page" id="page" hidden>
-      <section class="st-meneurs" id="meneurs"></section>
-      <div class="st-table-wrap"><table class="st-table" id="table"></table></div>
-      <p class="st-note" id="note"></p>
+      <div class="st-carte">
+        <h2 class="st-titre">Statistiques</h2>
+        <nav class="st-onglets" role="tablist" aria-label="Sections">
+          <button type="button" role="tab" data-onglet="accueil" aria-selected="true">Accueil</button>
+          <button type="button" role="tab" data-onglet="patineurs" aria-selected="false">Patineurs</button>
+          <button type="button" role="tab" data-onglet="gardiens" aria-selected="false">Gardiens</button>
+          <a href="classement.html">Équipes</a>
+        </nav>
+
+        <section class="st-blocs" id="vueAccueil"></section>
+
+        <section id="vueTableau" hidden>
+          <div class="st-filtres" style="margin-bottom:14px">
+            <input type="search" id="recherche" placeholder="Rechercher un joueur…" aria-label="Rechercher un joueur" autocomplete="off">
+            <select id="equipe" aria-label="Équipe"><option value="">Toutes les équipes</option></select>
+            <div class="st-seg" id="segPosition" role="group" aria-label="Position">
+              <button type="button" data-po="" aria-pressed="true">Tous</button>
+              <button type="button" data-po="A" aria-pressed="false">Attaquants</button>
+              <button type="button" data-po="D" aria-pressed="false">Défenseurs</button>
+            </div>
+          </div>
+          <div class="st-table-wrap"><table class="st-table" id="table"></table></div>
+          <div class="st-pages" id="pages" style="margin-top:12px"></div>
+        </section>
+
+        <p class="st-note" id="note"></p>
+      </div>
     </div>
     <p class="st-vide" id="vide" hidden>Aucune statistique importée pour l’instant.</p>
   </main>
@@ -99,17 +143,21 @@
 
 <script>
 /* =========================================================================
-   Stats des joueurs : onglet public STATS_JOUEURS (importé par un dirigeant,
-   après vérification, depuis publier.lnhq.ca/stats-import.html).
-   Tri par colonne, filtres équipe / position, recherche ; meneurs en haut.
+   Stats des joueurs, à la manière de nhl.com/stats :
+   - Accueil : blocs de meneurs (vedette + 10 premiers, égalités « T3 ») ;
+   - Patineurs / Gardiens : tableau complet, tri par colonne, filtres, pages de 50.
+   Données : onglets publics STATS_JOUEURS et STATS_GARDIENS (importés par un
+   dirigeant depuis publier.lnhq.ca/stats-import.html), photos via IDS_LNH.
+   L'adresse garde l'état : ?onglet=patineurs&tri=b&po=D (et ?joueur=Nom, Prénom).
    ========================================================================= */
 const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
 const EQUIPES = new Map((window.LNHQ_TEAMS || []).map(t => [t.code, t]));
 const $ = id => document.getElementById(id);
 document.getElementById('sheetTitle').textContent = 'LNHQ';
-const els = { rowCount: document.getElementById('rowCount'), lastUpdated: document.getElementById('lastUpdated') };
+const els = { rowCount: document.getElementById('rowCount') };
+const PAR_PAGE = 50;
 
-// Colonnes de l'onglet → affichage. num : valeur numérique (tri) ; une colonne vide partout est masquée.
+// Colonnes des tableaux. asc : plus bas = meilleur (tri croissant au 1er clic) ; calc : colonne calculée.
 const COLS_P = [
   { cle: 'pj', titre: 'PJ', aide: 'Parties jouées' },
   { cle: 'b', titre: 'B', aide: 'Buts' },
@@ -117,28 +165,28 @@ const COLS_P = [
   { cle: 'p', titre: 'PTS', aide: 'Points' },
   { cle: 'pm', titre: '+/-', aide: 'Différentiel' },
   { cle: 'pun', titre: 'PUN', aide: 'Minutes de pénalité' },
-  { cle: 't', titre: 'T', aide: 'Tirs' },
-  { cle: 'pct', titre: '%T', aide: '% de tirs convertis' },
-  { cle: 'bg', titre: 'BG', aide: 'Buts gagnants' },
+  { cle: 'ppj', titre: 'P/PJ', aide: 'Points par match', calc: j => (num(j.pj) > 0 && j.p !== '') ? (num(j.p) / num(j.pj)).toFixed(2) : '' },
   { cle: 'ban', titre: 'BAN', aide: 'Buts en avantage numérique' },
   { cle: 'pan', titre: 'PAN', aide: 'Points en avantage numérique' },
   { cle: 'bin', titre: 'BIN', aide: 'Buts en infériorité numérique' },
   { cle: 'pin', titre: 'PIN', aide: 'Points en infériorité numérique' },
+  { cle: 'bg', titre: 'BG', aide: 'Buts gagnants' },
+  { cle: 't', titre: 'T', aide: 'Tirs' },
+  { cle: 'pct', titre: '%T', aide: '% de tirs convertis' },
   { cle: 'tgm', titre: 'TG/M', aide: 'Temps de glace moyen par match' },
   { cle: 'mjg', titre: 'MJG', aide: 'Mises au jeu gagnées' },
   { cle: 'mjt', titre: 'MJ', aide: 'Mises au jeu prises' },
   { cle: 'pmj', titre: '%MJ', aide: '% de mises au jeu gagnées' },
   { cle: 'me', titre: 'MÉ', aide: 'Mises en échec' },
   { cle: 'tbl', titre: 'TBL', aide: 'Tirs bloqués' },
-  { cle: 'rev', titre: 'REV', aide: 'Revirements (rondelles perdues)' },
+  { cle: 'rev', titre: 'REV', aide: 'Revirements (rondelles perdues)', asc: true },
   { cle: 'rec', titre: 'REC', aide: 'Récupérations (rondelles volées)' },
 ];
-// Gardiens (onglet STATS_GARDIENS). asc : plus bas = meilleur (tri croissant au 1er clic).
 const COLS_G = [
   { cle: 'pj', titre: 'PJ', aide: 'Parties jouées' },
   { cle: 'v', titre: 'V', aide: 'Victoires' },
-  { cle: 'd', titre: 'D', aide: 'Défaites' },
-  { cle: 'dp', titre: 'DP', aide: 'Défaites en prolongation ou en fusillade' },
+  { cle: 'd', titre: 'D', aide: 'Défaites', asc: true },
+  { cle: 'dp', titre: 'DP', aide: 'Défaites en prolongation ou en fusillade', asc: true },
   { cle: 'bl', titre: 'BL', aide: 'Blanchissages' },
   { cle: 'parr', titre: '%ARR', aide: 'Pourcentage d’arrêts' },
   { cle: 'moy', titre: 'MOY', aide: 'Moyenne de buts accordés par match', asc: true },
@@ -147,35 +195,51 @@ const COLS_G = [
   { cle: 'bc', titre: 'BC', aide: 'Buts contre', asc: true },
   { cle: 'min', titre: 'MIN', aide: 'Minutes jouées' },
   { cle: 'pun', titre: 'PUN', aide: 'Minutes de pénalité' },
+  { cle: 'b', titre: 'B', aide: 'Buts' },
+  { cle: 'a', titre: 'A', aide: 'Passes' },
   { cle: 'p', titre: 'PTS', aide: 'Points' },
 ];
-// Entête de l'onglet → clé (les colonnes sont lues par leur nom, l'ordre peut changer).
-const entetes = cols => Object.assign({ 'Joueur': 'joueur', 'Nom': 'nom', 'Équipe': 'equipe', 'PO': 'po', 'P': 'p', 'B': 'b', 'A': 'a', 'Importé le': 'importe' },
-  Object.fromEntries(cols.filter(c => c.cle !== 'p').map(c => [c.titre, c.cle])));
-// Meneurs : [clé, titre, options] ; qualif : seulement les gardiens avec assez de matchs.
-const MENEURS_P = [['p', 'Points'], ['b', 'Buts'], ['a', 'Passes'], ['pm', 'Plus/moins']];
-const MENEURS_G = [['v', 'Victoires'], ['parr', '% d’arrêts', { qualif: true }], ['moy', 'Moyenne', { asc: true, qualif: true }], ['bl', 'Blanchissages']];
+// Entête de l'onglet → clé (lues par leur nom : l'ordre de l'onglet peut changer).
+const entetes = cols => Object.assign({ 'Joueur': 'joueur', 'Nom': 'nom', 'Équipe': 'equipe', 'PO': 'po', 'P': 'p', 'Importé le': 'importe' },
+  Object.fromEntries(cols.filter(c => c.cle !== 'p' && !c.calc).map(c => [c.titre, c.cle])));
+
+// Blocs de l'accueil (comme les blocs « Skaters / Goalies / Defensemen » de la LNH).
+const BLOCS = [
+  { titre: 'Patineurs', lot: 'P', stats: [['p', 'Points'], ['b', 'Buts'], ['a', 'Passes']] },
+  { titre: 'Gardiens', lot: 'G', qualif: true, stats: [['moy', 'Moyenne', { asc: true }], ['parr', '% d’arrêts'], ['bl', 'Blanchissages'], ['v', 'Victoires']] },
+  { titre: 'Défenseurs', lot: 'P', po: 'D', stats: [['p', 'Points'], ['b', 'Buts'], ['a', 'Passes']] },
+  { titre: 'Jeu physique', lot: 'P', stats: [['me', 'Mises en échec'], ['tbl', 'Tirs bloqués'], ['rec', 'Récupérations']] },
+];
 const lots = { P: [], G: [] };
-let COLS = COLS_P, MENEURS = MENEURS_P, joueurs = [], ids = new Map(), tri = { cle: 'p', sens: -1 }, filtre = { texte: '', equipe: '', po: '' };
-const modeGardiens = () => filtre.po === 'G';
-// Gardiens qualifiés pour les meneurs %ARR / MOY : au moins 40 % des matchs du plus utilisé.
-const seuilGardiens = () => Math.max(1, Math.round(0.4 * Math.max(0, ...lots.G.map(j => num(j.pj) || 0))));
+let ids = new Map();
+const etat = { onglet: 'accueil', tri: { cle: 'p', sens: -1 }, page: 0, texte: '', equipe: '', po: '' };
 
 function el(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
 const logo = c => { const i = el('img'); i.src = 'Logos/' + c + '.png'; i.alt = ''; i.loading = 'lazy'; i.onerror = () => { i.style.visibility = 'hidden'; }; return i; };
 const sansAccents = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const groupe = po => { const p = String(po || '').split('/')[0].toUpperCase(); return /^(LD|RD|D)$/.test(p) ? 'D' : p === 'G' ? 'G' : 'A'; };
-const nomAffiche = j => { if(!j.nom) return j.joueur; const v = j.nom.indexOf(','); return v > 0 ? j.nom.slice(v + 1).trim() + ' ' + j.nom.slice(0, v).trim() : j.nom; };
+// « McDavid, Connor » → { prenom: 'Connor', famille: 'McDavid' } ; sinon le nom abrégé de l'export (« C. McDavid »).
+const parties = j => {
+  const n = j.nom || '', v = n.indexOf(',');
+  if(v > 0) return { prenom: n.slice(v + 1).trim(), famille: n.slice(0, v).trim() };
+  const p = j.joueur.indexOf(' ');
+  return p > 0 ? { prenom: j.joueur.slice(0, p), famille: j.joueur.slice(p + 1) } : { prenom: '', famille: j.joueur };
+};
+const nomAffiche = j => { const x = parties(j); return (x.prenom + ' ' + x.famille).trim(); };
 const num = v => {
   const s = String(v), t = /^(\d+):(\d{2})$/.exec(s);   // « 21:12 » (temps de glace) → minutes
   if(t) return +t[1] + t[2] / 60;
   const n = parseFloat(s.replace('%', '').replace(',', '.')); return isNaN(n) ? null : n;
 };
+const valeur = (j, c) => c.calc ? c.calc(j) : j[c.cle];
+const affiche = (k, v) => k === 'pm' && num(v) > 0 ? '+' + v : v;
+// Gardiens qualifiés (meneurs %ARR / MOY) : au moins 40 % des matchs du plus utilisé.
+const seuilGardiens = () => Math.max(1, Math.round(0.4 * Math.max(0, ...lots.G.map(j => num(j.pj) || 0))));
+const photoDe = j => { const id = ids.get(j.nom); return id ? `https://assets.nhle.com/mugs/nhl/latest/${id}.png` : j.equipe ? 'Logos/' + j.equipe + '.png' : 'logo-lnhq.png'; };
 
 async function gviz(params){
   const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&${params}&t=${Date.now()}`);
-  const json = JSON.parse((await res.text()).match(/setResponse\(([\s\S]*)\);\s*$/)[1]);
-  return json.table;
+  return JSON.parse((await res.text()).match(/setResponse\(([\s\S]*)\);\s*$/)[1]).table;
 }
 
 async function charger(){
@@ -193,23 +257,19 @@ async function charger(){
         cles.forEach((k, i) => { if(k) j[k] = v(c, i); });
         importe = importe || j.importe;
         return j;
-      }).filter(j => j.joueur && j.pj !== '0');   // 0 match joué : rien à montrer
+      }).filter(j => j.joueur && j.pj !== '0' && j.pj !== '');   // aucun match joué : rien à montrer
     };
     lots.P = lire(t, COLS_P); lots.G = lire(tg, COLS_G);
     if(!lots.P.length && !lots.G.length){ $('loader').hidden = true; $('vide').hidden = false; return; }
-    document.querySelector('[data-po="G"]').hidden = !lots.G.length;   // pas encore de gardiens importés
-    // Arrivée depuis la carte d'un gardien : vue Gardiens.
-    if(joueurDemande && lots.G.some(j => j.nom === joueurDemande)) choisirPosition('G', false);
-    joueurs = modeGardiens() ? lots.G : lots.P;
     if(idsT && (idsT.cols[0] || {}).label === 'Joueur') idsT.rows.forEach(r => { const c = r.c || []; const n = c[0] && c[0].v, i = c[1] && c[1].v; if(n && /^\d{6,8}$/.test(String(i))) ids.set(String(n), String(i)); });
-    // Équipes présentes
+    document.querySelector('[data-onglet="gardiens"]').hidden = !lots.G.length;
     const codes = [...new Set(lots.P.concat(lots.G).map(j => j.equipe).filter(Boolean))].sort((a, b) => ((EQUIPES.get(a) || {}).name || a).localeCompare((EQUIPES.get(b) || {}).name || b, 'fr'));
     codes.forEach(c => $('equipe').append(new Option((EQUIPES.get(c) || {}).name || c, c)));
     const d = importe ? new Date(importe) : null;
     $('note').textContent = (d && !isNaN(d) ? 'Stats importées le ' + new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(d) + '. ' : '')
-      + 'Les buts de fusillade ne sont pas comptés. Clique sur une colonne pour trier.'
-      + (lots.G.length ? ` Gardiens : meneurs au % d’arrêts et à la moyenne à partir de ${seuilGardiens()} matchs.` : '');
-    $('loader').hidden = true; $('vide').hidden = true; $('page').hidden = false;
+      + 'Les buts de fusillade ne sont pas comptés.';
+    lireAdresse();
+    $('loader').hidden = true; $('page').hidden = false;
     rendre();
   }catch(e){
     console.error(e);
@@ -217,100 +277,167 @@ async function charger(){
   }
 }
 
-function filtres(){
-  const q = sansAccents(filtre.texte);
-  return joueurs.filter(j => (!filtre.equipe || j.equipe === filtre.equipe) && (!filtre.po || groupe(j.po) === filtre.po)
+/* ---------- Accueil : blocs de meneurs ---------- */
+const choixBloc = BLOCS.map(() => 0);   // sous-onglet actif de chaque bloc
+function classement(bloc, k, o = {}){
+  const seuil = seuilGardiens();
+  const second = bloc.lot === 'G' ? 'pj' : 'p';
+  const liste = lots[bloc.lot].filter(j => num(j[k]) != null && (!bloc.po || groupe(j.po) === bloc.po)
+    && (!bloc.qualif || ['v', 'bl'].includes(k) || num(j.pj) >= seuil));
+  liste.sort((a, b) => (num(a[k]) - num(b[k])) * (o.asc ? 1 : -1) || num(b[second]) - num(a[second]));
+  // Rangs avec égalités : « T3 » quand plusieurs joueurs ont la même valeur.
+  return liste.slice(0, 10).map((j, i, l) => {
+    const premier = liste.findIndex(x => num(x[k]) === num(j[k]));
+    const egal = liste.filter(x => num(x[k]) === num(j[k])).length > 1;
+    return { j, rang: (egal ? 'T' : '') + (premier + 1) };
+  });
+}
+function rendreBloc(bloc, b){
+  const art = el('article', 'st-bloc');
+  if(!lots[bloc.lot].length) return null;
+  const tete = el('div', 'st-bloc-tete'), h = el('h3'), lien = el('button', null, bloc.titre);
+  lien.type = 'button';
+  const [k, titreStat, o = {}] = bloc.stats[choixBloc[b]];
+  lien.addEventListener('click', () => allerTableau(bloc, k, o));
+  h.append(lien); tete.append(h);
+  if(bloc.qualif) tete.append(el('small', null, `(au moins ${seuilGardiens()} matchs)`));
+  const sous = el('div', 'st-sous'); sous.setAttribute('role', 'tablist');
+  bloc.stats.forEach(([, t], i) => {
+    const bt = el('button', null, t); bt.type = 'button'; bt.setAttribute('role', 'tab'); bt.setAttribute('aria-selected', String(i === choixBloc[b]));
+    bt.addEventListener('click', () => { choixBloc[b] = i; art.replaceWith(rendreBloc(bloc, b)); });
+    sous.append(bt);
+  });
+  const corps = el('div', 'st-corps');
+  const rangs = classement(bloc, k, o);
+  if(!rangs.length){ art.append(tete, sous, el('p', 'st-vide-bloc', 'Aucun joueur pour l’instant.')); return art; }
+  const vedette = el('div', 'st-vedette');
+  // Vedette : le premier ; survoler un nom de la liste la change (comme sur nhl.com).
+  const montrer = ({ j }, li) => {
+    const x = parties(j), ph = el('img', 'st-photo'); ph.alt = ''; ph.src = photoDe(j); ph.onerror = () => { ph.onerror = null; ph.src = 'logo-lnhq.png'; };
+    const eq = el('span', 'st-equipe'); if(j.equipe) eq.append(logo(j.equipe)); eq.append(document.createTextNode([j.equipe, j.po].filter(Boolean).join(' • ')));
+    const noms = el('div'); noms.append(el('div', 'st-prenom', x.prenom), el('div', 'st-famille', x.famille), eq);
+    vedette.replaceChildren(ph, noms, el('span', 'st-lib', titreStat), el('strong', 'st-val', affiche(k, j[k])));
+    liste.querySelectorAll('li').forEach(l => l.classList.toggle('is-actif', l === li));
+  };
+  const liste = el('ol', 'st-liste');
+  rangs.forEach(r => {
+    const li = el('li'); li.tabIndex = 0;
+    li.append(el('span', 'rang', r.rang + '.'), r.j.equipe ? logo(r.j.equipe) : el('span'), el('span', 'nom', nomAffiche(r.j)), el('span', 'val', affiche(k, r.j[k])));
+    li.addEventListener('pointerenter', () => montrer(r, li));
+    li.addEventListener('focus', () => montrer(r, li));
+    liste.append(li);
+  });
+  corps.append(vedette, liste);
+  const tous = el('button', 'st-tous', 'Tous les meneurs ›'); tous.type = 'button';
+  tous.addEventListener('click', () => allerTableau(bloc, k, o));
+  art.append(tete, sous, corps, tous);
+  montrer(rangs[0], liste.firstChild);
+  liste.addEventListener('pointerleave', () => montrer(rangs[0], liste.firstChild));
+  return art;
+}
+function allerTableau(bloc, k, o){
+  etat.onglet = bloc.lot === 'G' ? 'gardiens' : 'patineurs';
+  etat.tri = { cle: k, sens: o.asc ? 1 : -1 };
+  etat.po = bloc.po || ''; etat.page = 0;
+  rendre();
+  $('page').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---------- Tableaux ---------- */
+function filtres(lot){
+  const q = sansAccents(etat.texte);
+  return lots[lot].filter(j => (!etat.equipe || j.equipe === etat.equipe) && (lot === 'G' || !etat.po || groupe(j.po) === etat.po)
     && (!q || sansAccents(j.joueur + ' ' + j.nom).includes(q)));
 }
-
-function rendreMeneurs(liste){
-  const seuil = seuilGardiens(), second = modeGardiens() ? 'pj' : 'p';
-  $('meneurs').replaceChildren(...MENEURS.filter(([k]) => joueurs.some(j => j[k] !== '')).map(([k, titre, o = {}]) => {
-    const tries = liste.filter(j => num(j[k]) != null && (!o.qualif || num(j.pj) >= seuil))
-      .sort((a, b) => (num(a[k]) - num(b[k])) * (o.asc ? 1 : -1) || num(b[second]) - num(a[second])).slice(0, 4);
-    const c = el('article', 'st-meneur');
-    c.append(el('h3', null, titre));
-    if(!tries.length){ c.append(el('p', 'st-note', '—')); return c; }
-    const [p, ...suiv] = tries;
-    const pr = el('div', 'st-premier');
-    const id = ids.get(p.nom);
-    const photo = el('img', 'st-photo'); photo.alt = '';
-    photo.src = id ? `https://assets.nhle.com/mugs/nhl/latest/${id}.png` : (p.equipe ? 'Logos/' + p.equipe + '.png' : 'logo-lnhq.png');
-    photo.onerror = () => { photo.src = 'logo-lnhq.png'; };
-    const txt = el('div');
-    const sm = el('small'); if(p.equipe) sm.append(logo(p.equipe)); sm.append(document.createTextNode([p.equipe, p.po].filter(Boolean).join(' · ')));
-    txt.append(el('b', null, nomAffiche(p)), sm);
-    pr.append(photo, txt, el('span', 'st-valeur', (k === 'pm' && num(p[k]) > 0 ? '+' : '') + p[k]));
-    const ul = el('ul', 'st-suivants');
-    suiv.forEach((j, i) => { const li = el('li'); li.append(el('span', 'st-rang', String(i + 2))); if(j.equipe) li.append(logo(j.equipe)); li.append(el('span', null, nomAffiche(j)), el('b', null, (k === 'pm' && num(j[k]) > 0 ? '+' : '') + j[k])); ul.append(li); });
-    c.append(pr, ul);
-    return c;
-  }));
-}
-
-function rendre(){
-  const liste = filtres();
-  rendreMeneurs(liste);
-  const cols = COLS.filter(c => joueurs.some(j => j[c.cle] !== ''));
-  const tries = liste.slice().sort((a, b) => {
-    const x = num(a[tri.cle]), y = num(b[tri.cle]);
+function rendreTableau(){
+  const lot = etat.onglet === 'gardiens' ? 'G' : 'P', COLS = lot === 'G' ? COLS_G : COLS_P;
+  $('segPosition').hidden = lot === 'G';
+  document.querySelectorAll('[data-po]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.po === etat.po)));
+  const cols = COLS.filter(c => lots[lot].some(j => valeur(j, c) !== ''));
+  const col = COLS.find(c => c.cle === etat.tri.cle) || COLS[1];
+  const second = lot === 'G' ? 'pj' : 'p';
+  const tries = filtres(lot).sort((a, b) => {
+    const x = num(valeur(a, col)), y = num(valeur(b, col));
     if(x == null && y == null) return 0; if(x == null) return 1; if(y == null) return -1;
-    return (x - y) * tri.sens || (num(b.p) || 0) - (num(a.p) || 0);
+    return (x - y) * etat.tri.sens || (num(b[second]) || 0) - (num(a[second]) || 0);
   });
+  const pages = Math.max(1, Math.ceil(tries.length / PAR_PAGE));
+  etat.page = Math.min(etat.page, pages - 1);
+  const debut = etat.page * PAR_PAGE, morceau = tries.slice(debut, debut + PAR_PAGE);
   const thead = el('thead'), tr = el('tr');
-  const thJ = el('th', 'g fixe', 'Joueur'); tr.append(thJ, el('th', 'g', 'PO'));
+  tr.append(el('th', 'g', '#'), el('th', 'g fixe', 'Joueur'), el('th', 'g', 'Équipe'), el('th', 'g', 'PO'));
   cols.forEach(c => {
     const th = el('th', null, c.titre); th.title = c.aide; th.tabIndex = 0;
-    if(tri.cle === c.cle) th.setAttribute('aria-sort', tri.sens < 0 ? 'descending' : 'ascending');
-    const changer = () => { tri = tri.cle === c.cle ? { cle: c.cle, sens: -tri.sens } : { cle: c.cle, sens: c.asc ? 1 : -1 }; rendre(); };
+    if(col.cle === c.cle) th.setAttribute('aria-sort', etat.tri.sens < 0 ? 'descending' : 'ascending');
+    const changer = () => { etat.tri = etat.tri.cle === c.cle ? { cle: c.cle, sens: -etat.tri.sens } : { cle: c.cle, sens: c.asc ? 1 : -1 }; etat.page = 0; rendre(); };
     th.addEventListener('click', changer);
     th.addEventListener('keydown', ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); changer(); } });
     tr.append(th);
   });
   thead.append(tr);
   const tbody = el('tbody');
-  tries.forEach((j, i) => {
+  morceau.forEach((j, i) => {
     const r = el('tr');
-    const td = el('td', 'g fixe'), box = el('div', 'st-joueur');
-    box.append(el('span', 'st-rang', String(i + 1)));
-    if(j.equipe) box.append(logo(j.equipe));
-    const t = EQUIPES.get(j.equipe);
+    const td = el('td', 'g fixe st-joueur'), t = EQUIPES.get(j.equipe);
     const lien = el(t ? 'a' : 'span', null, nomAffiche(j));
     if(t) lien.href = 'equipe.html?team=' + t.slug + (j.nom ? '&joueur=' + encodeURIComponent(j.nom) : '');
-    box.append(lien);
-    td.append(box);
-    r.append(td, el('td', 'g st-pos', j.po));
+    td.append(lien);
+    const eq = el('td', 'g'), sp = el('span', 'st-eq'); if(j.equipe){ sp.append(logo(j.equipe), document.createTextNode(j.equipe)); } else sp.textContent = '—'; eq.append(sp);
+    r.append(el('td', 'rang', String(debut + i + 1)), td, eq, el('td', 'g', j.po));
     cols.forEach(c => {
-      const cell = el('td', tri.cle === c.cle ? 'tri' : '', c.cle === 'pm' && num(j.pm) > 0 ? '+' + j.pm : j[c.cle]);
-      if(c.cle === 'pm' && num(j.pm)) cell.classList.add(num(j.pm) > 0 ? 'st-pm-pos' : 'st-pm-neg');
+      const v = valeur(j, c), cell = el('td', col.cle === c.cle ? 'tri' : '', affiche(c.cle, v));
+      if(c.cle === 'pm' && num(v)) cell.classList.add(num(v) > 0 ? 'st-pm-pos' : 'st-pm-neg');
       r.append(cell);
     });
     tbody.append(r);
   });
-  if(!tries.length){ const r = el('tr'), td = el('td', 'g', 'Aucun joueur pour ces filtres.'); td.colSpan = cols.length + 2; r.append(td); tbody.append(r); }
+  if(!morceau.length){ const r = el('tr'), td = el('td', 'g', 'Aucun joueur pour ces filtres.'); td.colSpan = cols.length + 4; r.append(td); tbody.append(r); }
   $('table').replaceChildren(thead, tbody);
-  const mot = modeGardiens() ? 'gardien' : 'joueur';
-  if(els.rowCount) els.rowCount.textContent = `Stats des joueurs — ${tries.length} ${mot}${tries.length > 1 ? 's' : ''}`;
+  // Pagination
+  const nav = el('div');
+  const bouton = (txt, p, actif) => { const b = el('button', null, txt); b.type = 'button'; b.disabled = p < 0 || p >= pages; if(actif) b.setAttribute('aria-current', 'page'); b.addEventListener('click', () => { etat.page = p; rendre(); $('table').parentElement.scrollTo({ top: 0 }); }); return b; };
+  nav.append(bouton('‹', etat.page - 1));
+  for(let p = 0; p < pages; p++) if(p === 0 || p === pages - 1 || Math.abs(p - etat.page) <= 1) nav.append(bouton(String(p + 1), p, p === etat.page));
+    else if(Math.abs(p - etat.page) === 2) nav.append(el('span', null, '…'));
+  nav.append(bouton('›', etat.page + 1));
+  $('pages').replaceChildren(el('span', null, tries.length ? `${debut + 1}–${debut + morceau.length} sur ${tries.length}` : ''), pages > 1 ? nav : el('span'));
+  if(els.rowCount) els.rowCount.textContent = `Stats des ${lot === 'G' ? 'gardiens' : 'patineurs'} — ${tries.length}`;
 }
 
-// Arrivée depuis la carte d'un joueur (stats.html?joueur=Nom, Prénom) : recherche préremplie.
-const joueurDemande = new URLSearchParams(location.search).get('joueur');
-if(joueurDemande){ $('recherche').value = joueurDemande; filtre.texte = joueurDemande; }
-$('recherche').addEventListener('input', () => { filtre.texte = $('recherche').value; rendre(); });
-$('equipe').addEventListener('change', () => { filtre.equipe = $('equipe').value; rendre(); });
-// Position : « Gardiens » change de tableau (colonnes, meneurs et tri propres aux gardiens).
-function choisirPosition(po, afficher = true){
-  const avant = modeGardiens();
-  filtre.po = po;
-  document.querySelectorAll('[data-po]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.po === po)));
-  if(modeGardiens() !== avant){
-    const g = modeGardiens();
-    COLS = g ? COLS_G : COLS_P; MENEURS = g ? MENEURS_G : MENEURS_P; joueurs = g ? lots.G : lots.P;
-    tri = g ? { cle: 'v', sens: -1 } : { cle: 'p', sens: -1 };
-  }
-  if(afficher) rendre();
+/* ---------- Onglets et adresse ---------- */
+function rendre(){
+  document.querySelectorAll('[data-onglet]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.onglet === etat.onglet)));
+  const accueil = etat.onglet === 'accueil';
+  $('vueAccueil').hidden = !accueil; $('vueTableau').hidden = accueil;
+  if(accueil){
+    $('vueAccueil').replaceChildren(...BLOCS.map(rendreBloc).filter(Boolean));
+    if(els.rowCount) els.rowCount.textContent = 'Stats des joueurs';
+  }else rendreTableau();
+  const p = new URLSearchParams();
+  if(!accueil){ p.set('onglet', etat.onglet); p.set('tri', etat.tri.cle); if(etat.po) p.set('po', etat.po); }
+  if(etat.texte) p.set('joueur', etat.texte);
+  history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
 }
-document.querySelectorAll('[data-po]').forEach(b => b.addEventListener('click', () => choisirPosition(b.dataset.po)));
+function lireAdresse(){
+  const p = new URLSearchParams(location.search);
+  const onglet = p.get('onglet'), joueur = p.get('joueur');
+  if(['patineurs', 'gardiens'].includes(onglet)) etat.onglet = onglet;
+  // Arrivée depuis la carte d'un joueur (stats.html?joueur=Nom, Prénom) : son tableau, recherche préremplie.
+  if(joueur){ etat.texte = joueur; $('recherche').value = joueur; if(etat.onglet === 'accueil') etat.onglet = lots.G.some(j => j.nom === joueur) ? 'gardiens' : 'patineurs'; }
+  const cols = etat.onglet === 'gardiens' ? COLS_G : COLS_P, tri = cols.find(c => c.cle === p.get('tri'));
+  etat.tri = tri ? { cle: tri.cle, sens: tri.asc ? 1 : -1 } : etat.onglet === 'gardiens' ? { cle: 'v', sens: -1 } : { cle: 'p', sens: -1 };
+  if(['A', 'D'].includes(p.get('po'))) etat.po = p.get('po');
+}
+
+document.querySelectorAll('[data-onglet]').forEach(b => b.addEventListener('click', () => {
+  if(b.dataset.onglet === etat.onglet) return;
+  etat.onglet = b.dataset.onglet; etat.page = 0; etat.po = '';
+  etat.tri = etat.onglet === 'gardiens' ? { cle: 'v', sens: -1 } : { cle: 'p', sens: -1 };
+  rendre();
+}));
+$('recherche').addEventListener('input', () => { etat.texte = $('recherche').value; etat.page = 0; rendre(); });
+$('equipe').addEventListener('change', () => { etat.equipe = $('equipe').value; etat.page = 0; rendre(); });
+document.querySelectorAll('[data-po]').forEach(b => b.addEventListener('click', () => { etat.po = b.dataset.po; etat.page = 0; rendre(); }));
 charger();
 </script>
 </body>
