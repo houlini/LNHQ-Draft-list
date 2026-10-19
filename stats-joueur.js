@@ -1,13 +1,16 @@
 /* LNHQ — carte de stats d'un joueur, au survol (ordinateur) ou au toucher (mobile).
    Tout élément portant data-joueur="Nom, Prénom" (colonne B de PLAYERSDATABASE) l'affiche :
-   photo, équipe, position, OV, PJ · B · A · PTS · +/- · TG/M (onglet STATS_JOUEURS) et salaire.
+   photo, équipe, position, OV, PJ · B · A · PTS · +/- · TG/M (onglet STATS_JOUEURS) ou, pour un
+   gardien, PJ · V · D · DP · %ARR · MOY (STATS_GARDIENS), et salaire.
    Les données sont chargées une seule fois, au premier survol. */
 (function(){
   if(window.LNHQ_STATS_JOUEUR) return;
   const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
   const STATS = [['pj', 'PJ'], ['b', 'B'], ['a', 'A'], ['p', 'PTS'], ['pm', '+/-'], ['tgm', 'TG/M']];
-  // Entêtes de l'onglet STATS_JOUEURS → clés (lues par leur nom : l'ordre peut changer).
-  const ENTETES = { 'Nom': 'nom', 'Équipe': 'equipe', 'PJ': 'pj', 'B': 'b', 'A': 'a', 'P': 'p', '+/-': 'pm', 'TG/M': 'tgm' };
+  const STATS_G = [['pj', 'PJ'], ['v', 'V'], ['d', 'D'], ['dp', 'DP'], ['parr', '%ARR'], ['moy', 'MOY']];
+  // Entêtes des onglets STATS_JOUEURS / STATS_GARDIENS → clés (lues par leur nom : l'ordre peut changer).
+  const ENTETES = { 'Nom': 'nom', 'Équipe': 'equipe', 'PJ': 'pj', 'B': 'b', 'A': 'a', 'P': 'p', '+/-': 'pm', 'TG/M': 'tgm',
+    'V': 'v', 'D': 'd', 'DP': 'dp', '%ARR': 'parr', 'MOY': 'moy' };
   const PO = { C: 'C', LW: 'AG', RW: 'AD', LD: 'DG', RD: 'DD', D: 'D', G: 'G' };
 
   let donnees = null;   // Promise<{ stats: Map, infos: Map, ids: Map }>
@@ -19,12 +22,15 @@
       tableau('sheet=STATS_JOUEURS').catch(() => null),
       tableau('sheet=PLAYERSDATABASE&tq=' + encodeURIComponent("select B, C, H, N, Z where B <> '' and H <> 'CHOIX'")).catch(() => null),
       tableau('sheet=IDS_LNH').catch(() => null),
-    ]).then(([st, pdb, ids]) => {
+      tableau('sheet=STATS_GARDIENS').catch(() => null),
+    ]).then(([st, pdb, ids, sg]) => {
       const stats = new Map(), infos = new Map(), numeros = new Map();
-      if(st){
-        const cles = st.cols.map(c => ENTETES[(c.label || '').trim()]);
-        st.rows.forEach(r => { const j = {}; cles.forEach((k, i) => { if(k) j[k] = val((r.c || [])[i]); }); if(j.nom) stats.set(j.nom, j); });
-      }
+      const lire = (t, gardien) => {
+        if(!t || ((t.cols[0] || {}).label || '') !== 'Joueur') return;
+        const cles = t.cols.map(c => ENTETES[(c.label || '').trim()]);
+        t.rows.forEach(r => { const j = { gardien }; cles.forEach((k, i) => { if(k) j[k] = val((r.c || [])[i]); }); if(j.nom) stats.set(j.nom, j); });
+      };
+      lire(st, false); lire(sg, true);
       if(pdb) pdb.rows.forEach(r => { const c = r.c || []; const b = val(c[0]); if(b) infos.set(b, { ov: val(c[1]), po: val(c[2]), salaire: Number(c[3] && c[3].v) || 0, equipe: val(c[4]).toUpperCase() }); });
       if(ids && (ids.cols[0] || {}).label === 'Joueur') ids.rows.forEach(r => { const c = r.c || []; const n = val(c[0]), i = val(c[1]); if(n && /^\d{6,8}$/.test(i)) numeros.set(n, i); });
       return { stats, infos, ids: numeros };
@@ -84,7 +90,7 @@
     c.append(haut);
     if(st && st.pj && st.pj !== '0'){
       const dl = el('dl', 'sj-stats');
-      STATS.forEach(([k, t]) => { const g = el('div'); g.append(el('dt', null, t), el('dd', null, k === 'pm' && Number(st.pm) > 0 ? '+' + st.pm : (st[k] || '–'))); dl.append(g); });
+      (st.gardien ? STATS_G : STATS).forEach(([k, t]) => { const g = el('div'); g.append(el('dt', null, t), el('dd', null, k === 'pm' && Number(st.pm) > 0 ? '+' + st.pm : (st[k] || '–'))); dl.append(g); });
       c.append(dl);
     }else c.append(el('p', 'sj-vide', 'Aucun match joué cette saison.'));
     const bas = el('div', 'sj-bas');

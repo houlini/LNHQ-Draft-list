@@ -63,7 +63,7 @@
   .st-vide{ padding:30px; text-align:center; color:var(--ink-muted); }
   @media (max-width:600px){
     .st-filtres input, .st-filtres select{ flex:1 1 100%; height:38px; }
-    .st-seg{ width:100%; } .st-seg button{ flex:1; }
+    .st-seg{ width:100%; box-sizing:border-box; } .st-seg button{ flex:1 1 0; min-width:0; padding:0 4px; font-size:11px; letter-spacing:0; }
     .st-valeur{ font-size:34px; } .st-photo{ width:56px; height:56px; }
     .st-table{ font-size:13px; } .st-table td{ padding:6px 8px; }
   }
@@ -81,6 +81,7 @@
         <button type="button" data-po="" aria-pressed="true">Tous</button>
         <button type="button" data-po="A" aria-pressed="false">Attaquants</button>
         <button type="button" data-po="D" aria-pressed="false">Défenseurs</button>
+        <button type="button" data-po="G" aria-pressed="false">Gardiens</button>
       </div>
     </div>
   </div>
@@ -109,7 +110,7 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
 const els = { rowCount: document.getElementById('rowCount'), lastUpdated: document.getElementById('lastUpdated') };
 
 // Colonnes de l'onglet → affichage. num : valeur numérique (tri) ; une colonne vide partout est masquée.
-const COLS = [
+const COLS_P = [
   { cle: 'pj', titre: 'PJ', aide: 'Parties jouées' },
   { cle: 'b', titre: 'B', aide: 'Buts' },
   { cle: 'a', titre: 'A', aide: 'Passes' },
@@ -132,11 +133,33 @@ const COLS = [
   { cle: 'rev', titre: 'REV', aide: 'Revirements (rondelles perdues)' },
   { cle: 'rec', titre: 'REC', aide: 'Récupérations (rondelles volées)' },
 ];
+// Gardiens (onglet STATS_GARDIENS). asc : plus bas = meilleur (tri croissant au 1er clic).
+const COLS_G = [
+  { cle: 'pj', titre: 'PJ', aide: 'Parties jouées' },
+  { cle: 'v', titre: 'V', aide: 'Victoires' },
+  { cle: 'd', titre: 'D', aide: 'Défaites' },
+  { cle: 'dp', titre: 'DP', aide: 'Défaites en prolongation ou en fusillade' },
+  { cle: 'bl', titre: 'BL', aide: 'Blanchissages' },
+  { cle: 'parr', titre: '%ARR', aide: 'Pourcentage d’arrêts' },
+  { cle: 'moy', titre: 'MOY', aide: 'Moyenne de buts accordés par match', asc: true },
+  { cle: 'arr', titre: 'ARR', aide: 'Arrêts' },
+  { cle: 'tc', titre: 'TC', aide: 'Tirs contre' },
+  { cle: 'bc', titre: 'BC', aide: 'Buts contre', asc: true },
+  { cle: 'min', titre: 'MIN', aide: 'Minutes jouées' },
+  { cle: 'pun', titre: 'PUN', aide: 'Minutes de pénalité' },
+  { cle: 'p', titre: 'PTS', aide: 'Points' },
+];
 // Entête de l'onglet → clé (les colonnes sont lues par leur nom, l'ordre peut changer).
-const ENTETES = Object.assign({ 'Joueur': 'joueur', 'Nom': 'nom', 'Équipe': 'equipe', 'PO': 'po', 'P': 'p', 'Importé le': 'importe' },
-  Object.fromEntries(COLS.filter(c => c.cle !== 'p').map(c => [c.titre, c.cle])));
-const MENEURS = [['p', 'Points'], ['b', 'Buts'], ['a', 'Passes'], ['pm', 'Plus/moins']];
-let joueurs = [], ids = new Map(), tri = { cle: 'p', sens: -1 }, filtre = { texte: '', equipe: '', po: '' };
+const entetes = cols => Object.assign({ 'Joueur': 'joueur', 'Nom': 'nom', 'Équipe': 'equipe', 'PO': 'po', 'P': 'p', 'B': 'b', 'A': 'a', 'Importé le': 'importe' },
+  Object.fromEntries(cols.filter(c => c.cle !== 'p').map(c => [c.titre, c.cle])));
+// Meneurs : [clé, titre, options] ; qualif : seulement les gardiens avec assez de matchs.
+const MENEURS_P = [['p', 'Points'], ['b', 'Buts'], ['a', 'Passes'], ['pm', 'Plus/moins']];
+const MENEURS_G = [['v', 'Victoires'], ['parr', '% d’arrêts', { qualif: true }], ['moy', 'Moyenne', { asc: true, qualif: true }], ['bl', 'Blanchissages']];
+const lots = { P: [], G: [] };
+let COLS = COLS_P, MENEURS = MENEURS_P, joueurs = [], ids = new Map(), tri = { cle: 'p', sens: -1 }, filtre = { texte: '', equipe: '', po: '' };
+const modeGardiens = () => filtre.po === 'G';
+// Gardiens qualifiés pour les meneurs %ARR / MOY : au moins 40 % des matchs du plus utilisé.
+const seuilGardiens = () => Math.max(1, Math.round(0.4 * Math.max(0, ...lots.G.map(j => num(j.pj) || 0))));
 
 function el(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
 const logo = c => { const i = el('img'); i.src = 'Logos/' + c + '.png'; i.alt = ''; i.loading = 'lazy'; i.onerror = () => { i.style.visibility = 'hidden'; }; return i; };
@@ -157,26 +180,35 @@ async function gviz(params){
 
 async function charger(){
   try{
-    const [t, idsT] = await Promise.all([gviz('sheet=STATS_JOUEURS'), gviz('sheet=IDS_LNH').catch(() => null)]);
-    const lab = t.cols.map(c => (c.label || '').trim());
-    if(lab[0] !== 'Joueur' || lab[1] !== 'Nom'){ $('loader').hidden = true; $('vide').hidden = false; return; }
+    const [t, tg, idsT] = await Promise.all([gviz('sheet=STATS_JOUEURS'), gviz('sheet=STATS_GARDIENS').catch(() => null), gviz('sheet=IDS_LNH').catch(() => null)]);
     const v = (c, i) => c[i] && c[i].v != null ? String(c[i].v).trim() : '';
     let importe = '';
-    const cles = lab.map(l => l === 'PTS' ? 'p' : ENTETES[l]);
-    joueurs = t.rows.map(r => {
-      const c = r.c || [], j = {};
-      COLS.forEach(x => { j[x.cle] = ''; });
-      cles.forEach((k, i) => { if(k) j[k] = v(c, i); });
-      importe = importe || j.importe;
-      return j;
-    }).filter(j => j.joueur && j.pj !== '0');   // 0 match joué : rien à montrer
+    const lire = (tab, cols) => {
+      const lab = tab ? tab.cols.map(c => (c.label || '').trim()) : [];
+      if(lab[0] !== 'Joueur' || lab[1] !== 'Nom') return [];
+      const ent = entetes(cols), cles = lab.map(l => ent[l]);
+      return tab.rows.map(r => {
+        const c = r.c || [], j = {};
+        cols.forEach(x => { j[x.cle] = ''; });
+        cles.forEach((k, i) => { if(k) j[k] = v(c, i); });
+        importe = importe || j.importe;
+        return j;
+      }).filter(j => j.joueur && j.pj !== '0');   // 0 match joué : rien à montrer
+    };
+    lots.P = lire(t, COLS_P); lots.G = lire(tg, COLS_G);
+    if(!lots.P.length && !lots.G.length){ $('loader').hidden = true; $('vide').hidden = false; return; }
+    document.querySelector('[data-po="G"]').hidden = !lots.G.length;   // pas encore de gardiens importés
+    // Arrivée depuis la carte d'un gardien : vue Gardiens.
+    if(joueurDemande && lots.G.some(j => j.nom === joueurDemande)) choisirPosition('G', false);
+    joueurs = modeGardiens() ? lots.G : lots.P;
     if(idsT && (idsT.cols[0] || {}).label === 'Joueur') idsT.rows.forEach(r => { const c = r.c || []; const n = c[0] && c[0].v, i = c[1] && c[1].v; if(n && /^\d{6,8}$/.test(String(i))) ids.set(String(n), String(i)); });
     // Équipes présentes
-    const codes = [...new Set(joueurs.map(j => j.equipe).filter(Boolean))].sort((a, b) => ((EQUIPES.get(a) || {}).name || a).localeCompare((EQUIPES.get(b) || {}).name || b, 'fr'));
+    const codes = [...new Set(lots.P.concat(lots.G).map(j => j.equipe).filter(Boolean))].sort((a, b) => ((EQUIPES.get(a) || {}).name || a).localeCompare((EQUIPES.get(b) || {}).name || b, 'fr'));
     codes.forEach(c => $('equipe').append(new Option((EQUIPES.get(c) || {}).name || c, c)));
     const d = importe ? new Date(importe) : null;
     $('note').textContent = (d && !isNaN(d) ? 'Stats importées le ' + new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(d) + '. ' : '')
-      + 'Les buts de fusillade ne sont pas comptés. Clique sur une colonne pour trier.';
+      + 'Les buts de fusillade ne sont pas comptés. Clique sur une colonne pour trier.'
+      + (lots.G.length ? ` Gardiens : meneurs au % d’arrêts et à la moyenne à partir de ${seuilGardiens()} matchs.` : '');
     $('loader').hidden = true; $('vide').hidden = true; $('page').hidden = false;
     rendre();
   }catch(e){
@@ -192,8 +224,10 @@ function filtres(){
 }
 
 function rendreMeneurs(liste){
-  $('meneurs').replaceChildren(...MENEURS.filter(([k]) => joueurs.some(j => j[k] !== '')).map(([k, titre]) => {
-    const tries = liste.filter(j => num(j[k]) != null).sort((a, b) => num(b[k]) - num(a[k]) || num(b.p) - num(a.p)).slice(0, 4);
+  const seuil = seuilGardiens(), second = modeGardiens() ? 'pj' : 'p';
+  $('meneurs').replaceChildren(...MENEURS.filter(([k]) => joueurs.some(j => j[k] !== '')).map(([k, titre, o = {}]) => {
+    const tries = liste.filter(j => num(j[k]) != null && (!o.qualif || num(j.pj) >= seuil))
+      .sort((a, b) => (num(a[k]) - num(b[k])) * (o.asc ? 1 : -1) || num(b[second]) - num(a[second])).slice(0, 4);
     const c = el('article', 'st-meneur');
     c.append(el('h3', null, titre));
     if(!tries.length){ c.append(el('p', 'st-note', '—')); return c; }
@@ -228,7 +262,7 @@ function rendre(){
   cols.forEach(c => {
     const th = el('th', null, c.titre); th.title = c.aide; th.tabIndex = 0;
     if(tri.cle === c.cle) th.setAttribute('aria-sort', tri.sens < 0 ? 'descending' : 'ascending');
-    const changer = () => { tri = tri.cle === c.cle ? { cle: c.cle, sens: -tri.sens } : { cle: c.cle, sens: -1 }; rendre(); };
+    const changer = () => { tri = tri.cle === c.cle ? { cle: c.cle, sens: -tri.sens } : { cle: c.cle, sens: c.asc ? 1 : -1 }; rendre(); };
     th.addEventListener('click', changer);
     th.addEventListener('keydown', ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); changer(); } });
     tr.append(th);
@@ -255,7 +289,8 @@ function rendre(){
   });
   if(!tries.length){ const r = el('tr'), td = el('td', 'g', 'Aucun joueur pour ces filtres.'); td.colSpan = cols.length + 2; r.append(td); tbody.append(r); }
   $('table').replaceChildren(thead, tbody);
-  if(els.rowCount) els.rowCount.textContent = `Stats des joueurs — ${tries.length} joueur${tries.length > 1 ? 's' : ''}`;
+  const mot = modeGardiens() ? 'gardien' : 'joueur';
+  if(els.rowCount) els.rowCount.textContent = `Stats des joueurs — ${tries.length} ${mot}${tries.length > 1 ? 's' : ''}`;
 }
 
 // Arrivée depuis la carte d'un joueur (stats.html?joueur=Nom, Prénom) : recherche préremplie.
@@ -263,11 +298,19 @@ const joueurDemande = new URLSearchParams(location.search).get('joueur');
 if(joueurDemande){ $('recherche').value = joueurDemande; filtre.texte = joueurDemande; }
 $('recherche').addEventListener('input', () => { filtre.texte = $('recherche').value; rendre(); });
 $('equipe').addEventListener('change', () => { filtre.equipe = $('equipe').value; rendre(); });
-document.querySelectorAll('[data-po]').forEach(b => b.addEventListener('click', () => {
-  filtre.po = b.dataset.po;
-  document.querySelectorAll('[data-po]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  rendre();
-}));
+// Position : « Gardiens » change de tableau (colonnes, meneurs et tri propres aux gardiens).
+function choisirPosition(po, afficher = true){
+  const avant = modeGardiens();
+  filtre.po = po;
+  document.querySelectorAll('[data-po]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.po === po)));
+  if(modeGardiens() !== avant){
+    const g = modeGardiens();
+    COLS = g ? COLS_G : COLS_P; MENEURS = g ? MENEURS_G : MENEURS_P; joueurs = g ? lots.G : lots.P;
+    tri = g ? { cle: 'v', sens: -1 } : { cle: 'p', sens: -1 };
+  }
+  if(afficher) rendre();
+}
+document.querySelectorAll('[data-po]').forEach(b => b.addEventListener('click', () => choisirPosition(b.dataset.po)));
 charger();
 </script>
 </body>

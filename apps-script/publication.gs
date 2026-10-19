@@ -2576,8 +2576,24 @@ function deplacerTransactionsVersFil() {
    navigateur (incohérences affichées avant l'import) ; ici, on revérifie la forme
    et on remplace tout l'onglet public STATS_JOUEURS, lu par lnhq.ca/stats.html.
    ========================================================================= */
-const ONGLET_STATS = 'STATS_JOUEURS';
-const STATS_ENTETES = ['Joueur', 'Nom', 'Équipe', 'PO', 'PJ', 'B', 'A', 'P', '+/-', 'PUN', 'T', '%T', 'BG', 'BAN', 'PAN', 'BIN', 'PIN', 'TG/M', 'MJG', 'MJ', '%MJ', 'MÉ', 'TBL', 'REV', 'REC', 'Importé le'];
+// Deux onglets publics : patineurs et gardiens. entetes = colonnes de l'onglet (sans
+// « Importé le ») ; cles = clés envoyées par la page d'import, dans le même ordre.
+const STATS_TYPES = {
+  patineurs: {
+    onglet: 'STATS_JOUEURS',
+    entetes: ['Joueur', 'Nom', 'Équipe', 'PO', 'PJ', 'B', 'A', 'P', '+/-', 'PUN', 'T', '%T', 'BG', 'BAN', 'PAN', 'BIN', 'PIN', 'TG/M', 'MJG', 'MJ', '%MJ', 'MÉ', 'TBL', 'REV', 'REC'],
+    cles: ['joueur', 'nom', 'equipe', 'po', 'pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'pct', 'bg', 'ban', 'pan', 'bin', 'pin', 'tgm', 'mjg', 'mjt', 'pmj', 'me', 'tbl', 'rev', 'rec'],
+    entiers: ['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'pan', 'bin', 'pin', 'mjg', 'mjt', 'me', 'tbl', 'rev', 'rec'],
+    decimaux: [], courts: ['pct', 'pmj'],
+  },
+  gardiens: {
+    onglet: 'STATS_GARDIENS',
+    entetes: ['Joueur', 'Nom', 'Équipe', 'PO', 'PJ', 'V', 'D', 'DP', 'BL', '%ARR', 'MOY', 'ARR', 'TC', 'BC', 'MIN', 'PUN', 'B', 'A', 'P'],
+    cles: ['joueur', 'nom', 'equipe', 'po', 'pj', 'v', 'd', 'dp', 'bl', 'parr', 'moy', 'arr', 'tc', 'bc', 'min', 'pun', 'b', 'a', 'p'],
+    entiers: ['pj', 'v', 'd', 'dp', 'bl', 'arr', 'tc', 'bc', 'min', 'pun', 'b', 'a', 'p'],
+    decimaux: ['parr', 'moy'], courts: ['parr', 'moy'],   // « .936 », « 2.45 » : gardés tels quels
+  },
+};
 const MAX_LIGNES_STATS = 1500;
 
 function importerStats(d, membre) {
@@ -2588,14 +2604,13 @@ function importerStats(d, membre) {
   const codes = new Set(codesValides());
   const nombre = v => (v === '' || v == null) ? '' : (isNaN(Number(v)) ? null : String(Number(v)));
   const quand = new Date().toISOString();
-  // Ordre des colonnes de STATS_ENTETES (sans « Importé le »).
-  const CLES = ['joueur', 'nom', 'equipe', 'po', 'pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'pct', 'bg', 'ban', 'pan', 'bin', 'pin', 'tgm', 'mjg', 'mjt', 'pmj', 'me', 'tbl', 'rev', 'rec'];
-  const NUM = new Set(['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'pan', 'bin', 'pin', 'mjg', 'mjt', 'me', 'tbl', 'rev', 'rec']);
+  const cfg = STATS_TYPES[d.type] || STATS_TYPES.patineurs;
+  const STATS_ENTETES = cfg.entetes.concat(['Importé le']), CLES = cfg.cles, NUM = new Set(cfg.entiers);
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
     const classeur = SpreadsheetApp.openById(SHEET_ID);
-    const o = classeur.getSheetByName(ONGLET_STATS) || classeur.insertSheet(ONGLET_STATS);
+    const o = classeur.getSheetByName(cfg.onglet) || classeur.insertSheet(cfg.onglet);
     // Une colonne absente de cet import (clé non envoyée) garde la valeur déjà publiée pour
     // ce joueur. Les anciennes lignes sont lues par entête : l'ordre de l'onglet peut avoir changé.
     const avant = new Map();
@@ -2622,7 +2637,8 @@ function importerStats(d, membre) {
         else if (c === 'equipe') { const e = String(l.equipe || '').trim().toUpperCase(); ligne.push(codes.has(e) ? e : ''); }
         else if (c === 'po') ligne.push(String(l.po || '').trim().toUpperCase().slice(0, 12));
         else if (c === 'tgm') { const v = String(l.tgm == null ? '' : l.tgm).trim(); if (v && !/^\d{1,2}:\d{2}$/.test(v)) return { ok: false, erreur: 'nombre', joueur: joueur, colonne: c }; ligne.push(v); }
-        else ligne.push(String(l[c] == null ? '' : l[c]).trim().slice(0, c === 'pct' || c === 'pmj' ? 8 : 80));
+        else if (cfg.decimaux.indexOf(c) >= 0) { const v = String(l[c] == null ? '' : l[c]).trim(); if (v && isNaN(Number(v))) return { ok: false, erreur: 'nombre', joueur: joueur, colonne: c }; ligne.push(v.slice(0, 8)); }
+        else ligne.push(String(l[c] == null ? '' : l[c]).trim().slice(0, cfg.courts.indexOf(c) >= 0 ? 8 : 80));
       }
       ligne.push(quand);
       valeurs.push(ligne);
@@ -2632,7 +2648,7 @@ function importerStats(d, membre) {
     const tout = [STATS_ENTETES].concat(valeurs);
     o.getRange(1, 1, tout.length, STATS_ENTETES.length).setNumberFormat('@').setValues(tout);
     o.setFrozenRows(1);
-    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).appendRow([new Date(), membre.courriel, ONGLET_STATS, 'Import de ' + valeurs.length + ' joueurs', '', '']);
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL).appendRow([new Date(), membre.courriel, cfg.onglet, 'Import de ' + valeurs.length + (cfg === STATS_TYPES.gardiens ? ' gardiens' : ' patineurs'), '', '']);
     return { ok: true, joueurs: valeurs.length, importe: quand };
   } finally {
     verrou.releaseLock();

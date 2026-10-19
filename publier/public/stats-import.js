@@ -14,9 +14,35 @@
   const SHEET_ID = '1WEyoL9bgrGSQmX2HmEWxW7cCRp1hw9fQAQti6y9eD4A';
 
   // Colonnes : clé interne, entêtes acceptées (export du jeu ou français), libellé.
-  const COLONNES = [
+  // Deux types d'export : patineurs (onglet STATS_JOUEURS) et gardiens (STATS_GARDIENS),
+  // reconnus par leurs entêtes (SV% / GAA = gardiens).
+  const FIXES = [
     { cle: 'joueur', entetes: ['PLAYER', 'JOUEUR'], nom: 'Joueur', fixe: true },
     { cle: 'po', entetes: ['POS', 'PO', 'POSITION'], nom: 'PO', fixe: true },
+  ];
+  const TYPES = {
+    patineurs: { nom: 'patineurs', onglet: 'STATS_JOUEURS', colonnes: null, nombres: null, pourcents: ['pct', 'pmj'] },
+    gardiens: { nom: 'gardiens', onglet: 'STATS_GARDIENS', pourcents: [],
+      colonnes: FIXES.concat([
+        { cle: 'pj', entetes: ['GP', 'PJ'], nom: 'PJ' },
+        { cle: 'v', entetes: ['W', 'V'], nom: 'V' },
+        { cle: 'd', entetes: ['L', 'D'], nom: 'D' },
+        { cle: 'dp', entetes: ['OTL', 'DP'], nom: 'DP' },
+        { cle: 'bl', entetes: ['SO', 'BL'], nom: 'BL' },
+        { cle: 'parr', entetes: ['SV%', '%ARR'], nom: '%ARR' },
+        { cle: 'moy', entetes: ['GAA', 'MOY'], nom: 'MOY' },
+        { cle: 'arr', entetes: ['S', 'SV', 'ARR'], nom: 'ARR' },
+        { cle: 'tc', entetes: ['SA', 'TC'], nom: 'TC' },
+        { cle: 'bc', entetes: ['GA', 'BC'], nom: 'BC' },
+        { cle: 'min', entetes: ['MIN'], nom: 'MIN' },
+        { cle: 'pun', entetes: ['PIM', 'PUN'], nom: 'PUN' },
+        { cle: 'b', entetes: ['G', 'B'], nom: 'B' },
+        { cle: 'a', entetes: ['A'], nom: 'A' },
+        { cle: 'p', entetes: ['P', 'PTS'], nom: 'P' },
+      ]),
+      nombres: ['pj', 'v', 'd', 'dp', 'bl', 'parr', 'moy', 'arr', 'tc', 'bc', 'min', 'pun', 'b', 'a', 'p'] },
+  };
+  TYPES.patineurs.colonnes = FIXES.concat([
     { cle: 'pj', entetes: ['GP', 'PJ'], nom: 'PJ' },
     { cle: 'b', entetes: ['G', 'B', 'BUTS'], nom: 'B' },
     { cle: 'a', entetes: ['A', 'PASSES'], nom: 'A' },
@@ -40,9 +66,11 @@
     { cle: 'rec', entetes: ['TK', 'TAKEAWAYS', 'REC'], nom: 'REC' },
     // MIN (minutes totales) n'est pas publiée : elle sert seulement à vérifier TG/M.
     // Une colonne absente ou décochée garde la valeur déjà publiée.
-  ];
-  const NOMBRES = ['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'pan', 'bin', 'pin', 'mjg', 'mjt', 'me', 'tbl', 'rev', 'rec'];
-  const POURCENTS = ['pct', 'pmj'];
+  ]);
+  TYPES.patineurs.nombres = ['pj', 'b', 'a', 'p', 'pm', 'pun', 't', 'bg', 'ban', 'pan', 'bin', 'pin', 'mjg', 'mjt', 'me', 'tbl', 'rev', 'rec'];
+  let type = TYPES.patineurs, COLONNES, NOMBRES, POURCENTS;
+  const choisirType = t => { type = t; COLONNES = t.colonnes; NOMBRES = t.nombres; POURCENTS = t.pourcents; };
+  choisirType(TYPES.patineurs);
 
   let roster = [];            // { b: 'Nom, Prénom', po, equipe }
   let equipes = {};           // code → { pj, bp, v, ban, binf, tb, retard }
@@ -73,7 +101,7 @@
     const lab = res.cols.map(c => c.label);
     const iAN = lab.indexOf('Avantages num. V'), iBin = lab.indexOf('Buts inf. V');
     equipes = {};
-    const ajout = (c, k, n) => { (equipes[c] ??= { pj: 0, bp: 0, v: 0, ban: 0, binf: 0, tb: 0 })[k] += n; };
+    const ajout = (c, k, n) => { (equipes[c] ??= { pj: 0, bp: 0, bc: 0, bl: 0, v: 0, ban: 0, binf: 0, tb: 0 })[k] += n; };
     const an = s => { const m = /^(\d+)\s*\/\s*\d+/.exec(s || ''); return m ? +m[1] : 0; };
     res.rows.forEach(r => {
       const c = r.c || [];
@@ -82,7 +110,10 @@
       const tb = val(c[6]).toUpperCase() === 'TB', g = bv > bd ? V : D;
       ajout(V, 'pj', 1); ajout(D, 'pj', 1);
       // Le « but » de fusillade du gagnant n'est attribué à aucun joueur.
-      ajout(V, 'bp', bv - (tb && g === V ? 1 : 0)); ajout(D, 'bp', bd - (tb && g === D ? 1 : 0));
+      const bpV = bv - (tb && g === V ? 1 : 0), bpD = bd - (tb && g === D ? 1 : 0);
+      ajout(V, 'bp', bpV); ajout(D, 'bp', bpD);
+      ajout(V, 'bc', bpD); ajout(D, 'bc', bpV);
+      if(!bpD) ajout(V, 'bl', 1); if(!bpV) ajout(D, 'bl', 1);
       ajout(g, tb ? 'tb' : 'v', 1);
       if(iAN >= 0){ ajout(V, 'ban', an(val(c[iAN]))); ajout(D, 'ban', an(val(c[iAN + 1]))); }
       if(iBin >= 0){ ajout(V, 'binf', Number(val(c[iBin])) || 0); ajout(D, 'binf', Number(val(c[iBin + 1])) || 0); }
@@ -139,7 +170,7 @@
     const memeNom = roster.filter(r => compact(r.b.split(',')[0]) === famille);
     let exacts = memeNom.filter(r => !ini || sansAccents(r.b.split(',')[1]).startsWith(ini));
     // Homonymes (deux « E. Pettersson ») : départagés par la position (C ≠ D).
-    const groupe = po => /^(LD|RD|D)$/.test(String(po || '').split('/')[0].toUpperCase()) ? 'D' : 'A';
+    const groupe = po => { const p = String(po || '').split('/')[0].toUpperCase(); return /^(LD|RD|D)$/.test(p) ? 'D' : p === 'G' ? 'G' : 'A'; };
     if(exacts.length > 1){ const memePo = exacts.filter(r => groupe(r.po) === groupe(j.po)); if(memePo.length === 1) exacts = memePo; }
     // Un joueur du classeur ne peut être choisi qu'une fois d'office.
     if(exacts.length === 1 && joueurs.some(x => x !== j && x.choix === exacts[0])) exacts = [];
@@ -147,13 +178,14 @@
     j.choix = exacts.length === 1 ? exacts[0] : null;
   }
   let modeCorrection = false;   // true : on corrige la liste déjà publiée
-  const libelleBouton = () => modeCorrection ? `Enregistrer les corrections (${joueurs.length} joueurs)` : `Importer ${joueurs.length} joueurs`;
+  const libelleBouton = () => modeCorrection ? `Enregistrer les corrections (${joueurs.length} ${type.nom})` : `Importer ${joueurs.length} ${type.nom}`;
 
   /* ---------- Vérification ---------- */
   function analyser(texte){
     const lignes = lireCsv(texte);
     if(lignes.length < 2) throw new Error('Le CSV est vide ou n’a qu’une ligne d’entêtes.');
     const entetes = lignes[0].map(h => h.toUpperCase());
+    choisirType(entetes.includes('SV%') || entetes.includes('GAA') ? TYPES.gardiens : TYPES.patineurs);
     const index = {};
     COLONNES.forEach(c => { const i = entetes.findIndex(h => c.entetes.includes(h)); if(i >= 0) index[c.cle] = i; });
     if(index.joueur == null) throw new Error('Colonne PLAYER (joueur) introuvable dans les entêtes.');
@@ -167,7 +199,7 @@
       j.min = iMin >= 0 ? (v[iMin] || '') : '';
       j.remarque = iRem >= 0 ? (v[iRem] || '').replace(/^"|"$/g, '').trim() : '';
       NOMBRES.forEach(k => { if(j[k] !== '' && isNaN(Number(j[k]))) j.erreurs.push(`${k.toUpperCase()} « ${j[k]} » n’est pas un nombre`); });
-      if(j.tgm !== '' && !/^\d{1,2}:\d{2}$/.test(j.tgm)) j.erreurs.push(`TGM « ${j.tgm} » n’est pas un temps (mm:ss)`);
+      if(j.tgm && !/^\d{1,2}:\d{2}$/.test(j.tgm)) j.erreurs.push(`TGM « ${j.tgm} » n’est pas un temps (mm:ss)`);
       return j;
     }).filter(j => j.joueur);
     joueurs.forEach(rattacher);
@@ -191,6 +223,15 @@
       j.notes = j.remarque ? ['Remarque de l’export : ' + j.remarque] : [];
       const n = k => Number(j[k]) || 0;
       if(j.b !== '' && j.a !== '' && j.p !== '' && n('b') + n('a') !== n('p')) alerte(j, 'p', `B ${j.b} + A ${j.a} ≠ P ${j.p}`);
+      if(type === TYPES.gardiens){
+        if(j.tc !== '' && j.bc !== '' && j.arr !== '' && n('tc') - n('bc') !== n('arr')) alerte(j, 'arr', `TC ${j.tc} − BC ${j.bc} ≠ ARR ${j.arr}`);
+        if(n('tc') > 0 && j.parr !== '' && Math.abs(n('arr') / n('tc') - n('parr')) > 0.0015) alerte(j, 'parr', `%ARR ${j.parr} ≠ ${j.arr}/${j.tc} = ${(n('arr') / n('tc')).toFixed(3)}`);
+        // MOY = BC × 60 / minutes ; les minutes affichées sont arrondies (secondes) : petite marge.
+        if(n('min') > 0 && j.moy !== ''){ const haut = n('bc') * 60 / n('min'), bas = n('bc') * 60 / (n('min') + 1); if(n('moy') > haut + 0.01 || n('moy') < bas - 0.01) alerte(j, 'moy', `MOY ${j.moy} ≠ ${j.bc} × 60 / ${j.min} min = ${haut.toFixed(2)}`); }
+        if(n('v') + n('d') + n('dp') > n('pj')) alerte(j, 'v', `V ${j.v} + D ${j.d} + DP ${j.dp} > PJ ${j.pj}`);
+        if(n('bl') > n('v') + n('d') + n('dp')) alerte(j, 'bl', `BL ${j.bl} > décisions`);
+        if(n('min') > n('pj') * 65 + 1) alerte(j, 'min', `MIN ${j.min} > ${j.pj} matchs × 65`);
+      }else{
       if(j.t !== '' && j.pct !== '' && n('t') > 0){ const calc = Math.round(1000 * n('b') / n('t')) / 10; if(Math.abs(calc - parseFloat(j.pct)) > 0.15) alerte(j, 'pct', `%T ${j.pct} ≠ ${j.b}/${j.t} = ${calc}%`); }
       if(n('ban') + n('bin') > n('b')) alerte(j, n('bin') ? 'bin' : 'ban', `BAN ${j.ban || 0} + BIN ${j.bin || 0} > B ${j.b}`);
       if(n('bg') > n('b')) alerte(j, 'bg', `BG ${j.bg} > B ${j.b}`);
@@ -204,6 +245,7 @@
       if(j.tgm !== '' && j.min !== '' && n('pj') > 0){
         const [m, s] = j.tgm.split(':').map(Number), total = (m + s / 60) * n('pj');
         if(Math.abs(total - Number(j.min)) > n('pj')) alerte(j, 'tgm', `TG/M ${j.tgm} × ${j.pj} PJ = ${Math.round(total)} min ≠ ${j.min} min`);
+      }
       }
       // Matchs joués : au plus les matchs de ses équipes (toutes, s'il a été échangé),
       // en comptant les matchs en retard (joués dans le jeu, pas encore soumis).
@@ -225,6 +267,13 @@
       const s = k => js.reduce((t, j) => t + (Number(j[k]) || 0), 0), r = equipes[c];
       const ajout = (cle, txt) => { note(cle, c); if(inclure[cle] !== false) pb.equipe.push(c + ' : ' + txt); };
       const pl = (n, mot) => n + ' ' + mot + (n > 1 ? 's' : '');
+      if(type === TYPES.gardiens){
+        // Victoires des gardiens (fusillades comprises) et buts contre (sans le but de fusillade).
+        if(s('v') > r.v + r.tb) ajout('v', `${pl(s('v'), 'victoire')} des gardiens > ${pl(r.v + r.tb, 'victoire')} de l’équipe`);
+        if(s('bc') > r.bc) ajout('bc', `${pl(s('bc'), 'but')} contre au CSV > ${r.bc} accordés (hors fusillade)`);
+        if(s('bl') > r.bl) ajout('bl', `${pl(s('bl'), 'blanchissage')} > ${pl(r.bl, 'match')} sans but accordé`);
+        return;
+      }
       if(s('b') > r.bp) ajout('b', `${pl(s('b'), 'but')} au CSV > ${pl(r.bp, 'but')} de l’équipe (hors fusillade)`);
       if(s('ban') > r.ban) ajout('ban', `${pl(s('ban'), 'but')} en avantage > ${r.ban}`);
       if(s('bin') > r.binf) ajout('bin', `${pl(s('bin'), 'but')} en infériorité > ${r.binf}`);
@@ -246,7 +295,7 @@
     const nbAlertes = joueurs.filter(j => j.alertes.length).length;
     const aRattacher = joueurs.filter(j => !j.choix).length;
     const tuile = (lib, val, cls) => { const t = el('div', 'si-tuile ' + (cls || '')); t.append(el('small', null, lib), el('strong', null, String(val))); return t; };
-    $('tuiles').replaceChildren(tuile('Joueurs', joueurs.length), tuile('Lignes avec alerte', nbAlertes, nbAlertes ? 'is-alerte' : 'is-ok'),
+    $('tuiles').replaceChildren(tuile(type.nom[0].toUpperCase() + type.nom.slice(1), joueurs.length), tuile('Lignes avec alerte', nbAlertes, nbAlertes ? 'is-alerte' : 'is-ok'),
       tuile('À rattacher', aRattacher, aRattacher ? 'is-alerte' : 'is-ok'), tuile('Colonnes incohérentes', pb.incoherentes.length, pb.incoherentes.length ? 'is-erreur' : 'is-ok'));
     // Colonnes
     $('colonnes').replaceChildren(...COLONNES.filter(c => !c.fixe).map(c => {
@@ -337,7 +386,7 @@
       const msgs = [];
       if(info.absentes.length) msgs.push('Colonnes absentes : ' + info.absentes.join(', '));
       if(info.doublons.length) msgs.push('Homonymes à rattacher à la main (même nom, même position) : ' + [...new Set(info.doublons)].join(', '));
-      afficher(msgs.join(' · ') || `${joueurs.length} joueurs lus. Vérifie le rapport, puis importe.`, msgs.length ? 'is-alerte' : 'is-ok');
+      afficher(msgs.join(' · ') || `${joueurs.length} ${type.nom} lus. Vérifie le rapport, puis importe.`, msgs.length ? 'is-alerte' : 'is-ok');
     }catch(err){
       $('rapport').hidden = true;
       afficher(err.message || 'Impossible de lire ce fichier.', 'is-erreur');
@@ -345,11 +394,12 @@
   }
 
   // Corriger après coup : la liste publiée (onglet STATS_JOUEURS) revient dans l'éditeur.
-  async function chargerPublie(){
+  async function chargerPublie(quel){
     afficher('Chargement des stats publiées…', '');
     try{
       if(!roster.length) await chargerReferences();
-      const t = await gviz('sheet=STATS_JOUEURS');
+      choisirType(quel);
+      const t = await gviz('sheet=' + type.onglet);
       if(((t.cols[0] || {}).label || '') !== 'Joueur'){ afficher('Aucune stat publiée pour l’instant : importe d’abord un CSV.', 'is-alerte'); return; }
       // Colonnes repérées par leur entête (l'ordre de l'onglet peut changer).
       const parEntete = { 'Joueur': 'joueur', 'Nom': 'nom', 'Équipe': 'equipe' };
@@ -367,7 +417,7 @@
       COLONNES.forEach(c => { inclure[c.cle] = c.fixe || joueurs.some(j => j[c.cle] !== ''); });
       modeCorrection = true;
       rendre(false);
-      afficher(`${joueurs.length} joueurs publiés chargés. Corrige les valeurs, puis enregistre.`, 'is-ok');
+      afficher(`${joueurs.length} ${type.nom} publiés chargés. Corrige les valeurs, puis enregistre.`, 'is-ok');
     }catch(err){
       afficher('Impossible de charger les stats publiées.', 'is-erreur');
     }
@@ -376,7 +426,7 @@
   // Rapport en texte (à coller dans Discord ou ailleurs).
   function rapportTexte(){
     const pb = dernierPb || verifier();
-    const l = [`Rapport d’import des stats — ${new Date().toLocaleString('fr-CA')}`, `${joueurs.length} joueurs`];
+    const l = [`Rapport d’import des stats (${type.nom}) — ${new Date().toLocaleString('fr-CA')}`, `${joueurs.length} ${type.nom}`];
     const exclues = COLONNES.filter(c => !c.fixe && !inclure[c.cle] && joueurs.some(j => j[c.cle] !== '')).map(c => c.nom);
     if(exclues.length) l.push('Colonnes non publiées : ' + exclues.join(', ') + (pb.incoherentes.length ? ' (incohérentes : ' + pb.incoherentes.map(k => COLONNES.find(c => c.cle === k).nom).join(', ') + ')' : ''));
     const rattaches = joueurs.filter(j => j.choixManuel && j.choix);
@@ -407,10 +457,10 @@
       return o;
     });
     let r;
-    try{ r = await (await fetch('/api/stats/importer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lignes }) })).json(); }
+    try{ r = await (await fetch('/api/stats/importer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: type === TYPES.gardiens ? 'gardiens' : 'patineurs', lignes }) })).json(); }
     catch(e){ r = { ok: false, erreur: 'session' }; }
     envoi = false; b.disabled = false; b.textContent = libelleBouton();
-    if(r.ok) afficher(`✓ ${r.joueurs} joueurs importés. Ils sont sur lnhq.ca/stats.html (une minute peut être nécessaire).`, 'is-ok');
+    if(r.ok) afficher(`✓ ${r.joueurs} ${type.nom} importés. Ils sont sur lnhq.ca/stats.html (une minute peut être nécessaire).`, 'is-ok');
     else afficher({ admin: 'Seul un dirigeant peut importer les stats.', nombre: `Valeur non numérique pour ${r.joueur} (${r.colonne}).`, session: 'Ta session a peut-être expiré : recharge la page.' }[r.erreur] || 'L’import a échoué. Réessaie dans un instant.', 'is-erreur');
   }
 
@@ -433,7 +483,8 @@
     depot.addEventListener('drop', ev => { const f = ev.dataTransfer.files[0]; if(f) lireFichier(f); });
     $('verifierTexte').addEventListener('click', () => traiter($('texte').value));
     $('importer').addEventListener('click', importer);
-    $('chargerPublie').addEventListener('click', chargerPublie);
+    $('chargerPublie').addEventListener('click', () => chargerPublie(TYPES.patineurs));
+    $('chargerGardiens').addEventListener('click', () => chargerPublie(TYPES.gardiens));
     $('copierRapport').addEventListener('click', async () => {
       try{ await navigator.clipboard.writeText(rapportTexte()); afficher('Rapport copié : colle-le où tu veux (Discord, courriel…).', 'is-ok'); }
       catch(e){ afficher('Copie impossible : ' + rapportTexte(), 'is-alerte'); }

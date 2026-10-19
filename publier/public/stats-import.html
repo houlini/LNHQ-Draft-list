@@ -35,8 +35,8 @@
 
     <section id="contenu" hidden>
       <h2 class="si-titre">Import des stats de joueurs <small>Gestion admin</small></h2>
-      <p class="si-aide">Dépose l'export CSV (PLAYER, POS, GP, G, A, P, +/-, PIM, S, S%, GWG, PPG, PPP, SHG, SHP, TOI/G, MIN, FOW, FOT, FO%, HITS, BKS, GV, TK ;
-        l'ordre n'importe pas). Tout est vérifié avant l'import ; rien n'est enregistré tant que tu n'as pas cliqué « Importer ».
+      <p class="si-aide">Dépose l'export CSV des <b>patineurs</b> (PLAYER, POS, GP, G, A, P, +/-, PIM, S, S%, GWG, PPG, PPP, SHG, SHP, TOI/G, MIN, FOW, FOT, FO%, HITS, BKS, GV, TK)
+        ou des <b>gardiens</b> (PLAYER, POS, GP, W, L, OTL, SO, SV%, GAA, S, SA, GA, MIN, PIM, G, A, P) : le type est reconnu tout seul et l'ordre des colonnes n'importe pas. Tout est vérifié avant l'import ; rien n'est enregistré tant que tu n'as pas cliqué « Importer ».
         Seules les colonnes cochées sont remplacées : les autres gardent la valeur déjà publiée.</p>
 
       <label class="si-depot" id="depot">
@@ -44,7 +44,10 @@
         <b>Dépose le fichier CSV ici</b>
         <span>ou clique pour le choisir</span>
       </label>
-      <p class="si-ou"><button type="button" class="si-bouton" id="chargerPublie">✎ Corriger les stats déjà publiées</button></p>
+      <p class="si-ou">
+        <button type="button" class="si-bouton" id="chargerPublie">✎ Corriger les patineurs publiés</button>
+        <button type="button" class="si-bouton" id="chargerGardiens">✎ Corriger les gardiens publiés</button>
+      </p>
       <details class="si-coller">
         <summary>… ou colle le contenu du CSV</summary>
         <textarea id="texte" rows="6" placeholder="POS,PLAYER,GP,G,A,P,+/-,PIM,S,S%,GWG,PPG,PPP,SHG,SHP,TOI/G,MIN,FOW,FOT,FO%,HITS,BKS,GV,TK"></textarea>
