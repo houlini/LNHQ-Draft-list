@@ -236,7 +236,7 @@ async function streams(env, logins, reessai = false) {
     logins.slice(i, i + 100).forEach(l => params.append('user_login', l));
     params.set('first', '100');
     const rep = await fetch('https://api.twitch.tv/helix/streams?' + params, {
-      headers: { 'Client-Id': env.TWITCH_CLIENT_ID, 'Authorization': 'Bearer ' + jeton },
+      headers: { 'Client-Id': env.TWITCH_CLIENT_ID.trim(), 'Authorization': 'Bearer ' + jeton },
     });
     // Jeton invalidé par Twitch avant son échéance : on l'oublie (mémoire ET cache, sinon
     // il serait réutilisé jusqu'à 60 jours) et on en redemande un, une seule fois.
@@ -265,7 +265,7 @@ async function jetonTwitch(env) {
   }
   const rep = await fetch('https://id.twitch.tv/oauth2/token', {
     method: 'POST',
-    body: new URLSearchParams({ client_id: env.TWITCH_CLIENT_ID, client_secret: env.TWITCH_CLIENT_SECRET, grant_type: 'client_credentials' }),
+    body: new URLSearchParams({ client_id: env.TWITCH_CLIENT_ID.trim(), client_secret: env.TWITCH_CLIENT_SECRET.trim(), grant_type: 'client_credentials' }),
   });
   // 403 « invalid client secret » : secret régénéré sur dev.twitch.tv → refaire wrangler secret put.
   if (!rep.ok) throw new Error('jeton Twitch HTTP ' + rep.status + ' ' + (await rep.text()).slice(0, 200));
