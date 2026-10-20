@@ -43,8 +43,10 @@
       if((r[2] || '').toLowerCase() === 'time'){ periode++; return; }
       const date = (r[1] || '').slice(0, 10);
       if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || !r[3]) return;
+      const score = v => (v || '') !== '' && !isNaN(Number(v));
       matchs.push({ num: r[0], date, heure: r[2], visiteur: r[3], domicile: r[8],
-        codeVisiteur: code(r[3]), codeDomicile: code(r[8]), periode: Math.max(1, periode) });
+        codeVisiteur: code(r[3]), codeDomicile: code(r[8]), periode: Math.max(1, periode),
+        joue: score(r[5]) && score(r[6]) });   // F / G : score inscrit = match joué
     });
     return matchs;
   }

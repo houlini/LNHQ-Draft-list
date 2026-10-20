@@ -53,12 +53,16 @@
     const mesMatchs = matchs.filter(m => m.codeVisiteur === code || m.codeDomicile === code);
     const periodes = G.periodes(matchs);
     const courante = (periodes.find(p => p.fin >= auj) || periodes[periodes.length - 1] || {}).num;
-    if(!ouvertes) ouvertes = new Set([courante]);
+    // Période terminée sans déclaration : encore possible sur un match en retard pas joué.
+    const enRetard = p => p.fin < auj && !decl[code + '|' + p.num]
+      && mesMatchs.some(m => m.periode === p.num && !m.joue);
+    if(!ouvertes) ouvertes = new Set([courante, ...periodes.filter(enRetard).map(p => p.num)]);
 
     $('periodes').replaceChildren(...periodes.map(p => {
       const d = decl[code + '|' + p.num];
       const terminee = p.fin < auj;
-      const etat = d ? 'is-fait' : terminee ? 'is-illegal' : 'is-a-faire';
+      const retard = enRetard(p);
+      const etat = d ? 'is-fait' : retard ? 'is-retard' : terminee ? 'is-illegal' : 'is-a-faire';
       const bloc = el('details', 'gar-periode ' + etat + (p.num === courante ? ' is-courante' : ''));
       bloc.id = 'p-' + p.num;
       bloc.open = ouvertes.has(p.num);
@@ -66,7 +70,8 @@
       const tete = el('summary', 'gar-tete');
       tete.append(el('strong', null, 'Période ' + p.num + (p.num === courante ? ' · en cours' : '')),
         el('span', 'gar-dates', court.format(date(p.debut)) + ' au ' + court.format(date(p.fin))),
-        el('span', 'gar-etat', d ? `✅ ${court.format(date(d.date))} vs ${d.adversaire}` : terminee ? '❌ Illégale' : '⏳ À choisir'));
+        el('span', 'gar-etat', d ? `✅ ${court.format(date(d.date))} vs ${d.adversaire}`
+          : retard ? '⏳ Oubli : encore possible' :terminee ? '❌ Illégale' : '⏳ À choisir'));
       bloc.append(tete);
 
       const liste = el('ul', 'gar-matchs');
@@ -89,6 +94,14 @@
           li.append(b);
         }else if(choisi){
           li.append(el('span', 'gar-bouton is-choisi', '✓ 2e gardien'));
+        }else if(retard){
+          const b = el('button', 'gar-bouton', 'Choisir');
+          b.type = 'button';
+          b.title = 'Période terminée : choix définitif';
+          b.addEventListener('click', () => {
+            if(confirm(`La période ${p.num} est terminée : ce choix sera définitif. Confirmer ?`)) declarer(m, b);
+          });
+          li.append(b);
         }
         liste.append(li);
       });

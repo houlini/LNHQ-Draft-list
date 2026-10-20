@@ -566,7 +566,9 @@ const OUVERTURE_ENCHERES = new Date('2026-10-06T23:00:00Z');
    2 semaines (périodes de l'onglet SCHEDULE, séparées par une ligne « Time »).
    Le DG déclare le match (publier.lnhq.ca/gardien.html), d'avance s'il veut ;
    il peut changer ou retirer son choix jusqu'à la fin de la période, ensuite
-   elle est verrouillée. Onglet public GARDIENS : une ligne par équipe et période.
+   elle est verrouillée. Exception : période terminée sans déclaration, avec des
+   matchs en retard pas encore joués → il peut encore choisir un match de la
+   période (oubli), choix définitif. Onglet public GARDIENS : une ligne par équipe et période.
    Rappel Discord 3 jours avant la fin d'une période, et liste des équipes
    illégales le lendemain de la fin (WEBHOOK_GARDIENS du Worker).
    ========================================================================= */
@@ -644,7 +646,11 @@ function declarerGardien(d, membre) {
   const matchs = lireCalendrierGardiens();
   const m = matchs.find(x => x.num === String(d.match || '').trim());
   if (!m || (m.visiteur !== code && m.domicile !== code)) return { ok: false, erreur: 'match' };
-  if (finsDePeriode(matchs)[m.periode] < aujourdhuiLigue()) return { ok: false, erreur: 'periode_terminee' };
+  // Période terminée (oubli) : encore possible si rien n'a été déclaré et que l'équipe a
+  // des matchs en retard pas joués dans cette période. Une déclaration faite reste verrouillée.
+  const terminee = finsDePeriode(matchs)[m.periode] < aujourdhuiLigue();
+  if (terminee && !matchs.some(x => x.periode === m.periode && !x.joue && (x.visiteur === code || x.domicile === code)))
+    return { ok: false, erreur: 'periode_terminee' };
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {
@@ -652,6 +658,7 @@ function declarerGardien(d, membre) {
     const valeurs = [code, String(m.periode), m.num, m.date, m.visiteur === code ? m.domicile : m.visiteur, new Date().toISOString()];
     const lignes = o.getLastRow() > 1 ? o.getRange(2, 1, o.getLastRow() - 1, 2).getDisplayValues() : [];
     const i = lignes.findIndex(l => l[0] === code && Number(l[1]) === m.periode);
+    if (terminee && i >= 0) return { ok: false, erreur: 'periode_terminee' };
     if (i >= 0) o.getRange(i + 2, 1, 1, valeurs.length).setValues([valeurs]);
     else o.appendRow(valeurs);
     return { ok: true, periode: m.periode, match: m.num };
@@ -707,7 +714,7 @@ function rappelsGardiens() {
       const sansDecl = codes.filter(c => !faites.has(c + '|' + Number(p)));
       const illegales = sansDecl.filter(c => !incompletes.has(c)).map(nomEquipe);
       const sansMatch = sansDecl.filter(c => incompletes.has(c)).map(nomEquipe);
-      const note = sansMatch.length ? '\n\n*Matchs de la période pas tous joués (non comptées) : ' + sansMatch.join(', ') + '*' : '';
+      const note = sansMatch.length ? '\n\n*Matchs en retard (peuvent encore déclarer) : ' + sansMatch.join(', ') + '*' : '';
       messages.push(illegales.length
         ? messageGardiens('🚨 Fin de la période ' + p + ' — équipes illégales',
           'Aucun départ du 2e gardien déclaré pendant la période ' + p + ' :\n' + illegales.join(', ') + note, 0xE03131)
