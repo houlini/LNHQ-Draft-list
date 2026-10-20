@@ -267,7 +267,8 @@ async function jetonTwitch(env) {
     method: 'POST',
     body: new URLSearchParams({ client_id: env.TWITCH_CLIENT_ID, client_secret: env.TWITCH_CLIENT_SECRET, grant_type: 'client_credentials' }),
   });
-  if (!rep.ok) throw new Error('jeton Twitch HTTP ' + rep.status);
+  // 403 « invalid client secret » : secret régénéré sur dev.twitch.tv → refaire wrangler secret put.
+  if (!rep.ok) throw new Error('jeton Twitch HTTP ' + rep.status + ' ' + (await rep.text()).slice(0, 200));
   const d = await rep.json();
   const duree = Math.max(60, d.expires_in - 3600);
   jetonMemoire = { valeur: d.access_token, expire: Date.now() + duree * 1000 };
