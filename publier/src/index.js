@@ -140,6 +140,8 @@ async function lirePhotoResultat(env, photo) {
     contents: [{ parts: [{ inline_data: { mime_type: photo.mime, data: photo.data } }, { text: consigne }] }],
     generationConfig: {
       temperature: 0,
+      // Recopier des valeurs ne demande pas de « réflexion » : c'était l'essentiel du délai.
+      thinkingConfig: { thinkingBudget: 0 },
       mediaResolution: 'MEDIA_RESOLUTION_HIGH',
       responseMimeType: 'application/json',
       responseSchema: {
@@ -149,31 +151,40 @@ async function lirePhotoResultat(env, photo) {
       },
     },
   };
-  // Modèle gratuit parfois surchargé (503) : un nouvel essai, puis le modèle de secours.
-  const modeles = [env.GEMINI_MODEL || 'gemini-flash-latest', env.GEMINI_MODEL_SECOURS || 'gemini-flash-lite-latest'];
+  // Modèle gratuit souvent surchargé le soir : surcharge (503) ou réponse trop lente →
+  // on passe tout de suite au modèle de secours, plus léger, plutôt que d'attendre.
+  const modeles = [
+    { nom: env.GEMINI_MODEL || 'gemini-flash-latest', delai: 15000 },
+    { nom: env.GEMINI_MODEL_SECOURS || 'gemini-flash-lite-latest', delai: 25000 },
+  ];
+  const debut = Date.now();
   let derniere = 'lecture';
-  for (const modele of modeles) {
-    for (let essai = 0; essai < 2; essai++) {
+  for (const { nom: modele, delai } of modeles) {
+    const config = JSON.parse(JSON.stringify(corps.generationConfig));
+    for (let essai = 0; essai < 3; essai++) {
+      const t0 = Date.now();
       try {
         const rep = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY },
-          body: JSON.stringify(corps),
+          body: JSON.stringify({ ...corps, generationConfig: config }),
+          signal: AbortSignal.timeout(delai),
         });
         if (!rep.ok) {
-          console.error('Gemini', modele, rep.status, (await rep.text()).slice(0, 300));
+          const erreur = (await rep.text()).slice(0, 300);
+          console.error('Gemini', modele, rep.status, (Date.now() - t0) + ' ms', erreur);
           derniere = rep.status === 429 ? 'quota' : 'lecture';
-          // Réglage de haute définition refusé par ce modèle : on réessaie sans.
-          if (rep.status === 400 && corps.generationConfig.mediaResolution) { delete corps.generationConfig.mediaResolution; essai--; continue; }
-          if (rep.status === 503 && essai === 0) { await new Promise(r => setTimeout(r, 1500)); continue; }
-          break;   // autre erreur ou 2e échec : modèle suivant
+          // Réglage refusé par ce modèle (haute définition, réflexion) : on réessaie sans.
+          if (rep.status === 400 && config.mediaResolution) { delete config.mediaResolution; continue; }
+          if (rep.status === 400 && config.thinkingConfig) { delete config.thinkingConfig; continue; }
+          break;   // surcharge ou autre erreur : modèle suivant
         }
         const donnees = await rep.json();
         const texte = (donnees.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
-        console.log('Gemini', modele, texte.slice(0, 1500));
+        console.log('Gemini', modele, (Date.now() - t0) + ' ms (total ' + (Date.now() - debut) + ' ms)', texte.slice(0, 1500));
         return json({ ok: true, lecture: nettoyerLecture(JSON.parse(texte)), modele });
       } catch (err) {
-        console.error('Gemini', modele, err.message);
+        console.error('Gemini', modele, (Date.now() - t0) + ' ms', err.name === 'TimeoutError' ? 'trop lent, modèle suivant' : err.message);
         break;
       }
     }

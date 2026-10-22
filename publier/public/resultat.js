@@ -158,20 +158,25 @@
     $('envoyer').disabled = envoi || !m || $('butsV').value === '' || $('butsD').value === '';
   }
 
-  // Photo réduite à 1600 px (plus légère à envoyer et assez nette pour la lecture).
+  // Photo réduite à 1600 px pour l'archive, et une copie à 1280 px pour la lecture
+  // (plus rapide à envoyer et à lire, encore assez nette pour les chiffres).
   function reduire(fichier){
     return new Promise((ok, echec) => {
       const url = URL.createObjectURL(fichier);
       const img = new Image();
       img.onload = () => {
-        const echelle = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.naturalWidth * echelle);
-        c.height = Math.round(img.naturalHeight * echelle);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const version = max => {
+          const echelle = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.naturalWidth * echelle);
+          c.height = Math.round(img.naturalHeight * echelle);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          return c.toDataURL('image/jpeg', 0.85);
+        };
+        const dataUrl = version(1600);
+        const lecture = version(1280);
         URL.revokeObjectURL(url);
-        const dataUrl = c.toDataURL('image/jpeg', 0.85);
-        ok({ mime: 'image/jpeg', data: dataUrl.split(',')[1], dataUrl });
+        ok({ mime: 'image/jpeg', data: dataUrl.split(',')[1], dataUrl, lecture: lecture.split(',')[1] });
       };
       img.onerror = () => { URL.revokeObjectURL(url); echec(new Error('image')); };
       img.src = url;
@@ -194,7 +199,7 @@
     lecture.className = 'res-aide is-attente';
     lecture.textContent = 'Lecture de la photo…';
     lecture.hidden = false;
-    const r = await api('/api/resultat/lire', { mime: photo.mime, data: photo.data });
+    const r = await api('/api/resultat/lire', { mime: photo.mime, data: photo.lecture || photo.data });
     if(matchChoisi() !== m) return;   // le DG a changé de match entre-temps
     if(!r.ok || !r.lecture || !r.lecture.lisible){
       lecture.className = 'res-aide is-erreur';
