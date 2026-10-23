@@ -56,6 +56,14 @@ export default {
       if (!taille || taille > 2 * 1024 * 1024) return json({ ok: false, erreur: 'taille' }, 413);
       return appelerScript(env, 'importerStats', courriel, await request.text());
     }
+    // Base des ratings NHL 27 : privée, servie seulement aux membres connectés par Access.
+    if (url.pathname === '/api/ratings' && request.method === 'GET') {
+      const { value, metadata } = await env.RATINGS.getWithMetadata('joueurs');
+      if (!value) return json({ ok: false, erreur: 'vide' });
+      return new Response('{"ok":true,"misAJour":' + JSON.stringify(metadata?.misAJour || '') + ',"joueurs":' + value + '}', {
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'private, no-store' },
+      });
+    }
     if (url.pathname === '/api/transactions' && request.method === 'GET') {
       return appelerScript(env, 'transactions', courriel);
     }

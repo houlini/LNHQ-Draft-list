@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ratings NHL 27 — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=8">
+<link rel="stylesheet" href="ratings.css">
+<script src="ratings.js" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">LNHQ</h1>
+      </a>
+      <nav class="site-nav">
+        <a class="nav-btn" href="https://lnhq.ca/stats.html">Stats</a>
+      </nav>
+    </div>
+    <div class="meta-row"><span id="qui">Chargement de la base…</span></div>
+  </header>
+
+  <main class="rt-page">
+    <div id="refus" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div id="refusTexte"></div>
+    </div>
+
+    <section id="contenu" class="rt-carte" hidden>
+      <div class="rt-tete">
+        <h2 class="rt-titre">Ratings NHL 27 <small>Privé</small></h2>
+        <div class="rt-onglets" role="tablist">
+          <button type="button" role="tab" data-type="P" aria-selected="true">Patineurs</button>
+          <button type="button" role="tab" data-type="G" aria-selected="false">Gardiens</button>
+        </div>
+      </div>
+
+      <div class="rt-filtres">
+        <input type="search" id="recherche" placeholder="Rechercher un joueur" aria-label="Rechercher un joueur">
+        <select id="equipe" aria-label="Équipe"><option value="">Toutes les équipes</option></select>
+        <select id="position" aria-label="Position">
+          <option value="">Toutes les positions</option>
+          <option value="C">Centres</option>
+          <option value="LW">Ailiers gauches</option>
+          <option value="RW">Ailiers droits</option>
+          <option value="D">Défenseurs</option>
+        </select>
+        <select id="typeJ" aria-label="Type de joueur"><option value="">Tous les types</option></select>
+      </div>
+
+      <div class="rt-groupes" id="groupes" role="tablist" aria-label="Attributs affichés"></div>
+      <p class="rt-compte" id="compte"></p>
+      <div class="rt-table-wrap"><table class="rt-table" id="table"></table></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="fiche" class="rt-fiche" aria-labelledby="ficheNom">
+  <div class="rt-fiche-tete">
+    <img id="ficheLogo" alt="">
+    <div>
+      <h3 id="ficheNom"></h3>
+      <p id="ficheSous"></p>
+    </div>
+    <span class="rt-ov" id="ficheOv"></span>
+    <button type="button" class="rt-fermer" id="ficheFermer" aria-label="Fermer">✕</button>
+  </div>
+  <dl class="rt-bio" id="ficheBio"></dl>
+  <div class="rt-habiletes" id="ficheHab"></div>
+  <div class="rt-attr" id="ficheAttr"></div>
+</dialog>
+
+</body>
+</html>

@@ -16,6 +16,12 @@ crons = ["* * * * *", "0 16 * * *"]  # 2e : rappels du 2e gardien, une fois par 
 directory = "./public"
 binding = "ASSETS"
 
+# Base des ratings NHL 27 (projet nhl27-ratings), clé « joueurs » : jamais dans le dépôt,
+# lue seulement par /api/ratings derrière Access. Envoi : pwsh ratings-envoyer.ps1
+[[kv_namespaces]]
+binding = "RATINGS"
+id = "54ea6d10f439438eaab19ec065aa8088"
+
 [vars]
 # Valeurs affichées dans Zero Trust → Access → Applications → (l'application) → Vue d'ensemble.
 ACCESS_TEAM_DOMAIN = "https://lnhq.cloudflareaccess.com"
