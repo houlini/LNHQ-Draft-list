@@ -12,8 +12,12 @@
   const ENTETES = { 'Nom': 'nom', 'Équipe': 'equipe', 'PJ': 'pj', 'B': 'b', 'A': 'a', 'P': 'p', '+/-': 'pm', 'TG/M': 'tgm',
     'V': 'v', 'D': 'd', 'DP': 'dp', '%ARR': 'parr', 'MOY': 'moy' };
   const PO = { C: 'C', LW: 'AG', RW: 'AD', LD: 'DG', RD: 'DD', D: 'D', G: 'G' };
+  // Notes NHL 27 par groupe (api.lnhq.ca/ratings-apercu : moyennes seulement, la base reste privée).
+  const GROUPES = { P: [['PAT', 'Patinage'], ['TIR', 'Tir'], ['MAN', 'Maniement'], ['DÉF', 'Défense'], ['PHY', 'Physique'], ['INT', 'Intelligence']],
+    G: [['ARR', 'Arrêts'], ['JEU', 'Jeu'], ['PHY', 'Physique']] };
+  const cleNom = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 
-  let donnees = null;   // Promise<{ stats: Map, infos: Map, ids: Map }>
+  let donnees = null;   // Promise<{ stats: Map, infos: Map, ids: Map, ratings: Map }>
   const tableau = params => fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&${params}`)
     .then(r => r.text()).then(t => JSON.parse(t.match(/setResponse\(([\s\S]*)\);\s*$/)[1]).table);
   const val = c => c && c.v != null ? String(c.v).trim() : '';
@@ -23,7 +27,15 @@
       tableau('sheet=PLAYERSDATABASE&tq=' + encodeURIComponent("select B, C, H, N, Z where B <> '' and H <> 'CHOIX'")).catch(() => null),
       tableau('sheet=IDS_LNH').catch(() => null),
       tableau('sheet=STATS_GARDIENS').catch(() => null),
-    ]).then(([st, pdb, ids, sg]) => {
+      fetch('https://api.lnhq.ca/ratings-apercu').then(r => r.json()).catch(() => null),
+    ]).then(([st, pdb, ids, sg, rt]) => {
+      // Notes : « nom,prénom » sans accents → [{ equipe, type, notes }] (homonymes départagés par l'équipe).
+      // Second index « nom|équipe » : prénom écrit autrement (Gabe / Gabriel, Matt / Matthew).
+      const ratings = new Map();
+      ((rt && rt.joueurs) || []).forEach(([n, p, equipe, type, notes]) => {
+        const r = { equipe, type, notes };
+        [cleNom(n) + ',' + cleNom(p), cleNom(n) + '|' + equipe].forEach(k => ratings.set(k, [...(ratings.get(k) || []), r]));
+      });
       const stats = new Map(), infos = new Map(), numeros = new Map();
       const lire = (t, gardien) => {
         if(!t || ((t.cols[0] || {}).label || '') !== 'Joueur') return;
@@ -33,7 +45,7 @@
       lire(st, false); lire(sg, true);
       if(pdb) pdb.rows.forEach(r => { const c = r.c || []; const b = val(c[0]); if(b) infos.set(b, { ov: val(c[1]), po: val(c[2]), salaire: Number(c[3] && c[3].v) || 0, equipe: val(c[4]).toUpperCase() }); });
       if(ids && (ids.cols[0] || {}).label === 'Joueur') ids.rows.forEach(r => { const c = r.c || []; const n = val(c[0]), i = val(c[1]); if(n && /^\d{6,8}$/.test(i)) numeros.set(n, i); });
-      return { stats, infos, ids: numeros };
+      return { stats, infos, ids: numeros, ratings };
     });
     return donnees;
   }
@@ -60,6 +72,11 @@
     .sj-bas{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; font-size:12.5px; color:var(--ink-muted, #666); }
     .sj-bas a{ color:var(--accent, #0a3); font-weight:700; text-decoration:none; }
     .sj-bas a:hover{ text-decoration:underline; }
+    .sj-notes{ margin-top:10px; padding-top:6px; border-top:1px solid var(--line, #ddd); }
+    .sj-notes-titre{ display:block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent, #0a3); }
+    .sj-notes .sj-stats{ margin:2px 0 0; padding:0; border:0; }
+    .sj-notes .sj-haute{ color:var(--positive, #1E8E3E); }
+    .sj-notes .sj-basse{ color:var(--negative, #C5221F); }
     [data-joueur]{ cursor:help; }
     @media (prefers-reduced-motion: reduce){ .sj-carte{ transition:none; } }`;
   document.head.append(style);
@@ -93,9 +110,33 @@
       (st.gardien ? STATS_G : STATS).forEach(([k, t]) => { const g = el('div'); g.append(el('dt', null, t), el('dd', null, k === 'pm' && Number(st.pm) > 0 ? '+' + st.pm : (st[k] || '–'))); dl.append(g); });
       c.append(dl);
     }else c.append(el('p', 'sj-vide', 'Aucun match joué cette saison.'));
+    const v = id.indexOf(',');
+    const equipeJ = info.equipe || (st && st.equipe) || '';
+    let choix = v > 0 ? d.ratings.get(cleNom(id.slice(0, v)) + ',' + cleNom(id.slice(v + 1))) || [] : [];
+    if(!choix.length && v > 0 && equipeJ){ choix = d.ratings.get(cleNom(id.slice(0, v)) + '|' + equipeJ) || []; if(choix.length > 1) choix = []; }
+    const rt = choix.length > 1 ? choix.find(x => x.equipe === equipeJ) : choix[0];
+    if(rt){
+      const bloc = el('div', 'sj-notes');
+      bloc.append(el('span', 'sj-notes-titre', 'Notes NHL 27'));
+      const dl = el('dl', 'sj-stats');
+      dl.style.gridTemplateColumns = `repeat(${GROUPES[rt.type].length}, 1fr)`;
+      GROUPES[rt.type].forEach(([abr, nomG], i) => {
+        const n = rt.notes[i], g = el('div');
+        g.title = nomG;
+        const dd = el('dd', n == null ? '' : n >= 85 ? 'sj-haute' : n < 70 ? 'sj-basse' : '', n ?? '–');
+        g.append(el('dt', null, abr), dd);
+        dl.append(g);
+      });
+      bloc.append(dl);
+      c.append(bloc);
+    }
     const bas = el('div', 'sj-bas');
     bas.append(el('span', null, info.salaire ? millions(info.salaire) + ' (2026-27)' : ''));
-    const lien = el('a', null, 'Toutes ses stats →'); lien.href = 'stats.html?joueur=' + encodeURIComponent(id);
+    // Déjà sur la page Stats : le lien mène plutôt à son équipe.
+    const surStats = /stats\.html$/.test(location.pathname);
+    const lien = el('a', null, surStats && eq ? 'Voir son équipe →' : 'Toutes ses stats →');
+    lien.href = surStats && eq ? 'equipe.html?team=' + eq.slug + '&joueur=' + encodeURIComponent(id) : 'stats.html?joueur=' + encodeURIComponent(id);
+    if(surStats && !eq) lien.hidden = true;
     bas.append(lien);
     c.append(bas);
     return c;
@@ -143,7 +184,11 @@
   document.addEventListener('click', e => {
     if(carte && carte.contains(e.target)) return;
     const j = joueurDe(e.target);
-    if(dernierPointeur !== 'mouse' && j && !e.target.closest('a, button, input, select')){
+    // Toucher un nom (même s'il est un lien vers ses stats) : la carte d'abord ; son lien
+    // « Toutes ses stats » mène ensuite à la page.
+    const lien = e.target.closest('a');
+    if(dernierPointeur !== 'mouse' && j && (!lien || j.contains(lien)) && !e.target.closest('button, input, select')){
+      e.preventDefault();
       if(cible === j && carte) cacher(); else montrer(j);
       return;
     }

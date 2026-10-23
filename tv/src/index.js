@@ -22,6 +22,9 @@ export default {
     if (url.pathname.startsWith('/inscription')) {
       return inscription(request, env, url, cors);
     }
+    if (url.pathname === '/ratings-apercu' && request.method === 'GET') {
+      return apercuRatings(env, ctx, cors);
+    }
     if (url.pathname !== '/twitch' || request.method !== 'GET') {
       return new Response('Introuvable', { status: 404, headers: cors });
     }
@@ -48,6 +51,55 @@ export default {
     ctx.waitUntil(annoncerDirects(env));
   },
 };
+
+/* ---------- Aperçu public des ratings NHL 27 (carte au survol du site) ---------- */
+// La base complète reste privée (publier.lnhq.ca/ratings.html, derrière Access) : on ne
+// publie que la moyenne de chaque groupe d'attributs, arrondie. Copie partagée d'une heure.
+const GROUPES_RATINGS = {
+  P: [['Acceleration', 'Agility', 'Balance', 'Endurance', 'Speed'],
+    ['Slap Shot Accuracy', 'Slap Shot Power', 'Wrist Shot Accuracy', 'Wrist Shot Power'],
+    ['Deking', 'Hand-Eye', 'Passing', 'Puck Control'],
+    ['Def. Awareness', 'Faceoffs', 'Shot Blocking', 'Stick Checking'],
+    ['Aggressiveness', 'Body Checking', 'Durability', 'Fighting Skill', 'Strength'],
+    ['Discipline', 'Off. Awareness', 'Poise']],
+  G: [['Angles', 'Breakaway', 'Five Hole', 'Glove High', 'Glove Low', 'Stick High', 'Stick Low'],
+    ['Rebound Control', 'Recover', 'Vision', 'Poise', 'Poke Check', 'Passing', 'Puck Playing Freq.'],
+    ['Aggressiveness', 'Agility', 'Durability', 'Endurance', 'Speed']],
+};
+const CODES_RATINGS = {
+  'anaheim ducks': 'ANA', 'boston bruins': 'BOS', 'buffalo sabres': 'BUF', 'calgary flames': 'CGY',
+  'carolina hurricanes': 'CAR', 'chicago blackhawks': 'CHI', 'colorado avalanche': 'COL', 'columbus blue jackets': 'CBJ',
+  'dallas stars': 'DAL', 'detroit red wings': 'DET', 'edmonton oilers': 'EDM', 'florida panthers': 'FLA',
+  'los angeles kings': 'LAK', 'minnesota wild': 'MIN', 'montréal canadiens': 'MTL', 'montreal canadiens': 'MTL',
+  'nashville predators': 'NSH', 'new jersey devils': 'NJD', 'new york islanders': 'NYI', 'new york rangers': 'NYR',
+  'ottawa senators': 'OTT', 'philadelphia flyers': 'PHI', 'pittsburgh penguins': 'PIT', 'san jose sharks': 'SJS',
+  'seattle kraken': 'SEA', 'st. louis blues': 'STL', 'st louis blues': 'STL', 'tampa bay lightning': 'TBL',
+  'toronto maple leafs': 'TOR', 'utah mammoth': 'UTA', 'utah hockey club': 'UTA', 'vancouver canucks': 'VAN',
+  'vegas golden knights': 'VGK', 'washington capitals': 'WSH', 'winnipeg jets': 'WPG',
+};
+
+async function apercuRatings(env, ctx, cors) {
+  const entetes = { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600' };
+  const cle = new Request('https://api.lnhq.ca/ratings-apercu?cache');
+  const enCache = await caches.default.match(cle);
+  if (enCache && Date.now() - Number(enCache.headers.get('X-Genere') || 0) < 3600 * 1000) {
+    return new Response(enCache.body, { headers: entetes });
+  }
+  const base = env.RATINGS ? await env.RATINGS.get('joueurs', 'json') : null;
+  if (!base) return new Response('{"ok":false,"erreur":"vide"}', { status: 503, headers: { ...entetes, 'Cache-Control': 'no-store' } });
+  // [nom, prénom, code d'équipe, 'P' ou 'G', [notes par groupe]] — aucun attribut détaillé.
+  const joueurs = Object.values(base).map(j => {
+    const type = j.position === 'G' ? 'G' : 'P';
+    const notes = GROUPES_RATINGS[type].map(g => {
+      const v = g.map(k => j.attributs?.[k]).filter(x => typeof x === 'number');
+      return v.length === g.length ? Math.round(v.reduce((s, x) => s + x, 0) / v.length) : null;
+    });
+    return notes.some(n => n != null) ? [j.nom || '', j.prenom || '', CODES_RATINGS[(j.equipe || '').toLowerCase()] || '', type, notes] : null;
+  }).filter(Boolean);
+  const corps = JSON.stringify({ ok: true, joueurs });
+  ctx.waitUntil(caches.default.put(cle, new Response(corps, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=3600', 'X-Genere': String(Date.now()) } })));
+  return new Response(corps, { headers: entetes });
+}
 
 /* ---------- Inscriptions (lnhq.ca/inscription.html) ---------- */
 // Page publique : le Worker transmet au script (adresse et clé gardées en secrets,
