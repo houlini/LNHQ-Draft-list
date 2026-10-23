@@ -199,7 +199,7 @@
     lecture.className = 'res-aide is-attente';
     lecture.textContent = 'Lecture de la photo…';
     lecture.hidden = false;
-    const r = await api('/api/resultat/lire', { mime: photo.mime, data: photo.lecture || photo.data });
+    const r = await api('/api/resultat/lire', { mime: photo.mime, data: photo.lecture || photo.data, match: m.num });
     if(matchChoisi() !== m) return;   // le DG a changé de match entre-temps
     if(!r.ok || !r.lecture || !r.lecture.lisible){
       lecture.className = 'res-aide is-erreur';

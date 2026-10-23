@@ -4,7 +4,7 @@
 const MAX_OCTETS_ENVOI = 20 * 1024 * 1024;
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
 
@@ -44,7 +44,7 @@ export default {
     if (resultat && request.method === 'POST') {
       const taille = Number(request.headers.get('Content-Length') || 0);
       if (!taille || taille > MAX_OCTETS_ENVOI) return json({ ok: false, erreur: 'taille' }, 413);
-      if (resultat === 'lire') return lirePhotoResultat(env, await request.json().catch(() => ({})));
+      if (resultat === 'lire') return lirePhotoResultat(env, await request.json().catch(() => ({})), ctx);
       return appelerScript(env, resultat, courriel, await request.text());
     }
     const enchere = { '/api/encheres/lancer': 'lancerEnchere', '/api/encheres/miser': 'miserEnchere', '/api/encheres/tirage': 'tirerAuSort', '/api/encheres/programmer': 'programmerTirage' }[url.pathname];
@@ -123,7 +123,7 @@ const STATS_RESULTAT = {
   minAvantage: 'POWERPLAY MINUTES', inferiorite: 'SHORTHANDED GOALS',
 };
 
-async function lirePhotoResultat(env, photo) {
+async function lirePhotoResultat(env, photo, ctx) {
   if (!env.GEMINI_KEY) return json({ ok: false, erreur: 'lecture_indisponible' });
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.mime) || !photo.data) return json({ ok: false, erreur: 'photo' });
   const cote = (quel) => ({
@@ -166,6 +166,8 @@ async function lirePhotoResultat(env, photo) {
     { nom: env.GEMINI_MODEL_SECOURS || 'gemini-flash-lite-latest', delai: 25000 },
   ];
   const debut = Date.now();
+  const essais = [];   // historique : [modèle, durée, statut] de chaque appel
+  const fin = (reponse, extra) => { noterLecture(env, ctx, { t: new Date(debut).toISOString(), match: String(photo.match || ''), ko: Math.round(photo.data.length * 0.75 / 1024), ms: Date.now() - debut, essais, ...extra }); return json(reponse); };
   let derniere = 'lecture';
   for (const { nom: modele, delai } of modeles) {
     const config = JSON.parse(JSON.stringify(corps.generationConfig));
@@ -181,6 +183,7 @@ async function lirePhotoResultat(env, photo) {
         if (!rep.ok) {
           const erreur = (await rep.text()).slice(0, 300);
           console.error('Gemini', modele, rep.status, (Date.now() - t0) + ' ms', erreur);
+          essais.push([modele, Date.now() - t0, rep.status]);
           derniere = rep.status === 429 ? 'quota' : 'lecture';
           // Réglage refusé par ce modèle (haute définition, réflexion) : on réessaie sans.
           if (rep.status === 400 && config.mediaResolution) { delete config.mediaResolution; continue; }
@@ -190,14 +193,30 @@ async function lirePhotoResultat(env, photo) {
         const donnees = await rep.json();
         const texte = (donnees.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
         console.log('Gemini', modele, (Date.now() - t0) + ' ms (total ' + (Date.now() - debut) + ' ms)', texte.slice(0, 1500));
-        return json({ ok: true, lecture: nettoyerLecture(JSON.parse(texte)), modele });
+        essais.push([modele, Date.now() - t0, 200]);
+        const lecture = nettoyerLecture(JSON.parse(texte));
+        return fin({ ok: true, lecture, modele }, { ok: true, modele, lisible: lecture.lisible !== false });
       } catch (err) {
         console.error('Gemini', modele, (Date.now() - t0) + ' ms', err.name === 'TimeoutError' ? 'trop lent, modèle suivant' : err.message);
+        essais.push([modele, Date.now() - t0, err.name === 'TimeoutError' ? 'lent' : 'erreur']);
         break;
       }
     }
   }
-  return json({ ok: false, erreur: derniere });
+  return fin({ ok: false, erreur: derniere }, { ok: false, erreur: derniere });
+}
+
+// Historique des lectures (KV LECTURES, clé « historique ») : les 300 dernières, la plus
+// récente en premier. Écrit après la réponse au DG, pour ne pas le faire attendre.
+function noterLecture(env, ctx, entree) {
+  if (!env.LECTURES || !ctx) return;
+  ctx.waitUntil((async () => {
+    try {
+      const liste = (await env.LECTURES.get('historique', 'json')) || [];
+      liste.unshift(entree);
+      await env.LECTURES.put('historique', JSON.stringify(liste.slice(0, 300)));
+    } catch (err) { console.error('Historique des lectures :', err.message); }
+  })());
 }
 
 // Une stat ne contient que des chiffres et « : . % / » : le reste (ex. « 37 Lucas ») est vidé

@@ -22,6 +22,12 @@ binding = "ASSETS"
 binding = "RATINGS"
 id = "54ea6d10f439438eaab19ec065aa8088"
 
+# Historique des lectures de photos de résultats par Gemini (clé « historique » : les 300
+# dernières, avec modèle, durée et erreurs). Lecture : npx wrangler kv key get historique --binding LECTURES --remote
+[[kv_namespaces]]
+binding = "LECTURES"
+id = "a9ea6260be4c4228a9afdd935f8cd6c6"
+
 [vars]
 # Valeurs affichées dans Zero Trust → Access → Applications → (l'application) → Vue d'ensemble.
 ACCESS_TEAM_DOMAIN = "https://lnhq.cloudflareaccess.com"
