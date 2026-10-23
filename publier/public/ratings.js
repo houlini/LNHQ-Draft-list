@@ -30,14 +30,24 @@
     'toronto maple leafs': 'TOR', 'utah mammoth': 'UTA', 'utah hockey club': 'UTA', 'vancouver canucks': 'VAN',
     'vegas golden knights': 'VGK', 'washington capitals': 'WSH', 'winnipeg jets': 'WPG',
   };
-  const POSITIONS = { C: 'C', LW: 'AG', RW: 'AD', LD: 'DG', RD: 'DD', G: 'G' };
+  // Habiletés : le scanner colle ou coupe parfois les mots (« TAPETO TAPE », « ONET ») :
+  // on compare sans espaces ni ponctuation pour retrouver le nom officiel.
+  const HABILETES = ['Ankle Breaker', 'Backhand Beauty', 'Big Rig', 'Big Tipper', 'Born Leader', 'Elite Edges', 'Hipster',
+    'No Contest', 'One T', 'Pressure+', 'Quick Draw', 'Quick Pick', 'Quick Release', 'Rocket', 'Second Wind', 'Send It',
+    'Spark Plug', "Stick 'Em Up", 'Tape to Tape', 'Truculence', 'Unstoppable', 'Warrior', 'Wheels'];
+  const cleHab = s => (s || '').toUpperCase().replace(/[^A-Z+]/g, '');
+  const PAR_CLE = Object.fromEntries(HABILETES.map(h => [cleHab(h), h]));
+  const nomHab = s => PAR_CLE[cleHab(s)] || titre(s);
+  const NIVEAUX = { 'ELITE': { nom: 'Élite', rang: 3, cls: 'h-elite' }, 'ALL-STAR': { nom: 'Étoile', rang: 2, cls: 'h-etoile' }, 'SPECIALIST': { nom: 'Spécialiste', rang: 1, cls: 'h-spec' } };
+  const niveauHab = s => NIVEAUX[cleHab(s) === 'ALLSTAR' ? 'ALL-STAR' : cleHab(s)] || { nom: titre(s), rang: 0, cls: '' };
+  const POSITIONS ={ C: 'C', LW: 'AG', RW: 'AD', LD: 'DG', RD: 'DD', G: 'G' };
   const TIR = { LEFT: 'Gauche', RIGHT: 'Droite' };
   const codeEquipe = nom => CODES[(nom || '').trim().toLowerCase()] || '';
   const posFr = p => (p || '').split('/').map(x => POSITIONS[x] || x).join('/');
   const titre = s => (s || '').toLowerCase().replace(/(^|[\s-])\S/g, c => c.toUpperCase());
 
   let joueurs = [];
-  const etat = { type: 'P', groupe: 'resume', tri: 'ov', sens: -1, texte: '', equipe: '', position: '', typeJ: '' };
+  const etat = { type: 'P', groupe: 'resume', tri: 'ov', sens: -1, texte: '', equipe: '', position: '', typeJ: '', hab: '', niv: 0 };
 
   function el(tag, cls, text){
     const e = document.createElement(tag);
@@ -59,10 +69,13 @@
   }
 
   // Colonnes du tableau selon le groupe choisi : Résumé = OV + moyenne de chaque groupe.
+  // Colonne des habiletés : triée par force (Élite = 3, Étoile = 2, Spécialiste = 1).
+  const COL_HAB = { cle: 'hab', abr: 'Habiletés', nom: 'Habiletés (tri par force)', hab: true, val: j => j.habs.length ? j.habs.reduce((s, h) => s + h.rang, 0) : null };
   function colonnes(){
     const gs = GROUPES[etat.type];
     if(etat.groupe === 'resume') return [{ cle: 'ov', abr: 'OV', nom: 'Overall', val: j => j.overall ?? null },
-      ...gs.map(g => ({ cle: 'g-' + g.id, abr: g.nom.slice(0, 3).toUpperCase(), nom: 'Moyenne ' + g.nom.toLowerCase(), val: j => moyenne(j, g) }))];
+      ...gs.map(g => ({ cle: 'g-' + g.id, abr: g.nom.slice(0, 3).toUpperCase(), nom: 'Moyenne ' + g.nom.toLowerCase(), val: j => moyenne(j, g) })), COL_HAB];
+    if(etat.groupe === 'hab') return [{ cle: 'ov', abr: 'OV', nom: 'Overall', val: j => j.overall ?? null }, COL_HAB];
     const g = gs.find(x => x.id === etat.groupe) || gs[0];
     return [{ cle: 'ov', abr: 'OV', nom: 'Overall', val: j => j.overall ?? null },
       ...g.attr.map(([k, nom, abr]) => ({ cle: 'a-' + k, abr, nom, val: j => j.attributs?.[k] ?? null }))];
@@ -80,6 +93,8 @@
       && (!t || j.recherche.includes(t))
       && (!etat.equipe || j.code === etat.equipe)
       && (!etat.typeJ || j.type === etat.typeJ)
+      && (!etat.hab || j.habs.some(h => h.nom === etat.hab && h.rang >= etat.niv))
+      && (etat.hab || !etat.niv || j.habs.some(h => h.rang >= etat.niv))
       && (!etat.position || j.position.split('/').some(p => etat.position === 'D' ? /D$/.test(p) : p === etat.position)));
   }
 
@@ -91,8 +106,16 @@
     if(!types.includes(etat.typeJ)) etat.typeJ = '';
     $('typeJ').replaceChildren(new Option('Tous les types', ''), ...types.map(t => new Option(titre(t), t)));
     $('typeJ').value = etat.typeJ;
+    // Habiletés présentes dans le lot affiché.
+    const habs = [...new Set(joueurs.filter(j => (etat.type === 'G') === (j.position === 'G')).flatMap(j => j.habs.map(h => h.nom)))].sort((a, b) => a.localeCompare(b, 'fr'));
+    if(!habs.includes(etat.hab)) etat.hab = '';
+    $('hab').replaceChildren(new Option('Toutes les habiletés', ''), ...habs.map(h => new Option(h, h)));
+    $('hab').value = etat.hab;
+    $('hab').hidden = $('niv').hidden = !habs.length;
 
-    $('groupes').replaceChildren(...[{ id: 'resume', nom: 'Résumé' }, ...GROUPES[etat.type]].map(g => {
+    const groupes = [{ id: 'resume', nom: 'Résumé' }, ...GROUPES[etat.type], ...(habs.length ? [{ id: 'hab', nom: 'Habiletés' }] : [])];
+    if(!groupes.some(g => g.id === etat.groupe)) etat.groupe = 'resume';
+    $('groupes').replaceChildren(...groupes.map(g => {
       const b = el('button', null, g.nom);
       b.type = 'button';
       b.setAttribute('role', 'tab');
@@ -147,6 +170,14 @@
       eq.append(logo(j.code), document.createTextNode(j.code || '—'));
       r.append(nom, eq, el('td', 'is-texte', posFr(j.position)), el('td', null, j.age ?? ''));
       cols.forEach(c => {
+        if(c.hab){
+          const td = el('td', 'is-texte rt-habs');
+          td.append(...j.habs.map(h => el('span', 'rt-puce ' + h.cls, h.nom)));
+          if(!j.habs.length) td.textContent = '—';
+          if(c.cle === etat.tri) td.classList.add('is-tri');
+          r.append(td);
+          return;
+        }
         const v = c.val(j);
         const td = el('td', 'rt-val ' + niveau(v) + (c.cle === 'ov' ? ' rt-ov-col' : ''), v ?? '—');
         if(c.cle === etat.tri) td.classList.add('is-tri');
@@ -172,12 +203,12 @@
     const bio = [['Âge', j.age], ['Taille', j.taille], ['Poids', j.poids ? j.poids + ' lb' : ''], ['Tir', TIR[j.tir] || titre(j.tir)],
       ['Type', titre(j.type)], ['Repêchage', j.repechage ? j.repechage + (j.repeche_par ? ' · ' + j.repeche_par : '') : 'Non repêché']];
     $('ficheBio').replaceChildren(...bio.filter(b => b[1] != null && b[1] !== '').flatMap(([k, v]) => [el('dt', null, k), el('dd', null, String(v))]));
-    $('ficheHab').replaceChildren(...(j.habiletes || []).map(h => {
-      const p = el('span', 'rt-hab');
-      p.append(el('b', null, titre(h.nom)), el('small', null, titre(h.niveau)));
+    $('ficheHab').replaceChildren(...j.habs.map(h => {
+      const p = el('span', 'rt-hab ' + h.cls);
+      p.append(el('b', null, h.nom), el('small', null, h.niveau));
       return p;
     }));
-    $('ficheHab').hidden = !(j.habiletes || []).length;
+    $('ficheHab').hidden = !j.habs.length;
     $('ficheAttr').replaceChildren(...GROUPES[j.position === 'G' ? 'G' : 'P'].map(g => {
       const bloc = el('section', 'rt-groupe');
       const m = moyenne(j, g);
@@ -211,6 +242,8 @@
     $('equipe').addEventListener('change', e => { etat.equipe = e.target.value; render(); });
     $('position').addEventListener('change', e => { etat.position = e.target.value; render(); });
     $('typeJ').addEventListener('change', e => { etat.typeJ = e.target.value; render(); });
+    $('hab').addEventListener('change', e => { etat.hab = e.target.value; render(); });
+    $('niv').addEventListener('change', e => { etat.niv = Number(e.target.value); render(); });
     $('ficheFermer').addEventListener('click', () => $('fiche').close());
     // Clic sur le fond (hors de la fiche) : fermer.
     $('fiche').addEventListener('click', e => { if(e.target === $('fiche')) $('fiche').close(); });
@@ -230,6 +263,8 @@
     }
     joueurs = Object.values(d.joueurs || {}).map(j => Object.assign({}, j, {
       prenom: j.prenom || '', nom: j.nom || '', position: j.position || '', code: codeEquipe(j.equipe),
+      habs: (j.habiletes || []).map(h => { const n = niveauHab(h.niveau); return { nom: nomHab(h.nom), niveau: n.nom, rang: n.rang, cls: n.cls }; })
+        .sort((a, b) => b.rang - a.rang),
       recherche: ((j.prenom || '') + ' ' + (j.nom || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(),
     }));
     const equipes = [...new Set(joueurs.map(j => j.code).filter(Boolean))].sort();

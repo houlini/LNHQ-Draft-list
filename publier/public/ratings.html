@@ -7,8 +7,8 @@
 <title>Ratings NHL 27 — LNHQ</title>
 <link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
 <link rel="stylesheet" href="https://lnhq.ca/site.css?v=8">
-<link rel="stylesheet" href="ratings.css">
-<script src="ratings.js" defer></script>
+<link rel="stylesheet" href="ratings.css?v=2">
+<script src="ratings.js?v=2" defer></script>
 </head>
 <body>
 
@@ -54,6 +54,13 @@
           <option value="D">Défenseurs</option>
         </select>
         <select id="typeJ" aria-label="Type de joueur"><option value="">Tous les types</option></select>
+        <select id="hab" aria-label="Habileté"><option value="">Toutes les habiletés</option></select>
+        <select id="niv" aria-label="Niveau d'habileté">
+          <option value="0">Tous les niveaux</option>
+          <option value="1">Spécialiste et plus</option>
+          <option value="2">Étoile et plus</option>
+          <option value="3">Élite seulement</option>
+        </select>
       </div>
 
       <div class="rt-groupes" id="groupes" role="tablist" aria-label="Attributs affichés"></div>
