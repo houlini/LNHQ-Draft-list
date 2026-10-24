@@ -104,45 +104,126 @@ async function apercuRatings(env, ctx, cors) {
   return new Response(corps, { headers: entetes });
 }
 
-// Moyennes d'overall par équipe et par position (page Stats d'équipe) : seulement des
-// moyennes d'équipe et le nombre de joueurs, aucune note individuelle.
-// Position = la première listée (« C/LW » compte comme centre) ; LD/RD → D.
+// Moyennes des ratings par équipe et par position (page Stats d'équipe), calculées sur
+// l'ALIGNEMENT seulement (style Daily Faceoff : 4 trios, 3 paires, 2 gardiens), tel
+// qu'affiché sur la page Équipe : places enregistrées par le DG (onglet ALIGNEMENTS),
+// complétées par position puis overall — même logique que composer() d'alignement.js.
+// La position est la place dans l'alignement (AG, C, AD, D, G). Overall et notes
+// viennent de la base des ratings NHL 27 ; seules des moyennes d'équipe sortent.
+const PLACES_ALIGNEMENT = [];
+for (let l = 1; l <= 4; l++) [['G', 'LW'], ['C', 'C'], ['D', 'RW']].forEach(([c, po]) => PLACES_ALIGNEMENT.push({ id: 'A' + l + c, groupe: 'A', po }));
+for (let l = 1; l <= 3; l++) [['G', 'LD'], ['D', 'RD']].forEach(([c, po]) => PLACES_ALIGNEMENT.push({ id: 'D' + l + c, groupe: 'D', po }));
+PLACES_ALIGNEMENT.push({ id: 'G1', groupe: 'G', po: 'G' }, { id: 'G2', groupe: 'G', po: 'G' });
+const DUREE_CACHE_EQUIPES = 15 * 60;   // les DG changent leur alignement : copie de 15 min
+
+async function gvizLignes(params) {
+  const rep = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&${params}`);
+  const m = (await rep.text()).match(/setResponse\(([\s\S]*)\);\s*$/);
+  if (!m) throw new Error('format inattendu');
+  const t = JSON.parse(m[1]).table;
+  const lignes = t.rows.map(r => (r.c || []).map(c => c ? String(c.f != null ? c.f : (c.v != null ? c.v : '')).trim() : ''));
+  lignes.entetes = t.cols.map(c => (c.label || '').trim());
+  return lignes;
+}
+
+// Alignement de chaque équipe : { CODE: [{ id: 'Nom, Prénom', po: 'C' }, …] } (20 joueurs).
+async function alignements() {
+  const [pdb, sauve] = await Promise.all([
+    gvizLignes('headers=1&sheet=PLAYERSDATABASE&tq=' + encodeURIComponent("select B, C, H, Z, AB where B <> '' and H <> 'CHOIX'")),
+    gvizLignes('headers=1&sheet=ALIGNEMENTS').catch(() => null),
+  ]);
+  const ANCIENNES = { L: 'LW', R: 'RW' };
+  const positions = h => String(h || '').toUpperCase().split(/[\/,\s]+/).filter(Boolean).map(t => ANCIENNES[t] || t);
+  const groupePo = p => p === 'G' ? 'G' : /^(LD|RD|D)$/.test(p) ? 'D' : 'A';
+  const parEquipe = {};
+  pdb.forEach(l => {
+    const code = (l[3] || '').toUpperCase();
+    if (!code || !l[0]) return;
+    const pos = positions(l[2]);
+    (parEquipe[code] || (parEquipe[code] = [])).push({ id: l[0], ov: Number(l[1]) || 0, po: pos[0] || '', positions: pos, espoir: /^(true|vrai|x|oui)$/i.test(l[4] || '') });
+  });
+  const enregistres = {};
+  if (sauve && sauve.entetes[0] === 'Équipe' && sauve.entetes[1] === PLACES_ALIGNEMENT[0].id) {
+    sauve.forEach(l => { const p = {}; PLACES_ALIGNEMENT.forEach((x, i) => { if (l[i + 1]) p[x.id] = l[i + 1]; }); enregistres[(l[0] || '').toUpperCase()] = p; });
+  }
+  const resultat = {};
+  Object.entries(parEquipe).forEach(([code, joueurs]) => {
+    const parId = new Map(joueurs.map(j => [j.id, j]));
+    const places = {}, pris = new Set(), sauvegarde = enregistres[code] || {};
+    PLACES_ALIGNEMENT.forEach(p => { const j = parId.get(sauvegarde[p.id]); if (j && !pris.has(j.id)) { places[p.id] = j; pris.add(j.id); } });
+    const dispo = f => joueurs.filter(j => !j.espoir && !pris.has(j.id) && f(j)).sort((a, b) => b.ov - a.ov);
+    const prendre = (p, ...filtres) => {
+      if (places[p.id]) return;
+      for (const f of filtres) { const j = dispo(f)[0]; if (j) { places[p.id] = j; pris.add(j.id); return; } }
+    };
+    const principal = pos => j => j.po === pos;
+    const peutJouer = pos => j => groupePo(j.po) === groupePo(pos) && j.positions.includes(pos);
+    const groupe = g => j => groupePo(j.po) === g;
+    PLACES_ALIGNEMENT.forEach(p => {
+      if (p.groupe === 'G') prendre(p, groupe('G'));
+      else prendre(p, principal(p.po), peutJouer(p.po), groupe(p.groupe));
+    });
+    resultat[code] = PLACES_ALIGNEMENT.filter(p => places[p.id]).map(p => ({ id: places[p.id].id, po: p.groupe === 'D' ? 'D' : p.po }));
+  });
+  return resultat;
+}
+
 async function ratingsEquipes(env, ctx, cors) {
-  const entetes = { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600' };
-  const cle = new Request('https://api.lnhq.ca/ratings-equipes?cache2');
+  const entetes = { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=' + DUREE_CACHE_EQUIPES };
+  const cle = new Request('https://api.lnhq.ca/ratings-equipes?alignement');
   const enCache = await caches.default.match(cle);
-  if (enCache && Date.now() - Number(enCache.headers.get('X-Genere') || 0) < 3600 * 1000) {
+  if (enCache && Date.now() - Number(enCache.headers.get('X-Genere') || 0) < DUREE_CACHE_EQUIPES * 1000) {
     return new Response(enCache.body, { headers: entetes });
   }
   const base = env.RATINGS ? await env.RATINGS.get('joueurs', 'json') : null;
   if (!base) return new Response('{"ok":false,"erreur":"vide"}', { status: 503, headers: { ...entetes, 'Cache-Control': 'no-store' } });
-  const sommes = {}, groupes = {};
-  const ajouter = (o, k, v) => { const s = o[k] || (o[k] = [0, 0]); s[0] += v; s[1]++; };
+  let lignes;
+  try { lignes = await alignements(); }
+  catch (err) {
+    console.error('Alignements :', err.message);
+    return new Response('{"ok":false,"erreur":"classeur"}', { status: 502, headers: { ...entetes, 'Cache-Control': 'no-store' } });
+  }
+  // Base des ratings : « nom,prénom » sans accents, et « nom|équipe » si le prénom diffère (Gabe / Gabriel).
+  const cleNom = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+  const index = new Map();
   Object.values(base).forEach(j => {
-    const code = CODES_RATINGS[(j.equipe || '').toLowerCase()];
-    if (!code || typeof j.overall !== 'number') return;
-    const p = String(j.position || '').split('/')[0].trim().toUpperCase();
-    const po = p === 'LD' || p === 'RD' ? 'D' : p;
-    if (!['C', 'LW', 'RW', 'D', 'G'].includes(po)) return;
-    const e = sommes[code] || (sommes[code] = {});
-    [po, 'TOUS', ...(['C', 'LW', 'RW'].includes(po) ? ['ATT'] : [])].forEach(k => ajouter(e, k, j.overall));
-    // Notes par groupe (patineurs : 6 groupes, gardiens : 3), moyenne des joueurs de l'équipe.
-    const type = po === 'G' ? 'G' : 'P', g = groupes[code] || (groupes[code] = {});
-    GROUPES_RATINGS[type].forEach((attrs, i) => {
-      const v = attrs.map(k => j.attributs?.[k]).filter(x => typeof x === 'number');
-      if (v.length === attrs.length) ajouter(g, type + i, v.reduce((s, x) => s + x, 0) / v.length);
-    });
+    const code = CODES_RATINGS[(j.equipe || '').toLowerCase()] || '';
+    [cleNom(j.nom) + ',' + cleNom(j.prenom), cleNom(j.nom) + '|' + code].forEach(k => index.set(k, [...(index.get(k) || []), Object.assign({ code }, j)]));
   });
+  const trouver = (id, code) => {
+    const v = id.indexOf(',');
+    const nom = cleNom(v > 0 ? id.slice(0, v) : id), prenom = cleNom(v > 0 ? id.slice(v + 1) : '');
+    let c = index.get(nom + ',' + prenom) || [];
+    if (c.length > 1) c = c.filter(x => x.code === code);   // homonymes : celui de l'équipe
+    if (!c.length) { c = index.get(nom + '|' + code) || []; if (c.length > 1) c = []; }
+    return c.length === 1 ? c[0] : null;
+  };
   const moy = ([s, n]) => Math.round(s / n * 10) / 10;
-  // { CODE: { C: [moyenne, nombre], LW, RW, D, G, ATT, TOUS, groupes: { P: [6 moyennes], G: [3] } } }.
-  const equipes = Object.fromEntries(Object.entries(sommes).map(([code, e]) => {
+  const ajouter = (o, k, v) => { const s = o[k] || (o[k] = [0, 0]); s[0] += v; s[1]++; };
+  // { CODE: { C: [moyenne, nombre], LW, RW, D, G, ATT, TOUS, groupes: { P: [6], G: [3] }, alignes, sansRating } }.
+  const equipes = {};
+  Object.entries(lignes).forEach(([code, joueurs]) => {
+    const e = {}, g = {};
+    let sansRating = 0;
+    joueurs.forEach(({ id, po }) => {
+      const j = trouver(id, code);
+      if (!j || typeof j.overall !== 'number') { sansRating++; return; }
+      [po, 'TOUS', ...(['C', 'LW', 'RW'].includes(po) ? ['ATT'] : [])].forEach(k => ajouter(e, k, j.overall));
+      const type = po === 'G' ? 'G' : 'P';
+      GROUPES_RATINGS[type].forEach((attrs, i) => {
+        const v = attrs.map(k => j.attributs?.[k]).filter(x => typeof x === 'number');
+        if (v.length === attrs.length) ajouter(g, type + i, v.reduce((s, x) => s + x, 0) / v.length);
+      });
+    });
+    if (!e.TOUS) return;
     const r = Object.fromEntries(Object.entries(e).map(([k, s]) => [k, [moy(s), s[1]]]));
-    const g = groupes[code] || {};
     r.groupes = { P: GROUPES_RATINGS.P.map((_, i) => g['P' + i] ? moy(g['P' + i]) : null), G: GROUPES_RATINGS.G.map((_, i) => g['G' + i] ? moy(g['G' + i]) : null) };
-    return [code, r];
-  }));
-  const corps = JSON.stringify({ ok: true, equipes });
-  ctx.waitUntil(caches.default.put(cle, new Response(corps, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=3600', 'X-Genere': String(Date.now()) } })));
+    r.alignes = joueurs.length;
+    r.sansRating = sansRating;
+    equipes[code] = r;
+  });
+  const corps = JSON.stringify({ ok: true, base: 'alignement', equipes });
+  ctx.waitUntil(caches.default.put(cle, new Response(corps, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=' + DUREE_CACHE_EQUIPES, 'X-Genere': String(Date.now()) } })));
   return new Response(corps, { headers: entetes });
 }
 

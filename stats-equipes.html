@@ -284,7 +284,7 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
         const cls = [j === 2 || j === 5 ? 'se-sep' : '', t.cle === cle ? 'is-trie' : '',
           x && rangs[cle].haut.has(code) ? 'is-haut' : x && rangs[cle].bas.has(code) ? 'is-bas' : '', x ? '' : 'is-vide'].filter(Boolean).join(' ');
         const td = el('td', cls || null, x ? x[0].toFixed(1) : '—');
-        if(x){ td.append(el('small', null, x[1] + ' j.')); td.title = x[1] + ' joueur' + (x[1] > 1 ? 's' : ''); }
+        if(x) td.title = x[1] + ' joueur' + (x[1] > 1 ? 's' : '') + ' de l’alignement';
         tr.append(td);
       });
       tbody.append(tr);
@@ -292,8 +292,8 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
     });
     table.append(thead, tbody); defile.append(table); carte.append(defile);
     conteneur.append(carte, el('p', 'se-note',
-      'Moyenne de l’overall NHL 27 des joueurs de chaque équipe, par position (la première position listée : un C/AG compte comme centre). '
-      + 'Sous chaque moyenne, le nombre de joueurs. En vert, les 5 meilleures équipes de la colonne ; en rouge, les 5 dernières.'));
+      'Moyenne de l’overall NHL 27 des 20 joueurs de l’alignement de chaque équipe (4 trios, 3 paires, 2 gardiens), tel qu’affiché sur sa page : '
+      + 'la position est la place occupée dans l’alignement. En vert, les 5 meilleures équipes de la colonne ; en rouge, les 5 dernières.'));
     return conteneur;
   }
 
@@ -320,13 +320,14 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
       const x = r[cle];
       positions.append(tuile(cle === 'TOUS' ? 'Global' : titre, x && x[0], rangDe(code, c => ratings[c][cle] && ratings[c][cle][0]), x ? x[1] + ' joueur' + (x[1] > 1 ? 's' : '') : ''));
     });
-    boiteF.append(tete, el('h4', null, 'Overall moyen par position'), positions);
+    boiteF.append(tete, el('h4', null, 'Overall moyen de l’alignement, par position'), positions);
+    if(r.sansRating) boiteF.append(el('p', 'se-note', `${r.sansRating} joueur${r.sansRating > 1 ? 's' : ''} de l’alignement sans rating NHL 27 : non compté${r.sansRating > 1 ? 's' : ''}.`));
     ['P', 'G'].forEach(type => {
       const notes = (r.groupes && r.groupes[type]) || [];
       if(!notes.some(n => n != null)) return;
       const bloc = el('div', 'se-tuiles');
       GROUPES[type].forEach((nom, i) => bloc.append(tuile(nom, notes[i], rangDe(code, c => ratings[c].groupes && ratings[c].groupes[type][i]))));
-      boiteF.append(el('h4', null, type === 'P' ? 'Notes moyennes des patineurs' : 'Notes moyennes des gardiens'), bloc);
+      boiteF.append(el('h4', null, type === 'P' ? 'Notes moyennes des 18 patineurs' : 'Notes moyennes des 2 gardiens'), bloc);
     });
     td.append(boiteF);
     tr.append(td);
@@ -344,7 +345,7 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
     document.querySelector('.se-page').classList.toggle('is-etroite', vue === 'ratings');
     document.getElementById('titre').textContent = vue === 'ratings' ? 'Ratings par équipe' : 'Stats d’équipe';
     const nb = resultats ? Object.keys(resultats).length : 0;
-    document.getElementById('sousTitre').textContent = vue === 'ratings' ? 'moyennes NHL 27'
+    document.getElementById('sousTitre').textContent = vue === 'ratings' ? 'moyennes NHL 27 de l’alignement'
       : resultats ? (nb ? `${nb} match${nb > 1 ? 's' : ''} joué${nb > 1 ? 's' : ''}` : 'aucun match joué pour l’instant') : '';
     const equipes = window.LNHQ_TEAMS || [];
     const parCode = Object.fromEntries(equipes.map(x => [x.code, x]));
@@ -370,7 +371,7 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
   afficher();
   R.chargerResultats().then(r => { resultats = r; afficher(); })
     .catch(() => { if(vue === 'stats') boite.replaceChildren(el('p', 'se-etat', 'Impossible de charger les statistiques pour le moment.')); });
-  fetch('https://api.lnhq.ca/ratings-equipes').then(r => r.json())
+  fetch('https://api.lnhq.ca/ratings-equipes?v=alignement').then(r => r.json())
     .then(d => { if(!d.ok) throw new Error(d.erreur); ratings = d.equipes; afficher(); })
     .catch(() => { erreurRatings = true; if(vue === 'ratings') afficher(); });
 })();
