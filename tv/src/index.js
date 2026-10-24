@@ -25,6 +25,9 @@ export default {
     if (url.pathname === '/ratings-apercu' && request.method === 'GET') {
       return apercuRatings(env, ctx, cors);
     }
+    if (url.pathname === '/ratings-equipes' && request.method === 'GET') {
+      return ratingsEquipes(env, ctx, cors);
+    }
     if (url.pathname !== '/twitch' || request.method !== 'GET') {
       return new Response('Introuvable', { status: 404, headers: cors });
     }
@@ -97,6 +100,48 @@ async function apercuRatings(env, ctx, cors) {
     return notes.some(n => n != null) ? [j.nom || '', j.prenom || '', CODES_RATINGS[(j.equipe || '').toLowerCase()] || '', type, notes] : null;
   }).filter(Boolean);
   const corps = JSON.stringify({ ok: true, joueurs });
+  ctx.waitUntil(caches.default.put(cle, new Response(corps, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=3600', 'X-Genere': String(Date.now()) } })));
+  return new Response(corps, { headers: entetes });
+}
+
+// Moyennes d'overall par équipe et par position (page Stats d'équipe) : seulement des
+// moyennes d'équipe et le nombre de joueurs, aucune note individuelle.
+// Position = la première listée (« C/LW » compte comme centre) ; LD/RD → D.
+async function ratingsEquipes(env, ctx, cors) {
+  const entetes = { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600' };
+  const cle = new Request('https://api.lnhq.ca/ratings-equipes?cache2');
+  const enCache = await caches.default.match(cle);
+  if (enCache && Date.now() - Number(enCache.headers.get('X-Genere') || 0) < 3600 * 1000) {
+    return new Response(enCache.body, { headers: entetes });
+  }
+  const base = env.RATINGS ? await env.RATINGS.get('joueurs', 'json') : null;
+  if (!base) return new Response('{"ok":false,"erreur":"vide"}', { status: 503, headers: { ...entetes, 'Cache-Control': 'no-store' } });
+  const sommes = {}, groupes = {};
+  const ajouter = (o, k, v) => { const s = o[k] || (o[k] = [0, 0]); s[0] += v; s[1]++; };
+  Object.values(base).forEach(j => {
+    const code = CODES_RATINGS[(j.equipe || '').toLowerCase()];
+    if (!code || typeof j.overall !== 'number') return;
+    const p = String(j.position || '').split('/')[0].trim().toUpperCase();
+    const po = p === 'LD' || p === 'RD' ? 'D' : p;
+    if (!['C', 'LW', 'RW', 'D', 'G'].includes(po)) return;
+    const e = sommes[code] || (sommes[code] = {});
+    [po, 'TOUS', ...(['C', 'LW', 'RW'].includes(po) ? ['ATT'] : [])].forEach(k => ajouter(e, k, j.overall));
+    // Notes par groupe (patineurs : 6 groupes, gardiens : 3), moyenne des joueurs de l'équipe.
+    const type = po === 'G' ? 'G' : 'P', g = groupes[code] || (groupes[code] = {});
+    GROUPES_RATINGS[type].forEach((attrs, i) => {
+      const v = attrs.map(k => j.attributs?.[k]).filter(x => typeof x === 'number');
+      if (v.length === attrs.length) ajouter(g, type + i, v.reduce((s, x) => s + x, 0) / v.length);
+    });
+  });
+  const moy = ([s, n]) => Math.round(s / n * 10) / 10;
+  // { CODE: { C: [moyenne, nombre], LW, RW, D, G, ATT, TOUS, groupes: { P: [6 moyennes], G: [3] } } }.
+  const equipes = Object.fromEntries(Object.entries(sommes).map(([code, e]) => {
+    const r = Object.fromEntries(Object.entries(e).map(([k, s]) => [k, [moy(s), s[1]]]));
+    const g = groupes[code] || {};
+    r.groupes = { P: GROUPES_RATINGS.P.map((_, i) => g['P' + i] ? moy(g['P' + i]) : null), G: GROUPES_RATINGS.G.map((_, i) => g['G' + i] ? moy(g['G' + i]) : null) };
+    return [code, r];
+  }));
+  const corps = JSON.stringify({ ok: true, equipes });
   ctx.waitUntil(caches.default.put(cle, new Response(corps, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=3600', 'X-Genere': String(Date.now()) } })));
   return new Response(corps, { headers: entetes });
 }

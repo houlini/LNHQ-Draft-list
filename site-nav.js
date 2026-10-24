@@ -60,6 +60,7 @@
       ['Résultats', 'resultats.html', 'resultats'],
       ['Classement', 'classement.html', 'classement'],
       ['Stats des joueurs', 'stats.html', 'stats'],
+      ['Stats d’équipe', 'stats-equipes.html', 'stats-equipes'],
     ]],
     ['Marché', [
       ['Agents libres', 'joueurs.html', 'joueurs'],

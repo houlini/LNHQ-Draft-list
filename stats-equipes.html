@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stats d’équipe</title>
+<link rel="icon" type="image/png" href="logo-lnhq.png">
+<link rel="stylesheet" href="site.css?v=9">
+<script src="site-nav.js?v=8"></script>
+<script src="resultats-donnees.js?v=6"></script>
+<style>
+  .se-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:none; margin:0 auto; width:100%; box-sizing:border-box; }
+  .se-page.is-etroite{ max-width:1100px; }
+  .se-haut{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:10px 16px; margin-bottom:16px; }
+  .se-titre{ margin:0; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:22px; text-transform:uppercase; letter-spacing:0.02em; }
+  .se-titre b{ font-weight:inherit; }
+  .se-titre span{ font-family:'IBM Plex Sans', sans-serif; font-size:14px; font-weight:400; color:var(--ink-muted); text-transform:none; margin-left:6px; }
+
+  /* Onglets : Statistiques / Ratings (même style que les vues du classement) */
+  .se-vues{ display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:rgba(0,0,0,0.12); }
+  .se-vues button{
+    min-height:38px; padding:0 18px; border:none; border-radius:9px; cursor:pointer;
+    background:transparent; color:#fff; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .se-vues button:hover{ background:rgba(255,255,255,0.15); }
+  .se-vues button[aria-pressed="true"]{ background:var(--nav-dark); color:#fff; }
+
+  .se-carte{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .se-defile{ overflow-x:auto; }
+  .se-table{ width:100%; border-collapse:collapse; font-size:14px; }
+  .se-table th, .se-table td{ padding:7px 8px; text-align:center; white-space:nowrap; }
+  .se-table thead th{ font-size:11.5px; font-weight:700; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1px solid var(--line); }
+  .se-table tbody tr + tr{ border-top:1px solid var(--line); }
+  .se-table tbody tr:nth-child(even){ background:var(--stripe); }
+  .se-table td{ font-family:'IBM Plex Mono', monospace; }
+  .se-table th[data-tri]{ cursor:pointer; user-select:none; }
+  .se-table th[data-tri]:hover{ color:var(--accent); }
+  .se-table th.is-trie{ color:var(--accent); }
+  .se-table th.is-trie::after{ content:' ▼'; font-size:9px; }
+  .se-table th.is-trie.is-asc::after{ content:' ▲'; }
+  .se-table td.is-trie{ font-weight:700; color:var(--accent); }
+  .se-table .is-vide{ color:var(--ink-muted); }
+  /* Rang et Équipe figés côte à côte (site.css fige déjà la 1re colonne : le rang). */
+  .se-rang{ width:34px; min-width:34px; max-width:34px; box-sizing:border-box; box-shadow:none; color:var(--ink-muted); }
+  .se-equipe{ text-align:left !important; font-family:inherit !important; min-width:150px; position:sticky; left:34px; z-index:2; background:var(--surface); box-shadow:2px 0 4px -2px rgba(0,0,0,0.18); }
+  thead .se-equipe{ z-index:3; }
+  .se-table tbody tr:nth-child(even) .se-equipe, .se-table tbody tr:nth-child(even) .se-rang{ background:var(--stripe); }
+  .se-equipe a{ display:flex; align-items:center; gap:8px; color:inherit; text-decoration:none; min-width:0; }
+  .se-equipe a:hover .nom-long{ color:var(--accent); text-decoration:underline; }
+  .se-equipe img{ width:24px; height:24px; object-fit:contain; flex-shrink:0; }
+  .nom-court{ display:none; }
+
+  /* Ratings : les 5 meilleures et les 5 moins bonnes de chaque colonne en couleur. */
+  .se-r td.is-haut{ color:var(--positive); font-weight:700; }
+  .se-r td.is-bas{ color:var(--negative); }
+  .se-r td small{ display:block; font-family:'IBM Plex Sans', sans-serif; font-size:10.5px; color:var(--ink-muted); font-weight:400; }
+  .se-r th.se-sep, .se-r td.se-sep{ border-left:1px solid var(--line); }
+
+  /* Fiche d'équipe (vue Ratings) */
+  .se-r .se-ligne{ cursor:pointer; }
+  .se-r .se-ligne:hover td, .se-r .se-ligne:focus-visible td{ background:var(--accent-soft); }
+  .se-r .se-ligne.is-ouverte td{ background:var(--accent-soft); border-bottom:0; }
+  .se-r .se-ligne:focus-visible{ outline:none; }
+  .se-r .se-ligne{ scroll-margin-top:96px; }   /* sous la bande d'onglets collante */
+  .se-fiche{ padding:0 !important; text-align:left !important; white-space:normal !important; font-family:inherit !important; position:static !important; }
+  /* Largeur = partie visible du tableau (fixée en JS) : la fiche reste lisible même si le tableau défile. */
+  .se-fiche-int{ position:sticky; left:0; box-sizing:border-box; padding:14px 16px 16px; background:var(--accent-soft); }
+  .se-fiche-tete{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .se-fiche-tete img{ width:36px; height:36px; object-fit:contain; }
+  .se-fiche-tete h3{ margin:0; flex:1; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:19px; text-transform:uppercase; }
+  .se-fiche-tete a{ color:var(--accent); font-weight:700; font-size:13.5px; text-decoration:none; }
+  .se-fiche-tete a:hover{ text-decoration:underline; }
+  .se-fiche h4{ margin:14px 0 6px; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
+  .se-tuiles{ display:grid; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); gap:8px; }
+  .se-tuile{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:1px; }
+  .se-tuile span{ font-size:12px; font-weight:700; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.03em; }
+  .se-tuile b{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:24px; font-weight:500; line-height:1.1; }
+  .se-tuile small{ font-size:11.5px; color:var(--ink-muted); }
+  .se-tuile.is-haut b{ color:var(--positive); }
+  .se-tuile.is-bas b{ color:var(--negative); }
+
+  .se-legende{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:4px 16px; margin:12px 2px 0; font-size:12.5px; color:var(--ink-muted); }
+  .se-legende b{ color:var(--ink); font-family:'IBM Plex Mono', monospace; }
+  .se-note{ margin:12px 2px 0; font-size:13px; color:var(--ink-muted); line-height:1.5; }
+  .se-etat{ padding:24px; text-align:center; color:var(--ink-muted); }
+  @media (max-width:600px){
+    .se-vues{ width:100%; }
+    .se-vues button{ flex:1; padding:0 8px; }
+    .se-table{ font-size:13px; }
+    .se-table th, .se-table td{ padding:7px 5px; }
+    .se-equipe{ min-width:84px; }
+    .nom-long{ display:none; }
+    .nom-court{ display:inline; font-family:'IBM Plex Mono', monospace; font-weight:700; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <site-header class="app-header" current-page="stats-equipes"></site-header>
+
+  <div class="filter-band">
+    <div class="se-vues" role="group" aria-label="Vue">
+      <button type="button" data-vue="stats">Statistiques</button>
+      <button type="button" data-vue="ratings">Ratings</button>
+    </div>
+  </div>
+
+  <main id="content">
+    <div class="se-page">
+      <div class="se-haut">
+        <h2 class="se-titre"><b id="titre">Stats d’équipe</b> <span id="sousTitre"></span></h2>
+      </div>
+      <div id="boite"><p class="se-etat">Chargement…</p></div>
+    </div>
+  </main>
+</div>
+
+<script>
+document.getElementById('sheetTitle').textContent = 'LNHQ';
+(function(){
+  const R = window.LNHQ_RESULTATS;
+  const boite = document.getElementById('boite');
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; };
+  const VUES = ['stats', 'ratings'];
+
+  // ---------- Statistiques (résultats des matchs) : [clé, en-tête, description, format, plus bas = mieux] ----------
+  const un = v => v.toFixed(1);
+  const pct = v => v.toFixed(1) + ' %';
+  const mmss = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+  const COLONNES_STATS = [
+    ['pj', 'PJ', 'Parties jouées', String],
+    ['bpMoy', 'BP/M', 'Buts pour par match', un],
+    ['bcMoy', 'BC/M', 'Buts contre par match', un, true],
+    ['tirsMoy', 'Tirs/M', 'Tirs par match', un],
+    ['tirsContreMoy', 'TC/M', 'Tirs contre par match', un, true],
+    ['anButs', 'AN', 'Avantage numérique, cumul de la saison : buts / occasions', (v, s) => v + '/' + s.anOcc],
+    ['anPct', 'AN %', 'Avantage numérique : buts / occasions', pct],
+    ['bcAvantage', 'BC AN', 'Buts contre pendant son avantage numérique (buts en infériorité de l’adversaire, cumul)', String, true],
+    ['dnArrets', 'DN', 'Désavantage numérique, cumul de la saison : pénalités écoulées sans but / désavantages', (v, s) => v + '/' + s.dnOcc],
+    ['dnPct', 'DN %', 'Désavantage numérique : pénalités écoulées sans but', pct],
+    ['mjPct', 'MAJ %', 'Mises au jeu gagnées', pct],
+    ['passesMoy', 'Passes %', 'Passes réussies (moyenne)', pct],
+    ['attaqueMoy', 'Attaque', "Temps d'attaque moyen par match", mmss],
+    ['defenseMoy', 'Défense', 'Temps en défensive moyen par match (temps d’attaque de l’adversaire)', mmss, true],
+    ['misesMoy', 'MEE/M', 'Mises en échec par match', un],
+    ['penalitesMoy', 'PUN/M', 'Minutes de pénalité par match', un, true],
+    ['minAvantage', 'Min AN', 'Minutes en avantage numérique (total)', mmss],
+    ['inferiorite', 'BI', 'Buts en infériorité (total)', String],
+  ];
+  // ---------- Ratings NHL 27 : moyenne d'overall par position (api.lnhq.ca/ratings-equipes) ----------
+  const COLONNES_RATINGS = [
+    ['TOUS', 'Global', 'Moyenne de tous les joueurs'],
+    ['ATT', 'Attaque', 'Moyenne des attaquants (C, AG, AD)'],
+    ['C', 'C', 'Moyenne des centres'],
+    ['LW', 'AG', 'Moyenne des ailiers gauches'],
+    ['RW', 'AD', 'Moyenne des ailiers droits'],
+    ['D', 'D', 'Moyenne des défenseurs'],
+    ['G', 'G', 'Moyenne des gardiens'],
+  ];
+
+  const GROUPES = { P: ['Patinage', 'Tir', 'Maniement', 'Défense', 'Physique', 'Intelligence'], G: ['Arrêts', 'Jeu', 'Physique'] };
+  // Équipe ouverte dans la vue Ratings (?equipe=MTL : lien depuis la page Équipe).
+  let ouverte = (new URLSearchParams(location.search).get('equipe') || '').toUpperCase();
+  let defiler = !!ouverte;
+
+  let vue = (() => {
+    if(ouverte) return 'ratings';
+    const p = new URLSearchParams(location.search).get('vue');
+    if(VUES.includes(p)) return p;
+    try{ const v = localStorage.getItem('lnhqStatsEquipesVue'); if(VUES.includes(v)) return v; }catch(e){}
+    return 'stats';
+  })();
+  const tris = { stats: { cle: null, asc: false }, ratings: { cle: 'TOUS', asc: false } };
+  let resultats = null, ratings = null, erreurRatings = false;
+
+  function celluleEquipe(code, parCode){
+    const eq = parCode[code] || { name: code, slug: '' };
+    const lien = el('a');
+    if(eq.slug) lien.href = 'equipe.html?team=' + eq.slug;
+    lien.title = eq.name;
+    const img = el('img'); img.src = 'Logos/' + code + '.png'; img.alt = ''; img.loading = 'lazy';
+    lien.append(img, el('span', 'nom-long', eq.name), el('span', 'nom-court', code));
+    const td = el('td', 'se-equipe'); td.append(lien);
+    return td;
+  }
+  // En-tête triable. 1er clic : le meilleur en haut ; 2e : l'inverse ; 3e : ordre par défaut.
+  function entete(t, cle, titre, desc, basMieux, defaut, cls){
+    const th = el('th', [cls, t.cle === cle ? 'is-trie' + (t.asc ? ' is-asc' : '') : ''].filter(Boolean).join(' ') || null, titre);
+    th.title = desc + ' — cliquer pour trier';
+    th.dataset.tri = cle;
+    th.addEventListener('click', () => {
+      const meilleur = !!basMieux;
+      if(t.cle !== cle){ t.cle = cle; t.asc = meilleur; }
+      else if(t.asc === meilleur) t.asc = !meilleur;
+      else { t.cle = defaut; t.asc = false; }
+      afficher();
+    });
+    return th;
+  }
+
+  function vueStats(equipes, parCode){
+    const t = tris.stats;
+    const ordre = R.classement(resultats, equipes.map(x => x.code)).map(e => e.code);
+    const parStats = Object.fromEntries(R.statsEquipes(resultats, equipes.map(x => x.code)).map(s => [s.code, s]));
+    let lignes = ordre.map(c => parStats[c]);
+    if(t.cle){
+      // Équipes sans match toujours en bas, quel que soit le sens.
+      lignes = lignes.slice().sort((a, b) => {
+        const va = a.pj ? a[t.cle] : null, vb = b.pj ? b[t.cle] : null;
+        if(va == null || vb == null) return (va == null) - (vb == null);
+        return t.asc ? va - vb : vb - va;
+      });
+    }
+    const conteneur = el('div'), carte = el('section', 'se-carte'), defile = el('div', 'se-defile');
+    const table = el('table', 'se-table');
+    const tete = el('tr');
+    tete.append(el('th', 'se-rang', '#'), el('th', 'se-equipe', 'Équipe'));
+    COLONNES_STATS.forEach(([cle, titre, desc, , basMieux]) => tete.append(entete(t, cle, titre, desc, basMieux, null)));
+    const thead = el('thead'); thead.append(tete);
+    const tbody = el('tbody');
+    lignes.forEach((s, i) => {
+      const tr = el('tr');
+      tr.append(el('td', 'se-rang', String(i + 1)), celluleEquipe(s.code, parCode));
+      COLONNES_STATS.forEach(([cle, , , format]) => {
+        const v = s[cle], vide = !s.pj || v == null;
+        const td = el('td', (vide ? 'is-vide' : '') + (t.cle === cle ? ' is-trie' : '') || null, vide ? '—' : format(v, s));
+        if((cle === 'anPct' || cle === 'anButs') && !vide) td.title = `${s.anButs} but${s.anButs > 1 ? 's' : ''} en ${s.anOcc} occasion${s.anOcc > 1 ? 's' : ''}`;
+        if((cle === 'dnPct' || cle === 'dnArrets') && !vide) td.title = `${s.dnButs} but${s.dnButs > 1 ? 's' : ''} accordé${s.dnButs > 1 ? 's' : ''} en ${s.dnOcc} désavantage${s.dnOcc > 1 ? 's' : ''}`;
+        tr.append(td);
+      });
+      tbody.append(tr);
+    });
+    table.append(thead, tbody); defile.append(table); carte.append(defile);
+    const legende = el('div', 'se-legende');
+    COLONNES_STATS.forEach(([, titre, desc]) => { const p = el('div'); p.append(el('b', null, titre), ' ' + desc); legende.append(p); });
+    conteneur.append(carte, legende);
+    return conteneur;
+  }
+
+  function vueRatings(equipes, parCode){
+    if(erreurRatings) return el('p', 'se-etat', 'Impossible de charger les ratings pour le moment.');
+    if(!ratings) return el('p', 'se-etat', 'Chargement…');
+    const t = tris.ratings;
+    const v = (code, cle) => (ratings[code] && ratings[code][cle]) || null;
+    const lignes = equipes.map(x => x.code).filter(c => ratings[c]).sort((a, b) => {
+      const va = v(a, t.cle), vb = v(b, t.cle);
+      if(!va || !vb) return !va - !vb;
+      return (t.asc ? va[0] - vb[0] : vb[0] - va[0]) || a.localeCompare(b);
+    });
+    // Rangs par colonne pour colorer le top 5 et les 5 derniers.
+    const rangs = {};
+    COLONNES_RATINGS.forEach(([cle]) => {
+      const tri = lignes.filter(c => v(c, cle)).sort((a, b) => v(b, cle)[0] - v(a, cle)[0]);
+      rangs[cle] = { haut: new Set(tri.slice(0, 5)), bas: new Set(tri.slice(-5)) };
+    });
+    const conteneur = el('div'), carte = el('section', 'se-carte'), defile = el('div', 'se-defile');
+    const table = el('table', 'se-table se-r');
+    const tete = el('tr');
+    tete.append(el('th', 'se-rang', '#'), el('th', 'se-equipe', 'Équipe'));
+    COLONNES_RATINGS.forEach(([cle, titre, desc], i) => tete.append(entete(t, cle, titre, desc, false, 'TOUS', i === 2 || i === 5 ? 'se-sep' : '')));
+    const thead = el('thead'); thead.append(tete);
+    const tbody = el('tbody');
+    // Rang d'une équipe dans la ligue pour une valeur (1 = meilleure).
+    const rangDe = (code, lire) => { const x = lire(code); if(x == null) return null; return lignes.filter(c => { const y = lire(c); return y != null && y > x; }).length + 1; };
+    lignes.forEach((code, i) => {
+      const tr = el('tr', 'se-ligne' + (code === ouverte ? ' is-ouverte' : ''));
+      tr.tabIndex = 0;
+      tr.setAttribute('aria-expanded', String(code === ouverte));
+      const basculer = e => {
+        if(e.target.closest('.se-fiche')) return;
+        e.preventDefault();   // le nom de l'équipe ouvre sa fiche ici ; la fiche a le lien vers sa page
+        ouverte = ouverte === code ? '' : code;
+        const url = new URL(location.href);
+        if(ouverte) url.searchParams.set('equipe', ouverte); else url.searchParams.delete('equipe');
+        history.replaceState(null, '', url);
+        afficher();
+      };
+      tr.addEventListener('click', basculer);
+      tr.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') basculer(e); });
+      tr.append(el('td', 'se-rang', String(i + 1)), celluleEquipe(code, parCode));
+      COLONNES_RATINGS.forEach(([cle], j) => {
+        const x = v(code, cle);
+        const cls = [j === 2 || j === 5 ? 'se-sep' : '', t.cle === cle ? 'is-trie' : '',
+          x && rangs[cle].haut.has(code) ? 'is-haut' : x && rangs[cle].bas.has(code) ? 'is-bas' : '', x ? '' : 'is-vide'].filter(Boolean).join(' ');
+        const td = el('td', cls || null, x ? x[0].toFixed(1) : '—');
+        if(x){ td.append(el('small', null, x[1] + ' j.')); td.title = x[1] + ' joueur' + (x[1] > 1 ? 's' : ''); }
+        tr.append(td);
+      });
+      tbody.append(tr);
+      if(code === ouverte) tbody.append(ficheEquipe(code, parCode, rangDe, COLONNES_RATINGS.length + 2));
+    });
+    table.append(thead, tbody); defile.append(table); carte.append(defile);
+    conteneur.append(carte, el('p', 'se-note',
+      'Moyenne de l’overall NHL 27 des joueurs de chaque équipe, par position (la première position listée : un C/AG compte comme centre). '
+      + 'Sous chaque moyenne, le nombre de joueurs. En vert, les 5 meilleures équipes de la colonne ; en rouge, les 5 dernières.'));
+    return conteneur;
+  }
+
+  // Fiche d'une équipe (sous sa ligne) : moyennes par position et notes par groupe, avec le rang dans la ligue.
+  function ficheEquipe(code, parCode, rangDe, colonnes){
+    const r = ratings[code], eq = parCode[code] || { name: code, slug: '' };
+    const tr = el('tr', 'se-fiche-ligne'), td = el('td', 'se-fiche');
+    td.colSpan = colonnes;
+    const boiteF = el('div', 'se-fiche-int');
+    const tete = el('div', 'se-fiche-tete');
+    const img = el('img'); img.src = 'Logos/' + code + '.png'; img.alt = '';
+    tete.append(img, el('h3', null, eq.name));
+    if(eq.slug){ const a = el('a', null, 'Page de l’équipe →'); a.href = 'equipe.html?team=' + eq.slug; tete.append(a); }
+    const suffixe = n => n === 1 ? '1re' : n + 'e';
+    const tuile = (titre, valeur, rang, sous) => {
+      const t = el('div', 'se-tuile' + (rang && rang <= 5 ? ' is-haut' : rang && rang > lignesTotal - 5 ? ' is-bas' : ''));
+      t.append(el('span', null, titre), el('b', null, valeur == null ? '—' : valeur.toFixed(1)));
+      t.append(el('small', null, [rang ? suffixe(rang) + ' / ' + lignesTotal : '', sous].filter(Boolean).join(' · ')));
+      return t;
+    };
+    const lignesTotal = Object.keys(ratings).length;
+    const positions = el('div', 'se-tuiles');
+    COLONNES_RATINGS.forEach(([cle, titre, desc]) => {
+      const x = r[cle];
+      positions.append(tuile(cle === 'TOUS' ? 'Global' : titre, x && x[0], rangDe(code, c => ratings[c][cle] && ratings[c][cle][0]), x ? x[1] + ' joueur' + (x[1] > 1 ? 's' : '') : ''));
+    });
+    boiteF.append(tete, el('h4', null, 'Overall moyen par position'), positions);
+    ['P', 'G'].forEach(type => {
+      const notes = (r.groupes && r.groupes[type]) || [];
+      if(!notes.some(n => n != null)) return;
+      const bloc = el('div', 'se-tuiles');
+      GROUPES[type].forEach((nom, i) => bloc.append(tuile(nom, notes[i], rangDe(code, c => ratings[c].groupes && ratings[c].groupes[type][i]))));
+      boiteF.append(el('h4', null, type === 'P' ? 'Notes moyennes des patineurs' : 'Notes moyennes des gardiens'), bloc);
+    });
+    td.append(boiteF);
+    tr.append(td);
+    return tr;
+  }
+
+  function ajusterFiche(){
+    const d = boite.querySelector('.se-defile'), f = boite.querySelector('.se-fiche-int');
+    if(d && f) f.style.width = d.clientWidth + 'px';
+  }
+  addEventListener('resize', ajusterFiche);
+
+  function afficher(){
+    document.querySelectorAll('.se-vues button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vue === vue)));
+    document.querySelector('.se-page').classList.toggle('is-etroite', vue === 'ratings');
+    document.getElementById('titre').textContent = vue === 'ratings' ? 'Ratings par équipe' : 'Stats d’équipe';
+    const nb = resultats ? Object.keys(resultats).length : 0;
+    document.getElementById('sousTitre').textContent = vue === 'ratings' ? 'moyennes NHL 27'
+      : resultats ? (nb ? `${nb} match${nb > 1 ? 's' : ''} joué${nb > 1 ? 's' : ''}` : 'aucun match joué pour l’instant') : '';
+    const equipes = window.LNHQ_TEAMS || [];
+    const parCode = Object.fromEntries(equipes.map(x => [x.code, x]));
+    if(vue === 'ratings'){
+      boite.replaceChildren(vueRatings(equipes, parCode));
+      // Arrivé par un lien ?equipe= : on amène sa fiche à l'écran une fois les données là.
+      ajusterFiche();
+      const f = boite.querySelector('.se-ligne.is-ouverte');
+      if(f && defiler){ defiler = false; f.scrollIntoView({ block: 'start' }); }
+    }
+    else boite.replaceChildren(resultats ? vueStats(equipes, parCode) : el('p', 'se-etat', 'Chargement…'));
+  }
+
+  document.querySelectorAll('.se-vues button').forEach(b => b.addEventListener('click', () => {
+    vue = b.dataset.vue;
+    try{ localStorage.setItem('lnhqStatsEquipesVue', vue); }catch(e){}
+    const url = new URL(location.href);
+    url.searchParams.set('vue', vue);
+    history.replaceState(null, '', url);
+    afficher();
+  }));
+
+  afficher();
+  R.chargerResultats().then(r => { resultats = r; afficher(); })
+    .catch(() => { if(vue === 'stats') boite.replaceChildren(el('p', 'se-etat', 'Impossible de charger les statistiques pour le moment.')); });
+  fetch('https://api.lnhq.ca/ratings-equipes').then(r => r.json())
+    .then(d => { if(!d.ok) throw new Error(d.erreur); ratings = d.equipes; afficher(); })
+    .catch(() => { erreurRatings = true; if(vue === 'ratings') afficher(); });
+})();
+</script>
+</body>
+</html>
