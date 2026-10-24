@@ -84,7 +84,7 @@ const CODES_RATINGS = {
 
 async function apercuRatings(env, ctx, cors) {
   const entetes = { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600' };
-  const cle = new Request('https://api.lnhq.ca/ratings-apercu?cache3');
+  const cle = new Request('https://api.lnhq.ca/ratings-apercu?cache4');
   const enCache = await caches.default.match(cle);
   if (enCache && Date.now() - Number(enCache.headers.get('X-Genere') || 0) < 3600 * 1000) {
     return new Response(enCache.body, { headers: entetes });
