@@ -70,7 +70,8 @@
     .sj-stats dd{ margin:2px 0 0; font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:14px; }
     .sj-vide{ margin:10px 0 0; padding-top:8px; border-top:1px solid var(--line, #ddd); color:var(--ink-muted, #666); }
     .sj-bas{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; font-size:12.5px; color:var(--ink-muted, #666); }
-    .sj-bas a{ color:var(--accent, #0a3); font-weight:700; text-decoration:none; }
+    .sj-liens{ display:flex; gap:12px; flex-shrink:0; }
+    .sj-bas a{ color:var(--accent, #0a3); font-weight:700; text-decoration:none; white-space:nowrap; }
     .sj-bas a:hover{ text-decoration:underline; }
     .sj-notes{ margin-top:10px; padding-top:6px; border-top:1px solid var(--line, #ddd); }
     .sj-notes-titre{ display:block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent, #0a3); }
@@ -132,12 +133,23 @@
     }
     const bas = el('div', 'sj-bas');
     bas.append(el('span', null, info.salaire ? millions(info.salaire) + ' (2026-27)' : ''));
-    // Déjà sur la page Stats : le lien mène plutôt à son équipe.
+    // Déjà sur la page Stats : le premier lien mène plutôt à son équipe.
     const surStats = /stats\.html$/.test(location.pathname);
-    const lien = el('a', null, surStats && eq ? 'Voir son équipe →' : 'Toutes ses stats →');
-    lien.href = surStats && eq ? 'equipe.html?team=' + eq.slug + '&joueur=' + encodeURIComponent(id) : 'stats.html?joueur=' + encodeURIComponent(id);
-    if(surStats && !eq) lien.hidden = true;
-    bas.append(lien);
+    const liens = el('span', 'sj-liens');
+    if(!surStats || eq){
+      const lien = el('a', null, surStats ? 'Son équipe →' : 'Stats →');
+      lien.href = surStats ? 'equipe.html?team=' + eq.slug + '&joueur=' + encodeURIComponent(id) : 'stats.html?joueur=' + encodeURIComponent(id);
+      liens.append(lien);
+    }
+    // Fiche complète des ratings : page privée (Access), donc pour les DG.
+    if(rt){
+      const r = el('a', null, 'Ratings →');
+      r.href = 'https://publier.lnhq.ca/ratings.html?joueur=' + encodeURIComponent(id) + (rt.equipe ? '&equipe=' + rt.equipe : '');
+      r.target = '_blank'; r.rel = 'noopener';
+      r.title = 'Tous ses attributs NHL 27 (réservé aux membres de la ligue)';
+      liens.append(r);
+    }
+    bas.append(liens);
     c.append(bas);
     return c;
   }

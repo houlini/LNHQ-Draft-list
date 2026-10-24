@@ -274,6 +274,33 @@
     $('contenu').hidden = false;
     brancher();
     render();
+    ouvrirDemande();
+  }
+
+  // ?joueur=Nom, Prénom (lien de la carte au survol de lnhq.ca) : ouvre sa fiche.
+  // Prénom écrit autrement (Gabe / Gabriel) : le nom de famille seul s'il est unique.
+  function ouvrirDemande(){
+    const demande = new URLSearchParams(location.search).get('joueur');
+    if(!demande) return;
+    const cle = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+    const v = demande.indexOf(',');
+    const nom = cle(v > 0 ? demande.slice(0, v) : demande), prenom = cle(v > 0 ? demande.slice(v + 1) : '');
+    let trouves = joueurs.filter(j => cle(j.nom) === nom && cle(j.prenom) === prenom);
+    if(!trouves.length) trouves = joueurs.filter(j => cle(j.nom) === nom);
+    // Homonymes : l'équipe passée dans le lien (&equipe=CODE) départage.
+    const equipe = (new URLSearchParams(location.search).get('equipe') || '').toUpperCase();
+    if(trouves.length > 1 && equipe) trouves = trouves.filter(j => j.code === equipe);
+    if(trouves.length !== 1){
+      // Introuvable ou homonymes : la recherche montre les candidats.
+      etat.texte = v > 0 ? demande.slice(0, v).trim() : demande;
+      $('recherche').value = etat.texte;
+      render();
+      return;
+    }
+    const j = trouves[0];
+    etat.type = j.position === 'G' ? 'G' : 'P';
+    render();
+    ouvrir(j);
   }
 
   demarrer();
