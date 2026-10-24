@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calendrier</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=8">
-<script src="site-nav.js?v=7"></script>
+<link rel="stylesheet" href="site.css?v=9">
+<script src="site-nav.js?v=8"></script>
 <script src="gardiens-donnees.js"></script>
 <script src="resultats-donnees.js?v=6"></script>
 <style>
@@ -155,7 +155,7 @@
   }
   .cal-resultat:hover{ filter:brightness(1.08); transform:translateY(-1px); }
   .sem-aujourdhui{
-    height:42px; padding:0 14px; border-radius:9px; border:1px solid rgba(255,255,255,0.5); cursor:pointer;
+    height:42px; padding:0 14px; border-radius:9px; border:1px solid rgba(24,27,32,0.45); cursor:pointer;
     background:transparent; color:inherit; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
   }
 
@@ -265,8 +265,31 @@
   .gar-ligne.is-fait .gar-logos span{ border-color:rgba(47,158,68,0.7); background:rgba(47,158,68,0.12); }
   .gar-ligne.is-illegal .gar-logos span{ border-color:#E03131; background:rgba(224,49,49,0.12); }
   .gar-vide{ font-size:13px; color:var(--ink-muted); }
+  /* Résumé repliable (téléphone et tablette) : une ligne, le calendrier reste dans le premier écran. */
+  .gar-sommaire{ list-style:none; }
+  .gar-sommaire::-webkit-details-marker{ display:none; }
+  .gar-resume, .gar-chevron{ display:none; }
+  @media (max-width:1099px){
+    /* Le bouton de l'en-tête suffit à soumettre un résultat ; on retire le doublon. */
+    .cal-resultat{ display:none; }
+    .cal-gauche:has(> .gar-boite[hidden]){ display:none; }
+    .gar-sommaire{
+      display:flex; align-items:center; gap:10px; min-height:48px; padding:8px 12px 8px 14px;
+      background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); cursor:pointer;
+    }
+    .gar-sommaire:hover{ border-color:var(--accent); }
+    .gar-sommaire .sem-titre{ flex:1; min-width:0; margin:0; display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 10px; font-size:17px; }
+    .gar-sous-titre{ display:none; }
+    .gar-resume{ display:block; margin:0; font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink-muted); }
+    .gar-resume .gar-resume-illegal{ color:var(--negative); font-weight:700; }
+    .gar-chevron{ display:block; flex-shrink:0; width:20px; height:20px; color:var(--ink-muted); transition:transform .2s ease-out; }
+    .gar-repli[open] .gar-chevron{ transform:rotate(180deg); }
+    .gar-repli[open] .gar-sommaire{ margin-bottom:12px; }
+  }
+  @media (prefers-reduced-motion:reduce){ .gar-chevron{ transition:none; } }
   /* Grand écran : gestion du 2e gardien à gauche, calendrier à droite. */
   @media (min-width:1100px){
+    .gar-sommaire{ pointer-events:none; }
     #dataWrap:not([hidden]){
       display:grid; grid-template-columns:minmax(320px, 380px) minmax(0, 1fr); align-items:start;
       padding-left:clamp(12px,3vw,40px);
@@ -500,6 +523,8 @@ async function chargerResultats(){
 }
 
 /* ---------- 2e gardien (déclarations sur publier.lnhq.ca/gardien.html) ---------- */
+// Le seuil suit la mise en page en deux colonnes (voir @media min-width:1100px).
+const GRAND_ECRAN = window.matchMedia('(min-width:1100px)');
 async function chargerGardiens(){
   if(!window.LNHQ_GARDIENS) return;
   state.decl = await LNHQ_GARDIENS.chargerDeclarations();
@@ -589,11 +614,38 @@ function renderGardiens(){
     if(sansMatch.length) corps.append(ligneGardien('is-sans-match', 'Matchs en retard · peuvent encore déclarer', sansMatch, null, ''));
   }
   const titre = el('h2', 'sem-titre', '2e gardien');
-  if(sousTitre) titre.append(el('span', null, sousTitre));
-  box.replaceChildren(titre, cartes);
+  if(sousTitre) titre.append(el('span', 'gar-sous-titre', sousTitre));
+  // Téléphone et tablette : l'encadré est replié en une ligne de résumé, pour que le
+  // calendrier commence dans le premier écran. Grand écran : toujours déplié.
+  const morceaux = [];
+  if(courante){
+    const aFaire = codes.filter(c => !decl[c + '|' + courante.num]).length;
+    const reste = jours(auj, courante.fin);
+    morceaux.push(el('span', null, 'Période ' + courante.num), el('span', null, aFaire ? `${aFaire} à faire` : 'Tous déclarés'));
+    if(courante.debut <= auj) morceaux.push(el('span', null, reste === 0 ? 'Dernier jour' : `${reste} j restant${reste > 1 ? 's' : ''}`));
+  }
+  if(montrerPrec && precInfo.illegales.length){
+    morceaux.push(el('span', 'gar-resume-illegal', `${precInfo.illegales.length} illégale${precInfo.illegales.length > 1 ? 's' : ''}`));
+  }
+  const resume = el('span', 'gar-resume');
+  morceaux.forEach((m, i) => { if(i) resume.append(' · '); resume.append(m); });
+  titre.append(resume);
+  const sommaire = el('summary', 'gar-sommaire');
+  sommaire.innerHTML = '<svg class="gar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+  sommaire.prepend(titre);
+  // Grand écran : l'encadré reste ouvert (pas de repli au clic ni au clavier).
+  sommaire.addEventListener('click', e => { if(GRAND_ECRAN.matches) e.preventDefault(); });
+  const repli = el('details', 'gar-repli');
+  repli.open = GRAND_ECRAN.matches;
+  repli.append(sommaire, cartes);
+  box.replaceChildren(repli);
   box.classList.toggle('a-deux', !!(courante && montrerPrec));
   box.hidden = !cartes.children.length;
 }
+GRAND_ECRAN.addEventListener('change', e => {
+  const repli = document.querySelector('#gardiens .gar-repli');
+  if(repli) repli.open = e.matches;
+});
 
 async function loadData({ background=false } = {}){
   if(!background) toggle({ loading:true });

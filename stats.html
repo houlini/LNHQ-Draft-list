@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stats des joueurs</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
-<link rel="stylesheet" href="site.css?v=8">
-<script src="site-nav.js?v=7"></script>
+<link rel="stylesheet" href="site.css?v=9">
+<script src="site-nav.js?v=8"></script>
+<script src="stats-joueur.js?v=4" defer></script>
 <style>
   /* Mise en page inspirée de nhl.com/stats : carte blanche, onglets, blocs de meneurs, tableau complet. */
   .st-page{ padding:16px clamp(12px,3vw,40px) 30px; max-width:1400px; margin:0 auto; width:100%; box-sizing:border-box; }
@@ -115,7 +116,7 @@
           <button type="button" role="tab" data-onglet="accueil" aria-selected="true">Accueil</button>
           <button type="button" role="tab" data-onglet="patineurs" aria-selected="false">Patineurs</button>
           <button type="button" role="tab" data-onglet="gardiens" aria-selected="false">Gardiens</button>
-          <a href="classement.html">Équipes</a>
+          <a href="stats-equipes.html">Équipes</a>
         </nav>
 
         <section class="st-blocs" id="vueAccueil"></section>
@@ -316,6 +317,7 @@ function rendreBloc(bloc, b){
     const x = parties(j), ph = el('img', 'st-photo'); ph.alt = ''; ph.src = photoDe(j); ph.onerror = () => { ph.onerror = null; ph.src = 'logo-lnhq.png'; };
     const eq = el('span', 'st-equipe'); if(j.equipe) eq.append(logo(j.equipe)); eq.append(document.createTextNode([j.equipe, j.po].filter(Boolean).join(' • ')));
     const noms = el('div'); noms.append(el('div', 'st-prenom', x.prenom), el('div', 'st-famille', x.famille), eq);
+    if((j.nom || '').includes(',')) noms.dataset.joueur = j.nom;
     vedette.replaceChildren(ph, noms, el('span', 'st-lib', titreStat), el('strong', 'st-val', affiche(k, j[k])));
     liste.querySelectorAll('li').forEach(l => l.classList.toggle('is-actif', l === li));
   };
@@ -382,6 +384,7 @@ function rendreTableau(){
     const lien = el(t ? 'a' : 'span', null, nomAffiche(j));
     if(t) lien.href = 'equipe.html?team=' + t.slug + (j.nom ? '&joueur=' + encodeURIComponent(j.nom) : '');
     td.append(lien);
+    if((j.nom || '').includes(',')) td.dataset.joueur = j.nom;   // carte au survol : stats et notes NHL 27
     const eq = el('td', 'g'), sp = el('span', 'st-eq'); if(j.equipe){ sp.append(logo(j.equipe), document.createTextNode(j.equipe)); } else sp.textContent = '—'; eq.append(sp);
     r.append(el('td', 'rang', String(debut + i + 1)), td, eq, el('td', 'g', j.po));
     cols.forEach(c => {
@@ -391,7 +394,9 @@ function rendreTableau(){
     });
     tbody.append(r);
   });
-  if(!morceau.length){ const r = el('tr'), td = el('td', 'g', 'Aucun joueur pour ces filtres.'); td.colSpan = cols.length + 4; r.append(td); tbody.append(r); }
+  // Arrivé par un lien vers un joueur (page Équipe) qui n'a pas encore joué cette saison.
+  const seul = etat.texte.includes(',') && !etat.equipe && !etat.po;
+  if(!morceau.length){ const r = el('tr'), td = el('td', 'g', seul ? 'Aucune statistique pour ' + etat.texte.split(',').reverse().join(' ').trim() + ' cette saison.' : 'Aucun joueur pour ces filtres.'); td.colSpan = cols.length + 4; r.append(td); tbody.append(r); }
   $('table').replaceChildren(thead, tbody);
   // Pagination
   const nav = el('div');

@@ -12,7 +12,8 @@
   --ink-muted:#6B7178;
   --accent:#E8590C;
   --accent-soft:#FBEADC;
-  --accent-ink:#FFFFFF;
+  /* Texte sur un fond --accent : foncé dans les deux thèmes (blanc sur #E8590C = 3,6:1, trop faible). */
+  --accent-ink:#181B20;
   --stripe:#F1EEE7;
   --line:#E5E2D9;
   --danger:#A3402F;
@@ -208,7 +209,7 @@ button, input{font-family:inherit;}
 /* ---------- Bannière orange (contenu variable : recherche, filtres, sélecteur d'équipe...) ---------- */
 .filter-band{
   flex-shrink:0;
-  background:var(--accent);
+  background:var(--accent); color:var(--accent-ink);
   display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
   padding:12px clamp(16px,3vw,40px);
 }
@@ -222,9 +223,10 @@ button, input{font-family:inherit;}
   border:1px solid transparent; border-radius:9px;
   background:var(--surface); color:var(--ink); font-size:16px;
 }
-.filter-band .nav-btn{ border:1px solid rgba(255,255,255,0.4); }
-.filter-band .nav-btn:hover{ background:rgba(255,255,255,0.15); }
-.filter-band .nav-btn[aria-pressed="true"]{ background:rgba(255,255,255,0.25); }
+/* Sur la bande : texte foncé, et voiles clairs (un voile noir ferait chuter le contraste). */
+.filter-band .nav-btn:not(.team-switch-btn){ color:inherit; border:1px solid rgba(24,27,32,0.45); }
+.filter-band .nav-btn:not(.team-switch-btn):hover{ background:rgba(255,255,255,0.2); }
+.filter-band .nav-btn[aria-pressed="true"]{ background:rgba(255,255,255,0.35); }
 
 .filter-bar{
   display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
