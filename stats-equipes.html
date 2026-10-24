@@ -306,7 +306,8 @@ document.getElementById('sheetTitle').textContent = 'LNHQ';
     const tete = el('div', 'se-fiche-tete');
     const img = el('img'); img.src = 'Logos/' + code + '.png'; img.alt = '';
     tete.append(img, el('h3', null, eq.name));
-    if(eq.slug){ const a = el('a', null, 'Page de l’équipe →'); a.href = 'equipe.html?team=' + eq.slug; tete.append(a); }
+    // Vers l'alignement de l'équipe : les 20 joueurs sur lesquels portent ces moyennes.
+    if(eq.slug){ const a = el('a', null, 'Voir son alignement →'); a.href = 'equipe.html?team=' + eq.slug + '&vue=alignement'; tete.append(a); }
     const suffixe = n => n === 1 ? '1re' : n + 'e';
     const tuile = (titre, valeur, rang, sous) => {
       const t = el('div', 'se-tuile' + (rang && rang <= 5 ? ' is-haut' : rang && rang > lignesTotal - 5 ? ' is-bas' : ''));
