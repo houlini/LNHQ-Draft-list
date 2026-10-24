@@ -29,6 +29,7 @@
     'seattle kraken': 'SEA', 'st. louis blues': 'STL', 'st louis blues': 'STL', 'tampa bay lightning': 'TBL',
     'toronto maple leafs': 'TOR', 'utah mammoth': 'UTA', 'utah hockey club': 'UTA', 'vancouver canucks': 'VAN',
     'vegas golden knights': 'VGK', 'washington capitals': 'WSH', 'winnipeg jets': 'WPG',
+    'agents libres': 'UFA', 'agent libre': 'UFA', 'free agents': 'UFA',
   };
   // Habiletés : le scanner colle ou coupe parfois les mots (« TAPETO TAPE », « ONET ») :
   // on compare sans espaces ni ponctuation pour retrouver le nom officiel.
@@ -64,7 +65,7 @@
     const img = el('img', 'rt-logo');
     img.alt = '';
     img.loading = 'lazy';
-    if(code) img.src = 'https://lnhq.ca/Logos/' + code + '.png'; else img.hidden = true;
+    if(code && code !== 'UFA') img.src = 'https://lnhq.ca/Logos/' + code + '.png'; else img.hidden = true;
     return img;
   }
 
@@ -167,7 +168,7 @@
       const nom = el('td', 'rt-fige rt-nom');
       nom.append(el('b', null, j.nom), document.createTextNode(' ' + j.prenom));
       const eq = el('td', 'rt-eq');
-      eq.append(logo(j.code), document.createTextNode(j.code || '—'));
+      eq.append(logo(j.code), document.createTextNode(j.code === 'UFA' ? 'Agent libre' : j.code || '—'));
       r.append(nom, eq, el('td', 'is-texte', posFr(j.position)), el('td', null, j.age ?? ''));
       cols.forEach(c => {
         if(c.hab){
@@ -195,7 +196,7 @@
   }
 
   function ouvrir(j){
-    $('ficheLogo').src = j.code ? 'https://lnhq.ca/Logos/' + j.code + '.png' : 'https://lnhq.ca/logo-lnhq.png';
+    $('ficheLogo').src = j.code && j.code !== 'UFA' ? 'https://lnhq.ca/Logos/' + j.code + '.png' : 'https://lnhq.ca/logo-lnhq.png';
     $('ficheNom').textContent = j.prenom + ' ' + j.nom;
     $('ficheSous').textContent = [j.numero != null ? '#' + j.numero : '', posFr(j.position), j.equipe].filter(Boolean).join(' · ');
     $('ficheOv').textContent = j.overall ?? '—';
@@ -268,7 +269,8 @@
       recherche: ((j.prenom || '') + ' ' + (j.nom || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(),
     }));
     const equipes = [...new Set(joueurs.map(j => j.code).filter(Boolean))].sort();
-    $('equipe').append(...equipes.map(c => new Option(c, c)));
+    // Agents libres à la fin de la liste des équipes.
+    $('equipe').append(...equipes.filter(c => c !== 'UFA').map(c => new Option(c, c)), ...(equipes.includes('UFA') ? [new Option('Agents libres', 'UFA')] : []));
     const maj = d.misAJour ? new Date(d.misAJour) : null;
     $('qui').textContent = joueurs.length + ' joueurs' + (maj && !isNaN(maj) ? ' · mis à jour le ' + maj.toLocaleString('fr-CA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '');
     $('contenu').hidden = false;

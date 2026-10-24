@@ -79,6 +79,7 @@ const CODES_RATINGS = {
   'seattle kraken': 'SEA', 'st. louis blues': 'STL', 'st louis blues': 'STL', 'tampa bay lightning': 'TBL',
   'toronto maple leafs': 'TOR', 'utah mammoth': 'UTA', 'utah hockey club': 'UTA', 'vancouver canucks': 'VAN',
   'vegas golden knights': 'VGK', 'washington capitals': 'WSH', 'winnipeg jets': 'WPG',
+  'agents libres': 'UFA', 'agent libre': 'UFA', 'free agents': 'UFA',
 };
 
 async function apercuRatings(env, ctx, cors) {
@@ -148,6 +149,7 @@ async function alignements() {
   }
   const resultat = {};
   Object.entries(parEquipe).forEach(([code, joueurs]) => {
+    if (code === 'UFA') return;   // agents libres : pas d'alignement
     const parId = new Map(joueurs.map(j => [j.id, j]));
     const places = {}, pris = new Set(), sauvegarde = enregistres[code] || {};
     PLACES_ALIGNEMENT.forEach(p => { const j = parId.get(sauvegarde[p.id]); if (j && !pris.has(j.id)) { places[p.id] = j; pris.add(j.id); } });
