@@ -51,6 +51,12 @@
 .adm-champ select{ height:44px; padding:0 12px; font:inherit; font-size:16px; width:100%; box-sizing:border-box;
   border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); }
 .adm-bouton[hidden]{ display:none; }
+.adm-champ[hidden]{ display:none; }
+.adm-champ input{ height:44px; padding:0 12px; font:inherit; font-size:16px; width:100%; box-sizing:border-box;
+  border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); }
+.adm-champ input:focus, .adm-champ select:focus{ border-color:var(--accent); outline:none; }
+.adm-fixe{ margin:0; min-height:44px; display:flex; align-items:center; padding:0 12px; border:1px dashed var(--line); border-radius:8px; color:var(--ink-muted); }
+.adm-logo-grand{ width:44px; height:44px; object-fit:contain; }
 .adm-deja{ display:flex; flex-direction:column; gap:10px; padding-top:12px; border-top:1px solid var(--line); }
 .adm-deja[hidden]{ display:none; }
 

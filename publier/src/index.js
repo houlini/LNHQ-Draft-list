@@ -70,6 +70,13 @@ export default {
     if (url.pathname === '/api/admin/migration' && request.method === 'GET') {
       return appelerScript(env, 'migrationDiscord', courriel);
     }
+    // Fiche du DG (onglet DGs) : lecture et modification (nom, gamertag, Twitch).
+    if (url.pathname === '/api/profil' && request.method === 'GET') {
+      return appelerScript(env, 'monProfil', courriel, JSON.stringify({ code: url.searchParams.get('equipe') || '' }));
+    }
+    if (url.pathname === '/api/profil' && request.method === 'POST') {
+      return appelerScript(env, 'modifierProfil', courriel, await request.text());
+    }
     if (url.pathname === '/api/admin/resume' && request.method === 'GET') {
       const r = await scriptJson(env, 'resumeAdmin', courriel);
       // Date de la base des ratings (métadonnée KV, sans lire la base elle-même).
@@ -592,7 +599,7 @@ function pageConnexion(chemin) {
   const courriel = 'https://publier.lnhq.ca' + retour;
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow"><title>Connexion — LNHQ</title><link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
-<link rel="stylesheet" href="https://lnhq.ca/site.css?v=9"><link rel="stylesheet" href="/admin.css?v=5"></head><body><div class="app">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=9"><link rel="stylesheet" href="/admin.css?v=6"></head><body><div class="app">
 <header class="app-header"><div class="header-row"><a class="brand" href="https://lnhq.ca/"><img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ"><h1 class="app-title">LNHQ</h1></a></div>
 <div class="meta-row"><span>Espace DG</span></div></header>
 <main class="adm-page"><section class="adm-carte adm-etroite">

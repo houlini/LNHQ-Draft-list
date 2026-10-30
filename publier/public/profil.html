@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ma fiche DG — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=9">
+<link rel="stylesheet" href="admin.css?v=6">
+<script src="profil.js?v=1" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">LNHQ</h1>
+      </a>
+      <nav class="site-nav">
+        <a class="nav-btn" href="/">Espace DG</a>
+      </nav>
+    </div>
+    <div class="meta-row"><span id="qui">Chargement de ta fiche…</span></div>
+  </header>
+
+  <main class="adm-page">
+    <div id="refus" class="status-box error" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div id="refusTexte"></div>
+    </div>
+
+    <form id="formulaire" class="adm-carte adm-etroite adm-form" novalidate hidden>
+      <div class="adm-tete">
+        <h2 class="adm-titre">Ma fiche DG</h2>
+        <img class="adm-logo-grand" id="logo" alt="">
+      </div>
+      <p class="adm-note">Ce qui apparaît sur la page <a href="https://lnhq.ca/dgs.html">DGs</a> du site.</p>
+
+      <label class="adm-champ" id="champEquipe" hidden><span>Équipe <small>mode admin</small></span>
+        <select id="equipe"></select>
+      </label>
+      <label class="adm-champ"><span>Nom</span>
+        <input id="dg" type="text" maxlength="60" autocomplete="name" required>
+      </label>
+      <label class="adm-champ"><span>Gamertag <small>PSN / Xbox</small></span>
+        <input id="gamertag" type="text" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </label>
+      <label class="adm-champ"><span>Twitch <small>nom de ta chaîne ; « LNHQ » dans le titre de ton live l'affiche sur LNHQ TV</small></span>
+        <input id="twitch" type="text" maxlength="60" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@ma_chaine">
+      </label>
+      <div class="adm-champ"><span>Discord <small>géré par la ligue</small></span>
+        <p class="adm-fixe" id="discord">—</p>
+      </div>
+
+      <p class="adm-etat" id="message" role="status" hidden></p>
+      <button type="submit" class="adm-bouton" id="enregistrer">Enregistrer</button>
+    </form>
+  </main>
+</div>
+
+</body>
+</html>

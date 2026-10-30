@@ -110,6 +110,8 @@ function traiter(p, corps) {
   if (p.action === 'migrationDiscord') return migrationDiscord(membre);
   if (p.action === 'deciderAcces') return deciderAcces(JSON.parse(corps || '{}'), membre);
   if (p.action === 'resumeAdmin') return resumeAdmin(membre);
+  if (p.action === 'monProfil') return monProfil(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'modifierProfil') return modifierProfil(JSON.parse(corps || '{}'), membre);
   if (p.action === 'publier') return publier(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lire') return lire(JSON.parse(corps || '{}'), membre);
   if (p.action === 'recentes') return recentes(membre);
@@ -264,6 +266,74 @@ function deciderAcces(d, membre) {
     if (cleCompte(l) !== String(d.cle || '') || statutDe(l) !== 'attente') return { ok: false, erreur: 'ligne' };
     o.getRange(rangee, 4).setValue(d.decision === 'approuver' ? 'Approuvé' : 'Refusé');
     console.log('Accès ' + (d.decision === 'approuver' ? 'approuvé' : 'refusé') + ' (' + l[1] + ') par ' + membre.courriel);
+    return { ok: true };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+/* =========================================================================
+   FICHE DU DG (onglet public « DGs », page lnhq.ca/dgs.html)
+   Le DG modifie son nom (E), son gamertag (G) et sa chaîne Twitch (I) sur
+   dg.lnhq.ca/profil.html. La colonne Discord (H) reste gérée par la ligue.
+   Un admin peut modifier la fiche de n'importe quelle équipe (d.code).
+   ========================================================================= */
+const ONGLET_DGS = 'DGs';
+const COL_DGS = { code: 3, dg: 5, gamertag: 7, discord: 8, twitch: 9 };
+
+function ligneDg(code) {
+  // Nom de l'onglet sans tenir compte de la casse (« DGs » / « DGS »).
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheets().find(s => s.getName().toUpperCase() === ONGLET_DGS.toUpperCase());
+  if (!o || o.getLastRow() < 2) return null;
+  const valeurs = o.getRange(2, 1, o.getLastRow() - 1, COL_DGS.twitch).getDisplayValues();
+  const i = valeurs.findIndex(l => String(l[COL_DGS.code - 1]).trim().toUpperCase() === code);
+  return i < 0 ? null : { onglet: o, rangee: i + 2, l: valeurs[i] };
+}
+
+function codeProfil(d, membre) {
+  const demande = String(d.code || '').trim().toUpperCase();
+  const sien = CODES_EQUIPES[membre.equipe] || '';
+  if (demande && demande !== sien) return membre.annonces ? demande : '';
+  return sien;
+}
+
+function monProfil(d, membre) {
+  const code = codeProfil(d, membre);
+  if (!code) return { ok: false, erreur: membre.annonces ? 'equipe' : 'pas_ton_equipe' };
+  const x = ligneDg(code);
+  if (!x) return { ok: false, erreur: 'introuvable' };
+  const v = c => String(x.l[c - 1] || '').trim();
+  return { ok: true, code: code, admin: membre.annonces, dg: v(COL_DGS.dg), gamertag: v(COL_DGS.gamertag), discord: v(COL_DGS.discord), twitch: v(COL_DGS.twitch) };
+}
+
+// Texte libre nettoyé : sans caractères de contrôle, et jamais pris pour une formule.
+function champProfil(s, max) {
+  const t = String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  if (t.length > max || /^[=+\-]/.test(t)) return null;
+  return t;
+}
+
+function modifierProfil(d, membre) {
+  const code = codeProfil(d, membre);
+  if (!code) return { ok: false, erreur: 'pas_ton_equipe' };
+  const dg = champProfil(d.dg, 60), gamertag = champProfil(d.gamertag, 40);
+  if (dg === null || gamertag === null) return { ok: false, erreur: 'champ' };
+  if (!dg) return { ok: false, erreur: 'nom' };
+  // Twitch : nom de chaîne seulement (lien collé accepté), enregistré sous la forme « @chaine ».
+  const saisi = String(d.twitch || '').trim();
+  const brut = saisi.replace(/^https?:\/\/(www\.)?twitch\.tv\//i, '').replace(/^@/, '').replace(/\/$/, '');
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const x = ligneDg(code);
+    if (!x) return { ok: false, erreur: 'introuvable' };
+    // Valeur Twitch inchangée : gardée telle quelle, même si elle ne suit pas le format.
+    const inchange = saisi === String(x.l[COL_DGS.twitch - 1] || '').trim();
+    if (!inchange && brut && !/^[A-Za-z0-9_]{3,25}$/.test(brut)) return { ok: false, erreur: 'twitch' };
+    x.onglet.getRange(x.rangee, COL_DGS.dg).setValue(dg);
+    x.onglet.getRange(x.rangee, COL_DGS.gamertag).setValue(gamertag);
+    if (!inchange) x.onglet.getRange(x.rangee, COL_DGS.twitch).setValue(brut ? '@' + brut : '');
+    console.log('Fiche DG ' + code + ' modifiée par ' + membre.courriel);
     return { ok: true };
   } finally {
     verrou.releaseLock();
