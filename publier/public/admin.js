@@ -1,5 +1,6 @@
 /* LNHQ — page d'administration (admins seulement : case « Annonces » de l'onglet ACCES).
-   Demandes d'accès à approuver, et progression de la migration des comptes vers Discord. */
+   Regroupe les fonctions d'admin : compteurs « À faire », liens vers chaque outil (en mode
+   admin : ?admin=1), demandes d'accès, et progression de la migration vers Discord. */
 (function(){
   const $ = id => document.getElementById(id);
   const ERREURS = {
@@ -116,12 +117,39 @@
     await charger();
   }
 
+  function compteur(id, n){
+    const a = $(id);
+    a.querySelector('b').textContent = n == null ? '?' : String(n);
+    a.classList.toggle('is-actif', n > 0);
+  }
+
+  // Compteurs « À faire » et dates des données : chargés à part, la page s'affiche sans eux.
+  async function chargerResume(){
+    let r;
+    try{ r = await (await fetch('/api/admin/resume', { cache: 'no-store' })).json(); }catch(e){ r = { ok: false }; }
+    if(!r.ok) return;
+    compteur('cDemandes', r.demandes);
+    compteur('cTransactions', r.transactions);
+    compteur('cTirages', r.tirages);
+    compteur('cDiscord', r.discord);
+    if(r.importsStats && r.importsStats.length){
+      $('dernierImport').textContent = 'Dernier : ' + r.importsStats.map(i => `${i.titre.replace('Import de ', '')} (${i.date})`).join(' · ');
+    }
+    if(r.ratings){
+      const d = new Date(r.ratings);
+      $('dateRatings').textContent = 'Mise à jour : ' + (isNaN(d) ? r.ratings : d.toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' }))
+        + ' · envoi : pwsh publier/ratings-envoyer.ps1';
+    }
+  }
+
   async function charger(){
     let r;
     try{ r = await (await fetch('/api/admin/migration', { cache: 'no-store' })).json(); }catch(e){ r = { ok: false }; }
     if(!r.ok){ refuser(ERREURS[r.erreur] || 'Accès impossible pour le moment. Réessaie plus tard.'); return; }
     $('qui').textContent = 'Administration';
     comptes = r.comptes || [];
+    $('afaire').hidden = false;
+    $('outils').hidden = false;
     $('demandes').hidden = false;
     $('migration').hidden = false;
     afficherDemandes();
@@ -129,5 +157,5 @@
   }
 
   $('nonLies').addEventListener('change', afficher);
-  charger();
+  charger().then(chargerResume);
 })();

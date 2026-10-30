@@ -7,8 +7,8 @@
 <title>Administration — LNHQ</title>
 <link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
 <link rel="stylesheet" href="https://lnhq.ca/site.css?v=9">
-<link rel="stylesheet" href="admin.css?v=4">
-<script src="admin.js?v=2" defer></script>
+<link rel="stylesheet" href="admin.css?v=5">
+<script src="admin.js?v=3" defer></script>
 </head>
 <body>
 
@@ -33,6 +33,46 @@
       </svg>
       <div id="refusTexte"></div>
     </div>
+
+    <!-- Ce qui attend un admin (compteurs de /api/admin/resume). -->
+    <section id="afaire" class="adm-espace" hidden>
+      <h2 class="adm-titre">À faire</h2>
+      <nav class="adm-compteurs" aria-label="En attente">
+        <a class="adm-compteur" href="#demandes" id="cDemandes"><b>–</b><span>Demandes d'accès</span></a>
+        <a class="adm-compteur" href="transactions.html?vue=approbation" id="cTransactions"><b>–</b><span>Transactions à approuver</span></a>
+        <a class="adm-compteur" href="encheres.html" id="cTirages"><b>–</b><span>Tirages au sort à faire</span></a>
+        <a class="adm-compteur" href="publier.html" id="cDiscord"><b>–</b><span>Publications pas sur Discord</span></a>
+      </nav>
+    </section>
+
+    <section id="outils" class="adm-espace" hidden>
+      <h2 class="adm-titre">Outils</h2>
+
+      <h3 class="adm-sous-titre">Matchs et équipes</h3>
+      <nav class="adm-tuiles" aria-label="Matchs et équipes">
+        <a class="adm-tuile" href="resultat.html?admin=1"><span class="adm-icone" aria-hidden="true">📷</span><b>Corriger un résultat</b><small>N'importe quel match, même déjà soumis</small></a>
+        <a class="adm-tuile" href="alignement.html?admin=1"><span class="adm-icone" aria-hidden="true">📋</span><b>Modifier un alignement</b><small>L'alignement de n'importe quelle équipe</small></a>
+      </nav>
+
+      <h3 class="adm-sous-titre">Marché</h3>
+      <nav class="adm-tuiles" aria-label="Marché">
+        <a class="adm-tuile" href="transactions.html?vue=approbation"><span class="adm-icone" aria-hidden="true">✅</span><b>Approuver les transactions</b><small>Offres acceptées par les DG</small></a>
+        <a class="adm-tuile" href="transactions.html?vue=nouvelle&amp;admin=1"><span class="adm-icone" aria-hidden="true">🔁</span><b>Enregistrer une transaction</b><small>Conclue hors du site, exécutée tout de suite</small></a>
+        <a class="adm-tuile" href="encheres.html"><span class="adm-icone" aria-hidden="true">🎲</span><b>Tirages au sort</b><small>Égalités à 1000 : tirer ou programmer l'heure</small></a>
+      </nav>
+
+      <h3 class="adm-sous-titre">Publications</h3>
+      <nav class="adm-tuiles" aria-label="Publications">
+        <a class="adm-tuile" href="publier.html"><span class="adm-icone" aria-hidden="true">📣</span><b>Publier une annonce</b><small>Annonces de la ligue, signées par le commissaire</small></a>
+        <a class="adm-tuile" href="publier.html"><span class="adm-icone" aria-hidden="true">✏️</span><b>Modifier une publication</b><small>Nouvelles et annonces récentes · renvoi à Discord</small></a>
+      </nav>
+
+      <h3 class="adm-sous-titre">Données</h3>
+      <nav class="adm-tuiles" aria-label="Données">
+        <a class="adm-tuile" href="stats-import.html"><span class="adm-icone" aria-hidden="true">📥</span><b>Import des stats</b><small id="dernierImport">CSV des statistiques de la ligue</small></a>
+        <div class="adm-tuile is-info"><span class="adm-icone" aria-hidden="true">📊</span><b>Base des ratings NHL 27</b><small id="dateRatings">Envoi depuis l'ordinateur : pwsh publier/ratings-envoyer.ps1</small></div>
+      </nav>
+    </section>
 
     <section id="demandes" class="adm-carte" hidden>
       <h2 class="adm-titre">Demandes d'accès</h2>

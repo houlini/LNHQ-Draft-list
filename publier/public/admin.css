@@ -64,6 +64,18 @@
 .adm-petit.is-oui{ background:#2F9E44; border-color:#2F9E44; color:#fff; }
 .adm-petit:disabled{ opacity:0.6; cursor:wait; }
 
+/* Admin : compteurs « À faire » */
+.adm-compteurs{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; }
+.adm-compteur{ display:flex; flex-direction:column; gap:4px; padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--surface); color:var(--ink-muted); text-decoration:none; }
+.adm-compteur b{ font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-size:30px; font-weight:600; line-height:1; color:var(--ink-muted); }
+.adm-compteur span{ font-size:13px; font-weight:600; }
+.adm-compteur.is-actif{ border-color:var(--accent); background:var(--accent-soft); color:var(--ink); }
+.adm-compteur.is-actif b{ color:var(--accent); }
+.adm-compteur:hover{ border-color:var(--accent); }
+.adm-tuile.is-info{ cursor:default; }
+.adm-tuile.is-info:hover{ border-color:var(--line); }
+
 /* Accueil de l'espace DG : tuiles vers chaque fonction */
 .adm-espace{ display:flex; flex-direction:column; gap:14px; }
 .adm-sous-titre{ margin:10px 0 0; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:16px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted); }
@@ -79,6 +91,9 @@
 .adm-tuile.is-vedette{ border-color:var(--accent); background:var(--accent-soft); }
 .adm-rappel{ display:block; padding:10px 12px; border-radius:8px; background:rgba(88,101,242,0.14); color:#8C96FF; font-size:14px; font-weight:600; text-decoration:none; }
 
+@media (max-width:760px){
+  .adm-compteurs{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width:600px){
   .adm-tuiles{ grid-template-columns:1fr; }
   .adm-carte{ padding:12px; }

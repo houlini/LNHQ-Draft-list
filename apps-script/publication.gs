@@ -109,6 +109,7 @@ function traiter(p, corps) {
   if (p.action === 'lierDiscord') return lierDiscord(JSON.parse(corps || '{}'), membre);
   if (p.action === 'migrationDiscord') return migrationDiscord(membre);
   if (p.action === 'deciderAcces') return deciderAcces(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'resumeAdmin') return resumeAdmin(membre);
   if (p.action === 'publier') return publier(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lire') return lire(JSON.parse(corps || '{}'), membre);
   if (p.action === 'recentes') return recentes(membre);
@@ -267,6 +268,31 @@ function deciderAcces(d, membre) {
   } finally {
     verrou.releaseLock();
   }
+}
+
+// Page Admin : ce qui attend un admin, en un seul appel. Chaque bloc est protégé : une
+// erreur dans un onglet n'empêche pas d'afficher les autres compteurs.
+function resumeAdmin(membre) {
+  if (!membre.annonces) return { ok: false, erreur: 'annonces' };
+  const essayer = f => { try { return f(); } catch (err) { console.error(err); return null; } };
+  const fuseau = Session.getScriptTimeZone();
+  return {
+    ok: true,
+    demandes: essayer(() => ongletAcces().getDataRange().getValues().slice(1)
+      .filter(l => (String(l[0]).trim() || String(l[5] || '').trim()) && statutDe(l) === 'attente').length),
+    transactions: essayer(() => lireTransactions().filter(t => t.statut === TX.APPROBATION).length),
+    tirages: essayer(() => lireEncheres().filter(e => e.statut === TIRAGE && !e.tiragePrevu).length),
+    discord: essayer(() => enAttente(membre).attente.length),
+    // Dernier import des stats (onglet JOURNAL : « Import de N patineurs / gardiens »).
+    importsStats: essayer(() => {
+      const j = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_JOURNAL);
+      if (!j || j.getLastRow() < 2) return [];
+      return j.getRange(2, 1, j.getLastRow() - 1, 4).getValues()
+        .filter(l => String(l[3]).indexOf('Import de ') === 0 && l[0] instanceof Date)
+        .slice(-2).reverse()
+        .map(l => ({ date: Utilities.formatDate(l[0], fuseau, 'yyyy-MM-dd HH:mm'), titre: String(l[3]) }));
+    }),
+  };
 }
 
 function cleCompte(l) {

@@ -849,6 +849,8 @@
     const aRepondre = liste.some(t => t.statut === 'En attente' && t.equipes.includes(sienne) && !t.acceptees.includes(sienne));
     let depart = FILTRES[demandee] || demandee === 'nouvelle' ? demandee : (aRepondre ? 'recues' : 'nouvelle');
     if(!sienne && !['historique', 'nouvelle'].includes(depart)) depart = 'approbation';
+    // Lien de la page Admin (?vue=nouvelle&admin=1) : composer directement en mode admin.
+    if(moi.admin && sienne && params.has('admin')) changerMode(true);
     allerA(depart);
     if(sienne && EQUIPES[avec] && avec !== sienne){ allerA('nouvelle'); ajouterEquipe(avec); }
     // Les offres changent (réponses des autres DG) : rafraîchies chaque minute hors de l'atelier.

@@ -280,9 +280,10 @@
       return;
     }
     construireStats();
-    // Admin sans équipe (compte « Ligue ») : seulement le mode admin.
+    // Admin sans équipe (compte « Ligue ») : seulement le mode admin. Lien de la page Admin
+    // (?admin=1) : mode admin coché d'office, pour corriger un résultat.
     $('blocAdmin').hidden = !moi.admin;
-    $('modeAdmin').checked = moi.admin && !code;
+    $('modeAdmin').checked = moi.admin && (!code || new URLSearchParams(location.search).has('admin'));
     $('modeAdmin').disabled = moi.admin && !code;
     $('modeAdmin').addEventListener('change', () => { remplirMatchs(); choisirMatch(); });
     remplirMatchs();

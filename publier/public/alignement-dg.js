@@ -222,7 +222,7 @@
       }));
       if(EQUIPES[demande] && demande !== sienne) depart = demande;
       if(!depart) depart = 'ANA';
-      caseAdmin.checked = !sienne || depart !== sienne;
+      caseAdmin.checked = !sienne || depart !== sienne || new URLSearchParams(location.search).has('admin');
       caseAdmin.disabled = !sienne;
       sel.value = depart;
       sel.hidden = !caseAdmin.checked;
