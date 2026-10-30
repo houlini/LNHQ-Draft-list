@@ -2,11 +2,14 @@ name = "lnhq-publier"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
 
-# Joignable seulement par publier.lnhq.ca, derrière Cloudflare Access :
-# l'adresse *.workers.dev permettrait de contourner Access.
+# Joignable seulement par dg.lnhq.ca (connexion Discord) et publier.lnhq.ca (ancienne
+# adresse, derrière Cloudflare Access) : l'adresse *.workers.dev contournerait Access.
 workers_dev = false
 preview_urls = false
-routes = [{ pattern = "publier.lnhq.ca", custom_domain = true }]
+routes = [
+  { pattern = "dg.lnhq.ca", custom_domain = true },
+  { pattern = "publier.lnhq.ca", custom_domain = true },
+]
 
 # Chaque minute : fermeture des enchères dont le chrono est écoulé (voir scheduled()).
 [triggers]
@@ -15,6 +18,8 @@ crons = ["* * * * *", "0 16 * * *"]  # 2e : rappels du 2e gardien, une fois par 
 [assets]
 directory = "./public"
 binding = "ASSETS"
+# Les pages passent d'abord par le Worker : sur dg.lnhq.ca, il demande la connexion Discord.
+run_worker_first = true
 
 # Base des ratings NHL 27 (projet nhl27-ratings), clé « joueurs » : jamais dans le dépôt,
 # lue seulement par /api/ratings derrière Access. Envoi : pwsh ratings-envoyer.ps1
@@ -24,6 +29,7 @@ id = "54ea6d10f439438eaab19ec065aa8088"
 
 # Historique des lectures de photos de résultats par Gemini (clé « historique » : les 300
 # dernières, avec modèle, durée et erreurs). Lecture : npx wrangler kv key get historique --binding LECTURES --remote
+# Sert aussi aux codes de lien Discord (« lier:… », 10 minutes).
 [[kv_namespaces]]
 binding = "LECTURES"
 id = "a9ea6260be4c4228a9afdd935f8cd6c6"
@@ -44,3 +50,6 @@ GEMINI_MODEL = "gemini-flash-latest"
 #                                    transactions approuvées)
 #                                    npx wrangler secret put GEMINI_KEY       (clé Google AI Studio,
 #                                    lecture des photos de résultats)
+#                                    npx wrangler secret put DISCORD_CLIENT_ID     (application Discord
+#                                    npx wrangler secret put DISCORD_CLIENT_SECRET  « LNHQ », connexion)
+#                                    npx wrangler secret put SESSION_SECRET   (signe les sessions)

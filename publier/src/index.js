@@ -1,28 +1,62 @@
-// LNHQ — Worker de publier.lnhq.ca : sert l'éditeur (dossier public/) et relaie
-// les envois vers l'application web Apps Script, avec le courriel vérifié par Access.
+// LNHQ — Worker de l'espace des DG : sert les pages (dossier public/) et relaie les
+// envois vers l'application web Apps Script, avec l'identité vérifiée ici.
+//  - dg.lnhq.ca : connexion Discord (session signée par ce Worker), identité « discord:<id> ».
+//  - publier.lnhq.ca : ancienne adresse derrière Cloudflare Access (courriel), le temps
+//    que chaque DG lie son compte Discord (/lier-discord.html).
 
 const MAX_OCTETS_ENVOI = 20 * 1024 * 1024;
+const HOTE_DG = 'dg.lnhq.ca';
+const RETOUR_DISCORD = 'https://dg.lnhq.ca/auth/discord';
+const COOKIE_SESSION = 'lnhq_dg';
+const COOKIE_ETAT = 'lnhq_etat';
+const DUREE_SESSION = 30 * 24 * 3600;   // secondes
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
+    const surDg = url.hostname === HOTE_DG;
+    if (url.pathname.startsWith('/auth/')) return authentification(request, env, url);
+    if (!url.pathname.startsWith('/api/')) {
+      // Les pages de dg.lnhq.ca demandent d'abord la connexion Discord (CSS, scripts et
+      // images restent servis : sans l'API, ils ne montrent rien de privé).
+      if (surDg && estPage(url.pathname) && !(await lireSession(request, env))) {
+        return Response.redirect(`https://${HOTE_DG}/auth/discord/connexion?retour=` + encodeURIComponent(url.pathname + url.search), 302);
+      }
+      return env.ASSETS.fetch(request);
+    }
 
     let courriel;
-    try {
-      courriel = await verifierAcces(request, env);
-    } catch (err) {
-      console.warn('Accès refusé :', err.message);
-      // Jeton d'une ancienne configuration d'Access (ex. avant le changement de nom de
-      // l'équipe) : sa page de déconnexion n'existe plus, alors on efface le cookie ici.
-      // Au rechargement, Access redemande un code par courriel.
-      const rep = json({ ok: false, erreur: 'acces' }, 403);
-      rep.headers.append('Set-Cookie', 'CF_Authorization=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax');
-      return rep;
+    if (surDg) {
+      const session = await lireSession(request, env);
+      if (!session) return json({ ok: false, erreur: 'acces' }, 401);
+      courriel = 'discord:' + session.id;
+    } else {
+      try {
+        courriel = await verifierAcces(request, env);
+      } catch (err) {
+        console.warn('Accès refusé :', err.message);
+        // Jeton d'une ancienne configuration d'Access (ex. avant le changement de nom de
+        // l'équipe) : sa page de déconnexion n'existe plus, alors on efface le cookie ici.
+        // Au rechargement, Access redemande un code par courriel.
+        const rep = json({ ok: false, erreur: 'acces' }, 403);
+        rep.headers.append('Set-Cookie', 'CF_Authorization=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax');
+        return rep;
+      }
     }
 
     if (url.pathname === '/api/moi' && request.method === 'GET') {
       return appelerScript(env, 'moi', courriel);
+    }
+    // Lien du compte Discord, depuis publier.lnhq.ca (courriel vérifié par Access) : code
+    // aléatoire de 10 minutes (le courriel reste dans KV, jamais dans l'adresse), repris
+    // par /auth/discord après la connexion Discord.
+    if (url.pathname === '/api/discord/lier' && request.method === 'POST' && !surDg) {
+      const code = b64url(crypto.getRandomValues(new Uint8Array(18)));
+      await env.LECTURES.put('lier:' + code, courriel, { expirationTtl: 600 });
+      return json({ ok: true, url: `https://${HOTE_DG}/auth/discord/connexion?lier=${code}` });
+    }
+    if (url.pathname === '/api/admin/migration' && request.method === 'GET') {
+      return appelerScript(env, 'migrationDiscord', courriel);
     }
     if (url.pathname === '/api/article' && request.method === 'GET') {
       return appelerScript(env, 'lire', courriel, JSON.stringify({ id: url.searchParams.get('id') || '' }));
@@ -374,6 +408,166 @@ async function lireImage(url) {
     } catch { /* nouvel essai */ }
   }
   return null;
+}
+
+/* ---------- Connexion Discord (dg.lnhq.ca) ----------
+   /auth/discord/connexion → Discord (portée « identify » : identifiant et nom seulement)
+   → /auth/discord (retour) → cookie de session signé (HMAC, SESSION_SECRET) de 30 jours.
+   Les droits ne sont pas dans la session : chaque appel relit l'onglet ACCES du script,
+   donc effacer l'ID Discord d'une ligne coupe l'accès tout de suite. */
+async function authentification(request, env, url) {
+  if (url.hostname !== HOTE_DG) return Response.redirect(`https://${HOTE_DG}${url.pathname}${url.search}`, 302);
+
+  if (url.pathname === '/auth/discord/connexion') {
+    const retour = adresseRetour(url.searchParams.get('retour'));
+    const lier = url.searchParams.get('lier') || '';
+    const etat = b64url(crypto.getRandomValues(new Uint8Array(18)));
+    const cible = new URL('https://discord.com/oauth2/authorize');
+    cible.searchParams.set('client_id', String(env.DISCORD_CLIENT_ID).trim());
+    cible.searchParams.set('response_type', 'code');
+    cible.searchParams.set('redirect_uri', RETOUR_DISCORD);
+    cible.searchParams.set('scope', 'identify');
+    cible.searchParams.set('state', etat);
+    cible.searchParams.set('prompt', 'none');
+    const cookie = await signer(env, { etat, retour, lier, exp: maintenant() + 600 });
+    return redirection(cible.href, `${COOKIE_ETAT}=${cookie}; Path=/auth; Max-Age=600; Secure; HttpOnly; SameSite=Lax`);
+  }
+
+  if (url.pathname === '/auth/discord') {
+    const etat = await verifierSigne(env, lireCookie(request, COOKIE_ETAT));
+    const effacerEtat = `${COOKIE_ETAT}=; Path=/auth; Max-Age=0; Secure; HttpOnly; SameSite=Lax`;
+    if (url.searchParams.get('error')) {
+      return pageMessage('Connexion annulée', 'La connexion Discord a été annulée.', '/', 'Réessayer', effacerEtat);
+    }
+    if (!etat || etat.etat !== url.searchParams.get('state')) {
+      return pageMessage('Connexion expirée', 'La demande de connexion a expiré. Recommence.', '/', 'Se connecter', effacerEtat);
+    }
+    let utilisateur;
+    try {
+      utilisateur = await utilisateurDiscord(env, url.searchParams.get('code') || '');
+    } catch (err) {
+      console.error('Discord OAuth :', err.message);
+      return pageMessage('Discord ne répond pas', 'Impossible de vérifier ton compte Discord pour le moment. Réessaie dans un instant.', '/', 'Réessayer', effacerEtat);
+    }
+
+    let retour = etat.retour;
+    if (etat.lier) {
+      const courriel = /^[\w-]{24}$/.test(etat.lier) ? await env.LECTURES.get('lier:' + etat.lier) : null;
+      if (!courriel) return pageMessage('Lien expiré', 'Le lien a expiré. Retourne sur publier.lnhq.ca/lier-discord.html et recommence.', 'https://publier.lnhq.ca/lier-discord.html', 'Recommencer', effacerEtat);
+      await env.LECTURES.delete('lier:' + etat.lier);
+      const r = await scriptJson(env, 'lierDiscord', courriel, JSON.stringify({ id: utilisateur.id, nom: utilisateur.nom }));
+      if (!r.ok) {
+        const textes = {
+          deja_lie: 'Ton compte LNHQ est déjà lié à un autre compte Discord. Demande au commissaire de le délier.',
+          id_pris: 'Ce compte Discord est déjà lié à un autre compte LNHQ. Demande au commissaire de vérifier.',
+          inconnu: "Ton courriel n'est plus dans la liste d'accès de la ligue.",
+        };
+        return pageMessage('Lien impossible', textes[r.erreur] || 'Le lien n’a pas pu être enregistré. Réessaie plus tard.', 'https://publier.lnhq.ca/lier-discord.html', 'Retour', effacerEtat);
+      }
+      retour = '/lier-discord.html?lie=1';
+    }
+
+    const session = await signer(env, { id: utilisateur.id, nom: utilisateur.nom, exp: maintenant() + DUREE_SESSION });
+    const rep = redirection(`https://${HOTE_DG}${retour}`, `${COOKIE_SESSION}=${session}; Path=/; Max-Age=${DUREE_SESSION}; Secure; HttpOnly; SameSite=Lax`);
+    rep.headers.append('Set-Cookie', effacerEtat);
+    return rep;
+  }
+
+  if (url.pathname === '/auth/deconnexion') {
+    return redirection('https://lnhq.ca/', `${COOKIE_SESSION}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`);
+  }
+  return json({ ok: false, erreur: 'introuvable' }, 404);
+}
+
+async function utilisateurDiscord(env, code) {
+  if (!code) throw new Error('code absent');
+  const rep = await fetch('https://discord.com/api/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: String(env.DISCORD_CLIENT_ID).trim(),
+      client_secret: String(env.DISCORD_CLIENT_SECRET).trim(),
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: RETOUR_DISCORD,
+    }),
+  });
+  const jeton = await rep.json().catch(() => ({}));
+  if (!jeton.access_token) throw new Error(`jeton refusé (${rep.status}) ${JSON.stringify(jeton).slice(0, 200)}`);
+  const u = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: 'Bearer ' + jeton.access_token } })
+    .then(r => r.json());
+  if (!/^\d{15,22}$/.test(String(u.id || ''))) throw new Error('utilisateur sans identifiant');
+  return { id: String(u.id), nom: String(u.global_name || u.username || '').slice(0, 64) };
+}
+
+async function lireSession(request, env) {
+  const s = await verifierSigne(env, lireCookie(request, COOKIE_SESSION));
+  return s && s.id ? s : null;
+}
+
+// Seulement un chemin de ce site (jamais une autre adresse).
+function adresseRetour(retour) {
+  return retour && retour.startsWith('/') && !retour.startsWith('//') && !retour.startsWith('/auth/') ? retour : '/';
+}
+
+function estPage(chemin) {
+  return chemin.endsWith('.html') || !/\.[a-z0-9]+$/i.test(chemin);
+}
+
+function maintenant() {
+  return Math.floor(Date.now() / 1000);
+}
+
+function lireCookie(request, nom) {
+  const m = (request.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + nom + '=([^;]+)'));
+  return m ? m[1] : '';
+}
+
+function redirection(adresse, cookie) {
+  return new Response(null, { status: 302, headers: { Location: adresse, 'Set-Cookie': cookie, 'Cache-Control': 'no-store' } });
+}
+
+async function cleSession(env) {
+  if (!env.SESSION_SECRET) throw new Error('SESSION_SECRET manquant');
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(env.SESSION_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+}
+
+async function signer(env, donnees) {
+  const charge = b64url(new TextEncoder().encode(JSON.stringify(donnees)));
+  const signature = await crypto.subtle.sign('HMAC', await cleSession(env), new TextEncoder().encode(charge));
+  return charge + '.' + b64url(new Uint8Array(signature));
+}
+
+// Renvoie les données si la signature est bonne et la date d'expiration pas dépassée.
+async function verifierSigne(env, jeton) {
+  const [charge, signature] = String(jeton || '').split('.');
+  if (!charge || !signature) return null;
+  try {
+    const valide = await crypto.subtle.verify('HMAC', await cleSession(env), octetsB64url(signature), new TextEncoder().encode(charge));
+    if (!valide) return null;
+    const donnees = JSON.parse(texteB64url(charge));
+    return donnees.exp > maintenant() ? donnees : null;
+  } catch {
+    return null;
+  }
+}
+
+function b64url(octets) {
+  let binaire = '';
+  for (const o of octets) binaire += String.fromCharCode(o);
+  return btoa(binaire).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function pageMessage(titre, texte, lien, libelle, cookie) {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(titre)} — LNHQ</title><link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=9"></head><body><div class="app"><main style="max-width:560px;margin:0 auto;padding:40px 16px">
+<div class="status-box error"><div><strong>${esc(titre)}</strong><br>${esc(texte)}<br><br><a href="${esc(lien)}">${esc(libelle)}</a></div></div>
+</main></div></body></html>`;
+  const headers = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' };
+  if (cookie) headers['Set-Cookie'] = cookie;
+  return new Response(html, { status: 400, headers });
 }
 
 // Vérifie le jeton signé qu'Access ajoute à chaque requête autorisée, et renvoie le courriel.

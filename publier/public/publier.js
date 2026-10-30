@@ -11,7 +11,7 @@
   const ERREURS = {
     acces: 'Accès refusé : ta session de connexion n’est plus valide.',
     session: "Ta session a peut-être expiré. Recharge la page pour te reconnecter, ton texte sera perdu : copie-le d'abord.",
-    inconnu: "Ton courriel n'est pas dans la liste d'accès de la ligue. Contacte le dirigeant de la ligue.",
+    inconnu: "Ton compte n'est pas dans la liste d'accès de la ligue. Contacte le dirigeant de la ligue.",
     annonces: "Tu n'as pas le droit de publier une annonce.",
     vide: 'Le titre et le texte sont obligatoires.',
     photo: "L'image n'a pas pu être enregistrée.",

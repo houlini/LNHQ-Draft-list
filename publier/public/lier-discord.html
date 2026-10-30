@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Lier mon Discord — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=9">
+<link rel="stylesheet" href="admin.css?v=1">
+<script src="lier-discord.js?v=1" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">LNHQ</h1>
+      </a>
+    </div>
+    <div class="meta-row"><span id="qui">Vérification de ton accès…</span></div>
+  </header>
+
+  <main class="adm-page">
+    <section class="adm-carte adm-etroite">
+      <h2 class="adm-titre">Connexion par Discord</h2>
+      <p>L'espace des DG déménage à <strong>dg.lnhq.ca</strong>, avec une connexion par ton compte Discord : plus besoin de code par courriel.</p>
+      <div id="etat" class="adm-etat" hidden></div>
+      <button type="button" id="lier" class="adm-bouton adm-discord" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4A19.6 19.6 0 0 0 15.4 3l-.6 1.3a18.2 18.2 0 0 0-5.6 0L8.6 3a19.6 19.6 0 0 0-4.9 1.5C.6 9.1-.3 13.6.1 18.1a19.8 19.8 0 0 0 6 3l1.3-2.1a12.8 12.8 0 0 1-2-1l.5-.4a14.1 14.1 0 0 0 12.2 0l.5.4a12.8 12.8 0 0 1-2 1l1.3 2.1a19.7 19.7 0 0 0 6-3c.5-5.2-.9-9.7-3.6-13.7ZM8 15.3c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg>
+        Lier mon compte Discord
+      </button>
+      <a id="aller" class="adm-bouton" href="https://dg.lnhq.ca/" hidden>Aller sur dg.lnhq.ca</a>
+      <p class="adm-note">On garde seulement ton identifiant et ton nom Discord, rien d'autre.</p>
+    </section>
+  </main>
+</div>
+
+</body>
+</html>

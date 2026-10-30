@@ -104,7 +104,9 @@ function traiter(p, corps) {
   if (p.action === 'equipesInscrites') return equipesInscrites();
   const membre = trouverMembre(p.courriel);
   if (!membre) return { ok: false, erreur: 'inconnu' };
-  if (p.action === 'moi') return { ok: true, equipe: membre.equipe, annonces: membre.annonces };
+  if (p.action === 'moi') return { ok: true, equipe: membre.equipe, annonces: membre.annonces, discord: !!membre.discord, nomDiscord: membre.nomDiscord };
+  if (p.action === 'lierDiscord') return lierDiscord(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'migrationDiscord') return migrationDiscord(membre);
   if (p.action === 'publier') return publier(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lire') return lire(JSON.parse(corps || '{}'), membre);
   if (p.action === 'recentes') return recentes(membre);
@@ -138,15 +140,86 @@ function photoSeule(photo) {
   return { ok: true, id: id, url: urlPhoto(id) };
 }
 
-function trouverMembre(courriel) {
-  const cherche = String(courriel || '').trim().toLowerCase();
+// Identité donnée par le Worker : le courriel (publier.lnhq.ca, Cloudflare Access) ou
+// « discord:<id> » (dg.lnhq.ca), cherché dans la colonne F (ID Discord).
+function trouverMembre(identite) {
+  const cherche = String(identite || '').trim().toLowerCase();
   if (!cherche) return null;
+  const discord = cherche.indexOf('discord:') === 0 ? cherche.slice(8) : '';
   const lignes = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_ACCES).getDataRange().getValues();
-  const ligne = lignes.slice(1).find(l => String(l[0]).trim().toLowerCase() === cherche);
+  const ligne = lignes.slice(1).find(l => discord
+    ? String(l[5] || '').trim() === discord
+    : String(l[0]).trim().toLowerCase() === cherche);
   // Colonne D (Statut) : vide ou « Approuvé » = accès ; « À approuver » (inscription
   // du site pas encore validée) ou « Refusé » = aucun droit.
   if (!ligne || !estApprouve(ligne[3])) return null;
-  return { courriel: cherche, equipe: String(ligne[1] || '').trim() || 'Ligue', annonces: ligne[2] === true };
+  // Le courriel de la ligne reste l'identifiant du journal (auteur des publications),
+  // même connecté par Discord.
+  return {
+    courriel: String(ligne[0]).trim().toLowerCase() || cherche,
+    equipe: String(ligne[1] || '').trim() || 'Ligue',
+    annonces: ligne[2] === true,
+    discord: String(ligne[5] || '').trim(),
+    nomDiscord: String(ligne[6] || '').trim(),
+  };
+}
+
+/* =========================================================================
+   MIGRATION VERS DISCORD
+   Chaque DG, connecté par courriel sur publier.lnhq.ca, lie son compte Discord une
+   fois (lier-discord.html) : son ID Discord remplit la colonne F de sa ligne, seulement
+   si elle est vide. Le commissaire suit la progression sur dg.lnhq.ca/admin.html.
+   ========================================================================= */
+function lierDiscord(d, membre) {
+  const id = String(d.id || '').trim();
+  if (!/^\d{15,22}$/.test(id)) return { ok: false, erreur: 'discord' };
+  const nom = String(d.nom || '').trim().slice(0, 64);
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletAcces();
+    const lignes = o.getDataRange().getValues();
+    const i = lignes.findIndex((l, k) => k > 0 && String(l[0]).trim().toLowerCase() === membre.courriel);
+    if (i < 1) return { ok: false, erreur: 'inconnu' };
+    const actuel = String(lignes[i][5] || '').trim();
+    if (actuel && actuel !== id) return { ok: false, erreur: 'deja_lie' };
+    if (lignes.some((l, k) => k > 0 && k !== i && String(l[5] || '').trim() === id)) return { ok: false, erreur: 'id_pris' };
+    if (!actuel) {
+      // Format texte avant d'écrire : un ID de 18 chiffres deviendrait un nombre arrondi.
+      o.getRange(i + 1, 6).setNumberFormat('@');
+      o.getRange(i + 1, 6, 1, 3).setValues([[id, nom, new Date()]]);
+    } else if (!String(lignes[i][6] || '').trim() && nom) {
+      o.getRange(i + 1, 7).setValue(nom);
+    }
+    return { ok: true, equipe: membre.equipe };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// Tableau de progression (admins seulement) : jamais le courriel complet.
+function migrationDiscord(membre) {
+  if (!membre.annonces) return { ok: false, erreur: 'annonces' };
+  const fuseau = Session.getScriptTimeZone();
+  const comptes = ongletAcces().getDataRange().getValues().slice(1)
+    .filter(l => String(l[0]).trim() || String(l[5] || '').trim())
+    .map(l => ({
+      equipe: String(l[1] || '').trim() || 'Ligue',
+      code: CODES_EQUIPES[String(l[1] || '').trim()] || '',
+      admin: l[2] === true,
+      statut: statutDe(l),
+      compte: masquerCourriel(String(l[0]).trim()),
+      lie: !!String(l[5] || '').trim(),
+      nomDiscord: String(l[6] || '').trim(),
+      lieLe: l[7] instanceof Date ? Utilities.formatDate(l[7], fuseau, 'yyyy-MM-dd HH:mm') : '',
+    }));
+  return { ok: true, comptes: comptes };
+}
+
+function masquerCourriel(c) {
+  const at = c.indexOf('@');
+  if (at < 1) return c ? '…' : '';
+  return c.slice(0, Math.min(2, at)) + '…' + c.slice(at);
 }
 
 /* =========================================================================
@@ -155,7 +228,7 @@ function trouverMembre(courriel) {
    Pour approuver : vider la colonne Statut (ou écrire « Approuvé »), puis
    ajouter le courriel dans Cloudflare Access. Aucun courriel n'est renvoyé au site.
    ========================================================================= */
-const ACCES_ENTETES = ['Courriel', 'Équipe', 'Annonces', 'Statut', 'Demandé le'];
+const ACCES_ENTETES = ['Courriel', 'Équipe', 'Annonces', 'Statut', 'Demandé le', 'ID Discord', 'Nom Discord', 'Lié le'];
 const A_APPROUVER = 'À approuver';
 const MAX_EN_ATTENTE = 100;
 
@@ -168,7 +241,12 @@ function ongletAcces() {
   const o = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_ACCES);
   // Ajoute les colonnes d'inscription aux en-têtes existants (Courriel, Équipe, Annonces).
   const entetes = o.getRange(1, 1, 1, ACCES_ENTETES.length).getValues()[0];
-  if (entetes[3] !== ACCES_ENTETES[3]) o.getRange(1, 1, 1, ACCES_ENTETES.length).setValues([ACCES_ENTETES]);
+  if (entetes[3] !== ACCES_ENTETES[3]) o.getRange(1, 1, 1, 5).setValues([ACCES_ENTETES.slice(0, 5)]);
+  // Colonnes Discord (F à H) : ajoutées seulement si ces cellules d'en-tête sont vides.
+  if (entetes[5] !== ACCES_ENTETES[5] && entetes.slice(5).every(e => String(e).trim() === '')) {
+    o.getRange(1, 6, 1, 3).setValues([ACCES_ENTETES.slice(5)]);
+    o.getRange('F2:F').setNumberFormat('@');
+  }
   return o;
 }
 

@@ -15,7 +15,7 @@
   const ERREURS = {
     acces: 'Accès refusé : ta session de connexion n’est plus valide. Recharge la page.',
     session: 'Ta session a peut-être expiré. Recharge la page pour te reconnecter.',
-    inconnu: "Ton courriel n'est pas dans la liste d'accès de la ligue.",
+    inconnu: "Ton compte n'est pas dans la liste d'accès de la ligue.",
     equipe: "Ton courriel n'est lié à aucune équipe : seules les équipes peuvent miser.",
     minimum: 'Mise trop basse.',
     jetons: "Tu n'as pas assez de jetons disponibles.",
