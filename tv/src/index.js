@@ -230,33 +230,22 @@ async function ratingsEquipes(env, ctx, cors) {
 }
 
 /* ---------- Inscriptions (lnhq.ca/inscription.html) ---------- */
-// Page publique : le Worker transmet au script (adresse et clé gardées en secrets,
-// mêmes valeurs que pour publier.lnhq.ca). Le script n'accepte ici que ces 3 actions.
+// Page publique : seulement le nombre de comptes par équipe. La demande d'accès se fait
+// connecté par Discord sur dg.lnhq.ca/inscription.html (aucun courriel).
 const ROUTES_INSCRIPTION = {
-  'POST /inscription': 'inscrire',
-  'POST /inscription/statut': 'statutInscription',
   'GET /inscription/equipes': 'equipesInscrites',
 };
 
 async function inscription(request, env, url, cors) {
   const entetes = { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
   if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: { ...cors, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' } });
+    return new Response(null, { status: 204, headers: { ...cors, 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Max-Age': '86400' } });
   }
   const action = ROUTES_INSCRIPTION[request.method + ' ' + url.pathname];
   if (!action) return new Response(JSON.stringify({ ok: false, erreur: 'introuvable' }), { status: 404, headers: entetes });
   if (!env.SCRIPT_URL || !env.SCRIPT_SECRET) return new Response(JSON.stringify({ ok: false, erreur: 'config' }), { status: 503, headers: entetes });
 
-  let corps = '{}';
-  if (request.method === 'POST') {
-    const texte = await request.text();
-    if (texte.length > 2000) return new Response(JSON.stringify({ ok: false, erreur: 'taille' }), { status: 413, headers: entetes });
-    let d;
-    try { d = JSON.parse(texte); } catch { d = {}; }
-    // Piège à robots : champ invisible que seul un robot remplit. On répond « reçu » sans rien enregistrer.
-    if (d.site) return new Response(JSON.stringify({ ok: true, statut: 'attente' }), { headers: entetes });
-    corps = JSON.stringify({ courriel: d.courriel, equipe: d.equipe });
-  }
+  const corps = '{}';
   const cible = new URL(env.SCRIPT_URL);
   cible.searchParams.set('action', action);
   cible.searchParams.set('courriel', 'inscription');

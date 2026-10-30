@@ -6,11 +6,11 @@
 <title>Équipe</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=9">
-<script src="site-nav.js?v=8"></script>
+<script src="site-nav.js?v=9"></script>
 <script src="sans-contrat.js"></script>
 <link rel="stylesheet" href="alignement.css?v=5">
 <script src="alignement.js?v=7"></script>
-<script src="stats-joueur.js?v=4" defer></script>
+<script src="stats-joueur.js?v=5" defer></script>
 <style>
   /* ---------- Vues : Salaires (par défaut) / Alignement ---------- */
   .eq-vues{ display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:rgba(0,0,0,0.14); margin-left:auto; }
@@ -268,7 +268,7 @@
     <div class="al-zone" id="alignementWrap">
       <div class="al-entete">
         <p class="al-etat" id="alEtat">Chargement de l’alignement…</p>
-        <a class="al-modifier" id="alModifier" href="https://publier.lnhq.ca/alignement.html">Modifier l’alignement (DG) →</a>
+        <a class="al-modifier" id="alModifier" href="https://dg.lnhq.ca/alignement.html">Modifier l’alignement (DG) →</a>
       </div>
       <div id="alContenu"></div>
     </div>
@@ -1117,7 +1117,7 @@ els.retryBtn.addEventListener('click', () => loadData());
 })();
 
 /* ---------- Vue Alignement (trios, paires, gardiens ; voir alignement.js) ----------
-   Modifiable par le DG sur publier.lnhq.ca/alignement.html. */
+   Modifiable par le DG sur dg.lnhq.ca/alignement.html. */
 let alignementCharge = false;
 function initVues(){
   const vues = document.getElementById('eqVues');
@@ -1130,7 +1130,7 @@ function initVues(){
     zone.style.setProperty('--al-couleur', colors.primary);
     zone.style.setProperty('--al-sombre', darkenHex(colors.dark, 0.35));
   }
-  document.getElementById('alModifier').href = 'https://publier.lnhq.ca/alignement.html?equipe=' + currentTeam.code;
+  document.getElementById('alModifier').href = 'https://dg.lnhq.ca/alignement.html?equipe=' + currentTeam.code;
   changerVue(vueDemandee, true);
   // Changer d'équipe (menu Équipes ou « Choisir une équipe ») garde la vue Alignement.
   document.addEventListener('click', ev => {

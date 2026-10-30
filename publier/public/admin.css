@@ -40,7 +40,42 @@
 .adm-pastille.is-non{ background:var(--stripe); color:var(--ink-muted); }
 .adm-vide{ padding:24px !important; color:var(--ink-muted); }
 
+.adm-form{ display:flex; flex-direction:column; gap:12px; }
+.adm-form[hidden]{ display:none; }
+.adm-champ{ display:flex; flex-direction:column; gap:5px; }
+.adm-champ > span{ font-weight:700; font-size:12.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted); }
+.adm-champ small{ font-weight:400; text-transform:none; letter-spacing:0; }
+.adm-champ select{ height:44px; padding:0 12px; font:inherit; font-size:16px; width:100%; box-sizing:border-box;
+  border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); }
+.adm-bouton[hidden]{ display:none; }
+
+/* Demandes d'accès (admin) */
+.adm-demandes{ display:flex; flex-direction:column; gap:8px; margin:0; padding:0; list-style:none; }
+.adm-demande{ display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--bg); }
+.adm-demande .adm-qui{ flex:1 1 200px; min-width:0; display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.adm-demande .adm-qui small{ color:var(--ink-muted); width:100%; }
+.adm-actions{ display:flex; gap:6px; }
+.adm-petit{ min-height:38px; padding:0 14px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ink); font:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+.adm-petit.is-oui{ background:#2F9E44; border-color:#2F9E44; color:#fff; }
+.adm-petit:disabled{ opacity:0.6; cursor:wait; }
+
+/* Accueil de l'espace DG : tuiles vers chaque fonction */
+.adm-espace{ display:flex; flex-direction:column; gap:14px; }
+.adm-sous-titre{ margin:10px 0 0; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:16px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted); }
+.adm-tuiles{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; }
+#zoneAdmin{ display:flex; flex-direction:column; gap:10px; }
+#zoneAdmin[hidden]{ display:none; }
+.adm-tuile{ display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; column-gap:12px; align-items:center;
+  padding:14px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); color:var(--ink); text-decoration:none; min-height:64px; }
+.adm-tuile:hover, .adm-tuile:focus-visible{ border-color:var(--accent); }
+.adm-tuile .adm-icone{ grid-row:span 2; font-size:26px; line-height:1; }
+.adm-tuile b{ font-size:15px; }
+.adm-tuile small{ font-size:12.5px; color:var(--ink-muted); }
+.adm-tuile.is-vedette{ border-color:var(--accent); background:var(--accent-soft); }
+.adm-rappel{ display:block; padding:10px 12px; border-radius:8px; background:rgba(88,101,242,0.14); color:#8C96FF; font-size:14px; font-weight:600; text-decoration:none; }
+
 @media (max-width:600px){
+  .adm-tuiles{ grid-template-columns:1fr; }
   .adm-carte{ padding:12px; }
   .adm-table{ font-size:13px; }
   .adm-table th, .adm-table td{ padding:7px 8px; }

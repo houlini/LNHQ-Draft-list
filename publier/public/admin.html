@@ -7,8 +7,8 @@
 <title>Administration — LNHQ</title>
 <link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
 <link rel="stylesheet" href="https://lnhq.ca/site.css?v=9">
-<link rel="stylesheet" href="admin.css?v=1">
-<script src="admin.js?v=1" defer></script>
+<link rel="stylesheet" href="admin.css?v=2">
+<script src="admin.js?v=2" defer></script>
 </head>
 <body>
 
@@ -33,6 +33,13 @@
       </svg>
       <div id="refusTexte"></div>
     </div>
+
+    <section id="demandes" class="adm-carte" hidden>
+      <h2 class="adm-titre">Demandes d'accès</h2>
+      <p class="adm-note">Les nouveaux DG font leur demande connectés par Discord (lnhq.ca → Inscription DG). Tu peux aussi changer la colonne Statut de l'onglet ACCES à la main.</p>
+      <ul class="adm-demandes" id="listeDemandes"></ul>
+      <p class="adm-etat" id="msgDemandes" hidden></p>
+    </section>
 
     <section id="migration" class="adm-carte" hidden>
       <div class="adm-tete">

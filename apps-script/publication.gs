@@ -98,15 +98,17 @@ function traiter(p, corps) {
   if (p.action === 'tirerAuSortAuto') return tirerAuSortAuto();
   // Chaque jour (tâche planifiée du Worker) : rappels et fins de période du 2e gardien.
   if (p.action === 'rappelsGardiens') return rappelsGardiens();
-  // Page d'inscription publique (par le Worker api.lnhq.ca), sans membre connecté.
-  if (p.action === 'inscrire') return inscrire(JSON.parse(corps || '{}'));
-  if (p.action === 'statutInscription') return statutInscription(JSON.parse(corps || '{}'));
+  // Équipes inscrites (page publique, par le Worker api.lnhq.ca ; formulaire de dg.lnhq.ca).
   if (p.action === 'equipesInscrites') return equipesInscrites();
+  // Demande d'accès par Discord (dg.lnhq.ca/inscription.html) : connecté, mais pas encore membre.
+  if (p.action === 'demanderAcces') return demanderAcces(p.courriel, JSON.parse(corps || '{}'));
+  if (p.action === 'statutDemande') return statutDemande(p.courriel);
   const membre = trouverMembre(p.courriel);
   if (!membre) return { ok: false, erreur: 'inconnu' };
   if (p.action === 'moi') return { ok: true, equipe: membre.equipe, annonces: membre.annonces, discord: !!membre.discord, nomDiscord: membre.nomDiscord };
   if (p.action === 'lierDiscord') return lierDiscord(JSON.parse(corps || '{}'), membre);
   if (p.action === 'migrationDiscord') return migrationDiscord(membre);
+  if (p.action === 'deciderAcces') return deciderAcces(JSON.parse(corps || '{}'), membre);
   if (p.action === 'publier') return publier(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lire') return lire(JSON.parse(corps || '{}'), membre);
   if (p.action === 'recentes') return recentes(membre);
@@ -197,13 +199,91 @@ function lierDiscord(d, membre) {
   }
 }
 
+/* Demande d'accès sans courriel : la personne est connectée par Discord (identité
+   « discord:<id> » vérifiée par le Worker) et choisit son équipe. La ligne ajoutée dans
+   ACCES a le statut « À approuver » ; un admin décide sur dg.lnhq.ca/admin.html. */
+function idDiscordDe(identite) {
+  const s = String(identite || '').trim();
+  return /^discord:\d{15,22}$/.test(s) ? s.slice(8) : '';
+}
+
+function demanderAcces(identite, d) {
+  const id = idDiscordDe(identite);
+  if (!id) return { ok: false, erreur: 'discord' };
+  const equipe = String(d.equipe || '').trim();
+  if (!EQUIPES.includes(equipe)) return { ok: false, erreur: 'equipe' };
+  const nom = String(d.nom || '').trim().slice(0, 64);
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletAcces();
+    const lignes = o.getDataRange().getValues().slice(1);
+    const existante = lignes.find(l => String(l[5] || '').trim() === id);
+    if (existante) return { ok: true, statut: statutDe(existante), equipe: String(existante[1] || ''), deja: true };
+    // Une équipe déjà inscrite (approuvée ou en attente) ne peut pas être redemandée.
+    if (lignes.some(l => String(l[1]).trim() === equipe && (String(l[0]).trim() || String(l[5] || '').trim()) && statutDe(l) !== 'refuse')) {
+      return { ok: false, erreur: 'equipe_prise' };
+    }
+    if (lignes.filter(l => String(l[3]).trim() === A_APPROUVER).length >= MAX_EN_ATTENTE) return { ok: false, erreur: 'plein' };
+    // Première ligne vide (ni courriel ni ID Discord) : voir inscrire() pour les cases à cocher.
+    const libre = lignes.findIndex(l => !String(l[0]).trim() && !String(l[5] || '').trim());
+    const rangee = libre >= 0 ? libre + 2 : o.getLastRow() + 1;
+    o.getRange(rangee, 2).setValue(equipe);
+    o.getRange(rangee, 4, 1, 2).setValues([[A_APPROUVER, new Date()]]);
+    o.getRange(rangee, 6).setNumberFormat('@');
+    o.getRange(rangee, 6, 1, 3).setValues([[id, nom, new Date()]]);
+    const caseAnnonces = o.getRange(rangee, 3);
+    if (caseAnnonces.getDataValidation() === null) caseAnnonces.insertCheckboxes();
+    return { ok: true, statut: 'attente', equipe: equipe };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+function statutDemande(identite) {
+  const id = idDiscordDe(identite);
+  if (!id) return { ok: false, erreur: 'discord' };
+  const ligne = ongletAcces().getDataRange().getValues().slice(1).find(l => String(l[5] || '').trim() === id);
+  return { ok: true, statut: ligne ? statutDe(ligne) : 'inconnu', equipe: ligne ? String(ligne[1] || '') : '' };
+}
+
+// Approuver ou refuser une demande en attente (admins seulement). La ligne est désignée
+// par son numéro ET sa clé (ID Discord ou courriel masqué), pour ne jamais toucher une
+// autre ligne si l'onglet a été trié entre-temps.
+function deciderAcces(d, membre) {
+  if (!membre.annonces) return { ok: false, erreur: 'annonces' };
+  const rangee = Number(d.rangee);
+  if (!Number.isInteger(rangee) || rangee < 2) return { ok: false, erreur: 'ligne' };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletAcces();
+    if (rangee > o.getLastRow()) return { ok: false, erreur: 'ligne' };
+    const l = o.getRange(rangee, 1, 1, 8).getValues()[0];
+    if (cleCompte(l) !== String(d.cle || '') || statutDe(l) !== 'attente') return { ok: false, erreur: 'ligne' };
+    o.getRange(rangee, 4).setValue(d.decision === 'approuver' ? 'Approuvé' : 'Refusé');
+    console.log('Accès ' + (d.decision === 'approuver' ? 'approuvé' : 'refusé') + ' (' + l[1] + ') par ' + membre.courriel);
+    return { ok: true };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+function cleCompte(l) {
+  return String(l[5] || '').trim() || masquerCourriel(String(l[0]).trim());
+}
+
 // Tableau de progression (admins seulement) : jamais le courriel complet.
 function migrationDiscord(membre) {
   if (!membre.annonces) return { ok: false, erreur: 'annonces' };
   const fuseau = Session.getScriptTimeZone();
-  const comptes = ongletAcces().getDataRange().getValues().slice(1)
-    .filter(l => String(l[0]).trim() || String(l[5] || '').trim())
-    .map(l => ({
+  const comptes = ongletAcces().getDataRange().getValues()
+    .map((l, i) => ({ l: l, rangee: i + 1 }))
+    .slice(1)
+    .filter(x => String(x.l[0]).trim() || String(x.l[5] || '').trim())
+    .map(({ l, rangee }) => ({
+      rangee: rangee,
+      cle: cleCompte(l),
       equipe: String(l[1] || '').trim() || 'Ligue',
       code: CODES_EQUIPES[String(l[1] || '').trim()] || '',
       admin: l[2] === true,
@@ -212,6 +292,7 @@ function migrationDiscord(membre) {
       lie: !!String(l[5] || '').trim(),
       nomDiscord: String(l[6] || '').trim(),
       lieLe: l[7] instanceof Date ? Utilities.formatDate(l[7], fuseau, 'yyyy-MM-dd HH:mm') : '',
+      demandeLe: l[4] instanceof Date ? Utilities.formatDate(l[4], fuseau, 'yyyy-MM-dd HH:mm') : '',
     }));
   return { ok: true, comptes: comptes };
 }
@@ -223,10 +304,11 @@ function masquerCourriel(c) {
 }
 
 /* =========================================================================
-   INSCRIPTIONS (lnhq.ca/inscription.html, par l'API publique api.lnhq.ca)
-   Une demande ajoute une ligne dans ACCES avec le statut « À approuver ».
-   Pour approuver : vider la colonne Statut (ou écrire « Approuvé »), puis
-   ajouter le courriel dans Cloudflare Access. Aucun courriel n'est renvoyé au site.
+   ONGLET ACCES : une ligne par compte (courriel des anciens comptes et/ou ID Discord).
+   Une demande (demanderAcces, par Discord) a le statut « À approuver » ; un admin
+   l'approuve ou la refuse sur dg.lnhq.ca/admin.html, ou à la main dans la colonne
+   Statut (vide ou « Approuvé » = accès). L'API publique api.lnhq.ca ne lit plus que
+   le nombre de comptes par équipe (equipesInscrites), jamais un courriel.
    ========================================================================= */
 const ACCES_ENTETES = ['Courriel', 'Équipe', 'Annonces', 'Statut', 'Demandé le', 'ID Discord', 'Nom Discord', 'Lié le'];
 const A_APPROUVER = 'À approuver';
@@ -250,45 +332,9 @@ function ongletAcces() {
   return o;
 }
 
-function inscrire(d) {
-  const courriel = String(d.courriel || '').trim().toLowerCase();
-  const equipe = String(d.equipe || '').trim();
-  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(courriel) || courriel.length > 120) return { ok: false, erreur: 'courriel' };
-  if (!EQUIPES.includes(equipe)) return { ok: false, erreur: 'equipe' };
-  const verrou = LockService.getScriptLock();
-  verrou.waitLock(30000);
-  try {
-    const o = ongletAcces();
-    const lignes = o.getDataRange().getValues().slice(1);
-    const existante = lignes.find(l => String(l[0]).trim().toLowerCase() === courriel);
-    if (existante) return { ok: true, statut: statutDe(existante), deja: true };
-    // Une équipe déjà inscrite (approuvée ou en attente) ne peut pas être redemandée.
-    if (lignes.some(l => String(l[1]).trim() === equipe && String(l[0]).trim() && statutDe(l) !== 'refuse')) return { ok: false, erreur: 'equipe_prise' };
-    if (lignes.filter(l => String(l[3]).trim() === A_APPROUVER).length >= MAX_EN_ATTENTE) return { ok: false, erreur: 'plein' };
-    // Première ligne sans courriel sous la liste : les cases à cocher de la colonne C
-    // (jusqu'à la ligne 200) font croire au classeur que ces lignes sont remplies, et
-    // appendRow écrirait sous la ligne 200, loin de la liste.
-    const libre = lignes.findIndex(l => !String(l[0]).trim());
-    const rangee = libre >= 0 ? libre + 2 : o.getLastRow() + 1;
-    o.getRange(rangee, 1, 1, 2).setValues([[courriel, equipe]]);
-    o.getRange(rangee, 4, 1, 2).setValues([[A_APPROUVER, new Date()]]);
-    const caseAnnonces = o.getRange(rangee, 3);
-    if (caseAnnonces.getDataValidation() === null) caseAnnonces.insertCheckboxes();
-    return { ok: true, statut: 'attente' };
-  } finally {
-    verrou.releaseLock();
-  }
-}
-
 function statutDe(ligne) {
   if (estApprouve(ligne[3])) return 'approuve';
   return String(ligne[3]).trim().toLowerCase().indexOf('refus') === 0 ? 'refuse' : 'attente';
-}
-
-function statutInscription(d) {
-  const courriel = String(d.courriel || '').trim().toLowerCase();
-  const ligne = ongletAcces().getDataRange().getValues().slice(1).find(l => String(l[0]).trim().toLowerCase() === courriel);
-  return { ok: true, statut: ligne ? statutDe(ligne) : 'inconnu', equipe: ligne ? String(ligne[1] || '') : '' };
 }
 
 // Pour chaque équipe : nombre de comptes approuvés et en attente (jamais les courriels).
@@ -297,7 +343,7 @@ function equipesInscrites() {
   EQUIPES.forEach(nom => { compte[nom] = { equipe: nom, code: CODES_EQUIPES[nom], approuves: 0, attente: 0 }; });
   ongletAcces().getDataRange().getValues().slice(1).forEach(l => {
     const c = compte[String(l[1]).trim()];
-    if (!c || !String(l[0]).trim()) return;
+    if (!c || !(String(l[0]).trim() || String(l[5] || '').trim())) return;
     const s = statutDe(l);
     if (s === 'approuve') c.approuves++;
     else if (s === 'attente') c.attente++;

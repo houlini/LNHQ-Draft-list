@@ -144,7 +144,7 @@
     // Fiche complète des ratings : page privée (Access), donc pour les DG.
     if(rt){
       const r = el('a', null, 'Ratings →');
-      r.href = 'https://publier.lnhq.ca/ratings.html?joueur=' + encodeURIComponent(id) + (rt.equipe ? '&equipe=' + rt.equipe : '');
+      r.href = 'https://dg.lnhq.ca/ratings.html?joueur=' + encodeURIComponent(id) + (rt.equipe ? '&equipe=' + rt.equipe : '');
       r.target = '_blank'; r.rel = 'noopener';
       r.title = 'Tous ses attributs NHL 27 (réservé aux membres de la ligue)';
       liens.append(r);

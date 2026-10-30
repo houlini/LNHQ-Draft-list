@@ -1,6 +1,6 @@
 /* =========================================================================
    LNHQ — 2e gardien : données partagées (page Calendrier et page de déclaration
-   de publier.lnhq.ca). Règle : chaque équipe fait jouer son 2e gardien au moins
+   de dg.lnhq.ca). Règle : chaque équipe fait jouer son 2e gardien au moins
    une fois par période de 2 semaines (périodes de l'onglet SCHEDULE).
    Déclarations : onglet GARDIENS (Équipe, Période, Match, Date, Adversaire,
    Déclaré le), écrit seulement par le script ; une ligne par équipe et période.

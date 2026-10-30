@@ -26,8 +26,9 @@ export default {
     }
 
     let courriel;
+    let session = null;
     if (surDg) {
-      const session = await lireSession(request, env);
+      session = await lireSession(request, env);
       if (!session) return json({ ok: false, erreur: 'acces' }, 401);
       courriel = 'discord:' + session.id;
     } else {
@@ -55,8 +56,22 @@ export default {
       await env.LECTURES.put('lier:' + code, courriel, { expirationTtl: 600 });
       return json({ ok: true, url: `https://${HOTE_DG}/auth/discord/connexion?lier=${code}` });
     }
+    // Demande d'accès d'un compte Discord pas encore membre (dg.lnhq.ca/inscription.html).
+    if (url.pathname === '/api/inscription' && surDg) {
+      if (request.method === 'GET') return appelerScript(env, 'statutDemande', courriel);
+      if (request.method === 'POST') {
+        const d = await request.json().catch(() => ({}));
+        return appelerScript(env, 'demanderAcces', courriel, JSON.stringify({ equipe: String(d.equipe || ''), nom: session.nom || '' }));
+      }
+    }
+    if (url.pathname === '/api/equipes' && request.method === 'GET') {
+      return appelerScript(env, 'equipesInscrites', courriel);
+    }
     if (url.pathname === '/api/admin/migration' && request.method === 'GET') {
       return appelerScript(env, 'migrationDiscord', courriel);
+    }
+    if (url.pathname === '/api/admin/acces' && request.method === 'POST') {
+      return appelerScript(env, 'deciderAcces', courriel, await request.text());
     }
     if (url.pathname === '/api/article' && request.method === 'GET') {
       return appelerScript(env, 'lire', courriel, JSON.stringify({ id: url.searchParams.get('id') || '' }));

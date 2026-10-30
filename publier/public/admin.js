@@ -1,5 +1,5 @@
 /* LNHQ — page d'administration (admins seulement : case « Annonces » de l'onglet ACCES).
-   Pour l'instant : progression de la migration des comptes vers la connexion Discord. */
+   Demandes d'accès à approuver, et progression de la migration des comptes vers Discord. */
 (function(){
   const $ = id => document.getElementById(id);
   const ERREURS = {
@@ -66,16 +66,68 @@
     }
   }
 
-  async function demarrer(){
+  function afficherDemandes(){
+    const attente = comptes.filter(c => c.statut === 'attente');
+    const ul = $('listeDemandes');
+    ul.replaceChildren();
+    for(const c of attente){
+      const li = el('li', 'adm-demande');
+      const qui = el('div', 'adm-qui');
+      if(c.code){
+        const img = el('img', 'adm-logo');
+        img.src = `https://lnhq.ca/Logos/${c.code}.png`;
+        img.alt = '';
+        qui.append(img);
+      }
+      qui.append(el('b', null, c.equipe), ' · ', c.nomDiscord || c.compte || 'Compte inconnu');
+      if(c.demandeLe) qui.append(el('small', null, 'Demandé le ' + c.demandeLe));
+      const actions = el('div', 'adm-actions');
+      const oui = el('button', 'adm-petit is-oui', 'Approuver');
+      const non = el('button', 'adm-petit', 'Refuser');
+      oui.type = non.type = 'button';
+      oui.addEventListener('click', () => decider(c, 'approuver', [oui, non]));
+      non.addEventListener('click', () => {
+        if(confirm(`Refuser la demande de ${c.nomDiscord || c.compte} pour ${c.equipe} ?`)) decider(c, 'refuser', [oui, non]);
+      });
+      actions.append(oui, non);
+      li.append(qui, actions);
+      ul.append(li);
+    }
+    if(!attente.length) ul.append(el('li', 'adm-note', 'Aucune demande en attente.'));
+  }
+
+  async function decider(c, decision, boutons){
+    boutons.forEach(b => { b.disabled = true; });
+    let r;
+    try{
+      r = await (await fetch('/api/admin/acces', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rangee: c.rangee, cle: c.cle, decision }) })).json();
+    }catch(e){ r = { ok: false }; }
+    const m = $('msgDemandes');
+    m.hidden = false;
+    if(!r.ok){
+      boutons.forEach(b => { b.disabled = false; });
+      m.className = 'adm-etat is-erreur';
+      m.textContent = r.erreur === 'ligne' ? "Cette demande a changé dans l'onglet ACCES. Recharge la page." : 'La décision n’a pas pu être enregistrée. Réessaie.';
+      return;
+    }
+    m.className = 'adm-etat is-ok';
+    m.textContent = `${c.equipe} : demande ${decision === 'approuver' ? 'approuvée' : 'refusée'}.`;
+    await charger();
+  }
+
+  async function charger(){
     let r;
     try{ r = await (await fetch('/api/admin/migration', { cache: 'no-store' })).json(); }catch(e){ r = { ok: false }; }
     if(!r.ok){ refuser(ERREURS[r.erreur] || 'Accès impossible pour le moment. Réessaie plus tard.'); return; }
     $('qui').textContent = 'Administration';
     comptes = r.comptes || [];
+    $('demandes').hidden = false;
     $('migration').hidden = false;
+    afficherDemandes();
     afficher();
   }
 
   $('nonLies').addEventListener('change', afficher);
-  demarrer();
+  charger();
 })();

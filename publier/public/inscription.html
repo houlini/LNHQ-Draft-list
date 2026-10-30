@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Inscription DG — LNHQ</title>
+<link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=9">
+<link rel="stylesheet" href="admin.css?v=2">
+<script src="inscription-dg.js?v=1" defer></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <div class="header-row">
+      <a class="brand" href="https://lnhq.ca/">
+        <img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ">
+        <h1 class="app-title">LNHQ</h1>
+      </a>
+      <nav class="site-nav">
+        <a class="nav-btn" href="/auth/deconnexion">Se déconnecter</a>
+      </nav>
+    </div>
+    <div class="meta-row"><span id="qui">Vérification de ton compte…</span></div>
+  </header>
+
+  <main class="adm-page">
+    <section class="adm-carte adm-etroite">
+      <h2 class="adm-titre">Demander l'accès DG</h2>
+      <div id="etat" class="adm-etat" hidden></div>
+      <form id="formulaire" class="adm-form" novalidate hidden>
+        <p>Choisis ton équipe. Ta demande est envoyée aux dirigeants de la ligue, qui l'approuvent.</p>
+        <label class="adm-champ"><span>Équipe <small>seules les équipes sans DG inscrit</small></span>
+          <select id="equipe" required disabled><option value="">Chargement des équipes…</option></select>
+        </label>
+        <button type="submit" class="adm-bouton" id="envoyer">Envoyer ma demande</button>
+      </form>
+      <a id="aller" class="adm-bouton" href="/" hidden>Aller à l'espace DG</a>
+      <p class="adm-note" id="noteLier" hidden>Déjà DG, inscrit avec un courriel ? Ne refais pas de demande :
+        <a href="https://publier.lnhq.ca/lier-discord.html">lie plutôt ton compte Discord</a>.</p>
+    </section>
+  </main>
+</div>
+
+</body>
+</html>

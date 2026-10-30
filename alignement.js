@@ -1,7 +1,7 @@
 /* =========================================================================
    LNHQ — alignement d'une équipe (4 trios, 3 paires de défense, 2 gardiens).
    Partagé par la page Équipe (lnhq.ca, onglet Alignement) et la page de
-   modification de publier.lnhq.ca.
+   modification de dg.lnhq.ca.
    - Joueurs : PLAYERSDATABASE (Z = équipe ; choix de repêchage exclus ; les
      espoirs, colonne AB, restent hors de l'alignement automatique).
    - Alignement choisi par le DG : onglet ALIGNEMENTS (une ligne par équipe, une

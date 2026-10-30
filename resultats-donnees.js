@@ -1,6 +1,6 @@
 /* =========================================================================
    LNHQ — résultats des matchs : données partagées (Calendrier, Classement et
-   page de soumission de publier.lnhq.ca). Un DG soumet la photo de l'écran de
+   page de soumission de dg.lnhq.ca). Un DG soumet la photo de l'écran de
    fin de match ; le script écrit une ligne dans l'onglet RESULTATS (une par
    match) et le score dans SCHEDULE (F = visiteur, G = domicile).
    ========================================================================= */

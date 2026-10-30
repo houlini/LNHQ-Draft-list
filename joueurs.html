@@ -6,10 +6,10 @@
 <title>Agents libres</title>
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=9">
-<script src="site-nav.js?v=8"></script>
+<script src="site-nav.js?v=9"></script>
 <script src="encheres-donnees.js?v=6"></script>
 <script src="sans-contrat.js"></script>
-<script src="stats-joueur.js?v=4" defer></script>
+<script src="stats-joueur.js?v=5" defer></script>
 <style>
   /* Le tableau occupe toute la largeur du cadre ; il défile horizontalement sur mobile */
   #tableWrap table{ width:100%; }
@@ -545,7 +545,7 @@ function renderTableBody(){
       const td = document.createElement('td');
       const col = state.columns[i];
       // Nom → fiche de ratings NHL 27 du joueur (page privée des DG) ; carte au survol.
-      const link = i === 0 && row.b ? 'https://publier.lnhq.ca/ratings.html?joueur=' + encodeURIComponent(row.b) + '&equipe=UFA' : null;
+      const link = i === 0 && row.b ? 'https://dg.lnhq.ca/ratings.html?joueur=' + encodeURIComponent(row.b) + '&equipe=UFA' : null;
       if(link){
         const a = document.createElement('a');
         a.href = link;

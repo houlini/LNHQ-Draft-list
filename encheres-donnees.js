@@ -2,7 +2,7 @@
    LNHQ — données des enchères des agents libres, lues dans le classeur public :
    ENCHERES, MISES, JETONS, et les agents libres de PLAYERSDATABASE (colonne Z
    « LNHQ TM » = UFA). Utilisé par lnhq.ca/encheres.html et par la page de mise
-   de publier.lnhq.ca. Les règles réelles sont vérifiées par le script (sous verrou) ;
+   de dg.lnhq.ca. Les règles réelles sont vérifiées par le script (sous verrou) ;
    ce module sert seulement à afficher.
    ========================================================================= */
 (function(){

@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="logo-lnhq.png">
 <link rel="stylesheet" href="site.css?v=9">
 <link rel="stylesheet" href="encheres.css?v=6">
-<script src="site-nav.js?v=8"></script>
+<script src="site-nav.js?v=9"></script>
 <script src="sans-contrat.js"></script>
 <script src="encheres-donnees.js?v=6"></script>
 </head>
@@ -18,7 +18,7 @@
 
   <div class="filter-band ench-band">
     <span class="ench-regles">Départ min. 50 jetons · surenchère +20 · maximum 1000 (égalité → tirage au sort) · 24 h, relancé à 12 h à chaque mise</span>
-    <a class="publish-btn ench-lancer" href="https://publier.lnhq.ca/encheres.html">
+    <a class="publish-btn ench-lancer" href="https://dg.lnhq.ca/encheres.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Lancer une enchère
     </a>
@@ -66,9 +66,9 @@
 </div>
 
 <script>
-/* LNHQ — enchères des agents libres (lecture seule). On mise sur publier.lnhq.ca. */
+/* LNHQ — enchères des agents libres (lecture seule). On mise sur dg.lnhq.ca. */
 const E = window.LNHQ_ENCHERES;
-const MISER = 'https://publier.lnhq.ca/encheres.html';
+const MISER = 'https://dg.lnhq.ca/encheres.html';
 const els = {
   title: document.getElementById('sheetTitle'),
   rowCount: document.getElementById('rowCount'),

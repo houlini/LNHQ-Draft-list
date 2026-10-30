@@ -15,9 +15,10 @@
    ========================================================================= */
 (function(){
   const TEAM_BASE_URL = 'equipe.html?team=';
-  // Bouton rouge de l'en-tête : « Soumettre un résultat » (publier.lnhq.ca), la fonction
-  // la plus utilisée. L'inscription des DG reste dans le menu Ligue.
-  const URL_RESULTAT = 'https://publier.lnhq.ca/resultat.html';
+  // Bouton rouge de l'en-tête : « Soumettre un résultat » (dg.lnhq.ca), la fonction
+  // la plus utilisée. « Espace DG » (fin du menu) mène à l'accueil des fonctions des DG.
+  const URL_RESULTAT = 'https://dg.lnhq.ca/resultat.html';
+  const URL_ESPACE_DG = 'https://dg.lnhq.ca/';
   // [nom affiché, slug de equipe.html, code des fichiers Logos/XXX.png]
   const TEAMS = [
     ['Anaheim', 'anaheim', 'ANA'], ['Boston', 'boston', 'BOS'], ['Buffalo', 'buffalo', 'BUF'],
@@ -65,7 +66,7 @@
     ['Marché', [
       ['Agents libres', 'joueurs.html', 'joueurs'],
       ['Enchères', 'encheres.html', 'encheres'],
-      ['Proposer une transaction (DG)', 'https://publier.lnhq.ca/transactions.html'],
+      ['Proposer une transaction (DG)', 'https://dg.lnhq.ca/transactions.html'],
       ['Draft 2026', 'ordre.html', 'ordre'],
     ]],
     ['Ligue', [
@@ -140,6 +141,7 @@
             </div>
             ${SECTIONS.slice(2).map(([titre, items]) => sousMenu(titre, items, currentPage)).join('')}
             <a class="nav-btn" href="tv.html"${currentPage === 'tv' ? ' aria-current="page"' : ''}><span>TV</span></a>
+            <a class="nav-btn nav-dg" href="${URL_ESPACE_DG}"><span>Espace DG</span></a>
           </nav>
         </div>
         <div class="meta-row">

@@ -1,6 +1,6 @@
 /* =========================================================================
    LNHQ — fils d'annonces et de nouvelles, lus dans les onglets ANNONCES et
-   NOUVELLES du classeur (remplis par publier.lnhq.ca). Réglé par les attributs
+   NOUVELLES du classeur (remplis par dg.lnhq.ca). Réglé par les attributs
    de <main id="feed"> : data-tab (fil affiché au départ), data-form-url.
    Si la page a des onglets (.feed-tabs button[data-fil]), on passe d'un fil à
    l'autre sans recharger ; le fil choisi est dans l'adresse (?fil=nouvelles).
@@ -130,7 +130,7 @@
     return badge;
   }
 
-  // Couleurs de texte permises (même palette que l'éditeur de publier.lnhq.ca).
+  // Couleurs de texte permises (même palette que l'éditeur de dg.lnhq.ca).
   const COULEURS = ['#e8590c', '#e03131', '#2f9e44', '#1c7ed6', '#e0a800', '#868e96'];
 
   // Le texte vient de membres de la ligue : le HTML produit par le Markdown est
