@@ -20,7 +20,7 @@ export default {
       // Les pages de dg.lnhq.ca demandent d'abord la connexion Discord (CSS, scripts et
       // images restent servis : sans l'API, ils ne montrent rien de privé).
       if (surDg && estPage(url.pathname) && !(await lireSession(request, env))) {
-        return Response.redirect(`https://${HOTE_DG}/auth/discord/connexion?retour=` + encodeURIComponent(url.pathname + url.search), 302);
+        return pageConnexion(url.pathname + url.search);
       }
       return env.ASSETS.fetch(request);
     }
@@ -571,6 +571,29 @@ function b64url(octets) {
   let binaire = '';
   for (const o of octets) binaire += String.fromCharCode(o);
   return btoa(binaire).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Page de connexion de dg.lnhq.ca : Discord, ou la même page sur publier.lnhq.ca (courriel,
+// Cloudflare Access) pour ceux qui n'ont pas encore lié leur compte.
+function pageConnexion(chemin) {
+  const retour = adresseRetour(chemin);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const discord = '/auth/discord/connexion?retour=' + encodeURIComponent(retour);
+  const courriel = 'https://publier.lnhq.ca' + retour;
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow"><title>Connexion — LNHQ</title><link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
+<link rel="stylesheet" href="https://lnhq.ca/site.css?v=9"><link rel="stylesheet" href="/admin.css?v=4"></head><body><div class="app">
+<header class="app-header"><div class="header-row"><a class="brand" href="https://lnhq.ca/"><img class="brand-logo" src="https://lnhq.ca/logo-lnhq.png" alt="LNHQ"><h1 class="app-title">LNHQ</h1></a></div>
+<div class="meta-row"><span>Espace DG</span></div></header>
+<main class="adm-page"><section class="adm-carte adm-etroite">
+<h2 class="adm-titre">Connexion</h2>
+<p>Connecte-toi avec ton compte Discord pour accéder à l'espace des DG.</p>
+<a class="adm-bouton adm-discord" href="${esc(discord)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4A19.6 19.6 0 0 0 15.4 3l-.6 1.3a18.2 18.2 0 0 0-5.6 0L8.6 3a19.6 19.6 0 0 0-4.9 1.5C.6 9.1-.3 13.6.1 18.1a19.8 19.8 0 0 0 6 3l1.3-2.1a12.8 12.8 0 0 1-2-1l.5-.4a14.1 14.1 0 0 0 12.2 0l.5.4a12.8 12.8 0 0 1-2 1l1.3 2.1a19.7 19.7 0 0 0 6-3c.5-5.2-.9-9.7-3.6-13.7ZM8 15.3c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg>Se connecter avec Discord</a>
+<a class="adm-bouton adm-secondaire" href="${esc(courriel)}">Continuer avec mon courriel</a>
+<p class="adm-note">Ton compte n'est pas encore lié à Discord ? Le courriel fonctionne encore. Pour passer à Discord, lie ton compte une fois :
+<a href="https://publier.lnhq.ca/lier-discord.html">lier mon compte Discord</a>.</p>
+</section></main></div></body></html>`;
+  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
 
 function pageMessage(titre, texte, lien, libelle, cookie) {

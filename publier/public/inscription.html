@@ -7,7 +7,7 @@
 <title>Inscription DG — LNHQ</title>
 <link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
 <link rel="stylesheet" href="https://lnhq.ca/site.css?v=9">
-<link rel="stylesheet" href="admin.css?v=2">
+<link rel="stylesheet" href="admin.css?v=4">
 <script src="inscription-dg.js?v=1" defer></script>
 </head>
 <body>
@@ -38,8 +38,11 @@
         <button type="submit" class="adm-bouton" id="envoyer">Envoyer ma demande</button>
       </form>
       <a id="aller" class="adm-bouton" href="/" hidden>Aller à l'espace DG</a>
-      <p class="adm-note" id="noteLier" hidden>Déjà DG, inscrit avec un courriel ? Ne refais pas de demande :
-        <a href="https://publier.lnhq.ca/lier-discord.html">lie plutôt ton compte Discord</a>.</p>
+      <div class="adm-deja" id="noteLier" hidden>
+        <p class="adm-note">Déjà DG, inscrit avec un courriel ? Ne refais pas de demande :
+          <a href="https://publier.lnhq.ca/lier-discord.html">lie plutôt ton compte Discord</a>, ou continue avec ton courriel pour l'instant.</p>
+        <a class="adm-bouton adm-secondaire" href="https://publier.lnhq.ca/">Continuer avec mon courriel</a>
+      </div>
     </section>
   </main>
 </div>

@@ -13,6 +13,9 @@
 .adm-bouton:disabled{ opacity:0.6; cursor:wait; }
 .adm-bouton svg{ width:22px; height:22px; }
 .adm-discord{ background:#5865F2; color:#fff; }
+.adm-secondaire{ background:transparent; color:var(--ink); border:1px solid var(--line); font-weight:600; text-align:center; }
+.adm-note a{ color:var(--accent); }
+.adm-secondaire:hover{ border-color:var(--ink-muted); }
 .adm-etat{ padding:10px 12px; border-radius:8px; font-size:14px; font-weight:600; }
 .adm-etat.is-ok{ background:rgba(47,158,68,0.12); color:#2F9E44; }
 .adm-etat.is-erreur{ background:rgba(224,49,49,0.12); color:#E03131; }
@@ -48,6 +51,8 @@
 .adm-champ select{ height:44px; padding:0 12px; font:inherit; font-size:16px; width:100%; box-sizing:border-box;
   border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); }
 .adm-bouton[hidden]{ display:none; }
+.adm-deja{ display:flex; flex-direction:column; gap:10px; padding-top:12px; border-top:1px solid var(--line); }
+.adm-deja[hidden]{ display:none; }
 
 /* Demandes d'accès (admin) */
 .adm-demandes{ display:flex; flex-direction:column; gap:8px; margin:0; padding:0; list-style:none; }
