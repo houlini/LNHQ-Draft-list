@@ -158,4 +158,7 @@
 
   $('nonLies').addEventListener('change', afficher);
   charger().then(chargerResume);
+  // Retour arrière : le navigateur réaffiche la page gardée en mémoire, avec les compteurs
+  // d'avant (ex. une publication renvoyée à Discord entre-temps) ; on les relit.
+  window.addEventListener('pageshow', e => { if(e.persisted) charger().then(chargerResume); });
 })();
