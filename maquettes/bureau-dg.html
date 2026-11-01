@@ -677,6 +677,26 @@ body{ overflow-x:hidden; }
   box-shadow:0 20px 60px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
 }
 .bu-fond{ position:absolute; inset:0; width:100%; height:100%; display:block; user-select:none; pointer-events:none; }
+.ce-retour, .ce-tag-maquette{ display:none; }
+/* Plein écran (ordinateur) : la scène remplit la fenêtre du navigateur (barre d'adresse et barre des
+   tâches déjà déduites par 100dvh). L'en-tête du site disparaît ; les contrôles de la maquette
+   flottent, discrets, dans le coin en haut à gauche. */
+@media (min-width:900px){
+  .app:has(.bu-scene:not([hidden])) > .ce-maquette,
+  .app:has(.bu-scene:not([hidden])) > site-header{ display:none; }
+  .app:has(.bu-scene:not([hidden])) > .ce-bande{
+    position:fixed; top:10px; left:10px; z-index:300; width:auto; margin:0; padding:6px; gap:6px; flex-wrap:nowrap;
+    border-radius:12px; background:rgba(12,14,18,0.78); backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,0.45);
+    opacity:0.3; transition:opacity .2s; }
+  .app:has(.bu-scene:not([hidden])) > .ce-bande:hover, .app:has(.bu-scene:not([hidden])) > .ce-bande:focus-within{ opacity:1; }
+  .app:has(.bu-scene:not([hidden])) .ce-equipe-btn{ min-height:34px; font-size:14px; padding:0 12px 0 8px; }
+  .app:has(.bu-scene:not([hidden])) .ce-equipe-btn img{ width:24px; height:24px; }
+  .app:has(.bu-scene:not([hidden])) .ce-seg button{ min-height:30px; padding:0 10px; color:#fff; }
+  .app:has(.bu-scene:not([hidden])) .ce-retour{ display:inline-flex; align-items:center; padding:0 10px; min-height:34px; border-radius:9px; color:#fff; font-weight:700; font-size:13px; text-decoration:none; background:rgba(255,255,255,0.1); }
+  .app:has(.bu-scene:not([hidden])) .ce-tag-maquette{ display:inline-flex; align-items:center; padding:0 8px; border-radius:6px; background:#FFD43B; color:#12181F; font-size:10.5px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; }
+  .ce:has(> .bu-scene:not([hidden])){ padding:0; max-width:none; gap:0; justify-content:center; align-items:center; background:#050505; overflow:hidden; }
+  .bu-scene{ width:min(100vw, 100vh * 1.7769); width:min(100vw, 100dvh * 1.7769); border-radius:0; box-shadow:none; }
+}
 
 /* ---------- Zones : survol = halo doré + étiquette ---------- */
 .bu-objet{
@@ -888,9 +908,10 @@ body{ overflow-x:hidden; }
 .cart-nom.g{ color:#212529; }
 .cart-nom.vide{ color:#c92a2a; opacity:0.6; }
 /* ---------- Cahier : règlements (étiquette de la couverture) ---------- */
-.bu-cahier .bu-contenu{ left:31.5%; top:23.5%; width:49%; height:19.5%; display:flex; flex-direction:column; justify-content:center; padding:0 0.4cqw; background:#fbfbf7; color:#1a2533; line-height:1.15; }
-.bu-cahier b{ font:400 0.8cqw var(--marqueur); color:#c92a2a; }
-.bu-cahier small{ font-size:0.5cqw; color:#495057; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Écrit à la main directement sur l'étiquette de l'image (déformée en perspective, encre mêlée au papier). */
+.bu-cahier .bu-contenu{ inset:auto; left:0; top:0; width:7.7cqw; height:2.1cqw; transform-origin:0 0; display:flex; flex-direction:column; justify-content:center; align-items:center; overflow:visible; mix-blend-mode:multiply; line-height:1.05; }
+.bu-cahier b{ font:400 1cqw var(--marqueur); color:#b02525; rotate:-1deg; }
+.bu-cahier small{ max-width:100%; font:400 0.55cqw var(--ecrit); color:#343a40; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ---------- Cellulaire (à plat, en perspective) ---------- */
 /* Éteint par défaut ; s'allume et pulse quand une alerte attend le DG. */
@@ -1068,11 +1089,13 @@ body{ overflow-x:hidden; }
   <site-header class="app-header" current-page="calendrier"></site-header>
 
   <div class="filter-band ce-bande">
+    <a class="ce-retour" href="index.html" title="Retour au site">← LNHQ</a>
     <button type="button" class="ce-equipe-btn" id="equipeBtn"><img id="equipeLogo" alt=""><span id="equipeNom">Choisir mon équipe</span> ▾</button>
     <div class="ce-seg ce-mode" role="group" aria-label="Accès">
       <button type="button" data-mode="public" aria-pressed="true">👁 Public</button>
       <button type="button" data-mode="dg" aria-pressed="false">🔑 Mode DG</button>
     </div>
+    <span class="ce-tag-maquette">Maquette</span>
   </div>
 
   <main class="ce" id="ce" data-theme="planchette">
@@ -2091,6 +2114,7 @@ body{ overflow-x:hidden; }
     'o-cellulaire': [[0, 4], [76, 3], [23, 66], [107, 66]],       // téléphone à plat
     'o-align-g': [[163, 7], [346, 4], [42, 114], [315, 114]],     // cartable, page de gauche
     'o-align-d': [[367, 4], [559, 0], [330, 115], [563, 105]],    // cartable, page de droite
+    'o-reglements': [[95, 41], [223, 36], [121, 69], [247, 63]],  // étiquette du cahier
   };
   function ajusterPerspectives(){
     const scene = $('scene');
@@ -2469,6 +2493,7 @@ body{ overflow-x:hidden; }
     const { articles } = await chargerReglements();
     const r = reglementDuJour(articles);
     if(r) box.append(el('small', null, 'Du jour : ' + r.titre.charAt(0) + r.titre.slice(1).toLowerCase()));
+    ajusterPerspectives();
   }
 
   // Dépistage : le prochain adversaire (ou celui d'un match en retard) comparé à nous.
