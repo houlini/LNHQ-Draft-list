@@ -735,6 +735,7 @@ body{ overflow-x:hidden; }
   background:radial-gradient(130% 80% at 30% 0%, color-mix(in srgb, var(--ce-couleur) 30%, #0d1420), #05080d); }
 .ecr-tete{ display:flex; align-items:center; gap:0.45cqw; padding:0.45cqw 0.6cqw; background:rgba(0,0,0,0.45); font:600 0.78cqw 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; }
 .ecr-tete img{ width:1.3cqw; height:1.3cqw; object-fit:contain; }
+.ecr-tete > span:not(.points){ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ecr-tete small{ margin-left:auto; font:500 0.6cqw 'IBM Plex Sans', sans-serif; letter-spacing:0; text-transform:none; opacity:0.7; }
 
 /* Écran vertical : meneurs */
@@ -745,29 +746,62 @@ body{ overflow-x:hidden; }
 .men-liste li .pts{ grid-row:1 / span 2; grid-column:2; align-self:center; font:500 1.05cqw 'Orbitron', monospace; color:#ffb000; }
 .men-liste li:first-child .pts{ color:#ffd43b; text-shadow:0 0 0.4cqw rgba(255,212,59,0.6); }
 .men-sous{ padding:0.35cqw 0.6cqw 0; font:700 0.55cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#909aa5; }
+.men-liste li > img{ grid-row:1 / span 2; width:1.1cqw; height:1.1cqw; object-fit:contain; align-self:center; }
+.men-liste.logos li{ grid-template-columns:1.1cqw 1fr auto; }
+.men-liste.logos li small{ grid-column:2; }
+.men-liste.logos li .pts{ grid-column:3; }
+/* Boucle des diapos (écran vertical et télé) : une seule visible à la fois. */
+.diapo{ display:none; }
+.diapo.actif{ display:block; animation:apparait .5s ease; }
+@keyframes apparait{ from{ opacity:0; } }
+.points{ display:flex; gap:0.2cqw; margin-left:auto; }
+.points i{ width:0.35cqw; height:0.35cqw; border-radius:50%; background:rgba(255,255,255,0.25); }
+.points i.actif{ background:#ffb000; }
+.men-cats{ list-style:none; margin:0; padding:0.2cqw 0.5cqw; }
+.men-cats li{ display:grid; grid-template-columns:1fr 1.1cqw 2.3cqw; align-items:center; gap:0.3cqw; padding:0.32cqw 0; border-bottom:0.05cqw solid rgba(255,255,255,0.08); font-size:0.6cqw; color:#ced4da; }
+.men-cats li img{ width:1.1cqw; height:1.1cqw; object-fit:contain; }
+.men-cats li b{ text-align:right; font:500 0.72cqw 'Orbitron', monospace; color:#ffb000; }
+.men-cats li em{ font-style:normal; text-align:right; font-size:0.55cqw; color:#909aa5; }
+.men-cats.rangs li{ grid-template-columns:1fr 2cqw 1.6cqw; }
+.men-fiche{ padding:0.5cqw 0.6cqw 0.2cqw; text-align:center; }
+.men-fiche b{ display:block; font:500 1.35cqw 'Orbitron', monospace; color:#fff; }
+.men-fiche small{ font-size:0.58cqw; color:#adb5bd; }
+.forme{ display:flex; justify-content:center; gap:0.2cqw; margin-top:0.3cqw; }
+.forme i{ width:1cqw; height:1cqw; border-radius:0.2cqw; display:grid; place-items:center; font:700 0.5cqw 'IBM Plex Sans', sans-serif; font-style:normal; background:#2b8a3e; }
+.forme i.d{ background:#c92a2a; }
+.forme i.p{ background:#e8590c; }
 
-/* Grand écran : classement + prochain match */
-.bu-tele .bu-ecran{ display:grid; grid-template-columns:minmax(0, 1.25fr) minmax(0, 1fr); padding-bottom:3.2%; }
-.tv-colonne{ min-width:0; display:flex; flex-direction:column; }
-.tv-colonne + .tv-colonne{ border-left:0.06cqw solid rgba(255,255,255,0.1); }
-.tv-bandeau{ display:flex; align-items:center; justify-content:space-between; gap:0.4cqw; padding:0.5cqw 0.8cqw; background:rgba(0,0,0,0.45); font:600 0.85cqw 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; }
+/* Grand écran : LNHQ TV (fil de la ligue, ou les matchs en direct sur Twitch) */
+.bu-tele .bu-ecran{ display:flex; flex-direction:column; padding-bottom:3.2%; }
+.tv-bandeau{ display:flex; align-items:center; gap:0.6cqw; padding:0.45cqw 0.8cqw; background:rgba(0,0,0,0.55); font:600 0.85cqw 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; }
+.tv-bandeau img{ width:1.3cqw; height:1.3cqw; object-fit:contain; }
 .tv-direct{ display:inline-flex; align-items:center; gap:0.3cqw; padding:0.1cqw 0.45cqw; border-radius:0.3cqw; background:#e03131; color:#fff; font-size:0.65cqw; animation:clignote 1.4s steps(2) infinite; }
-.tv-table{ width:100%; border-collapse:collapse; font-size:0.85cqw; }
-.tv-table td{ padding:0.28cqw 0.6cqw; border-bottom:0.05cqw solid rgba(255,255,255,0.06); white-space:nowrap; }
-.tv-table td:first-child{ width:1.4cqw; color:#868e96; text-align:right; }
-.tv-table img{ width:1.25cqw; height:1.25cqw; object-fit:contain; vertical-align:middle; margin-right:0.4cqw; }
-.tv-table td.pts{ text-align:right; font-family:'Orbitron', monospace; color:#ffb000; }
-.tv-table td.fic{ text-align:right; color:#adb5bd; font-size:0.72cqw; }
-.tv-table tr.moi td{ background:color-mix(in srgb, var(--ce-couleur) 45%, transparent); color:#fff; font-weight:700; }
-.tv-match{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.6cqw; padding:0.6cqw; text-align:center; }
-.tv-quand{ font:600 1cqw 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.1em; color:#ffd43b; }
-.tv-duel{ display:flex; align-items:center; justify-content:center; gap:1.2cqw; }
-.tv-duel div{ display:flex; flex-direction:column; align-items:center; gap:0.25cqw; width:7cqw; }
-.tv-duel img{ width:4.2cqw; height:4.2cqw; object-fit:contain; filter:drop-shadow(0 0.3cqw 0.5cqw rgba(0,0,0,0.6)); }
-.tv-duel b{ font:500 0.95cqw 'Oswald', sans-serif; text-transform:uppercase; line-height:1.1; }
-.tv-duel small{ font-size:0.62cqw; color:#adb5bd; }
-.tv-duel > span{ font:700 1.4cqw 'Oswald', sans-serif; color:#868e96; }
-.tv-info{ font-size:0.72cqw; color:#ced4da; }
+.tv-diapos{ position:relative; flex:1; min-height:0; }
+.tv-diapos .diapo.actif{ display:flex; }
+.tv-nouv{ position:absolute; inset:0; flex-direction:column; justify-content:center; gap:0.5cqw; padding:0.8cqw 1.4cqw; }
+.tv-cat{ align-self:flex-start; padding:0.15cqw 0.6cqw; background:var(--cat, #1c7ed6); font:700 0.68cqw 'Oswald', sans-serif; letter-spacing:0.12em; text-transform:uppercase; }
+.tv-cat small{ margin-left:0.6cqw; font:500 0.6cqw 'IBM Plex Sans', sans-serif; letter-spacing:0; text-transform:none; opacity:0.85; }
+.tv-nouv h4{ margin:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font:600 1.75cqw/1.12 'Oswald', sans-serif; text-transform:uppercase; color:#fff; text-shadow:0 0.2cqw 0.6cqw rgba(0,0,0,0.6); }
+.tv-nouv p{ margin:0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; font-size:0.82cqw; line-height:1.4; color:#ced4da; }
+.tv-echange{ display:flex; gap:1.2cqw; }
+.tv-echange > div{ flex:1; min-width:0; display:grid; grid-template-columns:2.4cqw 1fr; gap:0.1cqw 0.6cqw; align-items:start; }
+.tv-echange img{ grid-row:1 / span 6; width:2.4cqw; height:2.4cqw; object-fit:contain; }
+.tv-echange small{ font:700 0.55cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#8ce99a; }
+.tv-echange span{ font-size:0.78cqw; color:#e9ecef; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tv-defile{ display:flex; align-items:center; overflow:hidden; background:#ffb000; color:#111; font:600 0.72cqw 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.04em; white-space:nowrap; }
+.tv-defile > b{ flex:none; z-index:1; padding:0.25cqw 0.6cqw; background:#111; color:#ffb000; }
+.tv-defile > div{ display:inline-flex; gap:2cqw; padding-left:2cqw; animation:defile var(--duree, 60s) linear infinite; }
+.bu-tele:hover .tv-defile > div{ animation-play-state:paused; }
+.tv-live{ flex:1; min-height:0; display:grid; gap:0.3cqw; padding:0.3cqw; grid-template-columns:repeat(var(--n, 1), minmax(0, 1fr)); }
+.tv-live[data-n="3"], .tv-live[data-n="4"]{ --n:2; grid-template-rows:1fr 1fr; }
+.tv-flux{ position:relative; min-height:0; overflow:hidden; background:#000 center / cover no-repeat; border-radius:0.2cqw; }
+.tv-flux::after{ content:''; position:absolute; inset:0; background:linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.85)); }
+.tv-flux .tv-direct{ position:absolute; top:0.4cqw; left:0.4cqw; z-index:1; }
+.tv-flux .tv-vues{ position:absolute; top:0.4cqw; right:0.4cqw; z-index:1; padding:0.1cqw 0.4cqw; border-radius:0.3cqw; background:rgba(0,0,0,0.6); font-size:0.6cqw; }
+.tv-flux .tv-qui{ position:absolute; left:0.5cqw; right:0.5cqw; bottom:0.4cqw; z-index:1; display:grid; grid-template-columns:auto 1fr; gap:0 0.5cqw; align-items:center; }
+.tv-qui img{ grid-row:1 / span 2; width:1.8cqw; height:1.8cqw; object-fit:contain; }
+.tv-qui b{ font:600 0.85cqw 'Oswald', sans-serif; text-transform:uppercase; }
+.tv-qui small{ font-size:0.6cqw; color:#ced4da; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* Tablette : plafond salarial */
 .bu-tablette .bu-ecran{ display:flex; align-items:center; gap:0.8cqw; padding:0.6cqw 0.8cqw; }
@@ -783,23 +817,31 @@ body{ overflow-x:hidden; }
 /* ---------- Tableau magnétique : alignement au marqueur ---------- */
 .bu-tableau .bu-contenu{ display:flex; flex-direction:column; justify-content:space-between; padding:0.7cqw 0.7cqw 0.9cqw; color:#1a3570; font-family:var(--marqueur);
   background:linear-gradient(160deg, #ffffff, #eef1f4 70%, #e3e8ec); }
-.tab-titre{ font-size:1.25cqw; line-height:1; color:#c92a2a; }
-.tab-groupe{ font:700 0.55cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.12em; text-transform:uppercase; color:#868e96; margin-top:0.3cqw; }
-.tab-ligne{ display:flex; flex-wrap:wrap; gap:0.15cqw 0.45cqw; }
-.tab-aimant{ display:inline-flex; align-items:center; gap:0.25cqw; font-size:0.78cqw; line-height:1.15; white-space:nowrap; }
-.tab-aimant::before{ content:''; flex:none; width:0.65cqw; height:0.65cqw; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fff 0 15%, var(--a, #1c7ed6) 45%, #0b2a55 100%); box-shadow:0 0.08cqw 0.12cqw rgba(0,0,0,0.4); }
-.tab-aimant.d{ --a:#e03131; color:#a61e1e; }
-.tab-aimant.g{ --a:#212529; color:#212529; }
+.tab-titre{ font-size:1.1cqw; line-height:1; color:#c92a2a; }
+.tab-groupe{ font:700 0.5cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.12em; text-transform:uppercase; color:#868e96; margin-top:0.2cqw; padding-left:0.75cqw; }
+/* Même grille pour toutes les lignes : nº de ligne puis une case par position (trios 3, paires 2, gardiens 2). */
+.tab-ligne{ display:grid; grid-template-columns:0.6cqw repeat(var(--n, 3), minmax(0, 1fr)); align-items:center; gap:0.25cqw; border-bottom:0.05cqw solid rgba(26,53,112,0.12); }
+.tab-ligne > i{ font:700 0.5cqw 'IBM Plex Sans', sans-serif; font-style:normal; color:#adb5bd; }
+.tab-aimant{ min-width:0; overflow:hidden; text-overflow:ellipsis; font-size:0.68cqw; line-height:1.3; white-space:nowrap; }
+.tab-aimant.d{ color:#a61e1e; }
+.tab-aimant.g{ color:#212529; }
+.tab-aimant.vide{ color:#c92a2a; opacity:0.6; }
 
 /* ---------- Calendrier : prochains matchs ---------- */
 .bu-calendrier .bu-contenu{ display:flex; flex-direction:column; background:#fbfaf6; color:#1a2533; }
 .cal-tete{ padding:0.3cqw 0.5cqw; background:var(--ce-couleur); color:var(--accent-ink); font:600 0.72cqw 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.06em; }
+.cal-dernier{ display:grid; grid-template-columns:1.9cqw 1fr 1.9cqw; align-items:center; gap:0.2cqw; padding:0.25cqw 0.4cqw; border-bottom:0.08cqw dashed #ced4da; }
+.cal-dernier img{ width:1.9cqw; height:1.9cqw; object-fit:contain; }
+.cal-dernier div{ text-align:center; line-height:1; }
+.cal-dernier b{ display:block; font:400 1.15cqw var(--marqueur); }
+.cal-dernier small{ font:700 0.48cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#868e96; }
+.cal-dernier .v{ color:#2b8a3e; } .cal-dernier .d{ color:#c92a2a; } .cal-dernier .p{ color:#e8590c; }
 .cal-liste{ list-style:none; margin:0; padding:0.15cqw 0.4cqw; flex:1; display:flex; flex-direction:column; justify-content:space-around; }
-.cal-liste li{ display:grid; grid-template-columns:3.2cqw 1cqw 1.1cqw 1fr; align-items:center; gap:0.2cqw; font-size:0.6cqw; }
+.cal-liste li{ display:grid; grid-template-columns:2.6cqw 1cqw 1.4cqw 1fr; align-items:center; gap:0.2cqw; font-size:0.62cqw; }
 .cal-liste li i{ font-style:normal; color:#5c6b7a; white-space:nowrap; }
 .cal-liste li span{ color:#868e96; text-align:center; }
-.cal-liste li img{ width:1.05cqw; height:1.05cqw; object-fit:contain; }
-.cal-liste li b{ font:400 0.7cqw var(--marqueur); }
+.cal-liste li img{ width:1.35cqw; height:1.35cqw; object-fit:contain; }
+.cal-liste li b{ font:400 0.85cqw var(--marqueur); }
 .cal-liste li.auj{ background:rgba(255,212,59,0.45); border-radius:0.2cqw; }
 .cal-liste li.retard b{ color:#c92a2a; }
 
@@ -845,10 +887,23 @@ body{ overflow-x:hidden; }
 .eff-ligne b{ font-weight:700; }
 
 /* ---------- Cellulaire (à plat, en perspective) ---------- */
-.bu-cell .bu-ecran{ inset:6% 8% 8% 6%; display:flex; flex-direction:column; justify-content:center; gap:0.15cqw; padding:0 0.4cqw; transform:skewX(-8deg); border-radius:0.4cqw; }
-.cell-notif{ padding:0.15cqw 0.3cqw; border-radius:0.3cqw; background:rgba(255,255,255,0.16); font-size:0.48cqw; line-height:1.2; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cell-notif b{ font-size:0.5cqw; }
-.cell-notif.alerte{ background:rgba(224,49,49,0.75); }
+/* Éteint par défaut ; s'allume et pulse quand une alerte attend le DG. */
+.bu-cell .bu-ecran{ inset:6% 8% 8% 6%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:0.15cqw; padding:0 0.4cqw; transform:skewX(-8deg); border-radius:0.4cqw; background:#05070a; color:rgba(255,255,255,0.25); text-align:center; }
+.bu-cell .bu-ecran > small{ font-size:0.5cqw; }
+.bu-cell.allume .bu-ecran{ background:radial-gradient(120% 90% at 50% 20%, #ff6b6b, #c92a2a 55%, #5c0f0f); color:#fff; animation:pulse-cell 1.6s ease-in-out infinite; }
+.bu-cell.allume.calme .bu-ecran{ background:radial-gradient(120% 90% at 50% 20%, #ffd43b, #e8590c 60%, #5c2a0f); }
+@keyframes pulse-cell{
+  0%, 100%{ box-shadow:0 0 0.3cqw 0.1cqw rgba(255,80,80,0.5); filter:brightness(1); }
+  50%{ box-shadow:0 0 1.6cqw 0.6cqw rgba(255,80,80,0.75); filter:brightness(1.25); } }
+.cell-nb{ font:700 1.3cqw 'Oswald', sans-serif; line-height:1; }
+.cell-txt{ max-width:100%; font:600 0.5cqw 'IBM Plex Sans', sans-serif; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media (prefers-reduced-motion: reduce){ .bu-cell.allume .bu-ecran{ animation:none; box-shadow:0 0 1cqw 0.4cqw rgba(255,80,80,0.6); } }
+.z-alertes{ display:grid; gap:10px; margin-bottom:20px; }
+.z-alerte{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; background:#fff; border-left:5px solid var(--a, #e03131); box-shadow:0 1px 3px rgba(0,0,0,0.12); color:#1a2533; }
+.z-alerte > i{ font-style:normal; font-size:22px; }
+.z-alerte div{ flex:1; min-width:0; }
+.z-alerte b{ display:block; }
+.z-alerte small{ color:#5c6b7a; }
 
 /* ---------- Chemise : étiquette « Dépistage » ---------- */
 .bu-chemise .bu-contenu{ left:31.5%; top:23.5%; width:49%; height:19.5%; display:flex; flex-direction:column; justify-content:center; padding:0 0.4cqw; background:#fbfbf7; color:#1a2533; line-height:1.1; }
@@ -999,8 +1054,8 @@ body{ overflow-x:hidden; }
       <img class="bu-fond" src="maquettes/bureau-dg-fond.webp" alt="" width="1672" height="941">
       <button type="button" class="bu-objet bu-del" data-objet="resultats" aria-label="Bandeau : résultats de la ligue"><div class="bu-ecran" id="o-del"></div></button>
       <button type="button" class="bu-objet bu-chandail" data-objet="fiche" aria-label="Chandail : fiche de l'équipe et du DG"><span class="bu-ecusson" id="o-ecusson"></span></button>
-      <button type="button" class="bu-objet bu-vertical" data-objet="meneurs" aria-label="Écran vertical : meneurs de l'équipe"><div class="bu-ecran" id="o-meneurs"></div></button>
-      <button type="button" class="bu-objet bu-tele" data-objet="tele" aria-label="Grand écran : classement et prochain match"><div class="bu-ecran" id="o-tele"></div></button>
+      <button type="button" class="bu-objet bu-vertical" data-objet="meneurs" aria-label="Écran vertical : stats de la ligue et de l'équipe"><div class="bu-ecran" id="o-meneurs"></div></button>
+      <button type="button" class="bu-objet bu-tele" data-objet="tele" aria-label="Grand écran : LNHQ TV, directs et fil de la ligue"><div class="bu-ecran" id="o-tele"></div></button>
       <button type="button" class="bu-objet bu-tableau" data-objet="cartable" aria-label="Tableau magnétique : alignement"><div class="bu-contenu" id="o-tableau"></div></button>
       <button type="button" class="bu-objet bu-calendrier" data-objet="calendrier" aria-label="Calendrier mural"><div class="bu-contenu" id="o-calendrier"></div></button>
       <button type="button" class="bu-objet bu-babillard" data-objet="babillard" aria-label="Babillard : annonces et nouvelles"><div class="bu-contenu" id="o-babillard"></div></button>
@@ -1009,7 +1064,7 @@ body{ overflow-x:hidden; }
       <button type="button" class="bu-objet bu-moniteur" data-objet="ordinateur" aria-label="Ordinateur : courriel et marché des transactions"><div class="bu-ecran" id="o-ordinateur"></div></button>
       <button type="button" class="bu-objet bu-postit" data-objet="postit" aria-label="Post-it : 2e gardien"><div class="bu-contenu" id="o-postit"></div></button>
       <button type="button" class="bu-objet bu-cartable" data-objet="effectif" aria-label="Cartable : effectif et ratings"><div class="bu-contenu" id="o-effectif"></div></button>
-      <button type="button" class="bu-objet bu-cell" data-objet="cellulaire" aria-label="Cellulaire : enchères des agents libres"><div class="bu-ecran" id="o-cellulaire"></div></button>
+      <button type="button" class="bu-objet bu-cell" data-objet="cellulaire" aria-label="Cellulaire : alertes et enchères"><div class="bu-ecran" id="o-cellulaire"></div></button>
       <button type="button" class="bu-objet bu-manette" data-objet="console" aria-label="Manette : soumettre un résultat"></button>
       <button type="button" class="bu-objet bu-chemise" data-objet="chemise" aria-label="Chemise : rapport de dépistage"><div class="bu-contenu" id="o-chemise"></div></button>
       <span class="bu-tasse" id="o-tasse"></span>
@@ -1949,9 +2004,9 @@ body{ overflow-x:hidden; }
   let moisZoom = '';                 // 'AAAA-MM' du grand calendrier
   const estPetit = () => matchMedia('(max-width: 899px)').matches;
   const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-  const ETIQUETTES = { calendrier: 'Calendrier', tele: 'Classement · prochain match · LNHQ TV', console: 'Console · soumettre un résultat', babillard: 'Annonces de la ligue',
-    cartable: 'Alignement', ordinateur: 'Courriel · transactions', postit: '2e gardien', cellulaire: 'Enchères', chemise: 'Dépistage',
-    resultats: 'Résultats de la ligue', meneurs: 'Meneurs · stats', plafond: 'Plafond salarial', effectif: 'Effectif · ratings', fiche: 'Fiche de l’équipe et du DG' };
+  const ETIQUETTES = { calendrier: 'Calendrier · dernier résultat', tele: 'LNHQ TV · directs et fil de la ligue', console: 'Console · soumettre un résultat', babillard: 'Annonces de la ligue',
+    cartable: 'Alignement', ordinateur: 'Courriel · transactions', postit: '2e gardien', cellulaire: 'Alertes · enchères', chemise: 'Dépistage',
+    resultats: 'Résultats de la ligue', meneurs: 'Stats · ligue et équipe', plafond: 'Plafond salarial', effectif: 'Effectif · ratings', fiche: 'Fiche de l’équipe et du DG' };
   const chargerDirect = () => unefois('direct', () => fetch('https://api.lnhq.ca/twitch').then(r => r.json()).catch(() => ({ chaines: [] })));
   const chargerFils = () => unefois('fils', () => Promise.all(['ANNONCES', 'NOUVELLES'].map(async s => {
     const t = await gvizTable('sheet=' + s);
@@ -2044,58 +2099,190 @@ body{ overflow-x:hidden; }
     box.replaceChildren(d);
   }
 
-  // Écran vertical : meneurs de l'équipe (points) et gardien nº 1.
+  // Boucle de diapos : une minuterie par écran (remplacée à chaque rendu) ; elle s'arrête au survol.
+  const minuteries = {};
+  function boucler(box, ms, auChangement){
+    clearInterval(minuteries[box.id]);
+    const diapos = [...box.querySelectorAll('.diapo')];
+    if(!diapos.length) return;
+    let i = 0;
+    const montrer = () => { diapos.forEach((d, k) => d.classList.toggle('actif', k === i)); if(auChangement) auChangement(i, diapos.length); };
+    montrer();
+    if(diapos.length > 1) minuteries[box.id] = setInterval(() => {
+      if(!box.isConnected){ clearInterval(minuteries[box.id]); return; }
+      if(box.closest('.bu-objet:hover')) return;
+      i = (i + 1) % diapos.length; montrer();
+    }, ms);
+  }
+  const fiche = x => x ? `${x.v}-${x.d}-${x.dp}` : '0-0-0';
+  const rangDe = (liste, code) => liste.findIndex(x => x.code === code) + 1;
+  const ordinal = n => n === 1 ? '1er' : n + 'e';
+  // Stats d'équipe de la ligue (écrans de fin de match), avec seulement les équipes qui ont joué.
+  const dec = (v, n) => v.toFixed(n).replace('.', ',');
+  const CATS_EQUIPE = [
+    ['Attaque (B/PJ)', 'bpMoy', 1, v => dec(v, 2)],
+    ['Défense (BC/PJ)', 'bcMoy', -1, v => dec(v, 2)],
+    ['Avantage num.', 'anPct', 1, v => dec(v, 1) + '%'],
+    ['Désavantage', 'dnPct', 1, v => dec(v, 1) + '%'],
+    ['Tirs / match', 'tirsMoy', 1, v => dec(v, 1)],
+    ['Mises au jeu', 'mjPct', 1, v => dec(v, 1) + '%'],
+  ];
+  const classerCat = (stats, cle, sens) => stats.filter(s => s.pj && s[cle] != null).sort((a, b) => sens * (b[cle] - a[cle]));
+  // Les 5 derniers matchs de l'équipe (V, D, DP), du plus ancien au plus récent.
+  const forme = () => {
+    const f = el('div', 'forme');
+    mesMatchs().filter(m => m.joue).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num)).slice(-5)
+      .forEach(m => { const r = resultatPour(m); f.append(el('i', r, r === 'v' ? 'V' : r === 'p' ? 'DP' : 'D')); });
+    return f;
+  };
+
+  // Écran vertical des stats : boucle sur meneurs de la ligue, meneurs de l'équipe, équipes de la ligue, mon équipe.
   async function apercuMeneurs(box){
-    const tete = el('div', 'ecr-tete'); tete.append(logo(equipe), el('span', null, 'Meneurs'));
+    const tete = el('div', 'ecr-tete'), titre = el('span', null, 'Stats'), points = el('span', 'points');
+    tete.append(logo(equipe), titre, points);
     box.replaceChildren(tete);
+    const { stats } = await chargerStats();
+    const tous = [...stats.values()];
+    const ligneJoueur = (j, avecLogo) => {
+      const li = el('li');
+      if(avecLogo) li.append(logo(j.equipe));
+      li.append(el('b', null, nomCourt(j.nom)), el('span', 'pts', j.p || '0'), el('small', null, `${j.b || 0} B · ${j.a || 0} A · ${j.pj || 0} PJ`));
+      return li;
+    };
+    const diapo = (nomDiapo, ...enfants) => { const d = el('div', 'diapo'); d.dataset.titre = nomDiapo; d.append(...enfants); return d; };
+    const parPoints = (a, b) => nombre(b.p) - nombre(a.p) || nombre(b.b) - nombre(a.b);
+
+    // 1. Ligue : meneurs
+    const ligue = el('ul', 'men-liste logos');
+    tous.filter(j => !j.gardien).sort(parPoints).slice(0, 7).forEach(j => ligue.append(ligneJoueur(j, true)));
+    const gl = tous.filter(j => j.gardien && nombre(j.pj) >= 3).sort((a, b) => nombre(b.parr) - nombre(a.parr))[0];
+    const d1 = diapo('Ligue · meneurs', ligue);
+    if(gl){ const u = el('ul', 'men-liste logos'), li = el('li'); li.append(logo(gl.equipe), el('b', null, nomCourt(gl.nom)), el('span', 'pts', gl.parr || '–'), el('small', null, `${gl.v || 0} V · ${gl.moy || '–'} MOY`)); u.append(li); d1.append(el('div', 'men-sous', 'Meilleur %ARR'), u); }
+
+    // 2. Équipe : meneurs et gardien nº 1
     const { patineurs, gardiens } = await statsEquipe();
-    const liste = el('ul', 'men-liste');
-    patineurs.slice(0, 6).forEach(j => {
-      const li = el('li'); li.append(el('b', null, nomCourt(j.nom)), el('span', 'pts', j.p || '0'), el('small', null, `${j.b || 0} B · ${j.a || 0} A · ${j.pj || 0} PJ`));
-      liste.append(li);
-    });
-    box.append(liste);
-    if(!patineurs.length) box.append(el('div', 'men-sous', 'Pas encore de stats'));
-    const g = gardiens[0];
-    if(g){
-      const lg = el('ul', 'men-liste'), li = el('li');
+    const eqListe = el('ul', 'men-liste');
+    patineurs.slice(0, 6).forEach(j => eqListe.append(ligneJoueur(j, false)));
+    const d2 = diapo(EQUIPES.get(equipe) ? equipe + ' · meneurs' : 'Meneurs', eqListe);
+    if(!patineurs.length) d2.append(el('div', 'men-sous', 'Pas encore de stats'));
+    if(gardiens[0]){
+      const g = gardiens[0], u = el('ul', 'men-liste'), li = el('li');
       li.append(el('b', null, nomCourt(g.nom)), el('span', 'pts', g.parr || '–'), el('small', null, `${g.v || 0} V · ${g.moy || '–'} MOY`));
-      lg.append(li);
-      box.append(el('div', 'men-sous', 'Gardien nº 1'), lg);
+      u.append(li); d2.append(el('div', 'men-sous', 'Gardien nº 1'), u);
     }
+
+    // 3. Ligue : équipes en tête de chaque catégorie
+    const se = R.statsEquipes(resultats, [...EQUIPES.keys()]);
+    const cats = el('ul', 'men-cats');
+    const tetePts = classement[0];
+    if(tetePts){ const li = el('li'); li.append(el('span', null, 'Points'), logo(tetePts.code), el('b', null, String(tetePts.pts))); cats.append(li); }
+    CATS_EQUIPE.forEach(([lib, cle, sens, f]) => {
+      const t = classerCat(se, cle, sens)[0];
+      if(!t) return;
+      const li = el('li'); li.append(el('span', null, lib), logo(t.code), el('b', null, f(t[cle]))); cats.append(li);
+    });
+    const d3 = diapo('Ligue · équipes', cats);
+
+    // 4. Mon équipe : fiche, rang et rang dans chaque catégorie
+    const moi = classement.find(x => x.code === equipe);
+    const div = divisionDe(equipe), rangDiv = div ? rangDe(R.classement(resultats, div.equipes), equipe) : 0;
+    const f = el('div', 'men-fiche');
+    f.append(el('b', null, fiche(moi)), el('small', null, (moi ? moi.pts : 0) + ' pts · ' + (rangDiv ? ordinal(rangDiv) + ' ' + div.nom : '') + ' · ' + ordinal(rangDe(classement, equipe) || classement.length) + ' ligue'), forme());
+    const rangs = el('ul', 'men-cats rangs');
+    const mes = se.find(s => s.code === equipe);
+    CATS_EQUIPE.forEach(([lib, cle, sens, fmt]) => {
+      if(!mes || mes[cle] == null) return;
+      const li = el('li'); li.append(el('span', null, lib), el('b', null, fmt(mes[cle])), el('em', null, ordinal(rangDe(classerCat(se, cle, sens), equipe))));
+      rangs.append(li);
+    });
+    const d4 = diapo(EQUIPES.get(equipe) ? equipe + ' · équipe' : 'Équipe', f, rangs);
+
+    box.append(d1, d2, d3, d4);
+    boucler(box, 8000, (i, n) => {
+      titre.textContent = box.querySelectorAll('.diapo')[i].dataset.titre;
+      points.replaceChildren(...Array.from({ length: n }, (_, k) => el('i', k === i ? 'actif' : '')));
+    });
   }
 
   function divisionDe(code){ return R.CONFERENCES.flatMap(c => c.divisions).find(d => d.equipes.includes(code)); }
-  // Grand écran : classement de la division et prochain match.
-  async function apercuTele(box){
-    const div = divisionDe(equipe);
-    const gauche = el('div', 'tv-colonne');
-    const tete = el('div', 'tv-bandeau'); tete.append(el('span', null, div ? div.nom : 'Classement'));
-    const table = el('table', 'tv-table');
-    R.classement(resultats, div ? div.equipes : null).slice(0, 8).forEach((x, i) => {
-      const tr = el('tr', x.code === equipe ? 'moi' : '');
-      const n = el('td'); n.append(logo(x.code), document.createTextNode(nom(x.code)));
-      tr.append(el('td', null, String(i + 1)), n, el('td', 'fic', `${x.v}-${x.d}-${x.dp}`), el('td', 'pts', String(x.pts)));
-      table.append(tr);
-    });
-    gauche.append(tete, table);
-    const droite = el('div', 'tv-colonne');
-    const tete2 = el('div', 'tv-bandeau'); tete2.append(el('span', null, 'Prochain match'));
-    const zone = el('div', 'tv-match');
-    const m = prochainMatch();
-    if(m){
-      const adv = m.v === equipe ? m.d : m.v;
-      const ecart = ecartJours(AUJ, m.date);
-      const cote = c => { const x = el('div'), t = classement.find(y => y.code === c); x.append(logo(c), el('b', null, nom(c)), el('small', null, t ? `${t.v}-${t.d}-${t.dp}` : '')); return x; };
-      const duel = el('div', 'tv-duel'); duel.append(cote(m.v), el('span', null, '@'), cote(m.d));
-      zone.append(el('div', 'tv-quand', ecart === 0 ? 'Ce soir' : ecart === 1 ? 'Demain' : 'Dans ' + ecart + ' jours'), duel,
-        el('div', 'tv-info', fCourt.format(parse(m.date)) + ' · ' + heureTexte(m.heure) + ' · ' + serieContre(adv)));
-    }else zone.append(el('div', 'tv-info', 'Plus de match à venir.'));
-    droite.append(tete2, zone);
-    box.replaceChildren(gauche, droite);
+
+  // Fil de la ligue : annonces, nouvelles et transactions, du plus récent au plus ancien.
+  const sansBalises = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/[*_#>`]+/g, '').replace(/\s+/g, ' ').trim();
+  const chargerFilTx = () => unefois('filTx', () => gvizTable('sheet=TRANSACTIONS').catch(() => ({ rows: [] })));
+  async function filLigue(){
+    const [[ann, nouv], tx] = await Promise.all([chargerFils(), chargerFilTx()]);
+    const echanges = cellules(tx).map((l, i) => ({ type: 'transaction', date: dateGviz(tx.rows[i].c[0] && tx.rows[i].c[0].v), titre: l[3],
+      details: (() => { try{ return JSON.parse(l[10] || '[]'); }catch(e){ return []; } })() })).filter(x => x.titre);
+    return [...ann.map(x => Object.assign({}, x, { type: 'annonce' })), ...nouv.map(x => Object.assign({}, x, { type: 'nouvelle' })), ...echanges]
+      .sort((a, b) => (b.date || 0) - (a.date || 0));
+  }
+  const CATS_FIL = { annonce: ['Annonce', '#e03131'], nouvelle: ['Nouvelle', '#1c7ed6'], transaction: ['Transaction', '#2b8a3e'] };
+  // Ce que chaque équipe reçoit dans une transaction.
+  function recus(details){
+    const parEquipe = new Map();
+    details.forEach(m => { if(!m.vers) return; if(!parEquipe.has(m.vers)) parEquipe.set(m.vers, []); parEquipe.get(m.vers).push(m); });
+    return [...parEquipe];
+  }
+  // Directs Twitch de la ligue. Maquette : ?direct=1 simule deux matchs en direct.
+  async function directsLigue(){
     const d = await chargerDirect();
-    const live = (d.chaines || []).filter(c => c.live && c.lnhq);
-    if(live.length) tete.append(el('span', 'tv-direct', '● EN DIRECT · ' + (live[0].nom || live[0].chaine)));
+    let live = (d.chaines || []).filter(c => c.live && c.lnhq);
+    if(!live.length && new URLSearchParams(location.search).get('direct')){
+      live = (d.chaines || []).slice(0, 2).map((c, i) => Object.assign({}, c, { live: true, lnhq: true, nom: c.chaine, titre: 'LNHQ · match de saison #' + (i + 1), spectateurs: 12 + i * 7,
+        vignette: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_' + c.chaine + '-640x360.jpg' }));
+    }
+    return live;
+  }
+
+  // Grand écran : LNHQ TV. Les matchs en direct sur Twitch ont priorité ; sinon le fil de la ligue en boucle.
+  async function apercuTele(box){
+    const tete = el('div', 'tv-bandeau');
+    tete.append(Object.assign(el('img'), { src: 'logo-lnhq.png', alt: '' }), el('span', null, 'LNHQ TV'));
+    box.replaceChildren(tete);
+    const live = await directsLigue();
+    if(live.length){
+      clearInterval(minuteries[box.id]);
+      tete.append(el('span', 'tv-direct', '● EN DIRECT'), el('small', null, live.length + ' match' + (live.length > 1 ? 's' : '')));
+      const grille = el('div', 'tv-live'); grille.dataset.n = String(Math.min(4, live.length)); grille.style.setProperty('--n', Math.min(2, live.length));
+      live.slice(0, 4).forEach(c => {
+        const f = el('div', 'tv-flux');
+        if(c.vignette) f.style.backgroundImage = `url("${c.vignette}${c.vignette.includes('?') ? '&' : '?'}t=${Math.floor(Date.now() / 300000)}")`;
+        const qui = el('div', 'tv-qui'); qui.append(logo(c.code), el('b', null, c.dg || c.nom || c.chaine), el('small', null, c.titre || ''));
+        f.append(el('span', 'tv-direct', '● DIRECT'), el('span', 'tv-vues', '👁 ' + (c.spectateurs || 0)), qui);
+        grille.append(f);
+      });
+      box.append(grille);
+      return;
+    }
+    const fil = (await filLigue()).slice(0, 10);
+    const diapos = el('div', 'tv-diapos');
+    fil.forEach(x => {
+      const [lib, coul] = CATS_FIL[x.type];
+      const d = el('div', 'diapo tv-nouv');
+      const cat = el('span', 'tv-cat', lib); cat.style.setProperty('--cat', coul);
+      if(x.date) cat.append(el('small', null, fMois.format(x.date)));
+      d.append(cat, el('h4', null, x.titre));
+      if(x.type === 'transaction'){
+        const ech = el('div', 'tv-echange');
+        recus(x.details).slice(0, 2).forEach(([code, l]) => {
+          const c = el('div'); c.append(logo(code), el('small', null, code + ' reçoit'), ...l.slice(0, 4).map(m => el('span', null, m.joueur ? prenomNom(m.joueur) + (m.po ? ' · ' + m.po : '') : (m.type || 'Choix'))));
+          ech.append(c);
+        });
+        d.append(ech);
+      }else{
+        const t = sansBalises(x.texte);
+        if(t) d.append(el('p', null, t.slice(0, 260)));
+      }
+      diapos.append(d);
+    });
+    if(!fil.length){ const d = el('div', 'diapo tv-nouv'); d.append(el('h4', null, 'Rien de neuf dans la ligue')); diapos.append(d); }
+    const bas = el('div', 'tv-defile'), rang = el('div');
+    fil.forEach(x => { const lib = CATS_FIL[x.type][0]; rang.append(el('span', null, x.titre.toLowerCase().startsWith(lib.toLowerCase()) ? x.titre : lib + ' · ' + x.titre)); });
+    rang.append(...[...rang.children].map(s => s.cloneNode(true)));
+    rang.style.setProperty('--duree', Math.max(30, fil.length * 7) + 's');
+    bas.append(el('b', null, 'Fil LNHQ'), rang);
+    box.append(diapos, bas);
+    boucler(box, 9000);
   }
 
   // Tableau magnétique : trios, paires et gardien écrits au marqueur.
@@ -2110,25 +2297,34 @@ body{ overflow-x:hidden; }
   async function apercuTableau(box){
     box.replaceChildren(el('div', 'tab-titre', 'Alignement'));
     const { compo } = await chargerAlignement();
-    const aimant = (id, cls) => { const j = compo.places[id]; return el('span', 'tab-aimant' + (cls ? ' ' + cls : ''), j ? j.famille : '—'); };
-    const ligne = (ids, cls) => { const l = el('div', 'tab-ligne'); l.append(...ids.map(id => aimant(id, cls))); return l; };
-    box.append(el('div', 'tab-groupe', 'Trios'), ligne(['A1G', 'A1C', 'A1D']), ligne(['A2G', 'A2C', 'A2D']), ligne(['A3G', 'A3C', 'A3D']),
-      el('div', 'tab-groupe', 'Défense'), ligne(['D1G', 'D1D'], 'd'), ligne(['D2G', 'D2D'], 'd'), ligne(['D3G', 'D3D'], 'd'),
-      el('div', 'tab-groupe', 'Devant le filet'), ligne(['G1', 'G2'], 'g'));
+    const aimant = (id, cls) => { const j = compo.places[id]; return el('span', 'tab-aimant' + (cls ? ' ' + cls : '') + (j ? '' : ' vide'), j ? j.famille : '—'); };
+    const ligne = (n, ids, cls) => { const l = el('div', 'tab-ligne'); l.style.setProperty('--n', ids.length); l.append(el('i', null, n), ...ids.map(id => aimant(id, cls))); return l; };
+    box.append(el('div', 'tab-groupe', 'Attaquants'), ...[1, 2, 3, 4].map(n => ligne(String(n), ['A' + n + 'G', 'A' + n + 'C', 'A' + n + 'D'])),
+      el('div', 'tab-groupe', 'Défenseurs'), ...[1, 2, 3].map(n => ligne(String(n), ['D' + n + 'G', 'D' + n + 'D'], 'd')),
+      el('div', 'tab-groupe', 'Gardiens'), ligne('', ['G1', 'G2'], 'g'));
   }
 
-  // Calendrier : les 5 prochains matchs (et les retards en premier).
+  // Calendrier : le dernier résultat en grand, puis les prochains matchs (les retards en premier).
   function apercuCalendrier(box){
-    const tete = el('div', 'cal-tete', NOM_MOIS_CAP(parse(AUJ).getMonth()) + ' · à venir');
+    const tete = el('div', 'cal-tete', NOM_MOIS_CAP(parse(AUJ).getMonth()) + ' ' + parse(AUJ).getFullYear());
+    const blocs = [tete];
+    const dernier = mesMatchs().filter(m => m.joue).sort((a, b) => b.date.localeCompare(a.date) || Number(b.num) - Number(a.num))[0];
+    if(dernier){
+      const r = resultatPour(dernier), pour = dernier.v === equipe ? dernier.bv : dernier.bd, contre = dernier.v === equipe ? dernier.bd : dernier.bv;
+      const d = el('div', 'cal-dernier'), mil = el('div');
+      mil.append(el('b', r, pour + ' – ' + contre), el('small', null, (r === 'v' ? 'Victoire' : r === 'p' ? 'Déf. ' + (R.FINS[dernier.fin] || 'prol.') : 'Défaite') + ' · ' + fMois.format(parse(dernier.date))));
+      d.append(logo(equipe), mil, logo(dernier.v === equipe ? dernier.d : dernier.v));
+      blocs.push(d);
+    }
     const liste = el('ol', 'cal-liste');
-    [...retards(), ...mesMatchs().filter(m => !m.joue && m.date >= AUJ).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num))].slice(0, 5).forEach(m => {
+    [...retards(), ...mesMatchs().filter(m => !m.joue && m.date >= AUJ).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num))].slice(0, dernier ? 3 : 5).forEach(m => {
       const adv = m.v === equipe ? m.d : m.v;
       const li = el('li', m.date === AUJ ? 'auj' : m.date < AUJ ? 'retard' : '');
       li.append(el('i', null, m.date === AUJ ? 'Ce soir' : fMois.format(parse(m.date))), el('span', null, m.v === equipe ? '@' : 'vs'), logo(adv), el('b', null, m.date < AUJ ? adv + ' !' : adv));
       liste.append(li);
     });
     if(!liste.children.length) liste.append(el('li', null, 'Plus de match.'));
-    box.replaceChildren(tete, liste);
+    box.replaceChildren(...blocs, liste);
   }
   const NOM_MOIS_CAP = m => NOMS_MOIS[m].charAt(0).toUpperCase() + NOMS_MOIS[m].slice(1);
 
@@ -2241,20 +2437,32 @@ body{ overflow-x:hidden; }
     box.append(ligne(pros.length + ' joueurs', 'GÉN ' + moy), ...pros.slice(0, 3).map(j => ligne(famille(j.id), String(j.ov))));
   }
 
-  // Cellulaire : enchères (jetons, dépassé, en tête).
+  // Alertes du DG : offre reçue, match en retard, 2e gardien pas déclaré, enchère dépassée.
+  // urgent = rouge ; les autres allument le cellulaire en orange.
+  async function alertesDG(){
+    if(!estDG()) return [];
+    const l = [];
+    courriels().filter(c => c.type === 'offre' && c.nonlu).forEach(c => l.push({ icone: '🔁', titre: 'Offre de transaction', texte: nom(c.de) + ' · ' + c.apercu, objet: 'ordinateur', bouton: 'Voir l’offre', urgent: true }));
+    retards().forEach(m => l.push({ icone: '⏰', titre: 'Match en retard', texte: fCourt.format(parse(m.date)) + ' · ' + (m.v === equipe ? '@ ' : 'vs ') + nom(m.v === equipe ? m.d : m.v), objet: 'console', bouton: 'Soumettre', urgent: true }));
+    const per = periodeCourante();
+    if(per && !declaration(equipe, per.num)) l.push({ icone: '🥅', titre: '2e gardien pas déclaré', texte: 'Période ' + per.num + ' · fin le ' + fMois.format(parse(per.fin)), objet: 'postit', bouton: 'Déclarer', urgent: false });
+    try{
+      const [d] = await chargerEncheres();
+      const misees = new Set(d.mises.filter(m => m.equipe === equipe).map(m => m.id));
+      d.encheres.filter(e => e.statut === 'En cours' && misees.has(e.id) && e.equipe !== equipe && !e.egalite.includes(equipe))
+        .forEach(e => l.push({ icone: '💰', titre: 'Enchère dépassée', texte: prenomNom(e.joueur) + ' · ' + e.mise + ' par ' + e.equipe, objet: 'agents', bouton: 'Relancer', urgent: false }));
+    }catch(e){ console.warn(e); }
+    return l;
+  }
+  // Cellulaire : éteint s'il n'y a rien ; allumé et pulsant quand une alerte attend.
   async function apercuCellulaire(box){
-    box.replaceChildren();
-    const notif = (titre, texte, cls) => { const n = el('div', 'cell-notif' + (cls ? ' ' + cls : '')); n.append(el('b', null, titre + ' '), document.createTextNode(texte)); box.append(n); };
-    if(!estDG()){ notif('🔒', 'Téléphone du DG'); return; }
-    const [d] = await chargerEncheres();
-    const eq = d.equipes.find(x => x.code === equipe) || { disponibles: 0 };
-    const misees = new Set(d.mises.filter(m => m.equipe === equipe).map(m => m.id));
-    const ouvertes = d.encheres.filter(e => e.statut === 'En cours');
-    const battue = ouvertes.find(e => misees.has(e.id) && e.equipe !== equipe && !e.egalite.includes(equipe));
-    if(battue) notif('Dépassé', famille(battue.joueur) + ' · ' + battue.mise, 'alerte');
-    const tete = ouvertes.filter(e => e.equipe === equipe).length;
-    if(tete) notif('En tête', tete + ' enchère' + (tete > 1 ? 's' : ''));
-    notif('💰', eq.disponibles + ' jetons');
+    const cell = box.closest('.bu-cell');
+    const heure = () => { const h = new Date(); return String(h.getHours()).padStart(2, '0') + ':' + String(h.getMinutes()).padStart(2, '0'); };
+    const alertes = await alertesDG();
+    cell.classList.toggle('allume', alertes.length > 0);
+    cell.classList.toggle('calme', alertes.length > 0 && !alertes.some(a => a.urgent));
+    if(!alertes.length){ box.replaceChildren(el('small', null, estDG() ? heure() : '🔒')); return; }
+    box.replaceChildren(el('span', 'cell-nb', String(alertes.length)), el('span', 'cell-txt', alertes[0].icone + ' ' + alertes[0].titre));
   }
 
   // Chemise : étiquette « Dépistage » et le meilleur espoir.
@@ -2270,16 +2478,16 @@ body{ overflow-x:hidden; }
     const t = classement.find(x => x.code === equipe) || { v: 0, d: 0, dp: 0, pts: 0 };
     const per = periodeCourante(), dcl = per && declaration(equipe, per.num), m = prochainMatch();
     const tuiles = [
-      ['tele', '📺', 'Classement', `${t.v}-${t.d}-${t.dp} · ${t.pts} pts` + (m ? ' · prochain : ' + (m.v === equipe ? '@ ' : 'vs ') + (m.v === equipe ? m.d : m.v) : '')],
+      ['tele', '📺', 'LNHQ TV', 'Directs, annonces, nouvelles, transactions'],
       ['resultats', '🚨', 'Résultats', 'Toute la ligue'],
-      ['calendrier', '📅', 'Calendrier', retards().length ? retards().length + ' match(s) en retard' : 'Les prochains matchs'],
+      ['calendrier', '📅', 'Calendrier', retards().length ? retards().length + ' match(s) en retard' : m ? 'Prochain : ' + (m.v === equipe ? '@ ' : 'vs ') + (m.v === equipe ? m.d : m.v) : 'Les prochains matchs'],
       ['console', '🎮', 'Console', estDG() ? 'Soumettre un résultat' : 'Derniers résultats'],
-      ['meneurs', '📈', 'Meneurs', 'Stats de l’équipe'],
+      ['meneurs', '📈', 'Stats', `${t.v}-${t.d}-${t.dp} · ${t.pts} pts · meneurs et classement`],
       ['cartable', '🧲', 'Alignement', 'Trios, paires et gardiens'],
       ['effectif', '🗂️', 'Effectif', 'Joueurs et ratings'],
       ['plafond', '💵', 'Plafond', 'Masse salariale'],
       ['ordinateur', '🖥️', estDG() ? 'Courriel' : 'Transactions', estDG() ? courriels().filter(x => x.nonlu).length + ' non lus' : 'Marché et historique'],
-      ['cellulaire', '📱', 'Enchères', 'Agents libres'],
+      ['cellulaire', '📱', 'Alertes', estDG() ? 'Offres, retards, 2e gardien, enchères' : 'Enchères des agents libres'],
       ['postit', '📝', '2e gardien', dcl ? 'Déclaré ✔' : 'À déclarer'],
       ['chemise', '📁', 'Dépistage', 'Espoirs et adversaires'],
       ['babillard', '📌', 'Annonces', 'Babillard de la ligue'],
@@ -2325,15 +2533,34 @@ body{ overflow-x:hidden; }
   function zoomMeneurs(){
     const blocs = [titreZoom('Statistiques', nom(equipe))];
     const zone = el('div', 'ce-cartes2'); zone.append(el('p', 'ce-vide', 'On compile les feuilles de match…'));
-    blocs.push(zone);
-    statsEquipe().then(({ patineurs, gardiens }) => {
+    const ligue = el('div', 'ce-cartes2'); ligue.style.marginTop = '16px';
+    blocs.push(zone, ligue);
+    Promise.all([statsEquipe(), chargerStats()]).then(([{ patineurs, gardiens }, { stats }]) => {
       const p = el('section', 'ce-carte'); p.append(el('h3', null, 'Patineurs'));
       p.append(patineurs.length ? tableau(['Joueur', 'PJ', 'B', 'A', 'PTS', '+/-'], patineurs.map(j => rangee([[prenomNom(j.nom)], [j.pj || '0'], [j.b || '0'], [j.a || '0'], [j.p || '0', 'fort'], [j.pm || '0']]))) : el('p', 'ce-vide', 'Pas encore de stats.'));
       const g = el('section', 'ce-carte'); g.append(el('h3', null, 'Gardiens'));
       g.append(gardiens.length ? tableau(['Gardien', 'PJ', 'V', 'D', '%ARR', 'MOY'], gardiens.map(j => rangee([[prenomNom(j.nom)], [j.pj || '0'], [j.v || '0'], [j.d || '0'], [j.parr || '–', 'fort'], [j.moy || '–']]))) : el('p', 'ce-vide', 'Pas encore de stats.'));
-      const lien = Object.assign(el('a', 'z-lien', 'Toutes les stats de la ligue →'), { href: 'stats.html' });
       zone.replaceChildren(p, g);
-      zone.after(lien);
+      // Meneurs de la ligue et stats de l'équipe comparées au reste de la ligue.
+      const m = el('section', 'ce-carte'); m.append(el('h3', null, 'Meneurs de la ligue'));
+      const top = [...stats.values()].filter(j => !j.gardien).sort((a, b) => nombre(b.p) - nombre(a.p) || nombre(b.b) - nombre(a.b)).slice(0, 10);
+      m.append(tableau(['Joueur', 'PJ', 'B', 'A', 'PTS'], top.map(j => rangee([[avecLogo(j.equipe, prenomNom(j.nom))], [j.pj || '0'], [j.b || '0'], [j.a || '0'], [j.p || '0', 'fort']], j.equipe === equipe ? 'moi' : ''))));
+      const se = R.statsEquipes(resultats, [...EQUIPES.keys()]), mes = se.find(s => s.code === equipe);
+      const e = el('section', 'ce-carte'); e.append(el('h3', null, 'Stats d’équipe'));
+      e.append(tableau(['Catégorie', nom(equipe), 'Rang', 'Meneur'], CATS_EQUIPE.map(([lib, cle, sens, f]) => {
+        const l = classerCat(se, cle, sens);
+        return rangee([[lib], [mes && mes[cle] != null ? f(mes[cle]) : '–', 'fort'], [mes && mes[cle] != null ? ordinal(rangDe(l, equipe)) : '–'], [l[0] ? avecLogo(l[0].code, f(l[0][cle])) : '–']]);
+      })));
+      ligue.replaceChildren(m, e);
+      // Classement de la conférence (était sur la télé).
+      const conf = R.CONFERENCES.find(c => c.divisions.some(d => d.equipes.includes(equipe))) || R.CONFERENCES[0];
+      const cl = el('div', 'ce-cartes2'); cl.style.marginTop = '16px';
+      conf.divisions.forEach(dv => {
+        const c = el('section', 'ce-carte'); c.append(el('h3', null, dv.nom));
+        c.append(tableau(['Équipe', 'PJ', 'V', 'D', 'DP', 'PTS'], R.classement(resultats, dv.equipes).map(x => rangee([[avecLogo(x.code, nom(x.code))], [String(x.pj)], [String(x.v)], [String(x.d)], [String(x.dp)], [String(x.pts), 'fort']], x.code === equipe ? 'moi' : ''))));
+        cl.append(c);
+      });
+      ligue.after(cl, Object.assign(el('a', 'z-lien', 'Toutes les stats de la ligue →'), { href: 'stats.html' }));
     }).catch(() => zone.replaceChildren(el('p', 'ce-vide', 'Stats indisponibles pour le moment.')));
     return blocs;
   }
@@ -2459,7 +2686,7 @@ body{ overflow-x:hidden; }
       cartable: () => [panneau('p-alignement', rendreAlignement)],
       ordinateur: zoomOrdinateur,
       postit: zoomPostit,
-      cellulaire: () => [panneau('p-agents', rendreAgents)],
+      cellulaire: zoomCellulaire,
       chemise: zoomChemise,
       console: zoomConsole,
       resultats: zoomResultats,
@@ -2486,34 +2713,57 @@ body{ overflow-x:hidden; }
     return blocs;
   }
 
+  // Télé (zoom) : les directs de la ligue, puis tout le fil (annonces, nouvelles, transactions).
   function zoomTele(){
-    const conf = R.CONFERENCES.find(c => c.divisions.some(d => d.equipes.includes(equipe))) || R.CONFERENCES[0];
-    const blocs = [titreZoom('Classement', conf.nom)];
-    const grille = el('div', 'ce-cartes2');
-    conf.divisions.forEach(dv => {
-      const c = el('section', 'ce-carte');
-      c.append(el('h3', null, dv.nom));
-      const t = el('table', 'tv-table'); t.style.fontSize = '14px';
-      const th = el('tr'); ['#', 'Équipe', 'PJ', 'V', 'D', 'DP', 'PTS'].forEach(x => th.append(el('td', null, x))); th.style.opacity = '.6'; t.append(th);
-      R.classement(resultats, dv.equipes).forEach((x, i) => {
-        const tr = el('tr', x.code === equipe ? 'moi' : '');
-        const n = el('td'); const img = logo(x.code); img.style.cssText = 'width:22px;height:22px'; n.append(img, document.createTextNode(nom(x.code)));
-        tr.append(el('td', null, String(i + 1)), n, el('td', null, String(x.pj)), el('td', null, String(x.v)), el('td', null, String(x.d)), el('td', null, String(x.dp)), el('td', 'pts', String(x.pts)));
-        t.append(tr);
+    const tv = el('section', 'ce-carte');
+    tv.append(el('h3', null, '📺 En direct'), el('p', 'ce-vide', 'On syntonise…'));
+    directsLigue().then(live => {
+      tv.lastChild.remove();
+      if(!live.length){ tv.append(el('p', 'ce-vide', 'Aucun match en direct pour l’instant.')); return; }
+      const g = el('div', 'tv-live'); g.dataset.n = String(Math.min(4, live.length)); g.style.cssText = `--n:${Math.min(2, live.length)};font-size:16px;container-type:inline-size;aspect-ratio:16/9`;
+      live.slice(0, 4).forEach(c => {
+        const a = el('a', 'tv-flux'); a.href = 'tv.html?chaine=' + encodeURIComponent(c.chaine); a.style.color = '#fff';
+        if(c.vignette) a.style.backgroundImage = `url("${c.vignette}")`;
+        const qui = el('div', 'tv-qui'); qui.append(logo(c.code), el('b', null, c.dg || c.nom || c.chaine), el('small', null, c.titre || ''));
+        a.append(el('span', 'tv-direct', '● DIRECT'), el('span', 'tv-vues', '👁 ' + (c.spectateurs || 0)), qui);
+        g.append(a);
       });
-      c.append(t);
-      grille.append(c);
+      tv.append(g);
     });
-    blocs.push(grille);
-    const tv = el('section', 'ce-carte'); tv.style.marginTop = '16px';
-    tv.append(el('h3', null, '📺 LNHQ TV'));
-    chargerDirect().then(d => {
-      const live = (d.chaines || []).filter(c => c.live && c.lnhq);
-      if(!live.length) tv.append(el('p', 'ce-vide', 'Personne en direct pour l’instant.'));
-      live.forEach(c => { const a = el('a', 'ce-btn', '● ' + (c.nom || c.chaine) + (c.equipe ? ' · ' + c.equipe : '')); a.href = 'tv.html?chaine=' + encodeURIComponent(c.chaine); a.style.cssText = 'color:#fff;margin:4px 8px 0 0'; tv.append(a); });
+    const fil = el('div', 'ce-liste'); fil.style.marginTop = '16px';
+    fil.append(el('p', 'ce-vide', 'On imprime le fil…'));
+    filLigue().then(l => {
+      fil.replaceChildren(...l.slice(0, 25).map(x => {
+        const [lib, coul] = CATS_FIL[x.type];
+        const c = el('section', 'ce-carte');
+        const cat = el('span', 'tv-cat', lib); cat.style.cssText = `--cat:${coul};font-size:11px;padding:2px 8px;display:inline-block;color:#fff`;
+        const h = el('h3'); h.append(el('span', null, x.titre), el('small', null, x.date ? fCourt.format(x.date) : ''));
+        c.append(cat, h);
+        if(x.type === 'transaction') recus(x.details).forEach(([code, m]) => { const p = el('p'); p.append(avecLogo(code, ' ' + nom(code) + ' reçoit : ' + m.map(y => y.joueur ? prenomNom(y.joueur) : (y.type || 'choix')).join(', '))); c.append(p); });
+        else if(sansBalises(x.texte)) c.append(el('p', null, sansBalises(x.texte).slice(0, 400)));
+        return c;
+      }));
+      if(!l.length) fil.replaceChildren(el('p', 'ce-vide', 'Rien de neuf dans la ligue.'));
+    }).catch(() => fil.replaceChildren(el('p', 'ce-vide', 'Fil indisponible pour le moment.')));
+    return [titreZoom('LNHQ TV', 'directs et fil de la ligue'), tv, fil];
+  }
+
+  // Cellulaire (zoom) : les alertes avec leur action, puis les enchères des agents libres.
+  function zoomCellulaire(){
+    const zone = el('div', 'z-alertes');
+    zone.append(el('p', 'ce-vide', estDG() ? 'On vérifie les notifications…' : '🔒 Les alertes sont réservées au DG.'));
+    if(estDG()) alertesDG().then(l => {
+      if(!l.length){ zone.replaceChildren(el('p', 'ce-vide', 'Aucune alerte. Tout est à jour ✔')); return; }
+      zone.replaceChildren(...l.map(a => {
+        const c = el('div', 'z-alerte'); c.style.setProperty('--a', a.urgent ? '#e03131' : '#e8590c');
+        const t = el('div'); t.append(el('b', null, a.titre), el('small', null, a.texte));
+        const b = el('button', 'ce-bouton is-principal', a.bouton); b.type = 'button';
+        b.addEventListener('click', () => { if(a.objet === 'agents') $('p-agents').scrollIntoView({ behavior: 'smooth' }); else ouvrirZoom(a.objet); });
+        c.append(el('i', null, a.icone), t, b);
+        return c;
+      }));
     });
-    blocs.push(tv);
-    return blocs;
+    return [titreZoom('Alertes', estDG() ? 'cellulaire du DG' : ''), zone, panneau('p-agents', rendreAgents)];
   }
 
   function zoomOrdinateur(){
