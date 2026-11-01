@@ -954,6 +954,20 @@ body{ overflow-x:hidden; }
 .mail-ligne img{ width:1.5cqw; height:1.5cqw; object-fit:contain; }
 .mail-ligne span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mail-ligne small{ font-size:0.6cqw; color:#868e96; font-weight:500; }
+/* Bureau de l'Espace DG : fond aux couleurs de l'équipe, barre du haut, 8 boutons (4 × 2) au-dessus
+   du coin du post-it (le bas de l'écran reste libre). */
+.os{ height:100%; display:flex; flex-direction:column; color:#fff;
+  background:radial-gradient(120% 120% at 20% 0%, color-mix(in srgb, var(--ce-couleur) 75%, #000), #0b0d10 75%); }
+.os-barre{ flex:none; display:flex; align-items:center; gap:0.4cqw; padding:0.25cqw 0.5cqw; background:rgba(0,0,0,0.45); font:600 0.6cqw 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; }
+.os-barre img{ width:0.9cqw; height:0.9cqw; object-fit:contain; }
+.os-barre span{ margin-left:auto; font:500 0.6cqw 'IBM Plex Sans', sans-serif; letter-spacing:0; opacity:0.85; }
+.os-apps{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); grid-auto-rows:3.05cqw; gap:0.3cqw; padding:0.4cqw 0.5cqw 0; }
+.os-app{ position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.15cqw; padding:0.15cqw; border:none; border-radius:0.35cqw;
+  background:rgba(255,255,255,0.1); color:#fff; font:inherit; cursor:pointer; transition:background .15s, transform .15s; }
+.os-app:hover, .os-app:focus-visible{ background:rgba(255,255,255,0.24); transform:translateY(-0.05cqw); outline:none; }
+.os-icone{ font-size:1.15cqw; line-height:1; }
+.os-app b{ max-width:100%; font:600 0.5cqw/1.15 'IBM Plex Sans', sans-serif; text-align:center; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.os-pastille{ position:absolute; top:0.15cqw; right:0.25cqw; min-width:0.75cqw; height:0.75cqw; padding:0 0.15cqw; border-radius:0.4cqw; background:#e03131; color:#fff; font:700 0.5cqw/0.75cqw 'IBM Plex Sans', sans-serif; font-style:normal; text-align:center; box-shadow:0 0 0.3cqw rgba(224,49,49,0.8); }
 .verrou{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.3cqw; color:#fff; text-align:center;
   background:radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--ce-couleur) 70%, #000), #0b0d10); }
 .verrou img{ width:4cqw; height:4cqw; object-fit:contain; filter:drop-shadow(0 0.4cqw 0.6cqw rgba(0,0,0,0.5)); }
@@ -1210,7 +1224,8 @@ body{ overflow-x:hidden; }
       <div class="bu-objet bu-calendrier" data-objet="calendrier" role="group" tabindex="0" aria-label="Calendrier du mois (Entrée pour agrandir)"><div class="bu-contenu" id="o-calendrier"></div></div>
       <button type="button" class="bu-objet bu-console" data-objet="console" aria-label="Console : soumettre un résultat"></button>
       <button type="button" class="bu-objet bu-tablette" data-objet="depistage" aria-label="Tablette : dépistage du prochain adversaire"><div class="bu-ecran" id="o-depistage"></div></button>
-      <button type="button" class="bu-objet bu-moniteur" data-objet="ordinateur" aria-label="Ordinateur : Espace DG"><div class="bu-ecran" id="o-ordinateur"></div></button>
+      <!-- Ordinateur : un div parce qu'il contient les boutons de l'Espace DG. -->
+      <div class="bu-objet bu-moniteur" data-objet="ordinateur" role="group" tabindex="0" aria-label="Ordinateur : Espace DG"><div class="bu-ecran" id="o-ordinateur"></div></div>
       <button type="button" class="bu-objet bu-cartable" data-objet="cartable" aria-label="Cartable : alignement, effectif et contrats"><div class="bu-page gauche" id="o-align-g"></div><div class="bu-page droite" id="o-align-d"></div></button>
       <button type="button" class="bu-objet bu-cahier" data-objet="reglements" aria-label="Cahier : règlements et dates importantes"><div class="bu-contenu" id="o-reglements"></div></button>
       <button type="button" class="bu-objet bu-cell" data-objet="cellulaire" aria-label="Cellulaire : alertes et enchères"><div class="bu-ecran" id="o-cellulaire"></div></button>
@@ -2672,16 +2687,32 @@ body{ overflow-x:hidden; }
       box.replaceChildren(v);
       return;
     }
-    const m = el('div', 'mail');
-    const b = el('div', 'mail-barre'); b.append(el('span', null, '📧 Courriel'), el('i', null, courriels().filter(x => x.nonlu).length + ' non lus'));
-    m.append(b);
-    courriels().slice(0, 5).forEach(c => {
-      const r = el('div', 'mail-ligne' + (c.nonlu ? ' nonlu' : ''));
-      r.append(c.de === 'LNHQ' ? Object.assign(el('img'), { src: 'logo-lnhq.png', alt: '' }) : logo(c.de), el('span', null, c.titre), el('small', null, c.type === 'offre' ? '41 h' : ''));
-      m.append(r);
+    // Le bureau de l'Espace DG : les boutons de dg.lnhq.ca, chacun ouvre sa page dans le panneau ;
+    // une pastille rouge quand une action attend (mêmes alertes que le cellulaire).
+    const os = el('div', 'os');
+    const barre = el('div', 'os-barre'), h = new Date();
+    barre.append(logo(equipe), el('b', null, 'Espace DG · ' + nom(equipe)), el('span', null, String(h.getHours()).padStart(2, '0') + ':' + String(h.getMinutes()).padStart(2, '0')));
+    const grille = el('div', 'os-apps');
+    const pastilles = {};
+    APPS_DG.forEach(([page, icone, titre]) => {
+      const b = el('button', 'os-app'); b.type = 'button'; b.title = titre;
+      const p = el('i', 'os-pastille'); p.hidden = true; pastilles[page] = p;
+      b.append(el('span', 'os-icone', icone), el('b', null, titre), p);
+      b.addEventListener('click', ev => { ev.stopPropagation(); ouvrirZoom('ordinateur', b, [titre, DG + page]); });
+      grille.append(b);
     });
-    box.replaceChildren(m);
+    os.append(barre, grille);
+    box.replaceChildren(os);
+    alertesDG().then(l => {
+      const parPage = { console: 'resultat.html', postit: 'gardien.html', agents: 'encheres.html', ordinateur: 'transactions.html' };
+      l.forEach(a => { const p = pastilles[parPage[a.objet]]; if(p){ p.hidden = false; p.textContent = String((Number(p.textContent) || 0) + 1); } });
+    });
   }
+  // Boutons de l'accueil de dg.lnhq.ca : [page, icône, titre].
+  const APPS_DG = [
+    ['resultat.html', '📷', 'Soumettre un résultat'], ['gardien.html', '🥅', '2e gardien'], ['alignement.html', '📋', 'Mon alignement'], ['encheres.html', '💰', 'Enchères'],
+    ['transactions.html', '🔁', 'Transactions'], ['ratings.html', '📊', 'Ratings NHL 27'], ['profil.html', '🪪', 'Ma fiche DG'], ['publier.html', '✏️', 'Publier une nouvelle'],
+  ];
 
   // Paramètres de l'annexe A utiles au cartable : effectif min/max, limite d'espoirs, plancher salarial.
   async function limitesLigue(){
@@ -3045,9 +3076,10 @@ body{ overflow-x:hidden; }
     $('zoomCorps').replaceChildren(barre, cadre);
   }
   function ouvrirZoom(type, depuis, page){
-    // Pages DG (dg.lnhq.ca) : ouvertes dans l'onglet, pas dans le panneau — la connexion Discord
-    // refuse de s'afficher dans un cadre. Le bouton Retour du navigateur ramène au bureau.
-    if(page && page[1].startsWith(DG)){ location.href = page[1]; return; }
+    // Pages DG (dg.lnhq.ca) sans être connecté : ouvertes dans l'onglet, pas dans le panneau — la
+    // connexion Discord refuse de s'afficher dans un cadre. Le bouton Retour ramène au bureau.
+    // En mode DG (déjà connecté), elles s'ouvrent dans le panneau comme les autres.
+    if(page && page[1].startsWith(DG) && !estDG()){ location.href = page[1]; return; }
     generationZoom++;
     zoomActuel = type;
     pageOuverte = !!page;
