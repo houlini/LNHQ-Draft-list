@@ -700,7 +700,7 @@ body{ overflow-x:hidden; }
 .bu-chandail{ left:0.6%; top:17.5%; width:12.7%; height:28.9%; }
 .bu-vertical{ left:15.55%; top:20%; width:10.35%; height:35.1%; }
 .bu-tele{ left:28.7%; top:20%; width:40.1%; height:33.2%; }
-.bu-calendrier{ left:71.1%; top:19.3%; width:27.9%; height:40.6%; }
+.bu-calendrier{ left:70.33%; top:19.66%; width:28.83%; height:41.55%; }
 .bu-cahier{ left:80.1%; top:75.6%; width:18.6%; height:16.3%; }
 .bu-console{ left:0.7%; top:59.3%; width:14.5%; height:4.5%; }
 .bu-tablette{ left:18.96%; top:59.62%; width:13.94%; height:14.35%; }
@@ -827,33 +827,32 @@ body{ overflow-x:hidden; }
 .pla-txt em.neg{ color:#ff8787; }
 
 /* ---------- Grand calendrier mural : le mois de l'équipe (résultats et matchs à venir) ---------- */
-/* Couvre le mur de droite (tableau, petit calendrier et babillard de l'image). */
-.bu-calendrier .bu-contenu{ display:flex; flex-direction:column; padding-top:1.1cqw; background:#fbfaf6; color:#1a2533; border-radius:0.25cqw; box-shadow:0 0.6cqw 1.4cqw rgba(0,0,0,0.6); }
-/* Reliure à spirale */
-.bu-calendrier .bu-contenu::before{ content:''; position:absolute; left:0; right:0; top:0; height:1.1cqw; border-radius:0.25cqw 0.25cqw 0 0;
-  background:repeating-linear-gradient(90deg, transparent 0 0.55cqw, #c9ced4 0.55cqw 0.7cqw, #6c737b 0.7cqw 0.78cqw, transparent 0.78cqw 1.3cqw) 0 0 / 100% 0.9cqw no-repeat, #2a2e34; }
-.gm-tete{ display:flex; align-items:center; gap:0.5cqw; padding:0.35cqw 0.5cqw; background:var(--ce-couleur); color:var(--accent-ink); }
-.gm-tete img{ width:1.7cqw; height:1.7cqw; object-fit:contain; }
-.gm-tete b{ flex:1; font:600 1.25cqw 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.06em; line-height:1; }
-.gm-tete small{ font:500 0.62cqw 'IBM Plex Sans', sans-serif; opacity:0.85; }
-.gm-nav{ width:1.7cqw; height:1.7cqw; display:grid; place-items:center; padding:0; border:0.08cqw solid currentColor; border-radius:0.3cqw; background:rgba(0,0,0,0.15); color:inherit; font:700 0.95cqw/1 'IBM Plex Sans', sans-serif; cursor:pointer; }
-.gm-nav:hover, .gm-nav:focus-visible{ background:rgba(0,0,0,0.35); outline:none; }
-.gm-jours, .gm-grille{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); }
-.gm-jours{ padding:0.2cqw 0; font:700 0.52cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#868e96; text-align:center; border-bottom:0.06cqw solid #ddd8cc; }
-.gm-grille{ flex:1; grid-auto-rows:1fr; }
-.gm-case{ position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.1cqw; border-right:0.05cqw solid #e6e1d6; border-bottom:0.05cqw solid #e6e1d6; }
-.gm-case > i{ position:absolute; top:0.15cqw; left:0.25cqw; font:600 0.55cqw 'IBM Plex Sans', sans-serif; font-style:normal; color:#868e96; }
-.gm-case img{ width:1.75cqw; height:1.75cqw; object-fit:contain; }
-.gm-case b{ font:400 0.82cqw/1 var(--marqueur); }
-.gm-case b.v{ color:#2b8a3e; } .gm-case b.d{ color:#c92a2a; } .gm-case b.p{ color:#e8590c; }
-.gm-case small{ font-size:0.5cqw; color:#5c6b7a; white-space:nowrap; }
-.gm-case.hors{ opacity:0.3; }
-.gm-case.auj{ background:rgba(255,212,59,0.35); }
-.gm-case.auj > i{ color:#c92a2a; font-weight:800; }
-.gm-case.retard{ background:rgba(224,49,49,0.13); }
+/* Le calendrier est dans l'image (papier, spirale, grille vide 7 × 6) : on écrit dessus, calé sur
+   ses lignes (px de l'image : bandeau 194-249, grille x 1182-1652, y 249-565). L'encre se mêle au
+   papier (multiply) pour prendre son grain et l'éclairage de la pièce. */
+.bu-calendrier .bu-contenu{ color:#1d2a4a; }
+.gm-tete{ position:absolute; left:1.24%; width:97.5%; top:2.3%; height:14.07%; display:grid; grid-template-rows:1fr auto; mix-blend-mode:multiply; }
+.gm-titre{ display:flex; align-items:center; justify-content:center; gap:0.6cqw; }
+.gm-titre b{ font:400 1.45cqw/1 var(--marqueur); color:var(--ce-couleur); text-transform:uppercase; letter-spacing:0.04em; }
+.gm-titre small{ position:absolute; right:0.6cqw; top:0.55cqw; font:400 0.72cqw var(--ecrit); color:#495057; }
+.gm-titre img{ position:absolute; left:0.5cqw; top:0.25cqw; width:1.8cqw; height:1.8cqw; object-fit:contain; }
+.gm-nav{ width:1.5cqw; height:1.5cqw; display:grid; place-items:center; padding:0; border:0.1cqw solid currentColor; border-radius:50%; background:none; color:#1d2a4a; font:400 0.9cqw/1 var(--marqueur); cursor:pointer; }
+.gm-nav:hover, .gm-nav:focus-visible{ background:rgba(29,42,74,0.12); outline:none; }
+.gm-jours, .gm-grille{ display:grid; grid-template-columns:66fr 68fr 67fr 67fr 67fr 68fr 67fr; }
+.gm-jours{ padding-bottom:0.15cqw; font:700 0.5cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#6c757d; text-align:center; }
+.gm-grille{ position:absolute; left:1.24%; width:97.5%; top:16.37%; height:80.82%; grid-template-rows:54fr 53fr 53fr 52fr 51fr 53fr; mix-blend-mode:multiply; }
+.gm-case{ position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.12cqw; padding-top:0.5cqw; }
+.gm-case > i{ position:absolute; top:0.2cqw; left:0.3cqw; font:400 0.72cqw/1 var(--ecrit); font-style:normal; color:#495057; }
+.gm-case img{ width:1.65cqw; height:1.65cqw; object-fit:contain; }
+.gm-case b{ font:400 0.85cqw/1 var(--marqueur); }
+.gm-case b.v{ color:#237032; } .gm-case b.d{ color:#b02525; } .gm-case b.p{ color:#d9480f; }
+.gm-case small{ font:400 0.6cqw/1 var(--ecrit); color:#495057; white-space:nowrap; }
+.gm-case.hors > *{ opacity:0.3; }
+/* Aujourd'hui : encerclé au marqueur rouge. */
+.gm-case.auj::after{ content:''; position:absolute; inset:8% 6%; border:0.14cqw solid #d6336c; border-radius:48% 52% 45% 55% / 55% 45% 55% 45%; rotate:-4deg; }
+.gm-case.auj > i{ color:#c92a2a; font-weight:700; }
+.gm-case.retard{ background:repeating-linear-gradient(-45deg, rgba(201,42,42,0.16) 0 0.2cqw, transparent 0.2cqw 0.5cqw); }
 .gm-case.retard small{ color:#c92a2a; font-weight:700; }
-.gm-pied{ display:flex; justify-content:space-between; gap:0.6cqw; padding:0.3cqw 0.5cqw; border-top:0.06cqw solid #ddd8cc; font-size:0.62cqw; color:#495057; white-space:nowrap; }
-.gm-pied b{ color:#1a2533; }
 .z-dates{ list-style:none; margin:0; padding:0; }
 .z-dates li{ display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px dashed #ced4da; }
 .z-dates li em{ font-style:normal; font-weight:700; color:#c92a2a; white-space:nowrap; }
@@ -1082,7 +1081,7 @@ body{ overflow-x:hidden; }
     <!-- La scène : le bureau du DG (mur + bureau). Chaque objet s'ouvre en plein écran. -->
     <!-- Image de fond (1672 × 941) ; chaque zone est placée en % de l'image et affiche les vraies données. -->
     <div class="bu-scene" id="scene" hidden>
-      <img class="bu-fond" src="maquettes/bureau-dg-fond.webp" alt="" width="1672" height="941">
+      <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=2" alt="" width="1672" height="941">
       <button type="button" class="bu-objet bu-del" data-objet="resultats" aria-label="Bandeau : résultats de la ligue"><div class="bu-ecran" id="o-del"></div></button>
       <button type="button" class="bu-objet bu-chandail" data-objet="fiche" aria-label="Chandail : fiche de l'équipe et du DG"><span class="bu-ecusson" id="o-ecusson"></span></button>
       <button type="button" class="bu-objet bu-vertical" data-objet="meneurs" aria-label="Écran vertical : stats de la ligue et de l'équipe"><div class="bu-ecran" id="o-meneurs"></div></button>
@@ -2423,19 +2422,15 @@ body{ overflow-x:hidden; }
     const duMois = mesMatchs().filter(x => x.date.startsWith(moisZoom));
     const joues = duMois.filter(x => x.joue);
     const v = joues.filter(x => resultatPour(x) === 'v').length, p = joues.filter(x => resultatPour(x) === 'p').length;
-    const titre = el('b', null, NOM_MOIS_CAP(m - 1) + ' ' + a);
-    tete.append(nav('‹', -1, 'Mois précédent'), logo(equipe), titre, el('small', null, joues.length ? `${v}-${joues.length - v - p}-${p} ce mois` : duMois.length + ' matchs'), nav('›', 1, 'Mois suivant'));
+    // Bandeau vierge du calendrier : logo, ‹ mois ›, fiche du mois, puis les jours de la semaine.
+    const ligneTitre = el('div', 'gm-titre');
+    ligneTitre.append(logo(equipe), nav('‹', -1, 'Mois précédent'), el('b', null, NOM_MOIS_CAP(m - 1) + ' ' + a), nav('›', 1, 'Mois suivant'),
+      el('small', null, joues.length ? `${v}-${joues.length - v - p}-${p} ce mois` : duMois.length + ' matchs'));
     const jours = el('div', 'gm-jours'); ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach(j => jours.append(el('span', null, j)));
+    tete.append(ligneTitre, jours);
     const grille = el('div', 'gm-grille');
     grilleMois(a, m - 1, true).forEach(c => { c.classList.add('gm-case'); if(c.classList.contains('retard')) c.append(el('small', null, 'en retard')); grille.append(c); });
-    // Pied : dernier résultat et prochain match, quel que soit le mois affiché.
-    const pied = el('div', 'gm-pied');
-    const dernier = mesMatchs().filter(x => x.joue).sort((x, y) => y.date.localeCompare(x.date) || Number(y.num) - Number(x.num))[0];
-    const proch = prochainMatch();
-    const morceau = (lib, txt) => { const s = el('span', null, lib + ' '); s.append(el('b', null, txt)); return s; };
-    if(dernier){ const pour = dernier.v === equipe ? dernier.bv : dernier.bd, contre = dernier.v === equipe ? dernier.bd : dernier.bv; pied.append(morceau('Dernier :', (resultatPour(dernier) === 'v' ? 'V ' : 'D ') + pour + '-' + contre + ' ' + (dernier.v === equipe ? '@ ' : 'vs ') + adversaireDe(dernier))); }
-    if(proch) pied.append(morceau('Prochain :', (proch.date === AUJ ? 'ce soir' : fMois.format(parse(proch.date))) + ' ' + (proch.v === equipe ? '@ ' : 'vs ') + adversaireDe(proch)));
-    box.replaceChildren(tete, jours, grille, pied);
+    box.replaceChildren(tete, grille);
   }
   const NOM_MOIS_CAP = m => NOMS_MOIS[m].charAt(0).toUpperCase() + NOMS_MOIS[m].slice(1);
 
