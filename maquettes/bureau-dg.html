@@ -722,6 +722,12 @@ body{ overflow-x:hidden; }
   padding:0.25cqw 0.7cqw; border-radius:0.4cqw; background:#12181F; color:#fff; font:700 0.85cqw 'IBM Plex Sans', sans-serif; transition:opacity .2s, translate .2s;
 }
 .bu-objet:hover .bu-etiquette, .bu-objet:focus-visible .bu-etiquette{ opacity:1; translate:-50% 0; }
+/* Écrans : la sélection s'allume à l'intérieur de la vitre, pour ne pas recouvrir le cadre de l'appareil. */
+.bu-tele:hover, .bu-tele:focus-visible, .bu-vertical:hover, .bu-vertical:focus-visible, .bu-moniteur:hover, .bu-moniteur:focus-visible{ box-shadow:none; }
+.bu-tele::after, .bu-vertical::after, .bu-moniteur::after{ content:''; position:absolute; inset:0; z-index:3; pointer-events:none; border-radius:0.15cqw; opacity:0; transition:opacity .2s;
+  box-shadow:inset 0 0 0 0.16cqw #FFD43B, inset 0 0 1.4cqw rgba(255,212,59,0.5); }
+.bu-moniteur::after{ clip-path:polygon(0 0, 100% 0, 100% 80.5%, 86.5% 82.5%, 86.2% 100%, 0 100%); }
+.bu-tele:hover::after, .bu-tele:focus-visible::after, .bu-vertical:hover::after, .bu-vertical:focus-visible::after, .bu-moniteur:hover::after, .bu-moniteur:focus-visible::after{ opacity:1; }
 /* Zones du haut : l'étiquette passe dessous (le haut de la scène la couperait). */
 .bu-del .bu-etiquette, .bu-chandail .bu-etiquette{ bottom:auto; top:calc(100% + 0.5cqw); }
 .bu-ecran, .bu-contenu{ position:absolute; inset:0; overflow:hidden; }
@@ -789,6 +795,22 @@ body{ overflow-x:hidden; }
 .points{ display:flex; gap:0.2cqw; margin-left:auto; }
 .points i{ width:0.35cqw; height:0.35cqw; border-radius:50%; background:rgba(255,255,255,0.25); }
 .points i.actif{ background:#ffb000; }
+/* Tableau compact (une ligne par joueur) : plus de stats, moins de texte coupé. */
+.men-table{ width:100%; border-collapse:collapse; font-size:0.6cqw; color:#e9ecef; }
+.men-table th{ padding:0.2cqw 0.15cqw; font:700 0.48cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.06em; color:#909aa5; text-align:right; }
+.men-table td{ padding:0.18cqw 0.15cqw; border-bottom:0.05cqw solid rgba(255,255,255,0.07); text-align:right; white-space:nowrap; }
+.men-table th:first-child, .men-table td:first-child{ padding-left:0.45cqw; text-align:left; }
+.men-table td:first-child{ max-width:6cqw; overflow:hidden; text-overflow:ellipsis; }
+.men-table td:last-child, .men-table th:last-child{ padding-right:0.45cqw; }
+.men-table td.pts{ font:500 0.68cqw 'Orbitron', monospace; color:#ffb000; }
+.men-table tr:first-child td.pts{ color:#ffd43b; }
+.men-table td img{ width:0.9cqw; height:0.9cqw; object-fit:contain; vertical-align:-0.2cqw; margin-right:0.25cqw; }
+.men-table tr.sep td{ padding-top:0.45cqw; font:700 0.48cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#909aa5; text-align:left; border:none; }
+.ecr-nav{ flex:none; width:1.1cqw; height:1.1cqw; display:grid; place-items:center; padding:0; border:none; border-radius:0.2cqw; background:rgba(255,255,255,0.12); color:#fff; font:700 0.7cqw/1 'IBM Plex Sans', sans-serif; cursor:pointer; }
+.ecr-nav:hover, .ecr-nav:focus-visible{ background:#ffb000; color:#111; outline:none; }
+.ecr-tete .ecr-nav:first-of-type{ margin-left:auto; }
+.bu-vertical .ecr-tete{ gap:0.3cqw; padding:0.4cqw 0.45cqw; font-size:0.66cqw; }
+.ecr-tete .ecr-nav ~ .points{ margin-left:0; }
 .men-cats{ list-style:none; margin:0; padding:0.2cqw 0.5cqw; }
 .men-cats li{ display:grid; grid-template-columns:1fr 1.1cqw 2.3cqw; align-items:center; gap:0.3cqw; padding:0.32cqw 0; border-bottom:0.05cqw solid rgba(255,255,255,0.08); font-size:0.6cqw; color:#ced4da; }
 .men-cats li img{ width:1.1cqw; height:1.1cqw; object-fit:contain; }
@@ -804,8 +826,23 @@ body{ overflow-x:hidden; }
 .forme i.p{ background:#e8590c; }
 
 /* Grand écran : LNHQ TV (fil de la ligue, ou les matchs en direct sur Twitch) */
-/* Le haut du moniteur cache le bas de la télé (dès y 473 dans l'image) : le contenu s'arrête juste au-dessus. */
-.bu-tele .bu-ecran{ display:flex; flex-direction:column; padding-bottom:4.6%; }
+/* Le moniteur est devant la télé (son cadre commence à y 471, x 624-1047 dans l'image) : l'écran de la télé
+   est découpé autour pour que le cadre du moniteur reste visible, et le contenu s'arrête juste au-dessus. */
+.bu-tele .bu-ecran{ display:flex; flex-direction:column; padding-bottom:4.6%;
+  clip-path:polygon(0 0, 100% 0, 100% 100%, 84.7% 100%, 84.7% 90.6%, 21.4% 90.6%, 21.4% 100%, 0 100%); }
+/* Deux colonnes : transactions à gauche, annonces et nouvelles à droite (chacune sa boucle). */
+.tv-colonnes{ flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; }
+.tv-col{ position:relative; min-width:0; min-height:0; display:flex; flex-direction:column; }
+.tv-col + .tv-col{ border-left:0.06cqw solid rgba(255,255,255,0.12); }
+.tv-col-tete{ display:flex; align-items:center; gap:0.4cqw; padding:0.3cqw 0.8cqw; font:600 0.62cqw 'Oswald', sans-serif; letter-spacing:0.12em; text-transform:uppercase; color:#adb5bd; }
+.tv-col-tete .points{ margin-left:auto; }
+.tv-col .tv-diapos{ flex:1; overflow:hidden; }
+.tv-col .tv-nouv{ padding:0.3cqw 0.8cqw 0.6cqw; justify-content:flex-start; gap:0.35cqw; }
+.tv-col .tv-nouv h4{ font-size:1.2cqw; -webkit-line-clamp:3; }
+.tv-col .tv-nouv p{ font-size:0.72cqw; -webkit-line-clamp:5; }
+.tv-col .tv-echange{ flex-direction:column; gap:0.45cqw; }
+.tv-col .tv-echange > div{ grid-template-columns:1.9cqw 1fr; }
+.tv-col .tv-echange img{ width:1.9cqw; height:1.9cqw; }
 .tv-bandeau{ display:flex; align-items:center; gap:0.6cqw; padding:0.45cqw 0.8cqw; background:rgba(0,0,0,0.55); font:600 0.85cqw 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; }
 .tv-bandeau img{ width:1.3cqw; height:1.3cqw; object-fit:contain; }
 .tv-direct{ display:inline-flex; align-items:center; gap:0.3cqw; padding:0.1cqw 0.45cqw; border-radius:0.3cqw; background:#e03131; color:#fff; font-size:0.65cqw; animation:clignote 1.4s steps(2) infinite; }
@@ -914,9 +951,9 @@ body{ overflow-x:hidden; }
 /* Pages à plat sur le bureau : chacune est déformée en perspective par JS (voir PERSPECTIVES). */
 /* Écrit directement sur les pages de la photo (patinoire à gauche, feuille lignée à droite) : pas de fond,
    l'encre se mêle au papier (multiply) et chaque nom penche un peu, comme écrit à la main. */
-.bu-page{ position:absolute; left:0; top:0; height:7.5cqw; transform-origin:0 0; display:flex; flex-direction:column; padding:0.35cqw 0.5cqw 0.4cqw; font-family:var(--marqueur); color:#1b2f6b; mix-blend-mode:multiply; }
+.bu-page{ position:absolute; left:0; top:0; height:7.5cqw; transform-origin:0 0; display:flex; flex-direction:column; padding:0.45cqw 0.8cqw 0.6cqw; font-family:var(--marqueur); color:#1b2f6b; mix-blend-mode:multiply; }
 .bu-page.gauche{ width:13.6cqw; }
-.bu-page.droite{ width:12.7cqw; padding-left:3.9cqw; padding-right:0.3cqw; }   /* le stylo de la photo longe la marge : on écrit à sa droite */
+.bu-page.droite{ width:12.7cqw; padding-left:3.9cqw; padding-right:1.3cqw; }   /* le stylo de la photo longe la marge : on écrit à sa droite */
 .cart-titre{ display:flex; justify-content:space-between; align-items:baseline; font-size:1.05cqw; line-height:1.2; color:#b02525; rotate:-1.2deg; }
 .cart-titre small{ font:400 0.62cqw var(--ecrit); color:#495057; }
 .cart-nom:nth-child(3n){ rotate:-1.6deg; } .cart-nom:nth-child(3n+1){ rotate:1.1deg; translate:0 0.05cqw; } .cart-nom:nth-child(3n+2){ rotate:-0.4deg; translate:0 -0.06cqw; }
@@ -1126,7 +1163,8 @@ body{ overflow-x:hidden; }
       <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=2" alt="" width="1672" height="941">
       <button type="button" class="bu-objet bu-del" data-objet="resultats" aria-label="Bandeau : résultats de la ligue"><div class="bu-ecran" id="o-del"></div></button>
       <button type="button" class="bu-objet bu-chandail" data-objet="fiche" aria-label="Chandail : fiche de l'équipe et du DG"><span class="bu-ecusson" id="o-ecusson"></span></button>
-      <button type="button" class="bu-objet bu-vertical" data-objet="meneurs" aria-label="Écran vertical : stats de la ligue et de l'équipe"><div class="bu-ecran" id="o-meneurs"></div></button>
+      <!-- Écran vertical : un div (comme le calendrier) parce qu'il contient ses boutons de page. -->
+      <div class="bu-objet bu-vertical" data-objet="meneurs" role="group" tabindex="0" aria-label="Écran vertical : stats de la ligue et de l'équipe (Entrée pour agrandir)"><div class="bu-ecran" id="o-meneurs"></div></div>
       <button type="button" class="bu-objet bu-tele" data-objet="tele" aria-label="Grand écran : LNHQ TV, directs et fil de la ligue"><div class="bu-ecran" id="o-tele"></div></button>
       <!-- Calendrier : un div (et non un bouton) parce qu'il contient ses propres boutons de mois. -->
       <div class="bu-objet bu-calendrier" data-objet="calendrier" role="group" tabindex="0" aria-label="Calendrier du mois (Entrée pour agrandir)"><div class="bu-contenu" id="o-calendrier"></div></div>
@@ -2240,20 +2278,31 @@ body{ overflow-x:hidden; }
   }
 
   // Boucle de diapos : une minuterie par écran (remplacée à chaque rendu) ; elle s'arrête au survol.
+  // Rend une fonction aller(sens) pour les boutons de page (qui relance la minuterie).
   const minuteries = {};
   function boucler(box, ms, auChangement){
     clearInterval(minuteries[box.id]);
     const diapos = [...box.querySelectorAll('.diapo')];
-    if(!diapos.length) return;
+    if(!diapos.length) return () => {};
     let i = 0;
     const montrer = () => { diapos.forEach((d, k) => d.classList.toggle('actif', k === i)); if(auChangement) auChangement(i, diapos.length); };
-    montrer();
-    if(diapos.length > 1) minuteries[box.id] = setInterval(() => {
-      if(!box.isConnected){ clearInterval(minuteries[box.id]); return; }
-      if(box.closest('.bu-objet:hover')) return;
-      i = (i + 1) % diapos.length; montrer();
-    }, ms);
+    const demarrer = () => {
+      clearInterval(minuteries[box.id]);
+      if(diapos.length > 1) minuteries[box.id] = setInterval(() => {
+        if(!box.isConnected){ clearInterval(minuteries[box.id]); return; }
+        if(box.closest('.bu-objet:hover')) return;
+        i = (i + 1) % diapos.length; montrer();
+      }, ms);
+    };
+    montrer(); demarrer();
+    return sens => { i = (i + sens + diapos.length) % diapos.length; montrer(); demarrer(); };
   }
+  // Bouton de page dans un écran : ne doit pas ouvrir le zoom de l'objet.
+  const boutonPage = (txt, etiquette, action) => {
+    const b = el('button', 'ecr-nav', txt); b.type = 'button'; b.setAttribute('aria-label', etiquette);
+    b.addEventListener('click', ev => { ev.stopPropagation(); action(); });
+    return b;
+  };
   const fiche = x => x ? `${x.v}-${x.d}-${x.dp}` : '0-0-0';
   const rangDe = (liste, code) => liste.findIndex(x => x.code === code) + 1;
   const ordinal = n => n === 1 ? '1er' : n + 'e';
@@ -2279,37 +2328,33 @@ body{ overflow-x:hidden; }
   // Écran vertical des stats : boucle sur meneurs de la ligue, meneurs de l'équipe, équipes de la ligue, mon équipe.
   async function apercuMeneurs(box){
     const tete = el('div', 'ecr-tete'), titre = el('span', null, 'Stats'), points = el('span', 'points');
-    tete.append(logo(equipe), titre, points);
-    box.replaceChildren(tete);
+    let aller = () => {};
+    tete.append(titre, boutonPage('‹', 'Page précédente', () => aller(-1)), points, boutonPage('›', 'Page suivante', () => aller(1)));    box.replaceChildren(tete);
     const { stats } = await chargerStats();
     const tous = [...stats.values()];
-    const ligneJoueur = (j, avecLogo) => {
-      const li = el('li');
-      if(avecLogo) li.append(logo(j.equipe));
-      li.append(el('b', null, nomCourt(j.nom)), el('span', 'pts', j.p || '0'), el('small', null, `${j.b || 0} B · ${j.a || 0} A · ${j.pj || 0} PJ`));
-      return li;
-    };
     const diapo = (nomDiapo, ...enfants) => { const d = el('div', 'diapo'); d.dataset.titre = nomDiapo; d.append(...enfants); return d; };
     const parPoints = (a, b) => nombre(b.p) - nombre(a.p) || nombre(b.b) - nombre(a.b);
+    // Tableau compact : patineurs (B A PTS) puis gardiens (V MOY %ARR) dans les mêmes colonnes.
+    const tableauStats = (patineurs, gardiens, avecLogo) => {
+      const t = el('table', 'men-table');
+      const nomJ = j => { const td = el('td'); if(avecLogo) td.append(logo(j.equipe)); td.append(document.createTextNode(nomCourt(j.nom))); return td; };
+      const th = el('tr'); ['Patineur', 'B', 'A', 'PTS'].forEach(c => th.append(el('th', null, c))); t.append(th);
+      patineurs.forEach(j => { const tr = el('tr'); tr.append(nomJ(j), el('td', null, j.b || '0'), el('td', null, j.a || '0'), el('td', 'pts', j.p || '0')); t.append(tr); });
+      if(gardiens.length){
+        const sep = el('tr', 'sep'); ['Gardien', 'V', 'MOY', '%ARR'].forEach((c, k) => { const td = el('td', null, c); if(k) td.style.textAlign = 'right'; sep.append(td); }); t.append(sep);
+        gardiens.forEach(j => { const tr = el('tr'); tr.append(nomJ(j), el('td', null, j.v || '0'), el('td', null, j.moy || '–'), el('td', 'pts', j.parr || '–')); t.append(tr); });
+      }
+      return t;
+    };
 
-    // 1. Ligue : meneurs
-    const ligue = el('ul', 'men-liste logos');
-    tous.filter(j => !j.gardien).sort(parPoints).slice(0, 7).forEach(j => ligue.append(ligneJoueur(j, true)));
-    const gl = tous.filter(j => j.gardien && nombre(j.pj) >= 3).sort((a, b) => nombre(b.parr) - nombre(a.parr))[0];
-    const d1 = diapo('Ligue · meneurs', ligue);
-    if(gl){ const u = el('ul', 'men-liste logos'), li = el('li'); li.append(logo(gl.equipe), el('b', null, nomCourt(gl.nom)), el('span', 'pts', gl.parr || '–'), el('small', null, `${gl.v || 0} V · ${gl.moy || '–'} MOY`)); u.append(li); d1.append(el('div', 'men-sous', 'Meilleur %ARR'), u); }
+    // 1. Ligue : meneurs (10 patineurs) et meilleurs gardiens (au moins 3 PJ)
+    const glig = tous.filter(j => j.gardien && nombre(j.pj) >= 3).sort((a, b) => nombre(b.parr) - nombre(a.parr)).slice(0, 2);
+    const d1 = diapo('Ligue · meneurs', tableauStats(tous.filter(j => !j.gardien).sort(parPoints).slice(0, 10), glig, true));
 
-    // 2. Équipe : meneurs et gardien nº 1
+    // 2. Équipe : meneurs et gardiens
     const { patineurs, gardiens } = await statsEquipe();
-    const eqListe = el('ul', 'men-liste');
-    patineurs.slice(0, 6).forEach(j => eqListe.append(ligneJoueur(j, false)));
-    const d2 = diapo(EQUIPES.get(equipe) ? equipe + ' · meneurs' : 'Meneurs', eqListe);
+    const d2 = diapo(EQUIPES.get(equipe) ? equipe + ' · meneurs' : 'Meneurs', tableauStats(patineurs.slice(0, 10), gardiens.slice(0, 2), false));
     if(!patineurs.length) d2.append(el('div', 'men-sous', 'Pas encore de stats'));
-    if(gardiens[0]){
-      const g = gardiens[0], u = el('ul', 'men-liste'), li = el('li');
-      li.append(el('b', null, nomCourt(g.nom)), el('span', 'pts', g.parr || '–'), el('small', null, `${g.v || 0} V · ${g.moy || '–'} MOY`));
-      u.append(li); d2.append(el('div', 'men-sous', 'Gardien nº 1'), u);
-    }
 
     // 3. Ligue : équipes en tête de chaque catégorie
     const se = R.statsEquipes(resultats, [...EQUIPES.keys()]);
@@ -2338,7 +2383,7 @@ body{ overflow-x:hidden; }
     const d4 = diapo(EQUIPES.get(equipe) ? equipe + ' · équipe' : 'Équipe', f, rangs);
 
     box.append(d1, d2, d3, d4);
-    boucler(box, 8000, (i, n) => {
+    aller = boucler(box, 10000, (i, n) => {
       titre.textContent = box.querySelectorAll('.diapo')[i].dataset.titre;
       points.replaceChildren(...Array.from({ length: n }, (_, k) => el('i', k === i ? 'actif' : '')));
     });
@@ -2394,35 +2439,51 @@ body{ overflow-x:hidden; }
       box.append(grille);
       return;
     }
-    const fil = (await filLigue()).slice(0, 10);
-    const diapos = el('div', 'tv-diapos');
-    fil.forEach(x => {
+    const fil = await filLigue();
+    const diapoFil = x => {
       const [lib, coul] = CATS_FIL[x.type];
       const d = el('div', 'diapo tv-nouv');
       const cat = el('span', 'tv-cat', lib); cat.style.setProperty('--cat', coul);
       if(x.date) cat.append(el('small', null, fMois.format(x.date)));
-      d.append(cat, el('h4', null, x.titre));
+      d.append(cat, el('h4', null, x.titre.replace(/^Transaction\s*:\s*/i, '')));
       if(x.type === 'transaction'){
         const ech = el('div', 'tv-echange');
         recus(x.details).slice(0, 2).forEach(([code, l]) => {
-          const c = el('div'); c.append(logo(code), el('small', null, code + ' reçoit'), ...l.slice(0, 4).map(m => el('span', null, m.joueur ? prenomNom(m.joueur) + (m.po ? ' · ' + m.po : '') : (m.type || 'Choix'))));
+          const c = el('div'); c.append(logo(code), el('small', null, code + ' reçoit'), ...l.slice(0, 2).map(m => el('span', null, m.joueur ? prenomNom(m.joueur) + (m.po ? ' · ' + m.po : '') : (m.type || 'Choix'))));
+          if(l.length > 2) c.append(el('span', null, '+ ' + (l.length - 2) + ' autre' + (l.length > 3 ? 's' : '')));
           ech.append(c);
         });
         d.append(ech);
       }else{
         const t = sansBalises(x.texte);
-        if(t) d.append(el('p', null, t.slice(0, 260)));
+        if(t) d.append(el('p', null, t.slice(0, 320)));
       }
-      diapos.append(d);
-    });
-    if(!fil.length){ const d = el('div', 'diapo tv-nouv'); d.append(el('h4', null, 'Rien de neuf dans la ligue')); diapos.append(d); }
+      return d;
+    };
+    // Une colonne = son titre, ses boutons de page, sa boucle de diapos.
+    const colonne = (id, titreCol, items, vide) => {
+      const col = el('div', 'tv-col'); col.id = id;
+      const pts = el('span', 'points'), tete = el('div', 'tv-col-tete');
+      let aller = () => {};
+      tete.append(el('span', null, titreCol), boutonPage('‹', 'Précédent', () => aller(-1)), pts, boutonPage('›', 'Suivant', () => aller(1)));
+      tete.querySelector('.ecr-nav').style.marginLeft = 'auto';
+      const diapos = el('div', 'tv-diapos');
+      items.forEach(x => diapos.append(diapoFil(x)));
+      if(!items.length){ const d = el('div', 'diapo tv-nouv'); d.append(el('h4', null, vide)); diapos.append(d); }
+      col.append(tete, diapos);
+      setTimeout(() => { aller = boucler(col, 9000, (i, n) => pts.replaceChildren(...Array.from({ length: n }, (_, k) => el('i', k === i ? 'actif' : '')))); });
+      return col;
+    };
+    const cols = el('div', 'tv-colonnes');
+    cols.append(colonne('tv-tx', '🔁 Transactions', fil.filter(x => x.type === 'transaction').slice(0, 8), 'Aucune transaction'),
+      colonne('tv-ann', '📢 Annonces · nouvelles', fil.filter(x => x.type !== 'transaction').slice(0, 8), 'Rien de neuf'));
     const bas = el('div', 'tv-defile'), rang = el('div');
-    fil.forEach(x => { const lib = CATS_FIL[x.type][0]; rang.append(el('span', null, x.titre.toLowerCase().startsWith(lib.toLowerCase()) ? x.titre : lib + ' · ' + x.titre)); });
+    fil.slice(0, 10).forEach(x => { const lib = CATS_FIL[x.type][0]; rang.append(el('span', null, x.titre.toLowerCase().startsWith(lib.toLowerCase()) ? x.titre : lib + ' · ' + x.titre)); });
     rang.append(...[...rang.children].map(s => s.cloneNode(true)));
-    rang.style.setProperty('--duree', Math.max(30, fil.length * 7) + 's');
+    rang.style.setProperty('--duree', Math.max(30, Math.min(10, fil.length) * 7) + 's');
     bas.append(el('b', null, 'Fil LNHQ'), rang);
-    box.append(diapos, bas);
-    boucler(box, 9000);
+    clearInterval(minuteries[box.id]);
+    box.append(cols, bas);
   }
 
   // Tableau magnétique : trios, paires et gardien écrits au marqueur.
@@ -2445,18 +2506,24 @@ body{ overflow-x:hidden; }
       titre('Gardiens', '1 · 2'), ligne('', ['G1', 'G2'], 'g'));
     document.fonts.ready.then(ajusterNoms);
   }
-  // Un nom trop long pour sa case est écrit plus petit plutôt que coupé (recalculé quand la scène change de taille).
+  // Même taille d'écriture pour tous les noms des deux pages : celle qui fait tenir la plupart des noms
+  // (pas sous 0,7 cqw) ; un nom encore trop long à cette taille est écrit un peu plus petit, seul.
+  // Recalculé quand la scène change de taille.
   function ajusterNoms(){
-    document.querySelectorAll('.bu-page .cart-nom').forEach(n => {
+    const noms = [...document.querySelectorAll('.bu-page .cart-nom')];
+    const besoin = n => {   // taille qui fait tenir ce nom dans sa case (largeur naturelle, 1 px de marge)
       n.style.fontSize = '';
       const dispo = n.clientWidth;
-      if(!dispo) return;
-      // Largeur naturelle du texte (max-content), avec 1 px de marge pour les arrondis.
+      if(!dispo) return 0.9;
       n.style.width = 'max-content';
-      let t = 0.9;
-      while(n.offsetWidth > dispo - 1 && t > 0.45){ t *= 0.93; n.style.fontSize = t.toFixed(3) + 'cqw'; }
+      const t = Math.min(0.9, 0.9 * (dispo - 1) / n.offsetWidth);
       n.style.width = '';
-    });
+      return t;
+    };
+    const tailles = noms.map(besoin);
+    if(!tailles.length) return;
+    const commune = Math.max(0.7, Math.min(...tailles));
+    noms.forEach((n, k) => { n.style.fontSize = Math.min(commune, tailles[k]).toFixed(3) + 'cqw'; });
   }
 
   // Grand calendrier mural : le mois de l'équipe (scores, matchs à venir, retards) ; ‹ › change de mois en un clic.
