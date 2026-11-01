@@ -927,6 +927,16 @@ body{ overflow-x:hidden; }
 /* Aujourd'hui : encerclé au marqueur rouge. */
 .gm-case.auj::after{ content:''; position:absolute; inset:8% 6%; border:0.14cqw solid #d6336c; border-radius:48% 52% 45% 55% / 55% 45% 55% 45%; rotate:-4deg; }
 .gm-case.auj > i{ color:#c92a2a; font-weight:700; }
+/* Survol du calendrier : pas d'éclairage (blanc sur blanc) mais du surligneur jaune sur le papier :
+   le mois, la case pointée, et le cercle d'aujourd'hui qui pulse. */
+.bu-calendrier::before{ display:none; }
+.bu-calendrier:hover, .bu-calendrier:focus-visible{ filter:none; }
+.gm-titre b{ padding:0 0.3cqw; background:linear-gradient(transparent 52%, rgba(255,221,0,0.6) 52% 90%, transparent 90%) no-repeat 0 0 / 0% 100%; transition:background-size .35s ease; }
+.bu-calendrier:hover .gm-titre b, .bu-calendrier:focus-visible .gm-titre b{ background-size:100% 100%; }
+.gm-case{ transition:background-color .15s; }
+.bu-calendrier .gm-case:hover{ background-color:rgba(255,221,0,0.3); }
+.bu-calendrier:hover .gm-case.auj::after{ animation:entoure 1.1s ease-in-out infinite alternate; }
+@keyframes entoure{ to{ scale:1.08; border-width:0.18cqw; } }
 .gm-case.retard{ background:repeating-linear-gradient(-45deg, rgba(201,42,42,0.16) 0 0.2cqw, transparent 0.2cqw 0.5cqw); }
 .gm-case.retard small{ color:#c92a2a; font-weight:700; }
 .z-dates{ list-style:none; margin:0; padding:0; }
