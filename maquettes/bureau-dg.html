@@ -769,7 +769,9 @@ body{ overflow-x:hidden; }
 @keyframes defile{ to{ transform:translateX(-50%); } }
 
 /* ---------- Chandail : écusson de l'équipe ---------- */
-.bu-ecusson{ position:absolute; left:49.5%; top:41%; width:3.6cqw; height:3.6cqw; translate:-50% -50%; display:flex; }   /* centre de la poitrine */
+/* Centre de la poitrine, mesuré dans l'image : axe du chandail x 116,5 (col, bande de taille et manches
+   concordent), entre le bas du col (y 242) et la bande de taille (y 370). */
+.bu-ecusson{ position:absolute; left:50.14%; top:47.9%; width:3.7cqw; height:3.7cqw; translate:-50% -50%; display:flex; }
 .bu-ecusson img{ width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 0.1cqw 0.15cqw rgba(0,0,0,0.6)); }
 
 /* ---------- Écrans (fond commun) ---------- */
@@ -862,10 +864,6 @@ body{ overflow-x:hidden; }
 .tv-echange img{ grid-row:1 / span 6; width:2.4cqw; height:2.4cqw; object-fit:contain; }
 .tv-echange small{ font:700 0.55cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#8ce99a; }
 .tv-echange span{ font-size:0.78cqw; color:#e9ecef; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.tv-defile{ display:flex; align-items:center; overflow:hidden; background:#ffb000; color:#111; font:600 0.72cqw 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.04em; white-space:nowrap; }
-.tv-defile > b{ flex:none; z-index:1; padding:0.25cqw 0.6cqw; background:#111; color:#ffb000; }
-.tv-defile > div{ display:inline-flex; gap:2cqw; padding-left:2cqw; animation:defile var(--duree, 60s) linear infinite; }
-.bu-tele:hover .tv-defile > div{ animation-play-state:paused; }
 .tv-live{ flex:1; min-height:0; display:grid; gap:0.3cqw; padding:0.3cqw; grid-template-columns:repeat(var(--n, 1), minmax(0, 1fr)); }
 .tv-live[data-n="3"], .tv-live[data-n="4"]{ --n:2; grid-template-rows:1fr 1fr; }
 .tv-flux{ position:relative; min-height:0; overflow:hidden; background:#000 center / cover no-repeat; border-radius:0.2cqw; }
@@ -1060,6 +1058,33 @@ body{ overflow-x:hidden; }
 .bu-zoom-objet.is-calendrier{ background:#fbfaf6; color:#1a2533; width:min(1000px, 96vw); }
 .bu-zoom-objet.is-tele{ background:#060a10; color:#e9ecef; border:16px solid #0a0b0d; border-radius:12px; }
 .bu-zoom-objet.is-postit{ width:min(560px, 96vw); background:linear-gradient(180deg, #fff6a8, #ffe873); color:#1a2533; border-radius:4px; }
+/* Fiche d'un match joué (depuis le calendrier) : score, stats de l'écran de fin, photo. */
+.bu-zoom-objet.is-match{ width:min(640px, 96vw); background:#fbfaf6; color:#1a2533; }
+.zm-tete{ display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; gap:12px; margin:4px 0 16px; }
+.zm-equipe{ display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; min-width:0; color:#6c757d; }
+.zm-equipe img{ width:64px; height:64px; object-fit:contain; }
+.zm-equipe span{ font-size:13px; }
+.zm-equipe b{ font:400 40px/1 var(--marqueur); }
+.zm-equipe.gagnant{ color:#1a2533; }
+.zm-equipe.gagnant b{ color:#237032; }
+.zm-milieu{ text-align:center; font:700 13px 'IBM Plex Sans', sans-serif; text-transform:uppercase; letter-spacing:0.05em; color:#b02525; }
+.zm-milieu small{ display:block; margin-top:3px; font-weight:500; text-transform:none; letter-spacing:0; color:#6c757d; }
+.zm-stats{ width:100%; border-collapse:collapse; margin-bottom:16px; }
+/* (site.css colle et colore la 1re colonne des tableaux et raye les rangées : annulé ici) */
+.zm-stats tbody tr:nth-child(n){ background:none; }
+.zm-stats tbody td, .zm-stats tbody th, .zm-stats tbody td:first-child{ position:static; padding:7px 4px; border:none; border-top:1px solid #e2ded3; background:none; color:inherit; box-shadow:none; }
+.zm-stats td{ width:28%; text-align:center; font:700 15px 'IBM Plex Mono', monospace; }
+.zm-stats th{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:#6c757d; }
+.zm-photo img{ display:block; width:100%; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,0.25); }
+.gcal [data-num], .bu-calendrier [data-num]{ cursor:pointer; }
+/* Panneau « page » : une vraie page du site dans un cadre, par-dessus le bureau. */
+.bu-zoom-objet.is-page{ width:min(1400px, 96vw); height:94vh; background:#0b0c0e; color:#fff; border:8px solid #0b0c0e; border-radius:16px; }
+.bu-zoom-objet.is-page .bu-zoom-corps{ padding:0; display:flex; flex-direction:column; overflow:hidden; }
+.bu-page-barre{ flex:none; display:flex; align-items:center; gap:12px; min-height:40px; padding:4px 60px 6px 12px; font:600 15px 'Oswald', sans-serif; letter-spacing:0.06em; text-transform:uppercase; }
+.bu-page-barre a{ margin-left:auto; color:#FFD43B; font:700 13px 'IBM Plex Sans', sans-serif; letter-spacing:0; text-transform:none; text-decoration:none; }
+.bu-page-barre a:hover{ text-decoration:underline; }
+.bu-page-cadre{ flex:1; width:100%; min-height:0; border:0; border-radius:8px; background:var(--bg, #f4f5f7); }
+.bu-zoom-objet.is-page .bu-fermer{ top:4px; right:6px; width:34px; height:34px; font-size:15px; background:rgba(255,255,255,0.12); }
 /* Cahier des règlements : couverture brune, pages lignées */
 .bu-zoom-objet.is-reglements{ width:min(900px, 96vw); border:16px solid #8a6a3f; border-radius:10px; color:#1a2533;
   background:linear-gradient(90deg, transparent 56px, #f1a5a5 56px 58px, transparent 58px), repeating-linear-gradient(180deg, #fffef8 0 27px, #cfe0f3 27px 28px); }
@@ -2153,7 +2178,7 @@ body{ overflow-x:hidden; }
     const petit = estPetit();
     $('scene').hidden = petit; $('pile').hidden = !petit;
     if(petit) rendrePile(); else rendreScene();
-    if(zoomActuel) remplirZoom(zoomActuel);
+    if(zoomActuel && !pageOuverte) remplirZoom(zoomActuel);
   }
   let etaitPetit = null;
   window.addEventListener('resize', () => { if(estPetit() !== etaitPetit && equipe){ etaitPetit = estPetit(); rendreTout(); } });
@@ -2490,14 +2515,10 @@ body{ overflow-x:hidden; }
     };
     const cols = el('div', 'tv-colonnes');
     cols.append(colonne('tv-tx', '🔁 Transactions', fil.filter(x => x.type === 'transaction').slice(0, 8), 'Aucune transaction'),
-      colonne('tv-ann', '📢 Annonces · nouvelles', fil.filter(x => x.type !== 'transaction').slice(0, 8), 'Rien de neuf'));
-    const bas = el('div', 'tv-defile'), rang = el('div');
-    fil.slice(0, 10).forEach(x => { const lib = CATS_FIL[x.type][0]; rang.append(el('span', null, x.titre.toLowerCase().startsWith(lib.toLowerCase()) ? x.titre : lib + ' · ' + x.titre)); });
-    rang.append(...[...rang.children].map(s => s.cloneNode(true)));
-    rang.style.setProperty('--duree', Math.max(30, Math.min(10, fil.length) * 7) + 's');
-    bas.append(el('b', null, 'Fil LNHQ'), rang);
+      // Toujours les annonces d'abord (les plus récentes), puis les nouvelles.
+      colonne('tv-ann', '📢 Annonces · nouvelles', [...fil.filter(x => x.type === 'annonce').slice(0, 4), ...fil.filter(x => x.type === 'nouvelle').slice(0, 5)], 'Rien de neuf'));
     clearInterval(minuteries[box.id]);
-    box.append(cols, bas);
+    box.append(cols);
   }
 
   // Tableau magnétique : trios, paires et gardien écrits au marqueur.
@@ -2586,7 +2607,8 @@ body{ overflow-x:hidden; }
         if(m.joue){ const r = resultatPour(m); const pour = m.v === equipe ? m.bv : m.bd, contre = m.v === equipe ? m.bd : m.bv; c.append(el('b', r, pour + '-' + contre)); }
         else if(cle < AUJ) c.classList.add('retard');
         else if(grand) c.append(el('small', null, (m.v === equipe ? '@ ' : 'vs ') + heureTexte(m.heure)));
-        c.title = fCourt.format(parse(m.date)) + ' · ' + (m.v === equipe ? '@ ' : 'vs ') + nom(adv);
+        c.title = fCourt.format(parse(m.date)) + ' · ' + (m.v === equipe ? '@ ' : 'vs ') + nom(adv) + (m.joue ? ' · voir le résultat' : ' · rapport de dépistage');
+        c.dataset.num = m.num;
       }
       cases.push(c);
     }
@@ -2949,14 +2971,88 @@ body{ overflow-x:hidden; }
   const reduitZoom = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let origineZoom = null;
   let generationZoom = 0;   // une fermeture en cours ne doit pas refermer un objet ouvert entre-temps
-  function ouvrirZoom(type, depuis){
+  let pageOuverte = false;  // le panneau montre une vraie page du site (iframe) plutôt qu'un zoom maison
+
+  // Vraie page du site pour chaque objet : [titre, adresse]. La télé dépend de la colonne cliquée.
+  const DG = 'https://dg.lnhq.ca/';
+  function pageObjet(type, cible){
+    const slug = code => (EQUIPES.get(code) || {}).slug || '';
+    if(type === 'tele'){
+      if($('o-tele').querySelector('.tv-live')) return ['LNHQ TV', 'tv.html'];
+      if(cible && cible.closest('#tv-tx')) return ['Transactions', './?fil=transactions'];
+      return ['Annonces et nouvelles', './?fil=annonces'];
+    }
+    return ({
+      resultats: ['Résultats', 'resultats.html?equipe=' + equipe],
+      fiche: ['Équipe', 'equipe.html?team=' + slug(equipe)],
+      meneurs: ['Stats des joueurs', 'stats.html'],
+      calendrier: ['Calendrier', 'calendrier.html'],
+      cartable: estDG() ? ['Alignement', DG + 'alignement.html'] : ['Équipe', 'equipe.html?team=' + slug(equipe)],
+      effectif: ['Masse salariale', 'masse.html'],
+      reglements: ['Règlements', 'reglements.html'],
+      ordinateur: estDG() ? ['Espace DG', DG] : ['Transactions', './?fil=transactions'],
+      cellulaire: ['Enchères', 'encheres.html'],
+      console: ['Soumettre un résultat', DG + 'resultat.html'],
+      postit: ['2e gardien', DG + 'gardien.html'],
+    })[type] || null;
+  }
+  // Un match du calendrier : joué → sa fiche (score, stats, photo) ; à venir → le rapport de dépistage complet.
+  let matchZoom = '';
+  function ouvrirMatch(num, depuis){
+    const m = matchs.find(x => x.num === num);
+    if(!m) return;
+    if(m.joue){ matchZoom = num; ouvrirZoom('match', depuis); }
+    else{ advDepistage = adversaireDe(m); ouvrirZoom('depistage', depuis); }
+  }
+  function zoomMatch(){
+    const m = matchs.find(x => x.num === matchZoom), r = resultats[matchZoom];
+    if(!m || !r) return [titreZoom('Match', ''), el('p', 'ce-vide', 'Résultat introuvable.')];
+    const cote = (code, buts, gagnant) => { const d = el('div', 'zm-equipe' + (gagnant ? ' gagnant' : '')); d.append(logo(code), el('span', null, nom(code)), el('b', null, String(buts))); return d; };
+    const tete = el('div', 'zm-tete'), milieu = el('div', 'zm-milieu', 'Final' + (r.fin ? ' · ' + (R.FINS[r.fin] || r.fin) : ''));
+    milieu.append(el('small', null, fJour.format(parse(m.date)) + ' · match nº ' + m.num));
+    tete.append(cote(r.visiteur, r.butsV, r.butsV > r.butsD), milieu, cote(r.domicile, r.butsD, r.butsD > r.butsV));
+    const blocs = [titreZoom('Résultat', serieContre(adversaireDe(m))), tete];
+    const corps = el('tbody');
+    R.STATS.forEach(s => {
+      const [v, d] = (r.stats || {})[s.cle] || ['', ''];
+      if(v === '' && d === '') return;
+      const tr = el('tr'); tr.append(el('td', null, v), el('th', null, s.nom), el('td', null, d)); corps.append(tr);
+    });
+    if(corps.children.length){ const t = el('table', 'zm-stats'); t.append(corps); blocs.push(t); }
+    if(r.photo){
+      const lien = Object.assign(el('a', 'zm-photo'), { href: r.photo, target: '_blank', rel: 'noopener' });
+      lien.append(Object.assign(el('img'), { src: r.photo, alt: 'Photo de l’écran de fin de match', loading: 'lazy' }));
+      blocs.push(lien);
+    }else blocs.push(el('p', 'ce-vide', 'Pas de photo soumise pour ce match.'));
+    return blocs;
+  }
+  // Panneau « page » : la page du site dans un cadre ; sur le même site, son en-tête est caché (le bureau
+  // reste derrière, ✕ ou Échap pour y revenir).
+  function remplirPage([titre, url]){
+    const barre = el('div', 'bu-page-barre');
+    barre.append(el('b', null, titre), Object.assign(el('a', null, 'Ouvrir la page ↗'), { href: url, target: '_blank', rel: 'noopener' }));
+    const cadre = el('iframe', 'bu-page-cadre'); cadre.title = titre; cadre.src = url;
+    cadre.addEventListener('load', () => {
+      try{
+        const d = cadre.contentDocument;
+        const st = d.createElement('style');
+        st.textContent = 'site-header, .app-header, .ce-maquette{ display:none !important; }';
+        d.head.append(st);
+        d.addEventListener('keydown', ev => { if(ev.key === 'Escape') fermerZoom(); });
+      }catch(e){ /* autre domaine (dg.lnhq.ca) : la page garde son en-tête */ }
+    });
+    $('zoomCorps').replaceChildren(barre, cadre);
+  }
+  function ouvrirZoom(type, depuis, page){
     generationZoom++;
     zoomActuel = type;
+    pageOuverte = !!page;
     origineZoom = depuis || null;
     const z = $('zoom'), o = $('zoomObjet');
-    o.className = 'bu-zoom-objet is-' + type;
+    o.className = 'bu-zoom-objet ' + (page ? 'is-page' : 'is-' + type);
     z.hidden = false;
-    remplirZoom(type);
+    $('reserve').append(...$('zoomCorps').querySelectorAll('.ce-panneau'));
+    if(page) remplirPage(page); else remplirZoom(type);
     if(depuis && !reduitZoom){
       const a = depuis.getBoundingClientRect(), b = o.getBoundingClientRect();
       o.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})`, opacity: 0.4 }, { transform: 'none', opacity: 1 }],
@@ -2968,7 +3064,13 @@ body{ overflow-x:hidden; }
     if(!zoomActuel) return;
     const z = $('zoom'), o = $('zoomObjet');
     const gen = generationZoom;
-    const fin = () => { if(gen !== generationZoom) return; z.hidden = true; zoomActuel = ''; $('reserve').append(...$('zoomCorps').querySelectorAll('.ce-panneau')); if(origineZoom) origineZoom.focus(); };
+    const fin = () => {
+      if(gen !== generationZoom) return;
+      z.hidden = true; zoomActuel = '';
+      $('reserve').append(...$('zoomCorps').querySelectorAll('.ce-panneau'));
+      if(pageOuverte){ $('zoomCorps').replaceChildren(); pageOuverte = false; }   // décharge la page
+      if(origineZoom) origineZoom.focus();
+    };
     if(origineZoom && !reduitZoom && origineZoom.offsetParent){
       const a = origineZoom.getBoundingClientRect(), b = o.getBoundingClientRect();
       o.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})`, opacity: 0.2 }],
@@ -2998,6 +3100,7 @@ body{ overflow-x:hidden; }
       postit: zoomPostit,
       cellulaire: zoomCellulaire,
       depistage: zoomDepistage,
+      match: zoomMatch,
       console: zoomConsole,
       resultats: zoomResultats,
       meneurs: zoomMeneurs,
@@ -3164,21 +3267,24 @@ body{ overflow-x:hidden; }
     simulees[equipe + '|' + per.num] = num;
     const m = matchs.find(x => x.num === num);
     if(!estPetit()) rendreScene(); else rendrePile();
-    if(zoomActuel) remplirZoom(zoomActuel);
+    if(zoomActuel && !pageOuverte) remplirZoom(zoomActuel);
     toast('Maquette : 2e gardien déclaré pour le ' + fCourt.format(parse(m.date)) + ' (rien n’est enregistré).');
   }
 
   // Ouvrir un objet (scène ou pile), fermer le zoom.
   document.addEventListener('click', ev => {
+    // Un match du calendrier (mural ou agrandi) : sa fiche ou le rapport de dépistage.
+    const caseMatch = ev.target.closest('.bu-calendrier [data-num], .gcal [data-num]');
+    if(caseMatch){ ouvrirMatch(caseMatch.dataset.num, caseMatch); return; }
     const o = ev.target.closest('[data-objet]');
-    if(o && o.dataset.objet !== 'fenetre' && !ev.target.closest('#zoom')) ouvrirZoom(o.dataset.objet, o);
+    if(o && o.dataset.objet !== 'fenetre' && !ev.target.closest('#zoom')) ouvrirZoom(o.dataset.objet, o, pageObjet(o.dataset.objet, ev.target));
   });
   $('zoomFermer').addEventListener('click', fermerZoom);
   $('zoomFond').addEventListener('click', fermerZoom);
   document.addEventListener('keydown', ev => {
     if(ev.key === 'Escape' && zoomActuel) fermerZoom();
     // Le calendrier mural est un div (il contient ses boutons de mois) : Entrée l'ouvre comme les autres objets.
-    if(ev.key === 'Enter' && ev.target.matches('div[data-objet]')) ouvrirZoom(ev.target.dataset.objet, ev.target);
+    if(ev.key === 'Enter' && ev.target.matches('div[data-objet]')) ouvrirZoom(ev.target.dataset.objet, ev.target, pageObjet(ev.target.dataset.objet, ev.target));
   });
 
   // Fichier ouvert directement (aperçu, double-clic) : les scripts du site ne peuvent pas se charger.
