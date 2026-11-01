@@ -10,13 +10,14 @@
 <link rel="stylesheet" href="alignement.css?v=5">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@400;700&family=Orbitron:wght@500;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@400;700&family=Orbitron:wght@500;800&family=UnifrakturMaguntia&family=Cinzel:wght@600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,400&display=swap">
 <script src="site-nav.js?v=7"></script>
 <script src="resultats-donnees.js?v=6"></script>
 <script src="gardiens-donnees.js"></script>
 <script src="alignement.js?v=6"></script>
 <script src="encheres-donnees.js?v=6"></script>
 <script src="stats-joueur.js?v=5"></script>
+<script src="marche-donnees.js?v=1"></script>
 <style>
 /* =========================================================================
    MAQUETTE — Centre de l'équipe (calendrier + résultats + 2e gardien + soumission).
@@ -704,7 +705,7 @@ body{ overflow-x:hidden; }
   /* Fenêtre plus étroite que 16:9 (rare sur ordinateur) : les côtés portent le chandail et le calendrier,
      on garde donc toute la largeur ; les marges du haut et du bas montrent le bureau flouté. */
   .ce:has(> .bu-scene:not([hidden])){ position:relative; isolation:isolate; }
-  .ce:has(> .bu-scene:not([hidden]))::before{ content:''; position:absolute; inset:-40px; z-index:-1; background:url("maquettes/bureau-dg-fond.webp?v=2") center / cover;   /* relatif à <base href="/"> */ filter:blur(28px) brightness(0.45); }
+  .ce:has(> .bu-scene:not([hidden]))::before{ content:''; position:absolute; inset:-40px; z-index:-1; background:url("maquettes/bureau-dg-fond.webp?v=3") center / cover;   /* relatif à <base href="/"> */ filter:blur(28px) brightness(0.45); }
 }
 @media (min-width:900px) and (max-aspect-ratio:1672/941){
   .bu-scene{ width:100vw; }
@@ -719,7 +720,7 @@ body{ overflow-x:hidden; }
   transition:filter .25s;
 }
 .bu-objet::before{ content:''; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .25s;
-  background:url("maquettes/bureau-dg-fond.webp?v=2") calc(var(--x) * -1cqw) calc(var(--y) * -0.5628cqw) / 100cqw 56.28cqw no-repeat;
+  background:url("maquettes/bureau-dg-fond.webp?v=3") calc(var(--x) * -1cqw) calc(var(--y) * -0.5628cqw) / 100cqw 56.28cqw no-repeat;
   filter:brightness(1.45) saturate(1.15);
   -webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%); mask-image:radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%); }
 .bu-objet:hover, .bu-objet:focus-visible{ outline:none; z-index:25; filter:brightness(1.15); }
@@ -742,17 +743,46 @@ body{ overflow-x:hidden; }
 .bu-vertical{ left:15.55%; top:20%; width:10.35%; height:35.1%; --x:15.55; --y:20; }
 /* Télé : la vitre exacte (x 480-1150, y 188-494). */
 .bu-tele{ left:28.7%; top:20%; width:40.1%; height:32.5%; --x:28.7; --y:20; }
-.bu-calendrier{ left:70.33%; top:19.66%; width:28.83%; height:41.55%; --x:70.33; --y:19.66; }
-.bu-cahier{ left:80.1%; top:75.6%; width:18.6%; height:16.3%; --x:80.1; --y:75.6; }
-.bu-console{ left:0.7%; top:59.3%; width:14.5%; height:4.5%; --x:0.7; --y:59.3; }
+/* Calendrier : le papier (x 1186-1624, y 195-520). */
+.bu-calendrier{ left:70.93%; top:20.72%; width:26.2%; height:34.54%; --x:70.93; --y:20.72; }
+.bu-cahier{ left:83.37%; top:76.73%; width:16.63%; height:14.66%; --x:83.37; --y:76.73; }
 .bu-tablette{ left:18.96%; top:59.62%; width:13.94%; height:14.35%; --x:18.96; --y:59.62; }
 /* Moniteur : la vitre exacte (x 636-1036, y 483-654) ; il passe toujours devant la télé, même au survol de celle-ci. */
 .bu-moniteur{ left:38.04%; top:51.33%; width:23.92%; height:18.17%; z-index:7; --x:38.04; --y:51.33; }
 .bu-tele:hover, .bu-tele:focus-visible{ z-index:6; }
 .bu-cartable{ left:3.1%; top:78.4%; width:35%; height:14%; --x:3.1; --y:78.4; }
 .bu-cell{ left:62.7%; top:78.7%; width:6.6%; height:8.4%; --x:62.7; --y:78.7; }
-.bu-manette{ left:70.9%; top:76.3%; width:9.2%; height:8.2%; --x:70.9; --y:76.3; }
+/* Enveloppe (x 728-970, y 792-860), journal (x 1165-1445, y 736-848), écriteau (x 1262-1462, y 652-712). */
+.bu-enveloppe{ left:43.54%; top:84.17%; width:14.47%; height:7.23%; --x:43.54; --y:84.17; }
+.bu-journal{ left:69.68%; top:78.21%; width:16.75%; height:11.9%; --x:69.68; --y:78.21; }
+.bu-ecriteau{ left:75.48%; top:69.29%; width:11.96%; height:6.38%; --x:75.48; --y:69.29; }
 .bu-tasse{ position:absolute; z-index:4; pointer-events:none; }
+
+/* ---------- Enveloppe : « Soumettre un résultat » au marqueur, tampon rouge si un match est en retard ---------- */
+/* Écrit à même l'enveloppe kraft de la photo (perspective par JS, encre mêlée au papier). */
+.bu-enveloppe .bu-contenu{ inset:auto; left:0; top:0; width:12cqw; height:3.2cqw; transform-origin:0 0; overflow:visible; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:0.25cqw; mix-blend-mode:multiply; }
+.env-titre{ font:400 1.02cqw/1 var(--marqueur); color:#1b2f6b; rotate:-1.5deg; }
+.env-sous{ margin-top:0.18cqw; font:700 0.5cqw/1 var(--ecrit); color:#3d3122; rotate:-0.8deg; white-space:nowrap; }
+.env-tampon{ position:absolute; right:0.7cqw; top:0.15cqw; padding:0.08cqw 0.35cqw; border:0.12cqw solid #c92a2a; border-radius:0.2cqw; rotate:8deg;
+  font:700 0.62cqw/1 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#c92a2a; opacity:0.85; }
+.bu-enveloppe.retard .bu-contenu{ animation:tampon 2.4s ease-in-out infinite; }
+@keyframes tampon{ 50%{ filter:brightness(0.92) saturate(1.3); } }
+
+/* ---------- Journal : La Gazette LNHQ (titre, photo et manchette imprimés sur la une) ---------- */
+.bu-journal .jr{ position:absolute; left:0; top:0; transform-origin:0 0; overflow:hidden; }
+.jr-titre{ width:10cqw; height:0.85cqw; display:flex; align-items:center; justify-content:center; gap:0.3cqw; background:linear-gradient(180deg, #ddc0b2, #d3b6a7); border-bottom:0.04cqw solid #2a2320;
+  font:400 0.78cqw/1 'UnifrakturMaguntia', 'Old English Text MT', serif; color:#1d1714; white-space:nowrap; }
+.jr-titre small{ font:600 0.22cqw/1 'IBM Plex Sans', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#5a4a40; }
+.jr-photo{ width:4.2cqw; height:2.3cqw; background:#b59c8f; display:flex; align-items:flex-end; justify-content:center; mix-blend-mode:multiply; }
+.jr-photo img{ height:100%; width:auto; max-width:100%; object-fit:cover; filter:grayscale(1) contrast(1.15) brightness(1.05); }
+.jr-photo img.logo{ height:80%; align-self:center; opacity:0.75; }
+.jr-une{ width:5.7cqw; height:0.95cqw; display:flex; align-items:center; padding:0 0.1cqw; background:#d8bbad; font:700 0.42cqw/1.05 'Oswald', sans-serif; text-transform:uppercase; color:#1d1714; letter-spacing:0.01em; }
+.jr-une span{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* ---------- Écriteau du DG : nom gravé dans le laiton ---------- */
+.bu-ecriteau .bu-contenu{ inset:auto; left:0; top:0; width:10cqw; height:2.27cqw; transform-origin:0 0; overflow:hidden; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:0.12cqw; mix-blend-mode:multiply; }
+.ecr-nom{ max-width:96%; font:700 0.86cqw/1 'Cinzel', 'Trajan Pro', serif; letter-spacing:0.05em; color:#4a3410; text-shadow:0 0.05cqw 0 rgba(255,236,170,0.75), 0 -0.03cqw 0 rgba(40,25,5,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ecr-role{ font:600 0.38cqw/1 'Cinzel', serif; letter-spacing:0.14em; text-transform:uppercase; color:#5c4318; text-shadow:0 0.04cqw 0 rgba(255,236,170,0.7); white-space:nowrap; }
 
 /* ---------- Bandeau DEL : résultats qui défilent ---------- */
 .bu-del .bu-ecran{ display:flex; align-items:center; background:radial-gradient(circle, #1a1206 0.06cqw, #050403 0.09cqw) 0 0 / 0.22cqw 0.22cqw, #050403; }
@@ -937,26 +967,32 @@ body{ overflow-x:hidden; }
 .pla-txt em.neg{ color:#ff8787; }
 
 /* ---------- Grand calendrier mural : le mois de l'équipe (résultats et matchs à venir) ---------- */
-/* Le calendrier est dans l'image (papier, spirale, grille vide 7 × 6) : on écrit dessus, calé sur
-   ses lignes (px de l'image : bandeau 194-249, grille x 1182-1652, y 249-565). L'encre se mêle au
-   papier (multiply) pour prendre son grain et l'éclairage de la pièce. */
+/* Le calendrier est dans l'image (papier, spirale, bandeau gris, grille vide 8 × 6) : on écrit dessus,
+   calé sur ses lignes (px de l'image : papier x 1186-1624, y 195-520 ; bandeau y 220-242 ; grille
+   x 1195-1617, y 250-509). La 1re colonne reçoit la fiche de la semaine. L'encre se mêle au papier
+   (multiply) pour prendre son grain et l'éclairage de la pièce. */
 .bu-calendrier .bu-contenu{ color:#1d2a4a; }
-.gm-tete{ position:absolute; left:1.24%; width:97.5%; top:2.3%; height:14.07%; display:grid; grid-template-rows:1fr auto; mix-blend-mode:multiply; }
-.gm-titre{ display:flex; align-items:center; justify-content:center; gap:0.6cqw; }
-.gm-titre b{ font:400 1.45cqw/1 var(--marqueur); color:var(--ce-couleur); text-transform:uppercase; letter-spacing:0.04em; }
-.gm-titre small{ position:absolute; right:0.6cqw; top:0.55cqw; font:400 0.72cqw var(--ecrit); color:#495057; }
-.gm-titre img{ position:absolute; left:0.5cqw; top:0.25cqw; width:1.8cqw; height:1.8cqw; object-fit:contain; }
-.gm-nav{ width:1.5cqw; height:1.5cqw; display:grid; place-items:center; padding:0; border:0.1cqw solid currentColor; border-radius:50%; background:none; color:#1d2a4a; font:400 0.9cqw/1 var(--marqueur); cursor:pointer; }
+.gm-tete{ position:absolute; left:2.05%; width:96.23%; top:7.69%; height:9.23%; display:grid; grid-template-rows:22fr 8fr; mix-blend-mode:multiply; }
+.gm-titre{ position:relative; display:flex; align-items:center; justify-content:center; gap:0.45cqw; }
+.gm-titre b{ font:400 0.98cqw/1 var(--marqueur); color:var(--ce-couleur); text-transform:uppercase; letter-spacing:0.04em; }
+.gm-titre small{ position:absolute; right:0.4cqw; top:50%; translate:0 -50%; font:400 0.56cqw var(--ecrit); color:#343a40; }
+.gm-titre img{ position:absolute; left:0.35cqw; top:50%; translate:0 -50%; width:1.05cqw; height:1.05cqw; object-fit:contain; }
+.gm-nav{ width:0.95cqw; height:0.95cqw; display:grid; place-items:center; padding:0; border:0.08cqw solid currentColor; border-radius:50%; background:none; color:#1d2a4a; font:400 0.6cqw/1 var(--marqueur); cursor:pointer; }
 .gm-nav:hover, .gm-nav:focus-visible{ background:rgba(29,42,74,0.12); outline:none; }
-.gm-jours, .gm-grille{ display:grid; grid-template-columns:66fr 68fr 67fr 67fr 67fr 68fr 67fr; }
-.gm-jours{ padding-bottom:0.15cqw; font:700 0.5cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#6c757d; text-align:center; }
-.gm-grille{ position:absolute; left:1.24%; width:97.5%; top:16.37%; height:80.82%; grid-template-rows:54fr 53fr 53fr 52fr 51fr 53fr; mix-blend-mode:multiply; }
-.gm-case{ position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.12cqw; padding-top:0.5cqw; }
-.gm-case > i{ position:absolute; top:0.2cqw; left:0.3cqw; font:400 0.72cqw/1 var(--ecrit); font-style:normal; color:#495057; }
-.gm-case img{ width:1.65cqw; height:1.65cqw; object-fit:contain; }
-.gm-case b{ font:400 0.85cqw/1 var(--marqueur); }
+.gm-jours, .gm-grille{ display:grid; grid-template-columns:54fr 53fr 54fr 53fr 52fr 53fr 52fr 50fr; }
+.gm-jours{ align-items:end; font:700 0.4cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#6c757d; text-align:center; }
+.gm-grille{ position:absolute; left:2.05%; width:96.23%; top:16.92%; height:79.69%; grid-template-rows:repeat(6, minmax(0, 1fr)); mix-blend-mode:multiply; }
+.gm-case{ position:relative; min-width:0; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.06cqw; padding-top:0.35cqw; }
+.gm-case > i{ position:absolute; top:0.12cqw; left:0.2cqw; font:400 0.55cqw/1 var(--ecrit); font-style:normal; color:#495057; }
+.gm-case img{ width:1.15cqw; height:1.15cqw; object-fit:contain; }
+.gm-case b{ font:400 0.68cqw/1 var(--marqueur); }
 .gm-case b.v{ color:#237032; } .gm-case b.d{ color:#b02525; } .gm-case b.p{ color:#d9480f; }
-.gm-case small{ font:400 0.6cqw/1 var(--ecrit); color:#495057; white-space:nowrap; }
+.gm-case small{ font:400 0.46cqw/1 var(--ecrit); color:#495057; white-space:nowrap; }
+/* 1re colonne : la semaine (fiche des matchs joués, ou nombre de matchs à venir). */
+.gm-sem{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.08cqw; min-width:0; }
+.gm-sem small{ font:700 0.36cqw/1 'IBM Plex Sans', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#868e96; }
+.gm-sem b{ font:400 0.62cqw/1 var(--marqueur); color:#495057; }
+.gm-sem.cours b{ color:var(--ce-couleur); }
 .gm-case.hors > *{ opacity:0.3; }
 /* Aujourd'hui : encerclé au marqueur rouge. */
 .gm-case.auj::after{ content:''; position:absolute; inset:8% 6%; border:0.14cqw solid #d6336c; border-radius:48% 52% 45% 55% / 55% 45% 55% 45%; rotate:-4deg; }
@@ -1027,7 +1063,7 @@ body{ overflow-x:hidden; }
 .cart-ligne > i{ font:400 0.65cqw var(--ecrit); font-style:normal; color:#6c757d; }
 /* ---------- Cahier : règlements (étiquette de la couverture) ---------- */
 /* Écrit à la main directement sur l'étiquette de l'image (déformée en perspective, encre mêlée au papier). */
-.bu-cahier .bu-contenu{ inset:auto; left:0; top:0; width:7.7cqw; height:2.1cqw; transform-origin:0 0; display:flex; flex-direction:column; justify-content:center; align-items:center; overflow:visible; mix-blend-mode:multiply; line-height:1.05; }
+.bu-cahier .bu-contenu{ inset:auto; left:0; top:0; width:6.4cqw; height:1.5cqw; transform-origin:0 0; display:flex; flex-direction:column; justify-content:center; align-items:center; overflow:visible; mix-blend-mode:multiply; line-height:1.05; }
 .bu-cahier b{ font:400 1cqw var(--marqueur); color:#b02525; rotate:-1deg; }
 .bu-cahier small{ max-width:100%; font:400 0.55cqw var(--ecrit); color:#343a40; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
@@ -1241,6 +1277,61 @@ body{ overflow-x:hidden; }
 .bu-zoom-onglets button{ padding:7px 14px; border-radius:999px; border:1px solid #1d2b4f; background:transparent; color:#1d2b4f; font:700 13px 'IBM Plex Sans', sans-serif; cursor:pointer; }
 .bu-zoom-onglets button.actif{ background:#1d2b4f; color:#fff; }
 .bu-zoom-objet.is-console{ background:radial-gradient(120% 100% at 50% 0%, #1b2a4a, #05070b 70%); color:#fff; border-radius:14px; }
+.bu-zoom-objet.is-enveloppe{ width:min(640px, 96vw); background:#fbfaf6; color:#1a2533; }
+
+/* ---------- La Gazette LNHQ (journal agrandi) : papier journal, titres à empattements, colonnes ---------- */
+.bu-zoom-objet.is-journal{ width:min(1100px, 96vw); background:#f3eee2; color:#1c1a17; border-radius:3px; box-shadow:0 30px 80px rgba(0,0,0,0.6); }
+.bu-zoom-objet.is-journal .bu-zoom-corps{ padding:26px 34px 34px; }
+.gz{ font:16px/1.5 Georgia, 'Times New Roman', serif; }
+.gz-tete{ text-align:center; padding-bottom:6px; border-bottom:4px double #1c1a17; margin-bottom:18px; }
+.gz-titre{ margin:2px 0 0; font:400 clamp(38px, 7vw, 72px)/1 'UnifrakturMaguntia', 'Old English Text MT', serif; letter-spacing:0.01em; }
+.gz-filet{ display:flex; justify-content:center; gap:18px; padding:5px 0; border-top:1px solid #1c1a17; border-bottom:1px solid #1c1a17; font:600 11px 'IBM Plex Sans', sans-serif; letter-spacing:0.14em; text-transform:uppercase; color:#4a4339; }
+.gz-filet:first-child{ border-top:none; text-transform:none; letter-spacing:0.04em; font:italic 400 14px Georgia, serif; }
+.gz-fictif{ margin:0 0 16px; padding:8px 12px; border:1px dashed #9c3d12; color:#9c3d12; font:600 13px 'IBM Plex Sans', sans-serif; text-align:center; }
+.gz-mien{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px; margin:0 0 18px; padding:10px 14px; background:#1c1a17; color:#f3eee2; font:600 14px 'IBM Plex Sans', sans-serif; }
+.gz-une{ display:grid; grid-template-columns:minmax(0, 0.9fr) minmax(0, 1.1fr); gap:22px; padding-bottom:18px; border-bottom:1px solid #1c1a17; }
+.gz-photo{ margin:0; min-height:200px; display:grid; place-items:end center; overflow:hidden; background:linear-gradient(180deg, #d9d2c3, #bdb4a3); }
+.gz-photo img{ width:100%; height:100%; max-height:300px; object-fit:cover; object-position:top; filter:grayscale(1) contrast(1.1) sepia(0.15); }
+.gz-photo img.logo{ width:60%; height:auto; align-self:center; object-fit:contain; opacity:0.8; }
+.gz-rubrique{ font:700 11px 'IBM Plex Sans', sans-serif; letter-spacing:0.16em; text-transform:uppercase; color:#9c3d12; }
+.gz-une h3{ margin:4px 0 10px; font:900 clamp(26px, 4vw, 40px)/1.05 'Playfair Display', Georgia, serif; }
+.gz-chapeau{ margin:0; font-size:17px; }
+.gz-chapeau::first-letter{ float:left; font:900 54px/0.85 'Playfair Display', serif; padding:4px 6px 0 0; }
+.gz-logos{ display:flex; gap:8px; margin-top:12px; }
+.gz-logos img{ width:34px; height:34px; object-fit:contain; }
+.gz-section{ margin:20px 0 10px; padding-bottom:4px; border-bottom:2px solid #1c1a17; font:900 15px 'Playfair Display', serif; letter-spacing:0.12em; text-transform:uppercase; }
+.gz-rumeurs{ column-count:3; column-gap:26px; column-rule:1px solid #b3aa98; }
+.gz-rumeurs .gz-section{ column-span:all; }
+.gz-breve{ break-inside:avoid; margin-bottom:14px; }
+.gz-breve h4{ margin:0 0 3px; font:700 17px/1.2 'Playfair Display', serif; }
+.gz-breve p{ margin:0; font-size:14.5px; text-align:justify; hyphens:auto; }
+.gz-mariage{ display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dotted #b3aa98; font-size:15px; }
+.gz-mariage img{ width:28px; height:28px; object-fit:contain; flex-shrink:0; }
+.gz-fleche{ font:700 16px 'IBM Plex Sans', sans-serif; color:#9c3d12; }
+.gz-equipes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:14px; }
+.gz-equipe{ padding:10px 12px; border:1px solid #b3aa98; background:rgba(255,255,255,0.35); break-inside:avoid; }
+.gz-equipe.mienne{ border:2px solid var(--ce-couleur); }
+.gz-equipe h4{ display:flex; align-items:center; gap:8px; margin:0 0 6px; font:700 17px 'Playfair Display', serif; }
+.gz-equipe h4 img{ width:26px; height:26px; object-fit:contain; }
+.gz-posture{ margin-left:auto; padding:1px 7px; border-radius:3px; font:700 10.5px 'IBM Plex Sans', sans-serif; font-style:normal; letter-spacing:0.06em; text-transform:uppercase; color:#fff; background:#495057; }
+.gz-posture.acheteur{ background:#2f9e44; } .gz-posture.vendeur{ background:#c92a2a; } .gz-posture.neutre{ background:#e67700; }
+.gz-note{ margin:0 0 6px; font-style:italic; font-size:14px; color:#4a4339; }
+.gz-etiquette{ display:block; margin-top:6px; font:700 10.5px 'IBM Plex Sans', sans-serif; letter-spacing:0.12em; text-transform:uppercase; color:#7a6f5d; }
+.gz-equipe ul{ margin:2px 0 0; padding:0; list-style:none; }
+.gz-equipe li{ padding:3px 0; border-bottom:1px dotted #cfc6b3; font-size:14.5px; line-height:1.3; }
+.gz-equipe li:last-child{ border-bottom:none; }
+.gz-equipe li b{ display:block; }
+.gz-equipe li small{ font:12px 'IBM Plex Mono', monospace; color:#6b6152; }
+.gz-equipe li i{ display:block; font-size:13px; color:#9c3d12; }
+@media (max-width:760px){
+  .bu-zoom-objet.is-journal .bu-zoom-corps{ padding:18px 16px 28px; }
+  .gz-tete{ padding-top:34px; }   /* la date passe sous le bouton ✕ */
+  .gz-une{ grid-template-columns:1fr; }
+  .gz-photo{ min-height:160px; }
+  .gz-photo img{ max-height:220px; }
+  .gz-rumeurs{ column-count:1; }
+  .gz-filet{ flex-wrap:wrap; gap:4px 12px; }
+}
 .bu-zoom-objet.is-cellulaire .ce-carte, .bu-zoom-objet.is-tele .ce-carte{ background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.12); color:inherit; }
 .bu-zoom-titre{ display:flex; align-items:center; gap:12px; margin:0 0 16px; padding-right:48px; font:500 26px 'Oswald', sans-serif; text-transform:uppercase; }
 .bu-zoom-titre img{ width:40px; height:40px; object-fit:contain; }
@@ -1439,7 +1530,7 @@ body{ overflow-x:hidden; }
     <!-- La scène : le bureau du DG (mur + bureau). Chaque objet s'ouvre en plein écran. -->
     <!-- Image de fond (1672 × 941) ; chaque zone est placée en % de l'image et affiche les vraies données. -->
     <div class="bu-scene" id="scene" hidden>
-      <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=2" alt="" width="1672" height="941">
+      <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=3" alt="" width="1672" height="941">
       <button type="button" class="bu-objet bu-del" data-objet="resultats" aria-label="Bandeau : résultats de la ligue"><div class="bu-ecran" id="o-del"></div></button>
       <button type="button" class="bu-objet bu-chandail" data-objet="fiche" aria-label="Chandail : fiche de l'équipe et du DG"><span class="bu-ecusson" id="o-ecusson"></span><span class="bu-plaque" id="o-plaque" hidden></span></button>
       <!-- Écran vertical : un div (comme le calendrier) parce qu'il contient ses boutons de page. -->
@@ -1447,14 +1538,15 @@ body{ overflow-x:hidden; }
       <button type="button" class="bu-objet bu-tele" data-objet="tele" aria-label="Grand écran : LNHQ TV, directs et fil de la ligue"><div class="bu-ecran" id="o-tele"></div></button>
       <!-- Calendrier : un div (et non un bouton) parce qu'il contient ses propres boutons de mois. -->
       <div class="bu-objet bu-calendrier" data-objet="calendrier" role="group" tabindex="0" aria-label="Calendrier du mois (Entrée pour agrandir)"><div class="bu-contenu" id="o-calendrier"></div></div>
-      <button type="button" class="bu-objet bu-console" data-objet="console" aria-label="Console : soumettre un résultat"></button>
       <button type="button" class="bu-objet bu-tablette" data-objet="depistage" aria-label="Tablette : dépistage du prochain adversaire"><div class="bu-ecran" id="o-depistage"></div></button>
       <!-- Ordinateur : un div parce qu'il contient les boutons de l'Espace DG. -->
       <div class="bu-objet bu-moniteur" data-objet="ordinateur" role="group" tabindex="0" aria-label="Ordinateur : Espace DG"><div class="bu-ecran" id="o-ordinateur"></div></div>
       <button type="button" class="bu-objet bu-cartable" data-objet="cartable" aria-label="Cartable : alignement, effectif et contrats"><div class="bu-page gauche" id="o-align-g"></div><div class="bu-page droite" id="o-align-d"></div></button>
       <button type="button" class="bu-objet bu-cahier" data-objet="reglements" aria-label="Cahier : règlements et dates importantes"><div class="bu-contenu" id="o-reglements"></div></button>
       <button type="button" class="bu-objet bu-cell" data-objet="cellulaire" aria-label="Cellulaire : alertes et enchères"><div class="bu-ecran" id="o-cellulaire"></div></button>
-      <button type="button" class="bu-objet bu-manette" data-objet="console" aria-label="Manette : soumettre un résultat"></button>
+      <button type="button" class="bu-objet bu-ecriteau" data-objet="fiche" aria-label="Écriteau : fiche de l'équipe et du DG"><div class="bu-contenu" id="o-ecriteau"></div></button>
+      <button type="button" class="bu-objet bu-journal" data-objet="journal" aria-label="Journal : La Gazette LNHQ, rumeurs et marché des échanges"><div class="jr jr-titre" id="o-jr-titre"></div><div class="jr jr-photo" id="o-jr-photo"></div><div class="jr jr-une" id="o-jr-une"></div></button>
+      <button type="button" class="bu-objet bu-enveloppe" data-objet="enveloppe" aria-label="Enveloppe : feuille de match, soumettre un résultat"><div class="bu-contenu" id="o-enveloppe"></div></button>
       <span class="bu-tasse" id="o-tasse"></span>
     </div>
 
@@ -2395,7 +2487,8 @@ body{ overflow-x:hidden; }
   const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   const ETIQUETTES = { calendrier: 'Calendrier du mois · cliquer pour agrandir', tele: 'LNHQ TV · directs et fil de la ligue', console: 'Console · soumettre un résultat', reglements: 'Règlements · dates importantes',
     cartable: 'Alignement · effectif et contrats', ordinateur: 'Espace DG', postit: '2e gardien', cellulaire: 'Alertes · enchères', depistage: 'Dépistage · prochain adversaire',
-    resultats: 'Résultats de la ligue', meneurs: 'Stats · ligue et équipe', effectif: 'Effectif · contrats · plafond', fiche: 'Fiche de l’équipe et du DG' };
+    resultats: 'Résultats de la ligue', meneurs: 'Stats · ligue et équipe', effectif: 'Effectif · contrats · plafond', fiche: 'Fiche de l’équipe et du DG',
+    enveloppe: 'Feuille de match · soumettre un résultat', journal: 'La Gazette LNHQ · rumeurs et marché des échanges' };
   const chargerDirect = () => unefois('direct', () => fetch('https://api.lnhq.ca/twitch').then(r => r.json()).catch(() => ({ chaines: [] })));
   const chargerFils = () => unefois('fils', () => Promise.all(['ANNONCES', 'NOUVELLES'].map(async s => {
     const t = await gvizTable('sheet=' + s);
@@ -2443,6 +2536,9 @@ body{ overflow-x:hidden; }
     apercuOrdinateur($('o-ordinateur'));
     sansErreur(apercuCellulaire($('o-cellulaire')));
     sansErreur(peindreSurface('o-tasse', equipe));
+    apercuEnveloppe($('o-enveloppe'));
+    apercuEcriteau($('o-ecriteau'));
+    sansErreur(apercuJournal());
     ajusterPerspectives();
   }
 
@@ -2506,7 +2602,7 @@ body{ overflow-x:hidden; }
   };
   const dansPoly = (p, x, y) => { let d = false; for(let i = 0, j = p.length - 1; i < p.length; j = i++){ if((p[i][1] > y) !== (p[j][1] > y) && x < (p[j][0] - p[i][0]) * (y - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0]) d = !d; } return d; };
   const lisse = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-  const FOND = 'maquettes/bureau-dg-fond.webp?v=2';
+  const FOND = 'maquettes/bureau-dg-fond.webp?v=3';
   const chargerImage = src => new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = src; });
   const pixels = (img, x, y, w, h, W, H) => {
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H }), g = c.getContext('2d', { willReadFrequently: true });
@@ -2689,14 +2785,190 @@ body{ overflow-x:hidden; }
     p.replaceChildren(el('b', null, ch.numero ? 'Nº ' + ch.numero : ''), el('span', null, ch.joueur || ''));
   }
 
+  /* ---------- Enveloppe : la feuille de match ---------- */
+  // Le DG y trouve la vraie page de soumission (dg.lnhq.ca/resultat.html) en mode « feuille de match »,
+  // avec le match en retard (ou celui de ce soir) déjà choisi.
+  function feuilleMatch(){
+    const m = retards()[0] || mesMatchs().find(x => !x.joue && x.date === AUJ);
+    return ['Feuille de match', DG + 'resultat.html?feuille=1' + (m ? '&match=' + encodeURIComponent(m.num) : '')];
+  }
+  function apercuEnveloppe(box){
+    const ret = estDG() ? retards() : [], pm = prochainMatch();
+    box.closest('.bu-enveloppe').classList.toggle('retard', ret.length > 0);
+    const versus = m => (m.v === equipe ? '@ ' : 'vs ') + adversaireDe(m);
+    const sous = ret.length ? ret.length + ' match' + (ret.length > 1 ? 's' : '') + ' en retard · ' + versus(ret[0]) + ' (' + fMois.format(parse(ret[0].date)) + ')'
+      : pm ? (pm.date === AUJ ? 'Ce soir' : fCourt.format(parse(pm.date))) + ' · ' + versus(pm) : '';
+    box.replaceChildren(el('span', 'env-titre', estDG() ? 'Soumettre un résultat' : 'Feuille de match'), el('span', 'env-sous', sous));
+    if(ret.length) box.append(el('span', 'env-tampon', 'En retard'));
+  }
+  // Public : la feuille du dernier match joué (les DG seuls soumettent).
+  function zoomEnveloppe(){
+    const dernier = mesMatchs().filter(x => x.joue).sort((a, b) => b.date.localeCompare(a.date) || Number(b.num) - Number(a.num))[0];
+    if(dernier && resultats[dernier.num]){ matchZoom = dernier.num; return zoomMatch(); }
+    return zoomConsole();
+  }
+
+  /* ---------- Écriteau : le nom du DG gravé dans le laiton ---------- */
+  function apercuEcriteau(box){
+    // La gravure rapetisse pour que le nom entier tienne sur la plaque (lettres capitales de Cinzel ≈ 0,72 em).
+    const graver = dg => {
+      const n = el('span', 'ecr-nom', dg || nom(equipe));
+      n.style.fontSize = Math.min(0.86, 9.2 / (n.textContent.length * 0.72)).toFixed(3) + 'cqw';
+      box.replaceChildren(n, el('span', 'ecr-role', dg ? 'Directeur général · ' + nom(equipe) : 'Bureau du directeur général'));
+    };
+    graver('');
+    unefois('dgs', () => gvizTable('sheet=DGs')).then(tab => {
+      const c = cellules(tab).find(l => String(l[2] || '').trim().toUpperCase() === equipe) || [];
+      graver(String(c[4] || '').trim());
+    }).catch(() => {});
+  }
+
+  /* ---------- Journal : La Gazette LNHQ (rumeurs et marché des échanges) ----------
+     Marché : onglet MARCHE (rempli par chaque DG sur dg.lnhq.ca/marche.html), lu par marche-donnees.js.
+     Tant qu'aucune équipe n'a rien inscrit, la Gazette montre un exemple fictif (bien identifié). */
+  const M = window.LNHQ_MARCHE;
+  const RECHERCHES_EXEMPLE = [
+    { pos: 'DD', role: 'top', ovMin: 80, n: '' }, { pos: 'C', style: 'fabricant', ageMax: 28, n: '' }, { pos: 'G', role: 'partant', ovMin: 82, n: 'Notre gardien se blesse trop souvent.' },
+    { pos: 'AG', style: 'marqueur', contrat: 'expirant', n: '' }, { pos: 'CHOIX', n: 'Un choix de 1re ronde 2027' }, { pos: 'D', style: 'robuste', contrat: 'bas', n: '' },
+    { pos: 'AD', role: 'top', tir: 'D', n: 'Pour compléter le 1er trio.' }, { pos: 'A', role: 'profondeur', contrat: 'bas', n: '' },
+  ].map(r => Object.assign({ pos: '', role: '', style: '', tir: '', ovMin: 0, ageMax: 0, contrat: '', n: '' }, r));
+  function exempleMarche(joueurs){
+    const m = new Map(), rang = new Map(classement.map((t, i) => [t.code, i]));
+    [...EQUIPES.keys()].filter(c => graine(c + 'gz') % 5 < 2).forEach(c => {
+      const liste = joueurs.filter(j => j.equipe === c && !j.choix && !j.espoir).sort((a, b) => b.ov - a.ov);
+      if(liste.length < 12) return;
+      const g = graine(c + 'marche');
+      const dispo = [liste[3 + g % 6], liste[9 + g % Math.max(1, liste.length - 10)]].filter(Boolean);
+      const r = rang.get(c) ?? 16;
+      m.set(c, { code: c, posture: r > 20 ? 'vendeur' : r < 8 ? 'acheteur' : 'neutre', note: '',
+        disponibles: dispo.slice(0, 1 + g % 2).map((j, k) => ({ j: j.id, n: k ? '' : ['Ouvert à toute offre', 'Contre un choix de 1re ronde', 'Pour libérer de l’espace', ''][g % 4] })),
+        recherches: [RECHERCHES_EXEMPLE[g % RECHERCHES_EXEMPLE.length]] });
+    });
+    return m;
+  }
+  const chargerGazette = () => unefois('gazette', async () => {
+    const [marche, joueurs] = await Promise.all([M.chargerMarche(), M.chargerJoueurs()]);
+    const parId = new Map(joueurs.filter(j => EQUIPES.has(j.equipe)).map(j => [j.id, j]));
+    const exemple = !marche.size;
+    return { marche: exemple ? exempleMarche([...parId.values()]) : marche, parId, exemple };
+  });
+  const rumeursDu = d => M.rumeurs(d.marche, d.parId, { nom, jour: AUJ, classement });
+  const photoUne = async (j, cible, logoCode) => {
+    const img = el('img');
+    img.alt = '';
+    if(j && !j.choix){
+      const id = (await idsLnh([j.id])).get(j.id);
+      if(id){ img.src = photoJoueur(id); img.onerror = () => { img.className = 'logo'; img.src = logoSrc(j.equipe); }; cible.replaceChildren(img); return; }
+    }
+    img.className = 'logo'; img.src = logoSrc(logoCode || equipe); cible.replaceChildren(img);
+  };
+  async function apercuJournal(){
+    $('o-jr-titre').replaceChildren(document.createTextNode('La Gazette LNHQ'));
+    const d = await chargerGazette(), r = rumeursDu(d)[0];
+    $('o-jr-une').replaceChildren(el('span', null, r ? r.titre : 'Le marché est calme'));
+    photoUne(r && r.joueur, $('o-jr-photo'), r ? r.equipes[0] : equipe);
+  }
+
+  function zoomJournal(){
+    const page = el('article', 'gz');
+    const tete = el('header', 'gz-tete');
+    const jour = parse(AUJ).toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    tete.append(el('div', 'gz-filet', 'Édition du ' + jour), el('h2', 'gz-titre', 'La Gazette LNHQ'), el('div', 'gz-filet', 'Rumeurs · Marché des échanges · Le journal des DG'));
+    const corps = el('div', 'gz-corps');
+    corps.append(el('p', 'ce-vide', 'Impression en cours…'));
+    page.append(tete, corps);
+    chargerGazette().then(d => remplirGazette(corps, d)).catch(e => { console.warn(e); corps.replaceChildren(el('p', 'ce-vide', 'La Gazette n’a pas été livrée ce matin. Réessaie plus tard.')); });
+    return [page];
+  }
+  function remplirGazette(corps, d){
+    const rum = rumeursDu(d), blocs = [];
+    if(d.exemple) blocs.push(el('p', 'gz-fictif', 'Exemple fictif : aucune équipe n’a encore inscrit son marché. Chaque DG le remplit depuis son Espace DG, et les rumeurs s’écrivent toutes seules.'));
+    // Le DG : son propre marché, et le bouton pour le mettre à jour.
+    if(estDG()){
+      const mien = d.exemple ? null : d.marche.get(equipe);
+      const b = el('div', 'gz-mien');
+      b.append(el('span', null, mien ? `Ton marché : ${mien.disponibles.length} joueur${mien.disponibles.length > 1 ? 's' : ''} disponible${mien.disponibles.length > 1 ? 's' : ''} · ${mien.recherches.length} recherché${mien.recherches.length > 1 ? 's' : ''}` : 'Tu n’as encore rien inscrit sur le marché.'));
+      const maj = el('button', 'ce-bouton is-principal', 'Mettre à jour mon marché'); maj.type = 'button';
+      maj.addEventListener('click', () => ouvrirZoom('ordinateur', maj, ['Marché des échanges', DG + 'marche.html']));
+      b.append(maj);
+      blocs.push(b);
+    }
+    // La une.
+    if(rum[0]){
+      const une = el('section', 'gz-une'), fig = el('figure', 'gz-photo'), txt = el('div');
+      photoUne(rum[0].joueur, fig, rum[0].equipes[0]);
+      const logos = el('div', 'gz-logos'); rum[0].equipes.forEach(c => logos.append(logo(c)));
+      txt.append(el('span', 'gz-rubrique', 'Rumeur du jour'), el('h3', null, rum[0].titre), el('p', 'gz-chapeau', rum[0].texte), logos);
+      une.append(fig, txt);
+      blocs.push(une);
+    }else blocs.push(el('p', 'ce-vide', 'Aucune rumeur pour l’instant : le marché est calme.'));
+    // Les autres rumeurs, en colonnes de journal.
+    if(rum.length > 1){
+      const col = el('section', 'gz-rumeurs');
+      col.append(el('h3', 'gz-section', 'Dans les coulisses'));
+      rum.slice(1, 9).forEach(r => { const a = el('div', 'gz-breve'); a.append(el('h4', null, r.titre), el('p', null, r.texte)); col.append(a); });
+      blocs.push(col);
+    }
+    // Mariages possibles : ce qu'une équipe cherche, une autre l'offre.
+    const mar = M.mariages(d.marche, d.parId).slice(0, 6);
+    if(mar.length){
+      const s = el('section', 'gz-mariages');
+      s.append(el('h3', 'gz-section', 'Mariages possibles'));
+      mar.forEach(x => {
+        const l = el('div', 'gz-mariage');
+        l.append(logo(x.vendeur), el('span', 'gz-fleche', '→'), logo(x.acheteur));
+        const t = el('span'); t.append(el('b', null, x.joueur.choix ? x.joueur.nom : x.joueur.nom + ' (' + M.poCourt(x.joueur.po) + ', ' + x.joueur.ov + ')'), document.createTextNode(` · ${nom(x.acheteur)} cherche : ${M.decrire(x.recherche, true)}`));
+        l.append(t); s.append(l);
+      });
+      blocs.push(s);
+    }
+    // Le marché, équipe par équipe : disponibles et recherchés.
+    const marche = el('section', 'gz-marche');
+    marche.append(el('h3', 'gz-section', 'Le marché des échanges'));
+    const grille = el('div', 'gz-equipes');
+    [...d.marche.values()].sort((a, b) => nom(a.code).localeCompare(nom(b.code), 'fr')).forEach(e => {
+      const c = el('div', 'gz-equipe' + (e.code === equipe ? ' mienne' : ''));
+      const h = el('h4'); h.append(logo(e.code), el('span', null, nom(e.code)));
+      if(e.posture) h.append(el('em', 'gz-posture ' + e.posture, M.libelle('posture', e.posture)));
+      c.append(h);
+      if(e.note) c.append(el('p', 'gz-note', '« ' + e.note + ' »'));
+      if(e.disponibles.length){
+        const ul = el('ul', 'gz-dispo');
+        e.disponibles.forEach(x => {
+          const j = d.parId.get(x.j), li = el('li');
+          if(!j || j.equipe !== e.code) return;   // joueur parti depuis
+          li.append(el('b', null, j.choix ? j.nom : j.nom), el('small', null, j.choix ? 'Choix de repêchage' : [M.poCourt(j.po), j.ov + ' OV', j.age + ' ans', M.millions(j.salaire), j.ans ? j.ans + ' an' + (j.ans > 1 ? 's' : '') : ''].filter(Boolean).join(' · ')));
+          if(x.n) li.append(el('i', null, x.n));
+          ul.append(li);
+        });
+        c.append(el('span', 'gz-etiquette', 'Disponibles'), ul);
+      }
+      if(e.recherches.length){
+        const ul = el('ul', 'gz-recherche');
+        e.recherches.forEach(r => { const li = el('li'); li.append(el('b', null, M.decrire(r))); if(r.n) li.append(el('i', null, r.n)); ul.append(li); });
+        c.append(el('span', 'gz-etiquette', 'Recherche'), ul);
+      }
+      grille.append(c);
+    });
+    if(!grille.children.length) grille.append(el('p', 'ce-vide', 'Aucune équipe sur le marché pour l’instant.'));
+    marche.append(grille);
+    blocs.push(marche);
+    corps.replaceChildren(...blocs);
+  }
+
   // Surfaces inclinées ou à plat dans l'image : leurs 4 coins (px de l'image, relatifs à leur zone),
   // dans l'ordre haut-gauche, haut-droite, bas-gauche, bas-droite.
   const PERSPECTIVES = {
     'o-depistage': [[2, 8], [201, 3], [20, 131], [229, 116]],     // tablette sur son support
-    'o-cellulaire': [[0, 4], [76, 3], [23, 66], [107, 66]],       // téléphone à plat
+    'o-cellulaire': [[0, 1], [72, 0], [18, 66], [110, 67]],       // téléphone à plat
     'o-align-g': [[163, 7], [346, 4], [42, 114], [315, 114]],     // cartable, page de gauche
     'o-align-d': [[367, 4], [559, 0], [330, 115], [563, 105]],    // cartable, page de droite
-    'o-reglements': [[95, 41], [223, 36], [121, 69], [247, 63]],  // étiquette du cahier
+    'o-reglements': [[84, 32], [189, 28], [108, 56], [215, 52]],  // étiquette du cahier
+    'o-enveloppe': [[2, 16], [207, 2], [20, 66], [240, 48]],      // enveloppe, devant le clavier
+    'o-jr-titre': [[23, 16], [189, 12], [25, 30], [194, 25]],     // journal : bandeau du titre
+    'o-jr-photo': [[33, 37], [102, 36], [53, 75], [124, 73]],     // journal : photo de la une
+    'o-jr-une': [[108, 36], [201, 32], [114, 51], [210, 47]],     // journal : manchette
+    'o-ecriteau': [[16, 9], [185, 8], [20, 48], [188, 46]],       // plaque de laiton de l'écriteau
   };
   function ajusterPerspectives(){
     const scene = $('scene');
@@ -3093,10 +3365,24 @@ body{ overflow-x:hidden; }
     const ligneTitre = el('div', 'gm-titre');
     ligneTitre.append(logo(equipe), nav('‹', -1, 'Mois précédent'), el('b', null, NOM_MOIS_CAP(m - 1) + ' ' + a), nav('›', 1, 'Mois suivant'),
       el('small', null, joues.length ? `${v}-${joues.length - v - p}-${p} ce mois` : duMois.length + ' matchs'));
-    const jours = el('div', 'gm-jours'); ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach(j => jours.append(el('span', null, j)));
+    const jours = el('div', 'gm-jours'); ['Sem.', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach(j => jours.append(el('span', null, j)));
     tete.append(ligneTitre, jours);
     const grille = el('div', 'gm-grille');
-    grilleMois(a, m - 1, true).forEach(c => { c.classList.add('gm-case'); if(c.classList.contains('retard')) c.append(el('small', null, 'en retard')); grille.append(c); });
+    // Chaque rangée commence par la semaine : fiche des matchs joués (V-D-DP), sinon nombre de matchs prévus.
+    const cases = grilleMois(a, m - 1, true), premier = new Date(a, m - 1, 1);
+    const debut = new Date(premier); debut.setDate(1 - (premier.getDay() + 6) % 7);
+    cases.forEach((c, k) => {
+      if(k % 7 === 0){
+        const lun = new Date(debut); lun.setDate(debut.getDate() + k);
+        const dim = new Date(lun); dim.setDate(lun.getDate() + 6);
+        const sem = mesMatchs().filter(x => x.date >= iso(lun) && x.date <= iso(dim)), js = sem.filter(x => x.joue);
+        const sv = js.filter(x => resultatPour(x) === 'v').length, sp = js.filter(x => resultatPour(x) === 'p').length;
+        const s = el('div', 'gm-sem' + (AUJ >= iso(lun) && AUJ <= iso(dim) ? ' cours' : ''));
+        s.append(el('small', null, fMois.format(lun)), el('b', null, js.length ? `${sv}-${js.length - sv - sp}-${sp}` : sem.length ? sem.length + ' m.' : '—'));
+        grille.append(s);
+      }
+      c.classList.add('gm-case'); if(c.classList.contains('retard')) c.append(el('small', null, 'en retard')); grille.append(c);
+    });
     box.replaceChildren(tete, grille);
   }
   const NOM_MOIS_CAP = m => NOMS_MOIS[m].charAt(0).toUpperCase() + NOMS_MOIS[m].slice(1);
@@ -3338,9 +3624,9 @@ body{ overflow-x:hidden; }
   // [page, icône, nom court, couleur de l'icône]
   const APPS_MOBILE_DG = [
     ['alignement.html', '📋', 'Alignement', '#1c7ed6'], ['gardien.html', '🥅', '2e gardien', '#0ca678'], ['encheres.html', '💰', 'Enchères', '#2f9e44'],
-    ['transactions.html', '🔁', 'Transactions', '#7048e8'], ['ratings.html', '📊', 'Ratings', '#4263eb'], ['profil.html', '🪪', 'Ma fiche', '#495057'], ['publier.html', '✏️', 'Publier', '#f08c00'],
+    ['transactions.html', '🔁', 'Transactions', '#7048e8'], ['marche.html', '🏷️', 'Mon marché', '#d6336c'], ['ratings.html', '📊', 'Ratings', '#4263eb'], ['profil.html', '🪪', 'Ma fiche', '#495057'], ['publier.html', '✏️', 'Publier', '#f08c00'],
   ];
-  const ALERTE_VERS = { console: ['resultat.html', '#e8590c'], postit: ['gardien.html', '#0ca678'], ordinateur: ['transactions.html', '#7048e8'], agents: ['encheres.html', '#2f9e44'] };
+  const ALERTE_VERS = { console: ['resultat.html?feuille=1', '#e8590c'], postit: ['gardien.html', '#0ca678'], ordinateur: ['transactions.html', '#7048e8'], agents: ['encheres.html', '#2f9e44'] };
   function rendrePile(){
     const pile = $('pile');
     const t = classement.find(x => x.code === equipe), slug = (EQUIPES.get(equipe) || {}).slug || '';
@@ -3368,7 +3654,7 @@ body{ overflow-x:hidden; }
       el('small', null, ret.length ? ret.length + ' match' + (ret.length > 1 ? 's' : '') + ' en retard · ' + (ret[0].v === equipe ? '@ ' : 'vs ') + adversaireDe(ret[0]) + ' (' + fMois.format(parse(ret[0].date)) + ')'
         : prochain ? (prochain.date === AUJ ? 'Ce soir' : fCourt.format(parse(prochain.date))) + ' · ' + (prochain.v === equipe ? '@ ' : 'vs ') + nom(adversaireDe(prochain)) : 'Photo de l’écran de fin de match'));
     sb.append(el('i', null, '📷'), st, el('i', 'mb-fleche', '›'));
-    sb.addEventListener('click', () => page(sb, 'Soumettre un résultat', DG + 'resultat.html'));
+    sb.addEventListener('click', () => page(sb, ...feuilleMatch()));
     blocs.push(sb);
 
     // 2. Notifications : ce qui attend le DG (remplies quand les alertes arrivent) ; en public, la connexion.
@@ -3431,14 +3717,14 @@ body{ overflow-x:hidden; }
     const ligue = el('div', 'mb-apps');
     [[iconeCalendrier(), 'Calendrier', '', 'calendrier.html'], ['🏆', 'Classement', '#f59f00', 'classement.html'], ['📈', 'Stats', '#12b886', 'stats.html'],
       ['🚨', 'Résultats', '#e03131', 'resultats.html?equipe=' + equipe], ['📢', 'Annonces', '#fa5252', './?fil=annonces'], ['📰', 'Nouvelles', '#339af0', './?fil=nouvelles'],
-      ['🔄', 'Échanges', '#845ef7', './?fil=transactions'], ['👕', 'Mon équipe', 'var(--ce-couleur)', 'equipe.html?team=' + slug + '&vue=alignement'],
+      ['🔄', 'Échanges', '#845ef7', './?fil=transactions'], ['🗞️', 'Gazette', '#5c4033', 'journal'], ['👕', 'Mon équipe', 'var(--ce-couleur)', 'equipe.html?team=' + slug + '&vue=alignement'],
       ...(estDG() ? [] : [['💰', 'Enchères', '#2f9e44', 'encheres.html']]), ['💵', 'Masse', '#37b24d', 'masse.html'], ['📒', 'Règlements', '#a0522d', 'reglements.html'], ['📺', 'LNHQ TV', '#343a40', 'tv.html'],
-    ].forEach(([icone, nomApp, couleur, url]) => ligue.append(app(icone, nomApp, couleur, b => page(b, nomApp, url))));
+    ].forEach(([icone, nomApp, couleur, url]) => ligue.append(app(icone, nomApp, couleur, b => url === 'journal' ? ouvrirZoom('journal', b) : page(b, nomApp, url))));
     blocs.push(titre('La ligue'), ligue);
 
     // 5. Dock : Soumettre un résultat au centre, entouré des 4 raccourcis les plus utiles, toujours à portée du pouce.
     const dock = el('nav', 'mb-dock'); dock.setAttribute('aria-label', 'Raccourcis');
-    const res = app('📷', 'Résultat', '', b => page(b, 'Soumettre un résultat', DG + 'resultat.html'));
+    const res = app('📷', 'Résultat', '', b => page(b, ...feuilleMatch()));
     res.classList.add('resultat'); if(ret.length){ res.classList.add('urgent'); res.pastille(ret.length); }
     dock.append(app(iconeCalendrier(), 'Calendrier', '', b => page(b, 'Calendrier', 'calendrier.html')), app('🔎', 'Dépistage', '#f59f00', b => depister(b)),
       res, app('📋', 'Alignement', '#1c7ed6', versAlignement), app('🏆', 'Classement', '#f59f00', b => page(b, 'Classement', 'classement.html')));
@@ -3868,7 +4154,8 @@ body{ overflow-x:hidden; }
       reglements: ['Règlements', 'reglements.html'],
       ordinateur: ['Espace DG', DG],
       cellulaire: ['Enchères', 'encheres.html'],
-      console: ['Soumettre un résultat', DG + 'resultat.html'],
+      console: feuilleMatch(),
+      enveloppe: estDG() ? feuilleMatch() : null,
       postit: ['2e gardien', DG + 'gardien.html'],
     })[type] || null;
   }
@@ -3982,6 +4269,8 @@ body{ overflow-x:hidden; }
       depistage: zoomDepistage,
       match: zoomMatch,
       console: zoomConsole,
+      enveloppe: zoomEnveloppe,
+      journal: zoomJournal,
       resultats: zoomResultats,
       meneurs: zoomMeneurs,
       effectif: zoomEffectif,

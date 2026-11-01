@@ -292,6 +292,18 @@
     $('photo').addEventListener('change', choisirPhoto);
     ['butsV', 'butsD'].forEach(id => $(id).addEventListener('input', majBouton));
     $('formulaire').addEventListener('submit', envoyer);
+    // Depuis l'enveloppe du bureau du DG : ?match=123 choisit le match d'office.
+    const demande = params.get('match');
+    if(demande && Array.from($('match').options).some(o => o.value === demande)){ $('match').value = demande; choisirMatch(); }
+  }
+
+  // ?feuille=1 (enveloppe du bureau du DG) : la page prend l'allure d'une feuille de match officielle ;
+  // dans le panneau du bureau, l'en-tête du site est caché (le bureau a sa propre barre).
+  const params = new URLSearchParams(location.search);
+  if(params.has('feuille')){
+    document.body.classList.add('feuille');
+    if(window.top !== window.self) document.body.classList.add('integre');
+    $('formulaire').querySelector('.res-titre').textContent = 'Feuille de match officielle';
   }
 
   demarrer();

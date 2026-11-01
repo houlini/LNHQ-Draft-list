@@ -123,6 +123,7 @@ function traiter(p, corps) {
   if (p.action === 'retirerGardien') return retirerGardien(JSON.parse(corps || '{}'), membre);
   if (p.action === 'soumettreResultat') return soumettreResultat(JSON.parse(corps || '{}'), membre);
   if (p.action === 'sauverAlignement') return sauverAlignement(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'sauverMarche') return sauverMarche(JSON.parse(corps || '{}'), membre);
   if (p.action === 'lancerEnchere') return lancerEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'miserEnchere') return miserEnchere(JSON.parse(corps || '{}'), membre);
   if (p.action === 'tirerAuSort') return tirerAuSort(JSON.parse(corps || '{}'), membre);
@@ -1082,6 +1083,108 @@ function sauverAlignement(d, membre) {
     valeurs.push(new Date().toISOString(), sienne || 'Ligue');
     const rang = o.getRange(i >= 0 ? i + 2 : o.getLastRow() + 1, 1, 1, valeurs.length);
     rang.setNumberFormat('@').setValues([valeurs]);
+    return { ok: true };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+/* =========================================================================
+   MARCHÉ DES ÉCHANGES (Gazette du bureau du DG)
+   Onglet MARCHE : une ligne par équipe. Disponibles = joueurs (ou choix) de l'équipe que le
+   DG est prêt à échanger ; Recherchés = types de joueurs voulus (critères + note).
+   Même règle que l'alignement : le DG modifie son équipe, un dirigeant toutes les équipes.
+   Lu par lnhq.ca/marche-donnees.js (mêmes valeurs de critères).
+   ========================================================================= */
+const ONGLET_MARCHE = 'MARCHE';
+const MARCHE_ENTETES = ['Équipe', 'Posture', 'Disponibles', 'Recherchés', 'Note', 'Modifié le', 'Par'];
+const MARCHE_CRITERES = {
+  posture: ['', 'acheteur', 'vendeur', 'neutre'],
+  pos: ['', 'A', 'C', 'AG', 'AD', 'D', 'DG', 'DD', 'G', 'CHOIX'],
+  role: ['', 'vedette', 'top', 'milieu', 'profondeur', 'espoir', 'partant', 'auxiliaire'],
+  style: ['', 'marqueur', 'fabricant', 'puissance', 'deux-sens', 'defensif', 'robuste', 'mises', 'def-offensif', 'def-defensif'],
+  tir: ['', 'G', 'D'],
+  contrat: ['', 'expirant', 'court', 'long', 'bas'],
+};
+const MARCHE_MAX_DISPONIBLES = 12;
+const MARCHE_MAX_RECHERCHES = 6;
+const MARCHE_MAX_NOTE = 200;
+
+function ongletMarche() {
+  const classeur = SpreadsheetApp.openById(SHEET_ID);
+  let o = classeur.getSheetByName(ONGLET_MARCHE);
+  if (!o) {
+    o = classeur.insertSheet(ONGLET_MARCHE);
+    o.appendRow(MARCHE_ENTETES);
+    o.setFrozenRows(1);
+    o.getRange(1, 1, o.getMaxRows(), MARCHE_ENTETES.length).setNumberFormat('@');
+  }
+  return o;
+}
+
+// Joueurs et choix de repêchage de l'équipe (colonne B).
+function actifsEquipe(code) {
+  const o = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ONGLET_JOUEURS);
+  const lignes = o.getRange(2, 1, o.getLastRow() - 1, COL_EQUIPE_JOUEUR).getDisplayValues();
+  const noms = new Set();
+  lignes.forEach(l => {
+    if (String(l[COL_EQUIPE_JOUEUR - 1]).trim().toUpperCase() === code && String(l[1]).trim()) noms.add(String(l[1]).trim());
+  });
+  return noms;
+}
+
+function texteMarche(v) {
+  return String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, MARCHE_MAX_NOTE);
+}
+
+function sauverMarche(d, membre) {
+  const admin = peutModifier(membre);
+  const sienne = codeDuMembre(membre);
+  const code = String(d.equipe || sienne || '').trim().toUpperCase();
+  if (!code || !Object.keys(CODES_EQUIPES).some(n => CODES_EQUIPES[n] === code)) return { ok: false, erreur: 'equipe' };
+  if (!admin && code !== sienne) return { ok: false, erreur: 'pas_ton_equipe' };
+  const posture = String(d.posture || '');
+  if (MARCHE_CRITERES.posture.indexOf(posture) < 0) return { ok: false, erreur: 'critere' };
+  const dispo = Array.isArray(d.disponibles) ? d.disponibles : [];
+  const voulus = Array.isArray(d.recherches) ? d.recherches : [];
+  if (dispo.length > MARCHE_MAX_DISPONIBLES || voulus.length > MARCHE_MAX_RECHERCHES) return { ok: false, erreur: 'trop' };
+
+  const actifs = actifsEquipe(code);
+  const vus = new Set();
+  const disponibles = [];
+  for (const x of dispo) {
+    const j = String((x && x.j) || '').trim();
+    if (!actifs.has(j)) return { ok: false, erreur: 'joueur', joueur: j };
+    if (vus.has(j)) continue;
+    vus.add(j);
+    disponibles.push({ j: j, n: texteMarche(x.n) });
+  }
+  const recherches = [];
+  for (const x of voulus) {
+    const r = { pos: String(x.pos || ''), role: String(x.role || ''), style: String(x.style || ''), tir: String(x.tir || ''), contrat: String(x.contrat || '') };
+    if (Object.keys(r).some(k => MARCHE_CRITERES[k].indexOf(r[k]) < 0)) return { ok: false, erreur: 'critere' };
+    const ov = Math.round(Number(x.ovMin) || 0), age = Math.round(Number(x.ageMax) || 0);
+    r.ovMin = ov >= 40 && ov <= 99 ? ov : 0;
+    r.ageMax = age >= 18 && age <= 45 ? age : 0;
+    r.n = texteMarche(x.n);
+    if (!r.pos && !r.role && !r.style && !r.tir && !r.contrat && !r.ovMin && !r.ageMax && !r.n) continue;   // ligne vide
+    recherches.push(r);
+  }
+  const note = texteMarche(d.note);
+
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletMarche();
+    const codes = o.getLastRow() > 1 ? o.getRange(2, 1, o.getLastRow() - 1, 1).getDisplayValues().map(l => l[0]) : [];
+    const i = codes.indexOf(code);
+    // Plus rien sur le marché : la ligne de l'équipe est effacée.
+    if (!posture && !disponibles.length && !recherches.length && !note) {
+      if (i >= 0) o.deleteRow(i + 2);
+      return { ok: true, vide: true };
+    }
+    const valeurs = [code, posture, JSON.stringify(disponibles), JSON.stringify(recherches), note, new Date().toISOString(), sienne || 'Ligue'];
+    o.getRange(i >= 0 ? i + 2 : o.getLastRow() + 1, 1, 1, valeurs.length).setNumberFormat('@').setValues([valeurs]);
     return { ok: true };
   } finally {
     verrou.releaseLock();

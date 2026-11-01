@@ -1,0 +1,47 @@
+/* LNHQ — marché des échanges du DG (dg.lnhq.ca/marche.html). */
+.mc-page{ max-width:860px; margin:0 auto; width:100%; box-sizing:border-box; padding:16px clamp(12px,3vw,32px) 48px; display:flex; flex-direction:column; gap:14px; }
+#zone{ display:flex; flex-direction:column; gap:14px; }
+#zone[hidden]{ display:none; }
+.mc-carte{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.mc-titre{ margin:0; font-family:'Oswald', 'IBM Plex Sans', sans-serif; font-weight:500; font-size:19px; text-transform:uppercase; letter-spacing:0.02em; display:flex; align-items:baseline; gap:10px; }
+.mc-titre small{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ink-muted); }
+.mc-champ{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+.mc-champ > span{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-muted); }
+.mc-page select, .mc-page input:not([type=checkbox]){
+  box-sizing:border-box; width:100%; min-height:40px; padding:0 10px; border-radius:8px; border:1px solid var(--line);
+  background:var(--bg); color:var(--ink); font:inherit; font-size:14.5px;
+}
+
+.mc-postures{ display:flex; flex-wrap:wrap; gap:8px; }
+.mc-posture{ min-height:40px; padding:0 16px; border-radius:999px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; font-weight:700; font-size:14px; cursor:pointer; }
+.mc-posture[aria-checked=true]{ background:var(--ink); border-color:var(--ink); color:var(--surface); }
+.mc-posture.acheteur[aria-checked=true]{ background:#2F9E44; border-color:#2F9E44; color:#fff; }
+.mc-posture.vendeur[aria-checked=true]{ background:#E03131; border-color:#E03131; color:#fff; }
+.mc-posture.neutre[aria-checked=true]{ background:#F08C00; border-color:#F08C00; color:#fff; }
+
+.mc-groupe{ display:flex; flex-direction:column; gap:4px; }
+.mc-groupe + .mc-groupe{ margin-top:10px; }
+.mc-groupe h3{ margin:0 0 2px; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); }
+.mc-joueur{ border-radius:8px; padding:2px 8px; }
+.mc-joueur.is-choisi{ background:var(--accent-soft); padding:6px 8px 8px; }
+.mc-joueur label{ display:flex; align-items:center; gap:10px; min-height:36px; cursor:pointer; min-width:0; }
+.mc-joueur input[type=checkbox]{ width:18px; height:18px; margin:0; flex-shrink:0; accent-color:var(--accent); }
+.mc-joueur b{ font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.mc-joueur small{ margin-left:auto; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-muted); white-space:nowrap; }
+.mc-joueur .mc-note{ margin-top:4px; }
+
+.mc-recherche{ border:1px solid var(--line); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:10px; }
+.mc-recherche-tete{ display:flex; align-items:flex-start; gap:10px; }
+.mc-recherche-tete b{ flex:1; font-size:15px; line-height:1.35; }
+.mc-suppr{ width:32px; height:32px; flex-shrink:0; border-radius:50%; border:1px solid var(--line); background:var(--bg); color:var(--ink-muted); cursor:pointer; font-size:14px; }
+.mc-suppr:hover{ color:var(--danger); border-color:var(--danger); }
+.mc-criteres{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+.mc-match{ margin:0; font-size:13px; color:var(--ink-muted); line-height:1.45; }
+.mc-ajouter{ align-self:flex-start; min-height:40px; padding:0 16px; border-radius:999px; border:1px dashed var(--accent); background:transparent; color:var(--accent); font:inherit; font-weight:700; cursor:pointer; }
+.mc-ajouter:disabled{ opacity:0.4; cursor:not-allowed; }
+
+@media (max-width:600px){
+  .mc-joueur label{ flex-wrap:wrap; row-gap:0; }
+  .mc-joueur small{ margin-left:28px; flex-basis:100%; }
+  .mc-criteres{ grid-template-columns:1fr 1fr; }
+}

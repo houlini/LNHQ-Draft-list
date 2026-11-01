@@ -102,6 +102,9 @@ export default {
     if (url.pathname === '/api/alignement/sauver' && request.method === 'POST') {
       return appelerScript(env, 'sauverAlignement', courriel, await request.text());
     }
+    if (url.pathname === '/api/marche/sauver' && request.method === 'POST') {
+      return appelerScript(env, 'sauverMarche', courriel, await request.text());
+    }
     const gardien = { '/api/gardien/declarer': 'declarerGardien', '/api/gardien/retirer': 'retirerGardien' }[url.pathname];
     if (gardien && request.method === 'POST') {
       return appelerScript(env, gardien, courriel, await request.text());
