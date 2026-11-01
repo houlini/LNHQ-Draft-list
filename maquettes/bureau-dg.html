@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="alignement.css?v=5">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@400;700&family=Orbitron:wght@500;800&family=UnifrakturMaguntia&family=Cinzel:wght@600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@400;700&family=Orbitron:wght@500;800&family=UnifrakturMaguntia&family=Cinzel:wght@600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Squada+One&family=Saira+Condensed:wght@700&family=Saira+Extra+Condensed:wght@700&display=swap">
 <script src="site-nav.js?v=7"></script>
 <script src="resultats-donnees.js?v=6"></script>
 <script src="gardiens-donnees.js"></script>
@@ -2606,8 +2606,8 @@ body{ overflow-x:hidden; }
      Couleurs : a = corps, b = bandes, c = ligne.
      m = bandes des manches, h = bandes du bas : « départ largeur… » en px de l'image, ex. « 300 b4 c10 b4 » = à partir de y 300,
      4 px de b, 10 px de c, 4 px de b (« _ » = le corps). Manches : y mesuré au bord extérieur (les bandes descendent vers le corps).
-     col = couleur du col ; e = empiècement d'épaules (couleur) : son bord est y = ey + ek·|dx| + ec·dx² (dx = écart à l'axe ;
-     ey 250 par défaut, 222 = mince bande sur le dessus des épaules ; ec 0,005 par défaut = bord arrondi ; ek < 0 = bord en
+     col = couleur du col ; e = empiècement d'épaules (couleur) : son bord suit le haut du chandail (donc le repli des épaules),
+     décalé de ey + ek·|dx| + ec·dx² (dx = écart à l'axe ; ey = hauteur au centre, 250 par défaut, 222 = mince bande ; ek < 0 = bord en
      pointe vers le bas, ex. Avalanche ; ek > 0 = bande qui s'élargit vers les épaules, ex. Penguins 1995) ; eb = liséré
      sous l'empiècement (couleur) ; v = chevron « pente départ largeur… » (bandes le long de
      y + pente·|x − axe| : pente positive = V qui descend des épaules, négative = pointe vers le haut) ;
@@ -2615,6 +2615,11 @@ body{ overflow-x:hidden; }
      Sans motif : celui de la photo (deux bandes). */
   /* Les deux vues du chandail (px de l'image) : la photo source (dx, dy = décalage de son coin dans l'image), le col et,
      de face, l'ouverture du V (on y voit le col arrière, puis l'intérieur du dos). Le dos couvre toute la zone (opaque). */
+  /* Photos des vrais chandails retirés, de dos (images générées d'après des photos réelles, cadrées comme le chandail gris :
+     240 × 300 px, coin à x 0, y 150 de l'image). Quand il y en a une, elle remplace le chandail peint. Clé : « CODE|Joueur ». */
+  const PHOTOS_CHANDAILS = {
+    'EDM|Wayne Gretzky': 'maquettes/chandails/EDM-gretzky.webp?v=1',
+  };
   const VUES_CHANDAIL = {
     face: { src: 'maquettes/bureau-dg-fond.webp?v=4', dx: 0, dy: 0, opaque: false,
       col: [[86, 206], [146, 206], [116, 248.5]], ouverture: [[95, 209], [138, 209], [116, 239.5]] },
@@ -2630,7 +2635,7 @@ body{ overflow-x:hidden; }
     DAL: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }, DET: { m: '302 b20', h: '370 b22', col: 'b' },
     EDM: { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b', e: 'b', ey: 228 }, FLA: { m: '300 c2 b12 c2', h: '', col: 'c', p: [290, 312, 'b', 'c'] },
     LAK: { m: '304 c2 b12 c2', h: '366 c2 b10 c2', col: 'b' }, MIN: { m: '', h: '', col: 'b', p: [249, 259, 'b', 'c'] },
-    MTL: { m: '302 b3 c14 b3', h: '368 b3 c16 b3', col: 'b', p: [283, 305, 'c', 'b'] }, NSH: { m: '312 c2 b40', h: '372 c2 b40', col: 'b' },
+    MTL: { m: '302 b3 c14 b3', h: '368 b3 c16 b3', col: 'b', p: [283, 305, 'c', 'b'], num: 'b/c', nom: 'b/c' }, NSH: { m: '312 c2 b40', h: '372 c2 b40', col: 'b' },
     NJD: { m: '300 b6 c3 b6', h: '364 b6 c3 b6', col: 'b' }, NYI: { m: '300 c3 b10', h: '364 c3 b10', col: 'b' },
     NYR: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'c' }, OTT: { m: '300 b8 c3 b8', h: '368 b8 c3 b8', col: 'b' },
     PHI: { m: '316 b2 c12', h: '396 c8', col: 'c' }, PIT: { m: '300 b6 c3 b6', h: '364 b6 c3 b6', col: 'b', e: 'b', ey: 232 },
@@ -2748,7 +2753,7 @@ body{ overflow-x:hidden; }
     BOS: [[1924, 1935, '#FFFFFF', '#5C3A1E', '#FFB81C', { m: '300 b4 c4 b8 c4 b4', h: '364 b4 c4 b8 c4 b4', col: 'b' }],
       [1936, 1958, '#FFFFFF', '#FFB81C', '#111111', { m: '300 b5 c5 b5', h: '366 b6 c6 b6', col: 'c', e: 'c' }],
       [1959, 1966, '#FFB81C', '#111111', '#FFFFFF', { m: '300 b3 _3 b3 _3 b3', h: '364 b3 _3 b3 _3 b3', col: 'b' }],
-      [1967, 1976, '#111111', '#FFB81C', '#FFFFFF', { m: '300 b6 c3 b6', h: '366 b6 c3 b6', col: 'b', e: 'b', ey: 240, ec: 0.003 }],
+      [1967, 1976, '#111111', '#FFB81C', '#FFFFFF', { m: '300 b6 c3 b6', h: '366 b6 c3 b6', col: 'b', e: 'b', ey: 229, num: 'b/c' }],
       [1977, 2007, '#111111', '#FFB81C', '#FFFFFF', { m: '300 b8 c3 _4 c3 b8', h: '364 b8 c3 _4 c3 b8', col: 'b' }],
       [2008, 2024, '#111111', '#FFB81C', '#FFFFFF', { m: '300 b5 _2 c4 _2 b5', h: '366 c3 _2 b6', col: 'b', e: 'b', ey: 222 }]],
     BUF: [[1971, 1978, '#0033A0', '#FFB81C', '#FFFFFF', { m: '300 b3 c2 b3 c2 b3', h: '366 b3 c2 b3 c2 b3', col: 'b', e: 'b', ey: 230, eb: 'c' }],
@@ -2766,11 +2771,12 @@ body{ overflow-x:hidden; }
     DAL: [[1968, 1993, '#007A33', '#FFB81C', '#111111', { m: '300 b5 c4', h: '364 b7 c4', col: 'b' }],
       [1994, 2013, '#111111', '#006847', '#B5985A', { m: '', h: '', col: 'c', e: 'b' }]],
     EDM: [[1980, 1980, '#003DA5', '#FF7900', '#FFFFFF', { m: '300 b4 c3 b4', h: '364 b4 c3 b4', col: 'b', e: 'b', ey: 232 }],
-      [1981, 1996, '#0047BB', '#FF7900', '#FFFFFF', { m: '300 c3 b8 c3', h: '364 c3 b8 c3', col: 'b', e: 'b', ey: 232 }],
+      // Relevé sur une photo du vrai chandail de Gretzky : mince empiècement orange bordé de blanc, bas des manches orange.
+      [1981, 1996, '#0033A0', '#FF6319', '#FFFFFF', { m: '306 c3 b6 c3 _26 b60', h: '358 c5 _5 b6 c2', col: 'c', e: 'b', ey: 221, eb: 'c', num: 'b/c', nom: 'c' }],
       [1997, 2011, '#041E42', '#FF4C00', '#A2AAAD', { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' }]],
     FLA: [[2004, 2016, '#041E42', '#C8102E', '#B9975B', { m: '302 b6 c2', h: '', col: 'b', e: 'b', ey: 230, eb: 'c' }]],
     LAK: [[1968, 1979, '#FFC72C', '#5B2C83', '#FFFFFF', { m: '300 b10', h: '364 b10', col: 'b' }],
-      [1980, 1988, '#FFC72C', '#5B2C83', '#FFFFFF', { m: '300 b4 c3 b4', h: '364 b4 c3 b4', col: 'b', e: 'b', ey: 244, eb: 'c' }],
+      [1980, 1988, '#FFC72C', '#5B2C83', '#FFFFFF', { m: '300 b4 c3 b4', h: '364 b4 c3 b4', col: 'b', e: 'b', ey: 238, ec: 0.002, eb: 'c', num: 'b/c', nom: 'b', fonte: 'tresEtroit' }],
       [1989, 2002, '#111111', '#A2AAAD', '#FFFFFF', { m: '300 b3 c6 b3', h: '364 c6 b3', col: 'c' }]],
     MIN: [[2008, 2017, '#A6192E', '#154734', '#DDCBA4', { m: '308 c2 b40', h: '', col: 'b' }]],
     NJD: [[1975, 1982, '#002F87', '#CE1126', '#FFD100', { m: '300 c3 b12 c3', h: '368 c3 b14 c3', col: 'b' }],
@@ -2853,7 +2859,7 @@ body{ overflow-x:hidden; }
       // Dos, aux proportions d'un chandail de la LNH, calées sur la largeur du dos (il pend, manches sur les côtés : 104 px
       // ≈ 76 cm) : chiffres de 25 cm (le minimum du règlement, ≈ 50 px), deux chiffres sur 60 % du dos ; lettres du nom
       // de 7 cm (≈ 13 px) en arc, à 4 cm sous le col (haut = y du haut des lettres) ; 5 px entre le nom et le numéro.
-      dos: { nom: { cx: 116.5, haut: 225, cap: 13, larg: 96 }, numero: { cx: 116.5, cap: 50 }, ecart: 5 },
+      dos: { nom: { cx: 116.5, haut: 225, cap: 15, larg: 96 }, numero: { cx: 116.5, cap: 50 }, ecart: 6 },
       // Numéros sur le haut des manches (vues de biais, donc écrasés).
       manches: [{ cx: 54, cy: 282, ecrase: 0.58 }, { cx: 181, cy: 282, ecrase: 0.58 }] },
     'o-tasse': { sorte: 'tasse', zone: [34, 676, 134, 90],
@@ -2925,31 +2931,47 @@ body{ overflow-x:hidden; }
     }
     return g.getImageData(0, 0, W, H);
   }
-  // Numéro à plat : chiffres pleins avec un mince liseré (comme le twill cousu des vrais chandails).
-  async function numeroAPlat(numero, haut, K, fond, contour){
-    await document.fonts.load('700 20px Oswald').catch(() => {});
-    const H = Math.round(haut * K), taille = H * 0.92;
-    const c = Object.assign(document.createElement('canvas'), { width: Math.round(H * 1.4), height: H }), g = c.getContext('2d', { willReadFrequently: true });
-    g.font = `700 ${taille}px Oswald, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.lineJoin = 'round'; g.lineWidth = H * 0.05; g.strokeStyle = contour; g.strokeText(numero, c.width / 2, H / 2 + taille * 0.04);
-    g.fillStyle = fond; g.fillText(numero, c.width / 2, H / 2 + taille * 0.04);
+  /* Polices des numéros et des noms : la lettrage de la LNH est fait sur mesure (pas de police libre). Les plus proches :
+     chiffres « bloc » à contre-formes carrées (Squada One), noms en capitales étroites (Saira Condensed) ; les Kings des
+     années 1980 ont des chiffres et des lettres plus hauts et étroits (Saira Extra Condensed). */
+  const POLICES = { bloc: ['Squada One', 400], etroit: ['Saira Condensed', 700], tresEtroit: ['Saira Extra Condensed', 700] };
+  const police = (nom, taille) => { const [f, p] = POLICES[nom] || POLICES.bloc; return `${p} ${taille}px "${f}", Oswald, sans-serif`; };
+  // Numéro à plat : chiffres de hauteur cap (px de l'image), avec liseré (contour, ou aucun si null).
+  async function numeroAPlat(numero, cap, K, fond, contour, fonte = 'bloc'){
+    await document.fonts.load(police(fonte, 40)).catch(() => {});
+    const t = document.createElement('canvas').getContext('2d');
+    t.font = police(fonte, 100); const m = t.measureText(numero), ratio = (m.actualBoundingBoxAscent || 72) / 100;
+    const taille = cap * K / ratio, H = Math.round(cap * K * 1.3), trait = contour ? cap * K * 0.045 : 0;
+    // Les chiffres « bloc » des chandails sont plus larges que la police : étirés de 25 % en largeur.
+    const etire = fonte === 'bloc' ? 1.25 : 1;
+    t.font = police(fonte, taille);
+    const c = Object.assign(document.createElement('canvas'), { width: Math.round(t.measureText(numero).width * etire + trait * 2 + 4), height: H }), g = c.getContext('2d', { willReadFrequently: true });
+    g.scale(etire, 1);
+    g.font = police(fonte, taille); g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const y = (H + cap * K) / 2;
+    if(contour){ g.lineJoin = 'round'; g.lineWidth = trait * 2 / etire; g.strokeStyle = contour; g.strokeText(numero, c.width / 2 / etire, y); }
+    g.fillStyle = fond; g.fillText(numero, c.width / 2 / etire, y);
     return g.getImageData(0, 0, c.width, c.height);
   }
   // Nom du dos à plat : capitales en arc (bombé vers le haut), de hauteur cap (px de l'image), rapetissées pour tenir dans
   // larg, avec contour. Le canevas grandit pour les bouts de l'arc (plus bas que le milieu) : rien n'est coupé.
   // Rend { img, haut } : haut = du haut du canevas au haut des lettres du milieu (px de l'image).
-  async function nomAPlat(nom, l, K, fond, contour){
-    await document.fonts.load('700 20px Oswald').catch(() => {});
+  // arc : le nom est courbé (ex. Bruins d'aujourd'hui) ; sinon droit, comme sur la plupart des chandails d'époque.
+  async function nomAPlat(nom, l, K, fond, contour, fonte = 'etroit', arc = false){
+    await document.fonts.load(police(fonte, 40)).catch(() => {});
     const W = Math.round(l.larg * K), c = Object.assign(document.createElement('canvas'), { width: W, height: 10 });
-    let g = c.getContext('2d', { willReadFrequently: true }), taille = l.cap * K / 0.83;
-    const police = () => { g.font = `700 ${taille}px Oswald, sans-serif`; };
-    const largeurs = () => [...nom].map(x => g.measureText(x).width + taille * 0.08);
-    police();
-    while(largeurs().reduce((s, x) => s + x, 0) > W * 0.92 && taille > l.cap * K / 0.83 * 0.55){ taille *= 0.95; police(); }
-    const lg = largeurs(), total = lg.reduce((s, x) => s + x, 0), R = W * 1.6;
-    const marge = taille * 0.16, chute = R * (1 - Math.cos(total / 2 / R)), base = marge + taille * 0.83;
+    let g = c.getContext('2d', { willReadFrequently: true });
+    g.font = police(fonte, 100);
+    const ratio = (g.measureText('H').actualBoundingBoxAscent || 72) / 100;
+    let taille = l.cap * K / ratio;
+    const appliquer = () => { g.font = police(fonte, taille); };
+    const largeurs = () => [...nom].map(x => g.measureText(x).width + taille * 0.06);
+    appliquer();
+    while(largeurs().reduce((s, x) => s + x, 0) > W * 0.92 && taille > l.cap * K / ratio * 0.55){ taille *= 0.95; appliquer(); }
+    const lg = largeurs(), total = lg.reduce((s, x) => s + x, 0), R = arc ? W * 1.6 : W * 400;
+    const marge = taille * 0.12, chute = R * (1 - Math.cos(total / 2 / R)), base = marge + taille * ratio;
     c.height = Math.ceil(base + chute + marge + taille * 0.05);
-    g = c.getContext('2d', { willReadFrequently: true }); police();
+    g = c.getContext('2d', { willReadFrequently: true }); appliquer();
     const cy = base + R, H = c.height;
     g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.lineJoin = 'round'; g.lineWidth = taille * 0.07;
     // Deux passes : tous les contours, puis tous les pleins (une lettre ne mord pas sur la précédente).
@@ -2958,7 +2980,7 @@ body{ overflow-x:hidden; }
       [...nom].forEach((x, k) => {
         const ang = a + lg[k] / 2 / R;
         g.save(); g.translate(W / 2 + R * Math.sin(ang), cy - R * Math.cos(ang)); g.rotate(ang);
-        if(passe === 'stroke'){ g.strokeStyle = contour; g.strokeText(x, 0, 0); } else { g.fillStyle = fond; g.fillText(x, 0, 0); }
+        if(passe === 'stroke'){ if(contour){ g.strokeStyle = contour; g.strokeText(x, 0, 0); } } else { g.fillStyle = fond; g.fillText(x, 0, 0); }
         g.restore();
         a += lg[k] / R;
       });
@@ -2977,41 +2999,59 @@ body{ overflow-x:hidden; }
     const tissu = s.sorte === 'tissu', tasse = couleurTasse(ch);
     const vue = tissu ? VUES_CHANDAIL[ch.vue] || VUES_CHANDAIL.face : null, dos = tissu && vue === VUES_CHANDAIL.dos;
     const source = vue || { src: FOND, dx: 0, dy: 0 };
-    // Numéros des manches : couleur des bandes (sinon blanc ou noir, pour trancher sur le corps), contour de la ligne.
-    const ecart = (a, b) => Math.abs(luminance(a) - luminance(b));
-    const remplissage = ecart(ch.bandes, ch.corps) > 60 ? ch.bandes : ecart('#FFFFFF', ch.corps) > 60 ? '#F8F9FA' : '#111111';
-    const contour = ecart(ch.ligne, remplissage) > 40 ? ch.ligne : luminance(remplissage) > 128 ? '#111111' : '#FFFFFF';
+    // Vraie photo du chandail retiré (de dos) : posée telle quelle dans le cadre, fondue sur 3 px aux bords.
+    const photoVraie = dos && PHOTOS_CHANDAILS[code + '|' + ch.joueur];
+    if(photoVraie){
+      const img = await imageDe(photoVraie);
+      if(box.dataset.cle !== cle) return;
+      const p = pixels(img, zx, zy - 150, zw, zh, W, H), o = p.data;
+      for(let py = 0; py < H; py++) for(let px = 0; px < W; px++){
+        const iy = zy + py / K, ix = zx + px / K;
+        o[(py * W + px) * 4 + 3] = 255 * lisse(0, 3, Math.min(ix - zx, zx + zw - ix, iy - zy, zy + zh - iy));
+      }
+      const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
+      c.getContext('2d').putImageData(p, 0, 0);
+      box.replaceChildren(c);
+      if(!cible) plaqueRetire(ch);
+      return;
+    }
+    /* Lettrage (numéros et nom) : couleurs relevées sur le vrai chandail de l'époque, dans le motif :
+       num = « plein/liseré », nom = « plein » ou « plein/liseré » (a, b, c = couleurs du chandail, ou #hex ; liseré omis
+       = aucun) ; fonte = clé de POLICES ; arc = nom courbé. Sans relevé : une couleur de l'équipe qui ressort sur le fond. */
+    const mo = ch.motif || {}, ecart = (a, b) => Math.abs(luminance(a) - luminance(b));
+    const teintes = { a: ch.corps, b: ch.bandes, c: ch.ligne };
+    const lireCouleurs = t => t ? String(t).split('/').map(x => teintes[x] || (x.startsWith('#') ? x : null)) : null;
+    const couleursSur = bg => {
+      const plein = [ch.bandes, ch.corps, ch.ligne, '#FFFFFF', '#111111'].find(x => ecart(x, bg) > 70) || '#FFFFFF';
+      return [plein, [ch.ligne, ch.bandes, ch.corps, '#FFFFFF', '#111111'].find(x => x !== plein && ecart(x, plein) > 45) || null];
+    };
+    const couleursNum = lireCouleurs(mo.num) || couleursSur(ch.corps), fonte = mo.fonte || 'bloc';
     // Avec une bande de poitrine à la hauteur des numéros, ils montent au-dessus d'elle.
     const manches = tissu ? s.manches.map(m => ch.poitrine && ch.poitrine[0] > m.cy - 12 ? Object.assign({}, m, { cy: Math.min(m.cy, ch.poitrine[0] - 12) }) : m) : [];
-    // Dos : le nom (de famille) en arc et le numéro, à la place du logo. Ni l'un ni l'autre ne chevauche le bas de
-    // l'empiècement : le nom va tout dessus ou tout dessous, le numéro dessous. Chacun prend une couleur de l'équipe
-    // qui ressort sur son fond (ex. nom noir sur l'empiècement or des Bruins, or sur le mauve des Kings).
-    const nomDos = dos && ch.joueur ? (ch.joueur.split(' ').slice(1).join(' ') || ch.joueur).toLocaleUpperCase('fr-CA') : '';
-    let posNom = null, posNumero = null, couleursNom = null, couleursNumero = null;
+    // Dos : le nom (de famille) en arc et le numéro, à la place du logo. Les noms au dos ne sont obligatoires dans la LNH
+    // que depuis 1977-1978 : avant, le numéro seul. Ni l'un ni l'autre ne chevauche le bas de l'empiècement.
+    const nomDos = dos && ch.joueur && ch.annee >= 1978 ? (ch.joueur.split(' ').slice(1).join(' ') || ch.joueur).toLocaleUpperCase('fr-CA') : '';
+    let posNom = null, posNumero = null, couleursNom = null;
     if(dos){
-      // Bas de l'empiècement à l'écart dx de l'axe ; sur la largeur du nom (dx ≤ 50), il va de bas (plus haut) à lim (plus bas).
-      const mo = ch.motif, sd = s.dos, bord = dx => (mo.ey || 250) + (mo.ek || 0) * dx + (mo.ec ?? 0.005) * dx * dx + (mo.eb ? 2.2 : 0);
+      // Bas de l'empiècement à l'écart dx de l'axe (il suit le haut du chandail, qui descend d'environ 0,24 px par px vers
+      // les épaules) ; sur la largeur du nom (dx ≤ 50), il va de bas (plus haut) à lim (plus bas).
+      const sd = s.dos, bord = dx => (mo.ey || 250) + 0.24 * dx + (mo.ek || 0) * dx + (mo.ec || 0) * dx * dx + (mo.eb ? 2.2 : 0);
       const bas = mo.e ? Math.min(bord(0), bord(50)) : 0, lim = mo.e ? Math.max(bord(0), bord(50)) : 0;
-      const teintes = { a: ch.corps, b: ch.bandes, c: ch.ligne };
       const fondA = y => mo.e && y < bas ? teintes[mo.e] : ch.corps;
-      const couleursSur = bg => {
-        const plein = [ch.bandes, ch.corps, ch.ligne, '#FFFFFF', '#111111'].find(x => ecart(x, bg) > 70) || '#FFFFFF';
-        return [plein, [ch.ligne, ch.bandes, ch.corps, '#FFFFFF', '#111111'].find(x => x !== plein && ecart(x, plein) > 45) || '#111111'];
-      };
       let haut = sd.nom.haut;
-      if(mo.e && lim > haut - 2 && bas < haut + sd.nom.cap + 3) haut = lim + 5;
+      if(nomDos && mo.e && lim > haut - 2 && bas < haut + sd.nom.cap + 3) haut = lim + 5;
       posNom = { haut, cy: haut + sd.nom.cap / 2 };
-      let hautN = haut + (nomDos ? sd.nom.cap + sd.ecart : 0);
+      let hautN = nomDos ? haut + sd.nom.cap + sd.ecart : sd.nom.haut + 4;
       if(mo.e && lim > hautN - 3) hautN = Math.max(hautN, lim + 5);
+      // Sans nom, avec une bande de poitrine (Canadiens), le numéro est centré sur la bande.
+      if(!nomDos && ch.poitrine) hautN = (ch.poitrine[0] + ch.poitrine[1]) / 2 - sd.numero.cap / 2;
       posNumero = { cx: sd.numero.cx, cy: hautN + sd.numero.cap / 2, ecrase: 1 };
-      couleursNom = couleursSur(fondA(posNom.cy));
-      couleursNumero = couleursSur(fondA(posNumero.cy));
+      couleursNom = lireCouleurs(mo.nom) || couleursSur(fondA(posNom.cy));
     }
     const [fond, plat, nomPlat, imgNumero, ...numeros] = await Promise.all([imageDe(source.src), logoAPlat(tissu ? ch.logo : logoSrc(code), s.logo, K, texteSur(tasse)),
-      nomDos ? nomAPlat(nomDos, s.dos.nom, K, ...couleursNom) : null,
-      // numeroAPlat : chiffres de 0,76 × haut.
-      dos && ch.numero ? numeroAPlat(String(ch.numero), s.dos.numero.cap / 0.76, K, ...couleursNumero) : null,
-      ...(tissu && ch.numero ? manches.map(() => numeroAPlat(String(ch.numero), 24, K, remplissage, contour)) : [])]);
+      nomDos ? nomAPlat(nomDos, s.dos.nom, K, couleursNom[0], couleursNom[1] || null, mo.fonteNom || (fonte === 'tresEtroit' ? 'tresEtroit' : 'etroit'), !!mo.arc) : null,
+      dos && ch.numero ? numeroAPlat(String(ch.numero), s.dos.numero.cap, K, couleursNum[0], couleursNum[1] || null, fonte) : null,
+      ...(tissu && ch.numero ? manches.map(() => numeroAPlat(String(ch.numero), 13, K, couleursNum[0], couleursNum[1] || null, fonte)) : [])]);
     if(box.dataset.cle !== cle) return;
     // La photo : luminance brute (texture), fine (plis, reflets) et large (éclairage).
     const photo = pixels(fond, zx - source.dx, zy - source.dy, zw, zh, W, H), d = photo.data, L = new Float32Array(W * H);
@@ -3021,13 +3061,13 @@ body{ overflow-x:hidden; }
     const corpsC = canaux(ch.corps), bandesC = canaux(ch.bandes), ligneC = canaux(ch.ligne), tasseC = canaux(tasse);
     // Teinte de la lumière : chaude sur la tasse (lampe du bureau) ; presque neutre sur le chandail, dont la photo grise porte
     // déjà l'éclairage (une teinte forte virerait les bleus au sarcelle et pousserait les orangés).
-    const chaud = tissu ? [1, 0.98, 0.95] : [1, 0.93, 0.84];
-    // Tissu dans un cadre éclairé à la lampe : couleurs un peu adoucies (10 % vers leur gris).
-    const terne = c => { const y = 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]; return c.map(v => v * 0.9 + y * 0.1); };
+    const chaud = tissu ? [1, 1, 1] : [1, 0.93, 0.84];
+    // Les couleurs du chandail restent celles du relevé (aucun ternissement : c'est l'éclairage de la photo qui les nuance).
+    const terne = c => c;
     const poit = ch.poitrine, poitC = poit && canaux(poit[2]), bordC = poit && canaux(poit[3]);
     // Tissu : le chandail gris uni de la photo est repeint au motif de l'équipe ; ses plis et son éclairage viennent du
     // rapport entre chaque pixel et le gris moyen du tissu.
-    let palette = null, motif = null, masque = null, encolure = null, gris = 1;
+    let palette = null, motif = null, masque = null, encolure = null, gris = 1, hautCol = null, haut0 = 207;
     if(tissu){
       palette = { a: terne(corpsC), b: terne(bandesC), c: terne(ligneC) };
       // Contour : le tissu clair sur le casier sombre, dans l'enveloppe. Ouverture : une érosion (flou puis seuil haut)
@@ -3042,6 +3082,22 @@ body{ overflow-x:hidden; }
       const dilate = flou(erode, W, H, Math.round(K * 1.6));
       for(let i = 0; i < W * H; i++) dilate[i] = lisse(0.03, 0.22, dilate[i]);
       masque = flou(dilate, W, H, Math.round(K * 0.4));
+      // Haut du chandail, colonne par colonne (px de l'image) : l'empiècement le suit, donc il épouse le repli des épaules.
+      // Au-delà des épaules (dx > 62), la manche pend : on prolonge la pente de l'épaule au lieu de suivre son bord.
+      hautCol = new Float32Array(W).fill(NaN);
+      for(let px = 0; px < W; px++) for(let py = 0; py < H; py++) if(masque[py * W + px] > 0.5){ hautCol[px] = zy + py / K; break; }
+      // Le col et le crochet creusent le haut au centre : on y garde le haut des épaules (le plus haut sur ±32 px), puis on lisse.
+      const xa = Math.round((116 - zx) * K), r32 = 32 * K;
+      let plat = Infinity; for(let px = xa - r32; px <= xa + r32; px++) if(hautCol[px] < plat) plat = hautCol[px];
+      for(let px = xa - r32; px <= xa + r32; px++) hautCol[px] = plat;
+      const lisseCol = new Float32Array(W), r = 8 * K;
+      for(let px = 0; px < W; px++){ let s = 0, n = 0; for(let k = -r; k <= r; k++){ const v = hautCol[px + k]; if(v === v && v !== undefined){ s += v; n++; } } lisseCol[px] = n ? s / n : NaN; }
+      hautCol = lisseCol;
+      haut0 = hautCol[xa];
+      for(const sens of [-1, 1]){
+        const xe = Math.round((116 + sens * 62 - zx) * K), xd = Math.round((116 + sens * 54 - zx) * K), pente = (hautCol[xe] - hautCol[xd]) / (8 * K);
+        for(let px = xe + sens; px >= 0 && px < W; px += sens) hautCol[px] = hautCol[xe] + Math.abs(px - xe) * pente;
+      }
       let somme = 0, n = 0;
       for(let i = 0; i < W * H; i++) if(masque[i] > 0.95){ somme += L[i]; n++; }
       gris = somme / (n || 1);
@@ -3052,7 +3108,7 @@ body{ overflow-x:hidden; }
       }
       const mo = ch.motif;
       const [pente, ...chevron] = String(mo.v || '').trim().split(/\s+/);
-      motif = { m: bandesMotif(mo.m), h: bandesMotif(mo.h), col: mo.col || 'b', e: mo.e || '', ey: mo.ey || 250, ek: mo.ek || 0, ec: mo.ec ?? 0.005, eb: mo.eb || '',
+      motif = { m: bandesMotif(mo.m), h: bandesMotif(mo.h), col: mo.col || 'b', e: mo.e || '', ey: mo.ey || 250, ek: mo.ek || 0, ec: mo.ec || 0, eb: mo.eb || '',
         v: mo.v ? { pente: Number(pente), b: bandesMotif(chevron.join(' ')) } : null };
     }
     // Couleur du motif au point (ix, iy) de l'image. Manches : à gauche de x 62 et à droite de x 169, sous l'épaule ;
@@ -3060,7 +3116,8 @@ body{ overflow-x:hidden; }
     const couleurMotif = (ix, iy) => {
       if(dansPoly(vue.col, ix, iy)) return palette[motif.col];                                 // col (en V de face, rond de dos)
       if(motif.e){                                                                             // empiècement : descend sur les épaules
-        const dx = Math.abs(ix - 116), lim = motif.ey + motif.ek * dx + motif.ec * dx * dx;
+        const dx = Math.abs(ix - 116), col = hautCol[Math.max(0, Math.min(W - 1, Math.round((ix - zx) * K)))];
+        const lim = motif.ey + ((col || haut0) - haut0) + motif.ek * dx + motif.ec * dx * dx;
         if(iy < lim) return palette[motif.e];
         if(motif.eb && iy < lim + 2.2) return palette[motif.eb];                               // liséré sous l'empiècement
       }
@@ -3090,7 +3147,8 @@ body{ overflow-x:hidden; }
         if(w < 0.02) continue;
         // Plis et reflets : rapport au gris moyen du tissu ; un léger lustre sur les reflets (visible sur les tissus foncés).
         const r = Math.min(1.45, Math.max(0.12, L[i] / gris)), lustre = Math.max(0, r - 1.15) * 25;
-        const ombre = 0.8 * Math.pow(r, 0.85);
+        // Calibré : au gris moyen du tissu (r = 1), la couleur sort exacte ; plus sombre dans les plis, plus claire aux reflets.
+        const ombre = Math.pow(r, 0.85);
         let tissuRgb = couleurMotif(ix, iy).map((c, k) => Math.min(255, c * ombre * chaud[k] + lustre));
         // Ouverture du V : le col arrière en haut, puis l'intérieur du dos, dans l'ombre.
         const ouvert = encolure ? encolure[i] : 0;
@@ -3128,7 +3186,7 @@ body{ overflow-x:hidden; }
       u += gx * 2.5 * K * cx; v += gy * 2.5 * K;
       const p = echantillon(img, u, v);
       // Même éclairage que le tissu (rapport au gris moyen) : les plis et les ombres passent sur l'écusson.
-      let lum = 0.84 * Math.pow(Math.min(1.45, Math.max(0.3, L[i] / gris)), 0.85) * Math.pow(pli, 0.6);
+      let lum = Math.pow(Math.min(1.45, Math.max(0.3, L[i] / gris)), 0.85) * Math.pow(pli, 0.6);
       lum *= (1 - 0.15 * (echantillon(img, u, v - 0.8 * K)[3] - echantillon(img, u, v + 0.8 * K)[3])) * (1 + 0.04 * Math.sin((px + py) * 2.1));
       const ombre = echantillon(img, u - 0.4 * K, v - 1.2 * K)[3] * 0.25;
       if(p[3] < ombre) poser(i, [0, 0, 0], ombre - p[3]);
