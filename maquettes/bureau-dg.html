@@ -2850,9 +2850,10 @@ body{ overflow-x:hidden; }
         [22, 350], [30, 300], [39, 248], [52, 222]],
       // Poitrine : axe x 116,5, sous la pointe du col en V (y 248), au-dessus de la bande de taille (y 366).
       logo: { cx: 116.5, cy: 294, larg: 60, haut: 60 },
-      // Dos, aux proportions d'un chandail de la LNH (≈ 84 cm du col au bas = 203 px) : lettres du nom de 7,5 cm (≈ 17 px)
-      // en arc, à 6 cm sous le col ; chiffres de 30 cm (≈ 66 px) juste dessous, presque toute la largeur du dos.
-      dos: { nom: { cx: 116.5, cy: 232, larg: 100, haut: 31 }, numero: { cx: 116.5, cy: 297, haut: 87 } },
+      // Dos, aux proportions d'un chandail de la LNH, calées sur la largeur du dos (il pend, manches sur les côtés : 104 px
+      // ≈ 76 cm) : chiffres de 25 cm (le minimum du règlement, ≈ 50 px), deux chiffres sur 60 % du dos ; lettres du nom
+      // de 7 cm (≈ 13 px) en arc, à 4 cm sous le col (haut = y du haut des lettres) ; 5 px entre le nom et le numéro.
+      dos: { nom: { cx: 116.5, haut: 225, cap: 13, larg: 96 }, numero: { cx: 116.5, cap: 50 }, ecart: 5 },
       // Numéros sur le haut des manches (vues de biais, donc écrasés).
       manches: [{ cx: 54, cy: 282, ecrase: 0.58 }, { cx: 181, cy: 282, ecrase: 0.58 }] },
     'o-tasse': { sorte: 'tasse', zone: [34, 676, 134, 90],
@@ -2924,28 +2925,33 @@ body{ overflow-x:hidden; }
     }
     return g.getImageData(0, 0, W, H);
   }
-  // Numéro de manche à plat : chiffres pleins avec contour.
+  // Numéro à plat : chiffres pleins avec un mince liseré (comme le twill cousu des vrais chandails).
   async function numeroAPlat(numero, haut, K, fond, contour){
     await document.fonts.load('700 20px Oswald').catch(() => {});
     const H = Math.round(haut * K), taille = H * 0.92;
     const c = Object.assign(document.createElement('canvas'), { width: Math.round(H * 1.4), height: H }), g = c.getContext('2d', { willReadFrequently: true });
     g.font = `700 ${taille}px Oswald, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.lineJoin = 'round'; g.lineWidth = H * 0.12; g.strokeStyle = contour; g.strokeText(numero, c.width / 2, H / 2 + taille * 0.04);
+    g.lineJoin = 'round'; g.lineWidth = H * 0.05; g.strokeStyle = contour; g.strokeText(numero, c.width / 2, H / 2 + taille * 0.04);
     g.fillStyle = fond; g.fillText(numero, c.width / 2, H / 2 + taille * 0.04);
     return g.getImageData(0, 0, c.width, c.height);
   }
-  // Nom du dos à plat : capitales en arc (bombé vers le haut), rapetissées pour tenir dans larg × haut, avec contour.
+  // Nom du dos à plat : capitales en arc (bombé vers le haut), de hauteur cap (px de l'image), rapetissées pour tenir dans
+  // larg, avec contour. Le canevas grandit pour les bouts de l'arc (plus bas que le milieu) : rien n'est coupé.
+  // Rend { img, haut } : haut = du haut du canevas au haut des lettres du milieu (px de l'image).
   async function nomAPlat(nom, l, K, fond, contour){
     await document.fonts.load('700 20px Oswald').catch(() => {});
-    const W = Math.round(l.larg * K), H = Math.round(l.haut * K);
-    const c = Object.assign(document.createElement('canvas'), { width: W, height: H }), g = c.getContext('2d', { willReadFrequently: true });
-    let taille = H * 0.66;
+    const W = Math.round(l.larg * K), c = Object.assign(document.createElement('canvas'), { width: W, height: 10 });
+    let g = c.getContext('2d', { willReadFrequently: true }), taille = l.cap * K / 0.83;
     const police = () => { g.font = `700 ${taille}px Oswald, sans-serif`; };
     const largeurs = () => [...nom].map(x => g.measureText(x).width + taille * 0.08);
     police();
-    while(largeurs().reduce((s, x) => s + x, 0) > W * 0.94 && taille > H * 0.3){ taille *= 0.94; police(); }
-    const lg = largeurs(), total = lg.reduce((s, x) => s + x, 0), R = W * 1.5, cy = H * 0.86 + R;
-    g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.lineJoin = 'round'; g.lineWidth = taille * 0.16;
+    while(largeurs().reduce((s, x) => s + x, 0) > W * 0.92 && taille > l.cap * K / 0.83 * 0.55){ taille *= 0.95; police(); }
+    const lg = largeurs(), total = lg.reduce((s, x) => s + x, 0), R = W * 1.6;
+    const marge = taille * 0.16, chute = R * (1 - Math.cos(total / 2 / R)), base = marge + taille * 0.83;
+    c.height = Math.ceil(base + chute + marge + taille * 0.05);
+    g = c.getContext('2d', { willReadFrequently: true }); police();
+    const cy = base + R, H = c.height;
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.lineJoin = 'round'; g.lineWidth = taille * 0.07;
     // Deux passes : tous les contours, puis tous les pleins (une lettre ne mord pas sur la précédente).
     ['stroke', 'fill'].forEach(passe => {
       let a = -total / 2 / R;
@@ -2957,7 +2963,7 @@ body{ overflow-x:hidden; }
         a += lg[k] / R;
       });
     });
-    return g.getImageData(0, 0, W, H);
+    return { img: g.getImageData(0, 0, W, H), haut: marge / K };
   }
   // cible : un autre élément où peindre (aperçu des 32 chandails), sans le placer dans la scène.
   async function peindreSurface(id, code, cible, chImpose){
@@ -2977,11 +2983,34 @@ body{ overflow-x:hidden; }
     const contour = ecart(ch.ligne, remplissage) > 40 ? ch.ligne : luminance(remplissage) > 128 ? '#111111' : '#FFFFFF';
     // Avec une bande de poitrine à la hauteur des numéros, ils montent au-dessus d'elle.
     const manches = tissu ? s.manches.map(m => ch.poitrine && ch.poitrine[0] > m.cy - 12 ? Object.assign({}, m, { cy: Math.min(m.cy, ch.poitrine[0] - 12) }) : m) : [];
-    // Dos : le nom (de famille) en arc et le grand numéro, à la place du logo.
+    // Dos : le nom (de famille) en arc et le numéro, à la place du logo. Ni l'un ni l'autre ne chevauche le bas de
+    // l'empiècement : le nom va tout dessus ou tout dessous, le numéro dessous. Chacun prend une couleur de l'équipe
+    // qui ressort sur son fond (ex. nom noir sur l'empiècement or des Bruins, or sur le mauve des Kings).
     const nomDos = dos && ch.joueur ? (ch.joueur.split(' ').slice(1).join(' ') || ch.joueur).toLocaleUpperCase('fr-CA') : '';
-    const [fond, plat, imgNom, imgNumero, ...numeros] = await Promise.all([imageDe(source.src), logoAPlat(tissu ? ch.logo : logoSrc(code), s.logo, K, texteSur(tasse)),
-      nomDos ? nomAPlat(nomDos, s.dos.nom, K, remplissage, contour) : null,
-      dos && ch.numero ? numeroAPlat(String(ch.numero), s.dos.numero.haut, K, remplissage, contour) : null,
+    let posNom = null, posNumero = null, couleursNom = null, couleursNumero = null;
+    if(dos){
+      // Bas de l'empiècement à l'écart dx de l'axe ; sur la largeur du nom (dx ≤ 50), il va de bas (plus haut) à lim (plus bas).
+      const mo = ch.motif, sd = s.dos, bord = dx => (mo.ey || 250) + (mo.ek || 0) * dx + (mo.ec ?? 0.005) * dx * dx + (mo.eb ? 2.2 : 0);
+      const bas = mo.e ? Math.min(bord(0), bord(50)) : 0, lim = mo.e ? Math.max(bord(0), bord(50)) : 0;
+      const teintes = { a: ch.corps, b: ch.bandes, c: ch.ligne };
+      const fondA = y => mo.e && y < bas ? teintes[mo.e] : ch.corps;
+      const couleursSur = bg => {
+        const plein = [ch.bandes, ch.corps, ch.ligne, '#FFFFFF', '#111111'].find(x => ecart(x, bg) > 70) || '#FFFFFF';
+        return [plein, [ch.ligne, ch.bandes, ch.corps, '#FFFFFF', '#111111'].find(x => x !== plein && ecart(x, plein) > 45) || '#111111'];
+      };
+      let haut = sd.nom.haut;
+      if(mo.e && lim > haut - 2 && bas < haut + sd.nom.cap + 3) haut = lim + 5;
+      posNom = { haut, cy: haut + sd.nom.cap / 2 };
+      let hautN = haut + (nomDos ? sd.nom.cap + sd.ecart : 0);
+      if(mo.e && lim > hautN - 3) hautN = Math.max(hautN, lim + 5);
+      posNumero = { cx: sd.numero.cx, cy: hautN + sd.numero.cap / 2, ecrase: 1 };
+      couleursNom = couleursSur(fondA(posNom.cy));
+      couleursNumero = couleursSur(fondA(posNumero.cy));
+    }
+    const [fond, plat, nomPlat, imgNumero, ...numeros] = await Promise.all([imageDe(source.src), logoAPlat(tissu ? ch.logo : logoSrc(code), s.logo, K, texteSur(tasse)),
+      nomDos ? nomAPlat(nomDos, s.dos.nom, K, ...couleursNom) : null,
+      // numeroAPlat : chiffres de 0,76 × haut.
+      dos && ch.numero ? numeroAPlat(String(ch.numero), s.dos.numero.cap / 0.76, K, ...couleursNumero) : null,
       ...(tissu && ch.numero ? manches.map(() => numeroAPlat(String(ch.numero), 24, K, remplissage, contour)) : [])]);
     if(box.dataset.cle !== cle) return;
     // La photo : luminance brute (texture), fine (plis, reflets) et large (éclairage).
@@ -3011,7 +3040,7 @@ body{ overflow-x:hidden; }
       const erode = flou(brut, W, H, Math.round(K * 1.2));
       for(let i = 0; i < W * H; i++) erode[i] = lisse(0.6, 0.9, erode[i]);
       const dilate = flou(erode, W, H, Math.round(K * 1.6));
-      for(let i = 0; i < W * H; i++) dilate[i] = lisse(0.08, 0.35, dilate[i]);
+      for(let i = 0; i < W * H; i++) dilate[i] = lisse(0.03, 0.22, dilate[i]);
       masque = flou(dilate, W, H, Math.round(K * 0.4));
       let somme = 0, n = 0;
       for(let i = 0; i < W * H; i++) if(masque[i] > 0.95){ somme += L[i]; n++; }
@@ -3060,7 +3089,7 @@ body{ overflow-x:hidden; }
         w = Math.max(m, bordZone);
         if(w < 0.02) continue;
         // Plis et reflets : rapport au gris moyen du tissu ; un léger lustre sur les reflets (visible sur les tissus foncés).
-        const r = Math.min(1.45, Math.max(0.3, L[i] / gris)), lustre = Math.max(0, r - 1.05) * 55;
+        const r = Math.min(1.45, Math.max(0.12, L[i] / gris)), lustre = Math.max(0, r - 1.15) * 25;
         const ombre = 0.8 * Math.pow(r, 0.85);
         let tissuRgb = couleurMotif(ix, iy).map((c, k) => Math.min(255, c * ombre * chaud[k] + lustre));
         // Ouverture du V : le col arrière en haut, puis l'intérieur du dos, dans l'ombre.
@@ -3100,7 +3129,7 @@ body{ overflow-x:hidden; }
       const p = echantillon(img, u, v);
       // Même éclairage que le tissu (rapport au gris moyen) : les plis et les ombres passent sur l'écusson.
       let lum = 0.84 * Math.pow(Math.min(1.45, Math.max(0.3, L[i] / gris)), 0.85) * Math.pow(pli, 0.6);
-      lum *= (1 - 0.35 * (echantillon(img, u, v - 0.8 * K)[3] - echantillon(img, u, v + 0.8 * K)[3])) * (1 + 0.05 * Math.sin((px + py) * 2.1));
+      lum *= (1 - 0.15 * (echantillon(img, u, v - 0.8 * K)[3] - echantillon(img, u, v + 0.8 * K)[3])) * (1 + 0.04 * Math.sin((px + py) * 2.1));
       const ombre = echantillon(img, u - 0.4 * K, v - 1.2 * K)[3] * 0.25;
       if(p[3] < ombre) poser(i, [0, 0, 0], ombre - p[3]);
       if(p[3] > 0) poser(i, terne(p.slice(0, 3)).map((c, k) => Math.min(255, c * lum * chaud[k])), p[3]);
@@ -3130,8 +3159,8 @@ body{ overflow-x:hidden; }
         }
     };
     numeros.forEach((img, n) => coudre(img, manches[n]));
-    if(imgNom) coudre(imgNom, Object.assign({ ecrase: 1 }, s.dos.nom));
-    if(imgNumero) coudre(imgNumero, Object.assign({ ecrase: 1 }, s.dos.numero));
+    if(nomPlat) coudre(nomPlat.img, { cx: s.dos.nom.cx, cy: posNom.haut - nomPlat.haut + nomPlat.img.height / K / 2, ecrase: 1 });
+    if(imgNumero) coudre(imgNumero, posNumero);
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
     c.getContext('2d').putImageData(out, 0, 0);
     box.replaceChildren(c);
