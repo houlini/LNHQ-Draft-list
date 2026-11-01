@@ -752,8 +752,7 @@ body{ overflow-x:hidden; }
 .bu-cartable{ left:3.1%; top:78.4%; width:35%; height:14%; --x:3.1; --y:78.4; }
 .bu-cell{ left:62.7%; top:78.7%; width:6.6%; height:8.4%; --x:62.7; --y:78.7; }
 .bu-manette{ left:70.9%; top:76.3%; width:9.2%; height:8.2%; --x:70.9; --y:76.3; }
-.bu-tasse{ position:absolute; z-index:4; left:4.7%; top:74%; width:3.2%; height:5.6%; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-.bu-tasse img{ max-width:100%; max-height:100%; object-fit:contain; opacity:0.85; filter:grayscale(0.2) drop-shadow(0 0 0.1cqw rgba(0,0,0,0.6)); }
+.bu-tasse{ position:absolute; z-index:4; pointer-events:none; }
 
 /* ---------- Bandeau DEL : résultats qui défilent ---------- */
 .bu-del .bu-ecran{ display:flex; align-items:center; background:radial-gradient(circle, #1a1206 0.06cqw, #050403 0.09cqw) 0 0 / 0.22cqw 0.22cqw, #050403; }
@@ -769,10 +768,9 @@ body{ overflow-x:hidden; }
 @keyframes defile{ to{ transform:translateX(-50%); } }
 
 /* ---------- Chandail : écusson de l'équipe ---------- */
-/* Centre de la poitrine, mesuré dans l'image : axe du chandail x 116,5 (col, bande de taille et manches
-   concordent), entre le bas du col (y 242) et la bande de taille (y 370). */
-.bu-ecusson{ position:absolute; left:50.14%; top:47.9%; width:3.7cqw; height:3.7cqw; translate:-50% -50%; display:flex; }
-.bu-ecusson img{ width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 0.1cqw 0.15cqw rgba(0,0,0,0.6)); }
+/* L'écusson et le logo de la tasse sont peints dans un canevas (voir SURFACES_LOGO), qui les place lui-même. */
+.bu-ecusson{ position:absolute; pointer-events:none; }
+.bu-ecusson canvas, .bu-tasse canvas{ display:block; width:100%; height:100%; }
 
 /* ---------- Écrans (fond commun) ---------- */
 .bu-vertical .bu-ecran, .bu-tele .bu-ecran, .bu-tablette .bu-ecran{
@@ -1240,8 +1238,8 @@ body{ overflow-x:hidden; }
     <a class="ce-retour" href="index.html" title="Retour au site">← LNHQ</a>
     <button type="button" class="ce-equipe-btn" id="equipeBtn"><img id="equipeLogo" alt=""><span id="equipeNom">Choisir mon équipe</span> ▾</button>
     <div class="ce-seg ce-mode" role="group" aria-label="Accès">
-      <button type="button" data-mode="public" aria-pressed="true">👁 Public</button>
-      <button type="button" data-mode="dg" aria-pressed="false">🔑 Mode DG</button>
+      <button type="button" data-mode="public" aria-pressed="false">👁 Public</button>
+      <button type="button" data-mode="dg" aria-pressed="true">🔑 Mode DG</button>
     </div>
     <span class="ce-tag-maquette">Maquette</span>
   </div>
@@ -1356,7 +1354,7 @@ body{ overflow-x:hidden; }
   let theme = 'planchette';
   try{ theme = localStorage.getItem('ce_theme') || 'planchette'; }catch(e){}
   const simulees = {};   // déclarations simulées : 'MTL|2' → numéro du match
-  let mode = 'public';   // 'public' (visiteur, n'importe quelle équipe) ou 'dg' (DG connecté de cette équipe)
+  let mode = 'dg';       // 'public' (visiteur, n'importe quelle équipe) ou 'dg' (DG connecté de cette équipe)
   let onglet = 'apercu';
   const estDG = () => mode === 'dg' && !!equipe;
 
@@ -2244,7 +2242,7 @@ body{ overflow-x:hidden; }
       if(!o.querySelector('.bu-etiquette')) o.append(el('span', 'bu-etiquette', ETIQUETTES[o.dataset.objet] || ''));
     });
     sansErreur(apercuDel($('o-del')));
-    $('o-ecusson').replaceChildren(logo(equipe));
+    sansErreur(logoDansPhoto('o-ecusson', equipe));
     sansErreur(apercuMeneurs($('o-meneurs')));
     sansErreur(apercuTele($('o-tele')));
     sansErreur(apercuCartable($('o-align-g'), $('o-align-d')));
@@ -2253,8 +2251,110 @@ body{ overflow-x:hidden; }
     sansErreur(apercuDepistage($('o-depistage')));
     apercuOrdinateur($('o-ordinateur'));
     sansErreur(apercuCellulaire($('o-cellulaire')));
-    $('o-tasse').replaceChildren(logo(equipe));
+    sansErreur(logoDansPhoto('o-tasse', equipe));
     ajusterPerspectives();
+  }
+
+  /* ---------- Logos peints dans la photo ----------
+     Au lieu d'une image collée à plat, le logo est redessiné pixel par pixel : il épouse la surface
+     (cylindre de la tasse, plis du tissu) et prend l'éclairage de la photo elle-même à cet endroit
+     (projecteur du cadre, reflets de la céramique). zone = rectangle du canevas en px de l'image. */
+  const SURFACES_LOGO = {
+    // Poitrine : axe du chandail x 116,5, entre le bas du col (y 242) et la bande de taille (y 370).
+    'o-ecusson': { sorte: 'tissu', zone: [78, 256, 77, 77], cx: 116.5, cy: 294, larg: 60, haut: 60 },
+    // Tasse noire lustrée : corps x 73-164 (axe 118,7, rayon 45,7), y 683-760 ; l'anse est de profil, à gauche.
+    'o-tasse': { sorte: 'tasse', zone: [70, 680, 98, 82], cx: 118.7, cy: 719, rayon: 45.7, larg: 64, haut: 46 },
+  };
+  const FOND = 'maquettes/bureau-dg-fond.webp?v=2';
+  const chargerImage = src => new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = src; });
+  const pixels = (img, x, y, w, h, W, H) => {
+    const c = Object.assign(document.createElement('canvas'), { width: W, height: H }), g = c.getContext('2d', { willReadFrequently: true });
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, x, y, w, h, 0, 0, W, H);
+    return g.getImageData(0, 0, W, H);
+  };
+  let fondImg;
+  // Échantillon bilinéaire (couleurs prémultipliées par l'alpha, pour éviter les franges sur les bords du logo).
+  function echantillon(d, x, y){
+    const { width: w, height: h, data } = d;
+    if(x < 0 || y < 0 || x > w - 1 || y > h - 1) return [0, 0, 0, 0];
+    const x0 = Math.floor(x), y0 = Math.floor(y), x1 = Math.min(x0 + 1, w - 1), y1 = Math.min(y0 + 1, h - 1), fx = x - x0, fy = y - y0;
+    const out = [0, 0, 0, 0];
+    [[x0, y0, (1 - fx) * (1 - fy)], [x1, y0, fx * (1 - fy)], [x0, y1, (1 - fx) * fy], [x1, y1, fx * fy]].forEach(([u, v, p]) => {
+      const i = (v * w + u) * 4, a = data[i + 3] / 255 * p;
+      out[0] += data[i] * a; out[1] += data[i + 1] * a; out[2] += data[i + 2] * a; out[3] += a;
+    });
+    if(out[3] > 0){ out[0] /= out[3]; out[1] /= out[3]; out[2] /= out[3]; }
+    return out;
+  }
+  // Flou rapide (boîte, deux passes) d'un tableau de luminance.
+  function flou(L, w, h, r){
+    const tmp = new Float32Array(L.length), out = new Float32Array(L.length);
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){ let s = 0, n = 0; for(let k = -r; k <= r; k++){ const u = x + k; if(u >= 0 && u < w){ s += L[y * w + u]; n++; } } tmp[y * w + x] = s / n; }
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){ let s = 0, n = 0; for(let k = -r; k <= r; k++){ const v = y + k; if(v >= 0 && v < h){ s += tmp[v * w + x]; n++; } } out[y * w + x] = s / n; }
+    return out;
+  }
+  async function logoDansPhoto(id, code){
+    const box = $(id), s = SURFACES_LOGO[id];
+    if(box.dataset.code === code) return;
+    box.dataset.code = code;
+    const [zx, zy, zw, zh] = s.zone, K = 3, W = zw * K, H = zh * K;
+    // Placé en cqw (1 px de l'image = 1/16,72 cqw), relatif à la zone parente quand elle a --x / --y.
+    box.style.cssText = `left:calc(${zx / 16.72}cqw - var(--x, 0) * 1cqw); top:calc(${zy / 16.72}cqw - var(--y, 0) * 0.5628cqw); width:${zw / 16.72}cqw; height:${zh / 16.72}cqw;`;
+    fondImg ||= chargerImage(FOND);
+    const [fond, img] = await Promise.all([fondImg, chargerImage(logoSrc(code))]);
+    if(box.dataset.code !== code) return;
+    // Le logo à plat, à 3× la résolution de la photo, centré dans larg × haut (contain).
+    const ech = Math.min(s.larg / img.naturalWidth, s.haut / img.naturalHeight), lw = Math.round(img.naturalWidth * ech * K), lh = Math.round(img.naturalHeight * ech * K);
+    const plat = pixels(img, 0, 0, img.naturalWidth, img.naturalHeight, lw, lh);
+    // La photo sous le logo : luminance fine (plis, reflets) et luminance large (éclairage).
+    const photo = pixels(fond, zx, zy, zw, zh, W, H), L = new Float32Array(W * H);
+    for(let i = 0; i < W * H; i++) L[i] = photo.data[i * 4] * 0.3 + photo.data[i * 4 + 1] * 0.59 + photo.data[i * 4 + 2] * 0.11;
+    const fin = flou(L, W, H, K), large = flou(L, W, H, 10 * K);
+    let moy = 0; for(let i = 0; i < W * H; i++) moy += large[i]; moy /= W * H;
+    const out = new ImageData(W, H), o = out.data;
+    for(let py = 0; py < H; py++) for(let px = 0; px < W; px++){
+      const i = py * W + px, ix = zx + px / K, iy = zy + py / K;
+      let u, v, lum, spec = 0;
+      if(s.sorte === 'tasse'){
+        // Cylindre vu un peu de haut : x = axe + r·sin φ ; les lignes horizontales du logo s'arrondissent (b = 12 % du rayon).
+        const sin = (ix - s.cx) / s.rayon;
+        if(Math.abs(sin) > 0.97) continue;
+        const phi = Math.asin(sin), cos = Math.cos(phi);
+        u = (phi * s.rayon + s.larg / 2) * K - (s.larg * K - lw) / 2;
+        v = (iy - s.cy + s.rayon * 0.12 * (1 - cos) + s.haut / 2) * K - (s.haut * K - lh) / 2;
+        // Lumière diffuse venant de l'avant-droite, bords assombris ; les reflets de la céramique passent par-dessus.
+        lum = (0.24 + 0.56 * Math.max(0, Math.cos(phi - 0.45))) * Math.pow(cos, 0.6);
+        spec = Math.min(1, Math.max(0, fin[i] - 10) / 90);
+      }else{
+        // Tissu : le relief des plis (rapport fin / large) décale un peu le logo et le module ; le projecteur du cadre l'éclaire.
+        const pli = Math.min(1.35, Math.max(0.7, fin[i] / (large[i] || 1)));
+        const gx = px > 0 && px < W - 1 ? (fin[i + 1] - fin[i - 1]) / (large[i] || 1) : 0, gy = py > 0 && py < H - 1 ? (fin[i + W] - fin[i - W]) / (large[i] || 1) : 0;
+        u = (ix - s.cx + s.larg / 2) * K - (s.larg * K - lw) / 2 + gx * 2.5 * K;
+        v = (iy - s.cy + s.haut / 2) * K - (s.haut * K - lh) / 2 + gy * 2.5 * K;
+        lum = 0.74 * Math.pow(large[i] / moy, 0.7) * Math.pow(pli, 1.7);
+      }
+      const p = echantillon(plat, u, v);
+      if(s.sorte === 'tissu'){
+        // Écusson brodé : bord éclairé en haut, ombré en bas ; ombre portée douce sur le tissu ; trame en diagonale.
+        const relief = echantillon(plat, u, v - 0.8 * K)[3] - echantillon(plat, u, v + 0.8 * K)[3];
+        lum *= (1 - 0.35 * relief) * (1 + 0.05 * Math.sin((px + py) * 2.1));
+        const ombre = echantillon(plat, u - 0.4 * K, v - 1.2 * K)[3] * 0.45;
+        if(p[3] < ombre){ o[i * 4 + 3] = (ombre - p[3]) * 255; }
+      }
+      if(p[3] <= 0) continue;
+      // Teinte chaude de la pièce, puis reflet (mode « écran »).
+      const teinte = [1, 0.9, 0.76], a = p[3], fondA = o[i * 4 + 3] / 255;
+      for(let k = 0; k < 3; k++){
+        let c = Math.min(255, p[k] * lum * teinte[k]);
+        c = c + (255 - c) * spec;
+        o[i * 4 + k] = c * a / (a + fondA * (1 - a) || 1);
+      }
+      o[i * 4 + 3] = (a + fondA * (1 - a)) * 255;
+    }
+    const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
+    c.getContext('2d').putImageData(out, 0, 0);
+    box.replaceChildren(c);
   }
 
   // Surfaces inclinées ou à plat dans l'image : leurs 4 coins (px de l'image, relatifs à leur zone),
