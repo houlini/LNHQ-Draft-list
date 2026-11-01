@@ -62,7 +62,8 @@ body.feuille{ background:radial-gradient(circle at 50% 0, #4a3524, #241910 75%);
 }
 .feuille .res-carte::before{ content:''; position:absolute; top:0; bottom:0; left:14px; border-left:2px solid rgba(201,42,42,0.28); }
 .feuille .res-titre{ text-align:center; font-size:23px; letter-spacing:0.14em; padding-bottom:12px; border-bottom:3px double #1d232b; }
-.feuille .res-titre::before{ content:'LNHQ'; display:block; font-size:12px; letter-spacing:0.4em; color:#8a7a5f; margin-bottom:2px; }
+.feuille .res-titre::before{ content:'LNHQ'; display:block; padding-top:52px; font-size:12px; letter-spacing:0.4em; color:#8a7a5f; margin-bottom:2px;
+  background:url("https://lnhq.ca/logo-lnhq.png") top center / auto 46px no-repeat; }
 .feuille .res-champ > span{ color:#7a6a4f; }
 .feuille .res-aide{ color:#6b6152; }
 .feuille .res-carte select, .feuille .res-carte input{

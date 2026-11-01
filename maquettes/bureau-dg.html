@@ -758,11 +758,26 @@ body{ overflow-x:hidden; }
 .bu-ecriteau{ left:75.48%; top:69.29%; width:11.96%; height:6.38%; --x:75.48; --y:69.29; }
 .bu-tasse{ position:absolute; z-index:4; pointer-events:none; }
 
+/* ---------- Cube de pointage de l'aréna, vu par la fenêtre (face x 758-897, y 8-76) : le bouclier LNHQ en DEL ---------- */
+/* Mêlé en « screen » à l'écran sombre de la photo : le noir du logo disparaît, l'orange s'allume. */
+.bu-cube{ position:absolute; z-index:3; pointer-events:none; left:44.86%; top:0; width:9.27%; height:8.5%; }
+.bu-cube .bu-contenu{ inset:auto; left:0; top:0; width:8.4cqw; height:4.1cqw; transform-origin:0 0; display:flex; align-items:center; justify-content:center; gap:0.45cqw;
+  mix-blend-mode:screen; background:radial-gradient(circle, rgba(255,120,0,0.12) 0.05cqw, transparent 0.08cqw) 0 0 / 0.2cqw 0.2cqw; animation:cube 6s ease-in-out infinite; }
+.cube-logo{ height:3.2cqw; filter:saturate(1.2) drop-shadow(0 0 0.35cqw rgba(255,107,0,0.8)); }
+.cube-txt{ display:flex; flex-direction:column; gap:0.2cqw; font:700 1.3cqw/1 'Orbitron', monospace; color:#ff7a1a; text-shadow:0 0 0.4cqw rgba(255,107,0,0.85); }
+.cube-txt small{ font:500 0.36cqw/1 'Orbitron', monospace; letter-spacing:0.06em; white-space:nowrap; color:#ffd8a8; text-shadow:0 0 0.25cqw rgba(255,160,60,0.7); }
+@keyframes cube{ 50%{ filter:brightness(1.2); } }
+@media (prefers-reduced-motion: reduce){ .bu-cube .bu-contenu{ animation:none; } }
+
 /* ---------- Enveloppe : « Soumettre un résultat » au marqueur, tampon rouge si un match est en retard ---------- */
 /* Écrit à même l'enveloppe kraft de la photo (perspective par JS, encre mêlée au papier). */
 .bu-enveloppe .bu-contenu{ inset:auto; left:0; top:0; width:12cqw; height:3.2cqw; transform-origin:0 0; overflow:visible; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:0.25cqw; mix-blend-mode:multiply; }
 .env-titre{ font:400 1.02cqw/1 var(--marqueur); color:#1b2f6b; rotate:-1.5deg; }
 .env-sous{ margin-top:0.18cqw; font:700 0.5cqw/1 var(--ecrit); color:#3d3122; rotate:-0.8deg; white-space:nowrap; }
+/* En-tête imprimé de la ligue, coin haut-gauche de l'enveloppe. */
+.env-entete{ position:absolute; left:0.7cqw; top:0.2cqw; display:flex; align-items:center; gap:0.18cqw; rotate:-2deg;
+  font:700 0.27cqw/1 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#3d3122; white-space:nowrap; }
+.env-entete img{ height:0.7cqw; filter:sepia(0.4) contrast(1.1); }
 .env-tampon{ position:absolute; right:0.7cqw; top:0.15cqw; padding:0.08cqw 0.35cqw; border:0.12cqw solid #c92a2a; border-radius:0.2cqw; rotate:8deg;
   font:700 0.62cqw/1 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#c92a2a; opacity:0.85; }
 .bu-enveloppe.retard .bu-contenu{ animation:tampon 2.4s ease-in-out infinite; }
@@ -781,14 +796,18 @@ body{ overflow-x:hidden; }
 
 /* ---------- Écriteau du DG : nom gravé dans le laiton ---------- */
 .bu-ecriteau .bu-contenu{ inset:auto; left:0; top:0; width:10cqw; height:2.27cqw; transform-origin:0 0; overflow:hidden; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:0.12cqw; mix-blend-mode:multiply; }
-.ecr-nom{ max-width:96%; font:700 0.86cqw/1 'Cinzel', 'Trajan Pro', serif; letter-spacing:0.05em; color:#4a3410; text-shadow:0 0.05cqw 0 rgba(255,236,170,0.75), 0 -0.03cqw 0 rgba(40,25,5,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ecr-role{ font:600 0.38cqw/1 'Cinzel', serif; letter-spacing:0.14em; text-transform:uppercase; color:#5c4318; text-shadow:0 0.04cqw 0 rgba(255,236,170,0.7); white-space:nowrap; }
+.ecr-nom{ max-width:76%; font:700 0.86cqw/1 'Cinzel', 'Trajan Pro', serif; letter-spacing:0.05em; color:#4a3410; text-shadow:0 0.05cqw 0 rgba(255,236,170,0.75), 0 -0.03cqw 0 rgba(40,25,5,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Bouclier LNHQ gravé de chaque côté du nom. */
+.ecr-blason{ position:absolute; top:50%; translate:0 -50%; height:1.3cqw; filter:grayscale(1) sepia(1) brightness(0.85) contrast(1.15); opacity:0.7; }
+.ecr-blason.g{ left:0.35cqw; } .ecr-blason.d{ right:0.35cqw; }
+.ecr-role{ max-width:76%; overflow:hidden; text-overflow:ellipsis; font:600 0.32cqw/1 'Cinzel', serif; letter-spacing:0.1em; text-transform:uppercase; color:#5c4318; text-shadow:0 0.04cqw 0 rgba(255,236,170,0.7); white-space:nowrap; }
 
 /* ---------- Bandeau DEL : résultats qui défilent ---------- */
 .bu-del .bu-ecran{ display:flex; align-items:center; background:radial-gradient(circle, #1a1206 0.06cqw, #050403 0.09cqw) 0 0 / 0.22cqw 0.22cqw, #050403; }
 .del-defile{ display:flex; gap:2.6cqw; padding-left:2cqw; white-space:nowrap; animation:defile var(--duree, 60s) linear infinite;
   font:500 1.3cqw 'Orbitron', monospace; color:#ffb000; text-shadow:0 0 0.35cqw rgba(255,176,0,0.75); }
 .del-defile span{ display:inline-flex; align-items:center; gap:0.5cqw; }
+.del-defile .del-logo{ height:2.2cqw; margin:0 -1.2cqw; filter:drop-shadow(0 0 0.25cqw rgba(255,107,0,0.7)); }
 .del-defile i{ font-style:normal; color:#ff6b00; font-size:0.85cqw; }
 .del-defile em{ font-style:normal; white-space:pre; }
 .del-defile b{ font-weight:800; color:#fff3c4; }
@@ -987,6 +1006,10 @@ body{ overflow-x:hidden; }
 .gm-titre img{ position:absolute; left:0.35cqw; top:50%; translate:0 -50%; width:1.05cqw; height:1.05cqw; object-fit:contain; }
 .gm-nav{ width:0.95cqw; height:0.95cqw; display:grid; place-items:center; padding:0; border:0.08cqw solid currentColor; border-radius:50%; background:none; color:#1d2a4a; font:400 0.6cqw/1 var(--marqueur); cursor:pointer; }
 .gm-nav:hover, .gm-nav:focus-visible{ background:rgba(29,42,74,0.12); outline:none; }
+/* Pied imprimé du calendrier officiel (bande de papier sous la grille, y 509-520). */
+.gm-pied{ position:absolute; left:2.05%; width:96.23%; top:96.7%; height:3.1%; display:flex; align-items:center; justify-content:center; gap:0.25cqw; mix-blend-mode:multiply;
+  font:600 0.36cqw/1 'IBM Plex Sans', sans-serif; letter-spacing:0.14em; text-transform:uppercase; color:#495057; white-space:nowrap; }
+.gm-pied img{ height:0.55cqw; }
 .gm-jours, .gm-grille{ display:grid; grid-template-columns:54fr 53fr 54fr 53fr 52fr 53fr 52fr 50fr; }
 .gm-jours{ align-items:end; font:700 0.4cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#6c757d; text-align:center; }
 .gm-grille{ position:absolute; left:2.05%; width:96.23%; top:16.92%; height:79.69%; grid-template-rows:repeat(6, minmax(0, 1fr)); mix-blend-mode:multiply; }
@@ -1040,6 +1063,10 @@ body{ overflow-x:hidden; }
 .os-barre{ flex:none; display:flex; align-items:center; gap:0.4cqw; padding:0.25cqw 0.5cqw; background:rgba(0,0,0,0.45); font:600 0.6cqw 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; }
 .os-barre img{ width:0.9cqw; height:0.9cqw; object-fit:contain; }
 .os-barre span{ margin-left:auto; font:500 0.6cqw 'IBM Plex Sans', sans-serif; letter-spacing:0; opacity:0.85; }
+/* Fond d'écran : le bouclier LNHQ en filigrane, sous les boutons. */
+.os, .verrou{ position:relative; isolation:isolate; }
+.os::after, .verrou::after{ content:''; position:absolute; z-index:-1; left:50%; top:58%; translate:-50% -50%; width:9cqw; height:9cqw; background:url("logo-lnhq.png") center / contain no-repeat; opacity:0.13; }
+.os-barre .os-ligue{ width:auto; height:1cqw; }
 .os-apps{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); grid-auto-rows:3.05cqw; gap:0.3cqw; padding:0.4cqw 0.5cqw 0; }
 .os-app{ position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.15cqw; padding:0.15cqw; border:none; border-radius:0.35cqw;
   background:rgba(255,255,255,0.1); color:#fff; font:inherit; cursor:pointer; transition:background .15s, transform .15s; }
@@ -1542,6 +1569,7 @@ body{ overflow-x:hidden; }
     <!-- Image de fond (1672 × 941) ; chaque zone est placée en % de l'image et affiche les vraies données. -->
     <div class="bu-scene" id="scene" hidden>
       <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=3" alt="" width="1672" height="941">
+      <span class="bu-cube" aria-hidden="true"><span class="bu-contenu" id="o-cube"></span></span>
       <button type="button" class="bu-objet bu-del" data-objet="resultats" aria-label="Bandeau : résultats de la ligue"><div class="bu-ecran" id="o-del"></div></button>
       <button type="button" class="bu-objet bu-chandail" data-objet="fiche" aria-label="Chandail : fiche de l'équipe et du DG"><span class="bu-ecusson" id="o-ecusson"></span><span class="bu-plaque" id="o-plaque" hidden></span></button>
       <!-- Écran vertical : un div (comme le calendrier) parce qu'il contient ses boutons de page. -->
@@ -1632,6 +1660,9 @@ body{ overflow-x:hidden; }
   const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   const lundi = s => { const d = parse(s); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return iso(d); };
   const AUJ = iso(new Date());
+  // La ligue : son bouclier et la saison en cours (elle commence en septembre : 2026-2027 de sept. 2026 à août 2027).
+  const LOGO_LIGUE = 'logo-lnhq.png';
+  const saisonLigue = () => { const [a, m] = AUJ.split('-').map(Number), d = m >= 9 ? a : a - 1; return d + '-' + (d + 1); };
   const fJour = new Intl.DateTimeFormat('fr-CA', { weekday: 'long', day: 'numeric', month: 'short' });
   const fCourt = new Intl.DateTimeFormat('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' });
   const fMois = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short' });
@@ -2537,6 +2568,7 @@ body{ overflow-x:hidden; }
       if(!o.querySelector('.bu-etiquette')) o.append(el('span', 'bu-etiquette', ETIQUETTES[o.dataset.objet] || ''));
     });
     sansErreur(apercuDel($('o-del')));
+    apercuCube($('o-cube'));
     sansErreur(peindreSurface('o-ecusson', equipe));
     sansErreur(apercuMeneurs($('o-meneurs')));
     sansErreur(apercuTele($('o-tele')));
@@ -3101,7 +3133,9 @@ body{ overflow-x:hidden; }
     const versus = m => (m.v === equipe ? '@ ' : 'vs ') + adversaireDe(m);
     const sous = ret.length ? ret.length + ' match' + (ret.length > 1 ? 's' : '') + ' en retard · ' + versus(ret[0]) + ' (' + fMois.format(parse(ret[0].date)) + ')'
       : pm ? (pm.date === AUJ ? 'Ce soir' : fCourt.format(parse(pm.date))) + ' · ' + versus(pm) : '';
-    box.replaceChildren(el('span', 'env-titre', estDG() ? 'Soumettre un résultat' : 'Feuille de match'), el('span', 'env-sous', sous));
+    const entete = el('span', 'env-entete');
+    entete.append(Object.assign(el('img'), { src: LOGO_LIGUE, alt: '' }), el('span', null, 'LNHQ · Bureau de la ligue'));
+    box.replaceChildren(entete, el('span', 'env-titre', estDG() ? 'Soumettre un résultat' : 'Feuille de match'), el('span', 'env-sous', sous));
     if(ret.length) box.append(el('span', 'env-tampon', 'En retard'));
   }
   // Public : la feuille du dernier match joué (les DG seuls soumettent).
@@ -3116,8 +3150,9 @@ body{ overflow-x:hidden; }
     // La gravure rapetisse pour que le nom entier tienne sur la plaque (lettres capitales de Cinzel ≈ 0,72 em).
     const graver = dg => {
       const n = el('span', 'ecr-nom', dg || nom(equipe));
-      n.style.fontSize = Math.min(0.86, 9.2 / (n.textContent.length * 0.72)).toFixed(3) + 'cqw';
-      box.replaceChildren(n, el('span', 'ecr-role', dg ? 'Directeur général · ' + nom(equipe) : 'Bureau du directeur général'));
+      n.style.fontSize = Math.min(0.86, 7.2 / (n.textContent.length * 0.72)).toFixed(3) + 'cqw';
+      const blason = cote => Object.assign(el('img', 'ecr-blason ' + cote), { src: LOGO_LIGUE, alt: '' });
+      box.replaceChildren(blason('g'), n, el('span', 'ecr-role', dg ? 'Directeur général · ' + nom(equipe) : 'Bureau du directeur général'), blason('d'));
     };
     graver('');
     unefois('dgs', () => gvizTable('sheet=DGs')).then(tab => {
@@ -3272,6 +3307,7 @@ body{ overflow-x:hidden; }
     'o-jr-photo': [[33, 37], [102, 36], [53, 75], [124, 73]],     // journal : photo de la une
     'o-jr-une': [[108, 36], [201, 32], [114, 51], [210, 47]],     // journal : manchette
     'o-ecriteau': [[16, 9], [185, 8], [20, 48], [188, 46]],       // plaque de laiton de l'écriteau
+    'o-cube': [[8, 8], [147, 8], [13, 76], [142, 76]],            // face du cube de pointage, par la fenêtre
   };
   function ajusterPerspectives(){
     const scene = $('scene');
@@ -3342,6 +3378,13 @@ body{ overflow-x:hidden; }
   }
   const dansJours = j => j === 0 ? 'aujourd’hui' : j === 1 ? 'demain' : 'dans ' + j + ' j';
 
+  // Cube de pointage de l'aréna : le bouclier et la saison en cours.
+  function apercuCube(box){
+    const txt = el('span', 'cube-txt');
+    txt.append(document.createTextNode('LNHQ'), el('small', null, 'Saison ' + saisonLigue()));
+    box.replaceChildren(Object.assign(el('img', 'cube-logo'), { src: LOGO_LIGUE, alt: '' }), txt);
+  }
+
   // Bandeau DEL : les 5 derniers résultats, ou tous ceux de la dernière soirée s'il y en a plus,
   // entrecoupés des annonces (décomptes, dernière annonce). Le contenu est doublé pour boucler sans saut.
   async function apercuDel(box){
@@ -3364,7 +3407,8 @@ body{ overflow-x:hidden; }
       joues.forEach((m, i) => { if(i % pas === 0 && annonces[i / pas]) items.push(annonces[i / pas]); items.push(m); });
       annonces.slice(Math.ceil(joues.length / pas)).forEach(a => items.push(a));
       if(!items.length) items.push('LNHQ · la saison commence bientôt');
-      const rendu = () => items.map(x => typeof x === 'string' ? el('span', 'annonce', x) : resultat(x));
+      // Le bouclier de la ligue entre chaque nouvelle, comme sur le ruban d'un aréna.
+      const rendu = () => items.flatMap(x => [Object.assign(el('img', 'del-logo'), { src: LOGO_LIGUE, alt: '' }), typeof x === 'string' ? el('span', 'annonce', x) : resultat(x)]);
       d.replaceChildren(...rendu(), ...rendu());
       d.style.setProperty('--duree', items.length * 4 + 's');
     };
@@ -3686,7 +3730,9 @@ body{ overflow-x:hidden; }
       }
       c.classList.add('gm-case'); if(c.classList.contains('retard')) c.append(el('small', null, 'en retard')); grille.append(c);
     });
-    box.replaceChildren(tete, grille);
+    const pied = el('div', 'gm-pied');
+    pied.append(Object.assign(el('img'), { src: LOGO_LIGUE, alt: '' }), el('span', null, 'Calendrier officiel · Saison ' + saisonLigue()));
+    box.replaceChildren(tete, grille, pied);
   }
   const NOM_MOIS_CAP = m => NOMS_MOIS[m].charAt(0).toUpperCase() + NOMS_MOIS[m].slice(1);
 
@@ -3861,7 +3907,7 @@ body{ overflow-x:hidden; }
     // une pastille rouge quand une action attend (mêmes alertes que le cellulaire).
     const os = el('div', 'os');
     const barre = el('div', 'os-barre'), h = new Date();
-    barre.append(logo(equipe), el('b', null, 'Espace DG · ' + nom(equipe)), el('span', null, String(h.getHours()).padStart(2, '0') + ':' + String(h.getMinutes()).padStart(2, '0')));
+    barre.append(Object.assign(el('img', 'os-ligue'), { src: LOGO_LIGUE, alt: 'LNHQ' }), logo(equipe), el('b', null, 'Espace DG · ' + nom(equipe)), el('span', null, String(h.getHours()).padStart(2, '0') + ':' + String(h.getMinutes()).padStart(2, '0')));
     const grille = el('div', 'os-apps');
     const pastilles = {};
     APPS_DG.forEach(([page, icone, titre]) => {
