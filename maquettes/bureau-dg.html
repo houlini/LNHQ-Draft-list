@@ -2582,7 +2582,9 @@ body{ overflow-x:hidden; }
      p = bande de poitrine [haut, bas, couleur, bordure] (à la hauteur des aisselles, l'écusson par-dessus).
      Sans motif : celui de la photo (deux bandes). */
   // Ouverture du col sur la photo (px de l'image) : le dos du chandail et la barre du cintre, au-dessus du col arrière.
-  const ENCOLURE = [[95, 211], [138, 211], [135, 220], [131, 226], [116, 227], [101, 226], [97, 220]];
+  // Bornée en haut par le dessous du cintre (pointe sous le crochet), sur les côtés par le bord intérieur du col.
+  const ENCOLURE = [[94, 214], [100, 212.5], [108, 209], [117, 206.5], [126, 209], [134, 212.5], [140, 214], [137, 220], [134, 224.5],
+    [116, 225], [100, 224.5], [96.5, 220]];
   const MOTIF_PHOTO = { m: '300 b12 c5 b28', h: '366 b10 c5 b22', col: 'b' };
   const MOTIFS = {
     ANA: { m: '300 c2 b12 c2 b4', h: '366 c2 b12 c2 b4', col: 'b' }, BOS: { m: '300 b8 c3 _4 c3 b8', h: '364 b8 c3 _4 c3 b8', col: 'b' },
@@ -2803,9 +2805,10 @@ body{ overflow-x:hidden; }
   const SURFACES = {
     'o-ecusson': { sorte: 'tissu', zone: [16, 198, 202, 216],
       // Contour du chandail (manches comprises), relevé sur la photo ; en haut, le cintre en bois est exclu par sa teinte chaude.
-      // Les épaules suivent le cintre jusqu'à son bout (x 58 et 174), puis tombent vers le haut des manches.
-      poly: [[84, 211], [146, 211], [160, 220], [174, 229], [180, 240], [187, 255], [195, 280], [204, 320], [208, 360], [209, 406], [170, 408], [169, 413],
-        [61, 413], [60, 408], [23, 406], [25, 360], [29, 320], [38, 280], [42, 255], [51, 240], [58, 229], [70, 221]],
+      // Les épaules suivent le dessus du cintre (son rebord est recouvert de tissu) jusqu'à son bout (x 58 et 174),
+      // puis tombent vers le haut des manches.
+      poly: [[84, 209], [146, 209], [160, 217], [175, 225.5], [180, 240], [187, 255], [195, 280], [204, 320], [208, 360], [209, 406], [170, 408], [169, 413],
+        [61, 413], [60, 408], [23, 406], [25, 360], [29, 320], [38, 280], [42, 255], [51, 240], [57, 225.5], [70, 217.5]],
       // Poitrine : axe x 116,5, entre le bas du col (y 242) et la bande de taille (y 370).
       logo: { cx: 116.5, cy: 294, larg: 60, haut: 60 },
       // Numéros sur le haut des manches (vues de biais, donc écrasés).
@@ -2918,7 +2921,7 @@ body{ overflow-x:hidden; }
     // Tissu : le motif de l'équipe remplace les bandes de la photo. L'éclairage vient de la photo, ramené à sa propre
     // couleur : chaque pixel est comparé à la moyenne de sa famille (tissu noir ≈ 18, bandes blanches ≈ 175), lissée
     // sur un pixel pour que les bords des bandes de la photo ne laissent pas de trace.
-    let base = null, palette = null, motif = null, masque = null;
+    let base = null, palette = null, motif = null, masque = null, encolure = null;
     if(tissu){
       const pale = new Float32Array(W * H);
       for(let i = 0; i < W * H; i++) pale[i] = L[i] > 70 ? 1 : 0;
@@ -2930,19 +2933,19 @@ body{ overflow-x:hidden; }
       const dedans = new Float32Array(W * H);
       for(let py = 0; py < H; py++) for(let px = 0; px < W; px++) dedans[py * W + px] = dansPoly(s.poly, zx + px / K, zy + py / K) ? 1 : 0;
       masque = flou(dedans, W, H, Math.round(K * 0.7));
+      const ouvert = new Float32Array(W * H);
+      for(let py = 0; py < H; py++) for(let px = 0; px < W; px++) ouvert[py * W + px] = dansPoly(ENCOLURE, zx + px / K, zy + py / K) ? 1 : 0;
+      encolure = flou(ouvert, W, H, Math.round(K * 0.6));
       const mo = ch.motif;
       const [pente, ...chevron] = String(mo.v || '').trim().split(/\s+/);
       motif = { m: bandesMotif(mo.m), h: bandesMotif(mo.h), col: mo.col || 'b', e: mo.e || '', ey: mo.ey || 250, ek: mo.ek || 0, ec: mo.ec ?? 0.005, eb: mo.eb || '',
         v: mo.v ? { pente: Number(pente), b: bandesMotif(chevron.join(' ')) } : null };
     }
-    // Encolure : entre le haut du col avant et la bande du col arrière, on voit l'intérieur du dos et le cintre.
-    const dansCol = (ix, iy) => tissu && dansPoly(ENCOLURE, ix, iy);
     // Couleur du motif au point (ix, iy) de l'image. Manches : à gauche de x 62 et à droite de x 169, sous l'épaule ;
     // leurs bandes descendent vers le corps (pente plus forte vers le poignet), mesurées au bord extérieur.
     const couleurMotif = (ix, iy, paleIci) => {
-      if(dansCol(ix, iy)) return palette.a;                                                    // dos du chandail, vu par l'encolure
-      if(paleIci && iy > 235 && iy < 250 && Math.abs(ix - 117) < 7) return palette.a;                     // étiquette au fond du V
-      if(iy < 252 && paleIci && Math.abs(ix - 116) < 40) return palette[motif.col];          // col en V (pâle sur la photo)
+      if(paleIci && iy > 233 && iy < 250 && Math.abs(ix - 117) < 9) paleIci = false;        // étiquette au fond du V : du tissu
+      if(iy < 252 && paleIci && Math.abs(ix - 116) < 36) return palette[motif.col];          // col en V (pâle sur la photo)
       if(motif.e){                                                                             // empiècement : descend sur les épaules
         const dx = Math.abs(ix - 116), lim = motif.ey + motif.ek * dx + motif.ec * dx * dx;
         if(iy < lim) return palette[motif.e];
@@ -2968,17 +2971,25 @@ body{ overflow-x:hidden; }
       const i = py * W + px, ix = zx + px / K, iy = zy + py / K;
       let w, rgb;
       if(tissu){
-        // Le contour suffit, sauf en haut où le cintre en bois (clair et chaud) passe sur les épaules ; le tissu noir,
-        // même éclairé en orangé par la lampe, reste repeint.
-        w = masque[i] * (iy < 240 ? 1 - (1 - lisse(0.42, 0.62, neutre[i])) * lisse(45, 80, L[i]) : 1);
-        // Dans l'encolure, la barre du cintre (claire) reste celle de la photo ; seul le tissu sombre du dos est repeint.
-        if(dansCol(ix, iy)) w *= 1 - lisse(30, 55, L[i]);
+        // Cintre en bois (clair et chaud ; le tissu noir, même éclairé en orangé par la lampe, n'en est pas). Il ne reste
+        // visible qu'au-dessus du col (crochet) ; son rebord sur les épaules et sa barre dans l'encolure sont recouverts.
+        const cintre = iy < 240 ? (1 - lisse(0.42, 0.62, neutre[i])) * lisse(45, 80, L[i]) : 0;
+        const ouvert = encolure[i], crochet = (1 - ouvert) * lisse(83, 88, ix) * (1 - lisse(147, 152, ix));
+        w = Math.max(masque[i] * (1 - crochet * cintre), ouvert);
         if(w < 0.02) continue;
-        // Plis et reflets : écart à la moyenne de la famille (adouci sur le tissu noir, où le grain de la photo est fort).
-        // Sur les bords des bandes de la photo (pa entre 0 et 1), le rapport n'est pas fiable : on y garde l'éclairage moyen.
-        const pa = (base[i] - 18) / 157, r = Math.min(1.9, Math.max(0.6, L[i] / base[i])), bord = Math.min(1, 4 * pa * (1 - pa) * 1.6);
-        const ombre = 0.86 * (Math.pow(r, 0.55 + 0.35 * pa) * (1 - bord) + bord);
-        rgb = couleurMotif(ix, iy, pa > 0.5).map((c, k) => Math.min(255, c * ombre * chaud[k]));
+        // Encolure : l'intérieur du dos, dans l'ombre (plus sombre en haut), d'un ton uni : la barre du cintre n'y paraît plus.
+        const dos = palette.a.map((c, k) => c * (0.26 + 0.18 * lisse(207, 225, iy)) * chaud[k]);
+        if(ouvert > 0.98) rgb = dos;
+        else{
+          // Plis et reflets : écart à la moyenne de la famille (adouci sur le tissu noir, où le grain de la photo est fort).
+          // Sur les bords des bandes de la photo (pa entre 0 et 1), le rapport n'est pas fiable : on y garde l'éclairage moyen.
+          // Le rebord du cintre et l'étiquette au fond du V n'ajoutent pas de reflet.
+          const etiquette = ix > 108 && ix < 126 && iy > 233 && iy < 250;
+          const pa = (base[i] - 18) / 157, bord = Math.min(1, 4 * pa * (1 - pa) * 1.6);
+          const r = etiquette ? 1 : Math.min(1.9 - 0.85 * cintre, Math.max(0.6, L[i] / base[i]));
+          const ombre = 0.86 * (Math.pow(r, 0.55 + 0.35 * pa) * (1 - bord) + bord);
+          rgb = couleurMotif(ix, iy, pa > 0.5 && cintre < 0.5).map((c, k) => Math.min(255, c * ombre * chaud[k]) * (1 - ouvert) + dos[k] * ouvert);
+        }
       }else{
         const sin = Math.max(-1, Math.min(1, (ix - s.logo.cx) / s.logo.rayon)), phi = Math.asin(sin), cosA = Math.cos(phi);
         const yH = s.haut[0] + s.haut[1] * cosA, yB = s.bas[0] + s.bas[1] * cosA;
