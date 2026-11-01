@@ -1242,7 +1242,6 @@ body{ overflow-x:hidden; }
 .fc-form label{ display:grid; gap:4px; min-width:0; }
 .fc-form label span{ font-size:12px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-muted); }
 .fc-form input[type=text]{ min-width:0; padding:8px 10px; border:1px solid var(--line, #ced4da); border-radius:8px; font:inherit; background:var(--surface, #fff); color:inherit; }
-.fc-form input[type=color]{ width:100%; height:38px; padding:2px; border:1px solid var(--line, #ced4da); border-radius:8px; background:none; cursor:pointer; }
 .fc-actions{ grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
 .fc-actions small{ color:var(--ink-muted); }
 .bu-zoom-objet.is-calendrier{ background:#fbfaf6; color:#1a2533; width:min(1000px, 96vw); }
@@ -2562,39 +2561,40 @@ body{ overflow-x:hidden; }
   // Chandail local de chaque équipe : [corps, bandes (les bandes blanches de la photo), ligne entre les bandes].
   // Le col prend la couleur des bandes. Montréal ajoute sa bande de poitrine (bleue bordée de blanc).
   const CHANDAILS = {
-    ANA: ['#FC4C02', '#FFFFFF', '#111111'], BOS: ['#111111', '#FFB81C', '#FFFFFF'], BUF: ['#003087', '#FFFFFF', '#FFB81C'], CGY: ['#C8102E', '#111111', '#F1BE48'],
+    ANA: ['#FC4C02', '#111111', '#FFFFFF'], BOS: ['#111111', '#FFB81C', '#FFFFFF'], BUF: ['#003087', '#FFFFFF', '#FFB81C'], CGY: ['#C8102E', '#F1BE48', '#FFFFFF'],
     CAR: ['#CC0000', '#111111', '#FFFFFF'], CHI: ['#CF0A2C', '#FFFFFF', '#111111'], COL: ['#6F263D', '#FFFFFF', '#236192'], CBJ: ['#002654', '#FFFFFF', '#CE1126'],
-    DAL: ['#006847', '#FFFFFF', '#111111'], DET: ['#CE1126', '#FFFFFF', '#FFFFFF'], EDM: ['#041E42', '#FF4C00', '#FFFFFF'], FLA: ['#C8102E', '#041E42', '#B9975B'],
+    DAL: ['#006847', '#FFFFFF', '#111111'], DET: ['#CE1126', '#FFFFFF', '#FFFFFF'], EDM: ['#041E42', '#FF4C00', '#FFFFFF'], FLA: ['#C8102E', '#FFFFFF', '#B9975B'],
     LAK: ['#111111', '#FFFFFF', '#A2AAAD'], MIN: ['#154734', '#DDCBA4', '#A6192E'], MTL: ['#AF1E2D', '#FFFFFF', '#192168'], NSH: ['#FFB81C', '#041E42', '#FFFFFF'],
     NJD: ['#CE1126', '#111111', '#FFFFFF'], NYI: ['#00539B', '#F47D30', '#FFFFFF'], NYR: ['#0038A8', '#FFFFFF', '#CE1126'], OTT: ['#111111', '#C52032', '#FFFFFF'],
-    PHI: ['#F74902', '#FFFFFF', '#111111'], PIT: ['#111111', '#FCB514', '#111111'], SJS: ['#006D75', '#FFFFFF', '#111111'], SEA: ['#001628', '#99D9D9', '#E9072B'],
+    PHI: ['#F74902', '#FFFFFF', '#111111'], PIT: ['#111111', '#FCB514', '#FFFFFF'], SJS: ['#006D75', '#FFFFFF', '#111111'], SEA: ['#001628', '#99D9D9', '#E9072B'],
     STL: ['#002F87', '#FCB514', '#041E42'], TBL: ['#0057B8', '#FFFFFF', '#FFFFFF'], TOR: ['#00205B', '#FFFFFF', '#00205B'], UTA: ['#111111', '#69B3E7', '#FFFFFF'],
-    VAN: ['#00205B', '#FFFFFF', '#00843D'], VGK: ['#333F48', '#B4975A', '#C8102E'], WSH: ['#C8102E', '#FFFFFF', '#041E42'], WPG: ['#041E42', '#FFFFFF', '#004C97'],
+    VAN: ['#00205B', '#FFFFFF', '#00843D'], VGK: ['#B4975A', '#FFFFFF', '#333F48'], WSH: ['#C8102E', '#FFFFFF', '#041E42'], WPG: ['#041E42', '#FFFFFF', '#004C97'],
   };
-  // Bande de poitrine (y en px de l'image, à la hauteur des aisselles, sous l'écusson) : [haut, bas, couleur, bordure].
-  const POITRINES = { MTL: [283, 305, '#192168', '#FFFFFF'] };
   /* Motif du chandail local de chaque équipe, peint sur la forme de la photo (les plis et l'éclairage restent ceux de la photo).
-     Couleurs : a = corps, b = bandes, c = ligne (les trois couleurs que le DG peut changer).
+     Couleurs : a = corps, b = bandes, c = ligne.
      m = bandes des manches, h = bandes du bas : « départ largeur… » en px de l'image, ex. « 300 b4 c10 b4 » = à partir de y 300,
      4 px de b, 10 px de c, 4 px de b (« _ » = le corps). Manches : y mesuré au bord extérieur (les bandes descendent vers le corps).
-     col = couleur du col ; e = empiècement d'épaules (couleur). Sans motif : celui de la photo (deux bandes). */
+     col = couleur du col ; e = empiècement d'épaules (couleur) ; v = chevron « pente départ largeur… » (bandes le long de
+     y + pente·|x − axe| : pente positive = V qui descend des épaules, négative = pointe vers le haut) ;
+     p = bande de poitrine [haut, bas, couleur, bordure] (à la hauteur des aisselles, l'écusson par-dessus).
+     Sans motif : celui de la photo (deux bandes). */
   const MOTIF_PHOTO = { m: '300 b12 c5 b28', h: '366 b10 c5 b22', col: 'b' };
   const MOTIFS = {
-    ANA: { m: '302 b3 c14 b3', h: '368 b3 c16 b3', col: 'c' }, BOS: { m: '300 b10 c4 b10', h: '368 b10 c4 b10', col: 'b', e: 'b' },
-    BUF: { m: '300 b5 c10 b5', h: '368 b5 c12 b5', col: 'b' }, CGY: { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' },
+    ANA: { m: '300 c2 b12 c2 b4', h: '366 c2 b12 c2 b4', col: 'b' }, BOS: { m: '300 b8 c3 _4 c3 b8', h: '364 b8 c3 _4 c3 b8', col: 'b' },
+    BUF: { m: '300 b5 c10 b5', h: '368 b5 c12 b5', col: 'b' }, CGY: { m: '300 c3 b8 c3', h: '364 c3 b6 c3 b8', col: 'b' },
     CAR: { m: '300 b10 c4 b10', h: '368 b10 c4 b10', col: 'b' }, CHI: { m: '300 b3 c12 b3', h: '364 c3 b3 c14 b3 c3', col: 'b' },
-    COL: { m: '300 b3 c12 b3', h: '368 b3 c14 b3', col: 'c', e: 'c' }, CBJ: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' },
+    COL: { m: '300 b3 c12 b3', h: '368 b3 c14 b3', col: 'c', e: 'c' }, CBJ: { m: '', h: '', col: 'c' },
     DAL: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }, DET: { m: '302 b20', h: '370 b22', col: 'b' },
-    EDM: { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' }, FLA: { m: '300 c2 b14 c2', h: '368 c2 b16 c2', col: 'b' },
-    LAK: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }, MIN: { m: '300 b4 c8 b4', h: '368 b4 c10 b4', col: 'b' },
-    MTL: { m: '302 b3 c14 b3', h: '368 b3 c16 b3', col: 'b' }, NSH: { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' },
-    NJD: { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' }, NYI: { m: '300 c3 b12 c3', h: '368 c3 b14 c3', col: 'b' },
+    EDM: { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b', e: 'b' }, FLA: { m: '300 c2 b12 c2', h: '', col: 'c', p: [290, 312, 'b', 'c'] },
+    LAK: { m: '304 c2 b12 c2', h: '366 c2 b10 c2', col: 'b' }, MIN: { m: '', h: '', col: 'b', p: [249, 259, 'b', 'c'] },
+    MTL: { m: '302 b3 c14 b3', h: '368 b3 c16 b3', col: 'b', p: [283, 305, 'c', 'b'] }, NSH: { m: '312 c2 b40', h: '372 c2 b40', col: 'b' },
+    NJD: { m: '300 b6 c3 b6', h: '364 b6 c3 b6', col: 'b' }, NYI: { m: '300 c3 b10', h: '364 c3 b10', col: 'b' },
     NYR: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'c' }, OTT: { m: '300 b8 c3 b8', h: '368 b8 c3 b8', col: 'b' },
-    PHI: { m: '310 c3 b8 c3', h: '', col: 'b' }, PIT: { m: '300 b5 c4 b14', h: '368 b5 c4 b16', col: 'b' },
+    PHI: { m: '316 b2 c12', h: '396 c8', col: 'c' }, PIT: { m: '300 b6 c3 b6', h: '364 b6 c3 b6', col: 'b', e: 'b' },
     SJS: { m: '300 c3 b10 c3', h: '368 c3 b12 c3', col: 'b' }, SEA: { m: '300 b12 c3', h: '368 b14 c3', col: 'b' },
     STL: { m: '300 b3 c12 b3', h: '368 b3 c14 b3', col: 'c' }, TBL: { m: '302 b16', h: '370 b18', col: 'b' },
     TOR: { m: '302 b5 _6 b5', h: '368 b5 _8 b5', col: 'b' }, UTA: { m: '300 c3 b12 c3', h: '368 c3 b14 c3', col: 'b' },
-    VAN: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }, VGK: { m: '300 b12 c3', h: '368 b14 c3', col: 'b' },
+    VAN: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }, VGK: { m: '300 c3 b12 c3', h: '', col: 'b' },
     WSH: { m: '300 b3 c10 b3', h: '368 b3 c12 b3', col: 'c' }, WPG: { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' },
   };
   // « 300 b4 c10 b4 » → [[300, 304, 'b'], [304, 314, 'c'], [314, 318, 'b']]
@@ -2606,7 +2606,7 @@ body{ overflow-x:hidden; }
   /* ---------- Chandails retirés : le vrai chandail de l'époque du joueur ----------
      Numéros retirés de chaque équipe : [joueur, numéro, 1re saison, dernière saison avec l'équipe] (le 1er = chandail par défaut).
      Le chandail affiché est celui du milieu de sa carrière : couleurs et motif de l'époque (EPOQUES), logo officiel de
-     la saison (LOGOS_LNH). Les équipes sans numéro retiré gardent le chandail actuel, personnalisable. */
+     la saison (LOGOS_LNH). Les équipes sans numéro retiré gardent le chandail actuel (nom et numéro au choix du DG). */
   const RETIRES = {
     ANA: [['Paul Kariya', '9', 1994, 2003], ['Teemu Selänne', '8', 1996, 2014], ['Scott Niedermayer', '27', 2005, 2010], ['Ryan Getzlaf', '15', 2005, 2022]],
     BOS: [['Bobby Orr', '4', 1966, 1976], ['Ray Bourque', '77', 1979, 2000], ['Phil Esposito', '7', 1967, 1975], ['Cam Neely', '8', 1986, 1996], ['Johnny Bucyk', '9', 1957, 1978],
@@ -2696,29 +2696,69 @@ body{ overflow-x:hidden; }
     WSH: [['WSH_19741975-19941995', 1975, 1995], ['WSH_19951996-20062007', 1996, 2007], ['WSH', 2008, 2022]],
     WPG: [['WIN_19791980-19891990', 1973, 1990], ['WIN_19901991-19951996', 1991, 1996]],
   };
-  /* Chandails d'époque (local, foncé) : [1re, dernière saison, corps, bandes, ligne, motif] ; hors de ces années, le chandail
-     actuel (CHANDAILS, MOTIFS). Ex. Oilers bleu royal et orange des années 1980, Whalers vert, Penguins noir et or. */
+  /* Chandails d'époque : [1re, dernière saison, corps, bandes, ligne, motif] ; hors de ces années, le chandail actuel
+     (CHANDAILS, MOTIFS). Relevés sur les planches de nhluniforms.com : le chandail foncé de l'époque, ou le seul qui
+     existait (Bruins 1934 blanc, brun et or ; Kings en or ; Sénateurs d'origine rayés). */
   const EPOQUES = {
-    ANA: [[1994, 2006, '#2E1A47', '#00685E', '#FFFFFF', { m: '300 b3 c12 b3', h: '368 c3 b14 c3', col: 'b' }], [2007, 2024, '#111111', '#B9975B', '#FC4C02', { m: '300 b10 c3', h: '368 b12 c3', col: 'b' }]],
-    BOS: [[1924, 2006, '#111111', '#FFB81C', '#FFFFFF', { m: '300 b10 c4 b10', h: '368 b10 c4 b10', col: 'b' }]],
-    BUF: [[1997, 2006, '#111111', '#C8102E', '#A2AAAD', { m: '300 b12 c4', h: '368 b14 c4', col: 'b' }], [2007, 2020, '#002654', '#FFB81C', '#A2AAAD', { m: '300 b4 c8 b4', h: '368 b4 c10 b4', col: 'b' }]],
-    CGY: [[1973, 1980, '#C8102E', '#F1BE48', '#FFFFFF', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }], [1981, 1994, '#C8102E', '#FFFFFF', '#F1BE48', { m: '300 c3 b10 c3', h: '368 c3 b12 c3', col: 'b' }]],
-    CAR: [[1980, 1997, '#046A38', '#FFFFFF', '#00205B', { m: '300 b3 c12 b3', h: '368 b3 c14 b3', col: 'b' }]],
-    COL: [[1980, 1995, '#003DA5', '#FFFFFF', '#C8102E', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }], [1996, 2014, '#6F263D', '#236192', '#A2AAAD', { m: '300 b3 c12 b3', h: '368 b3 c14 b3', col: 'c' }]],
-    DAL: [[1968, 1985, '#00843D', '#FFB81C', '#FFFFFF', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }], [1986, 1993, '#111111', '#00843D', '#FFB81C', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }],
-      [1994, 2013, '#111111', '#006847', '#B5985A', { m: '300 b12 c3', h: '368 b14 c3', col: 'b' }]],
-    EDM: [[1980, 1996, '#0047BB', '#FF7900', '#FFFFFF', { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' }], [1997, 2011, '#041E42', '#FF4C00', '#A2AAAD', { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' }]],
-    LAK: [[1968, 1988, '#5B2C83', '#FFB81C', '#FFFFFF', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }], [1989, 1998, '#111111', '#A2AAAD', '#FFFFFF', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }],
-      [1999, 2011, '#111111', '#5B2C83', '#A2AAAD', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }]],
-    NJD: [[1975, 1982, '#002F87', '#CE1126', '#FFD100', { m: '300 c3 b12 c3', h: '368 c3 b14 c3', col: 'b' }], [1983, 1992, '#CE1126', '#006341', '#FFFFFF', { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' }]],
-    OTT: [[1993, 2007, '#111111', '#C52032', '#C69214', { m: '300 b8 c3 b8', h: '368 b8 c3 b8', col: 'b' }], [2008, 2020, '#111111', '#C52032', '#FFFFFF', { m: '300 b12 c3', h: '368 b14 c3', col: 'b' }]],
-    PIT: [[1968, 1972, '#6CACE4', '#00205B', '#FFFFFF', { m: '300 c3 b12 c3', h: '368 c3 b14 c3', col: 'b' }], [1973, 1980, '#003087', '#FFFFFF', '#00205B', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }],
-      [1981, 1992, '#111111', '#FCB514', '#FFFFFF', { m: '300 b5 c4 b14', h: '368 b5 c4 b16', col: 'b' }], [1993, 2016, '#111111', '#CFC493', '#FFFFFF', { m: '300 b5 c4 b14', h: '368 b5 c4 b16', col: 'b' }]],
-    TBL: [[1993, 2007, '#111111', '#0057B8', '#A2AAAD', { m: '300 b12 c3', h: '368 b14 c3', col: 'b' }]],
-    VAN: [[1971, 1978, '#003E7E', '#00843D', '#FFFFFF', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }], [1979, 1997, '#111111', '#F2A900', '#C8102E', { m: '300 b10 c3 b4', h: '368 b12 c3 b4', col: 'b' }],
-      [1998, 2007, '#003E7E', '#8A1538', '#A2AAAD', { m: '300 b10 c3', h: '368 b12 c3', col: 'c' }]],
-    WSH: [[1996, 2007, '#0B1F41', '#8B6F4E', '#111111', { m: '300 b10 c3', h: '368 b12 c3', col: 'b' }]],
-    WPG: [[1973, 1996, '#003DA5', '#FFFFFF', '#CE1126', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }]],
+    ANA: [[1994, 2006, '#4B2A52', '#00685E', '#FFFFFF', { m: '318 c2 b40', h: '360 c3 b50', col: 'b' }],
+      [2007, 2024, '#111111', '#B9975B', '#FC4C02', { m: '302 b10 c3', h: '364 c2 b10 c2', col: 'b' }]],
+    BOS: [[1924, 1935, '#FFFFFF', '#5C3A1E', '#FFB81C', { m: '300 b4 c4 b8 c4 b4', h: '364 b4 c4 b8 c4 b4', col: 'b' }],
+      [1936, 1958, '#FFFFFF', '#FFB81C', '#111111', { m: '300 b5 c5 b5', h: '366 b6 c6 b6', col: 'c', e: 'c' }],
+      [1959, 1966, '#FFB81C', '#111111', '#FFFFFF', { m: '300 b3 _3 b3 _3 b3', h: '364 b3 _3 b3 _3 b3', col: 'b' }],
+      [1967, 1976, '#111111', '#FFB81C', '#FFFFFF', { m: '300 b6 c3 b6', h: '366 b6 c3 b6', col: 'b', e: 'b' }],
+      [1977, 2007, '#111111', '#FFB81C', '#FFFFFF', { m: '300 b8 c3 _4 c3 b8', h: '364 b8 c3 _4 c3 b8', col: 'b' }],
+      [2008, 2024, '#111111', '#FFB81C', '#FFFFFF', { m: '300 c3 b10 c3', h: '366 c3 b10 c3', col: 'b', e: 'b' }]],
+    BUF: [[1971, 1978, '#0033A0', '#FFB81C', '#FFFFFF', { m: '300 b3 c2 b3 c2 b3', h: '366 b3 c2 b3 c2 b3', col: 'b', e: 'b' }],
+      [1979, 1987, '#0033A0', '#FFB81C', '#FFFFFF', { m: '300 b3 _3 b3 _3 b3', h: '366 b3 _3 b3 _3 b3', col: 'b' }],
+      [1988, 1996, '#1A2A8C', '#FFB81C', '#FFFFFF', { m: '300 b3 _3 b3 _3 b3', h: '366 b3 _3 b3 _3 b3', col: 'b' }],
+      [1997, 2006, '#111111', '#FFFFFF', '#C8102E', { m: '300 b4 c6', h: '364 b4 c6', col: 'b' }],
+      [2007, 2020, '#002654', '#FFB81C', '#A2AAAD', { m: '302 b10 c3', h: '', col: 'b' }]],
+    CGY: [[1981, 1994, '#C8102E', '#F1BE48', '#FFFFFF', { m: '300 c3 b8 c3', h: '364 c3 b6 c3 b8', col: 'b' }],
+      [2001, 2007, '#C8102E', '#111111', '#F1BE48', { m: '318 c2 b40', h: '', v: '0.4 355 c3 b100', col: 'b' }],
+      [2008, 2020, '#C8102E', '#111111', '#F1BE48', { m: '306 c3 b40', h: '400 c4', col: 'b' }]],
+    CAR: [[1980, 1992, '#046A38', '#FFFFFF', '#00205B', { m: '300 b3 c12 b3', h: '368 b3 c14 b3', col: 'b' }],
+      [1993, 1997, '#0B1F41', '#A2AAAD', '#00843D', { m: '300 b4 c4 b4', h: '364 b6 c5 b6', col: 'c' }],
+      [1998, 2007, '#CC0000', '#111111', '#FFFFFF', { m: '300 c2 b10 c2', h: '362 c2 b10 c2 b6', col: 'b' }]],
+    COL: [[1996, 2007, '#6F263D', '#236192', '#111111', { m: '', h: '', v: '-0.3 345 c2 b100', col: 'b', e: 'b' }]],
+    DAL: [[1968, 1993, '#007A33', '#FFB81C', '#111111', { m: '300 b5 c4', h: '364 b7 c4', col: 'b' }],
+      [1994, 2013, '#111111', '#006847', '#B5985A', { m: '', h: '', col: 'c', e: 'b' }]],
+    EDM: [[1980, 1980, '#003DA5', '#FF7900', '#FFFFFF', { m: '300 b4 c3 b4', h: '364 b4 c3 b4', col: 'b', e: 'b' }],
+      [1981, 1996, '#0047BB', '#FF7900', '#FFFFFF', { m: '300 c3 b8 c3', h: '364 c3 b8 c3', col: 'b', e: 'b' }],
+      [1997, 2011, '#041E42', '#FF4C00', '#A2AAAD', { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' }]],
+    FLA: [[2004, 2016, '#041E42', '#C8102E', '#B9975B', { m: '302 b6 c2', h: '', col: 'b', e: 'b' }]],
+    LAK: [[1968, 1979, '#FFC72C', '#5B2C83', '#FFFFFF', { m: '300 b10', h: '364 b10', col: 'b' }],
+      [1980, 1988, '#FFC72C', '#5B2C83', '#FFFFFF', { m: '300 b4 c3 b4', h: '364 b4 c3 b4', col: 'b', e: 'b' }],
+      [1989, 2002, '#111111', '#A2AAAD', '#FFFFFF', { m: '300 b3 c6 b3', h: '364 c6 b3', col: 'c' }]],
+    MIN: [[2008, 2017, '#A6192E', '#154734', '#DDCBA4', { m: '308 c2 b40', h: '', col: 'b' }]],
+    NJD: [[1975, 1982, '#002F87', '#CE1126', '#FFD100', { m: '300 c3 b12 c3', h: '368 c3 b14 c3', col: 'b' }],
+      [1983, 1992, '#CE1126', '#006341', '#FFFFFF', { m: '300 c3 b14 c3', h: '368 c3 b16 c3', col: 'b' }]],
+    OTT: [[1918, 1934, '#C8102E', '#111111', '#FFFFFF', { m: '240 c7 b9 _7 c7 b9 _7 c7 b9 _7 c7 b9 _7 c7 b9 _7',
+        h: '222 c8 b10 _8 c8 b10 _8 c8 b10 _8 c8 b10 _8 c8 b10 _8 c8 b10 _8 c8 b10', col: 'c' }],
+      [1993, 2007, '#C52032', '#111111', '#FFFFFF', { m: '312 c2 b40', h: '', v: '-0.5 360 c2 b80', col: 'b', e: 'b' }],
+      [2008, 2020, '#111111', '#C52032', '#FFFFFF', { m: '300 b12 c3', h: '368 b14 c3', col: 'b' }]],
+    PHI: [[1968, 1981, '#F74902', '#FFFFFF', '#111111', { m: '310 b10', h: '366 b10', col: 'c', e: 'c' }],
+      [1982, 1997, '#F74902', '#FFFFFF', '#111111', { m: '316 c2 b8 c2', h: '396 c6', col: 'c', e: 'c' }]],
+    PIT: [[1968, 1972, '#6CACE4', '#FFFFFF', '#00205B', { m: '300 c2 b8 c2', h: '364 c2 b8 c2', col: 'b' }],
+      [1973, 1980, '#003087', '#FFFFFF', '#00205B', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }],
+      [1981, 1992, '#111111', '#FCB514', '#FFFFFF', { m: '300 b5 c4 b14', h: '368 b5 c4 b16', col: 'b' }],
+      [1993, 2002, '#111111', '#FCB514', '#FFFFFF', { m: '', h: '364 c3 b8', col: 'b', e: 'b' }],
+      [2003, 2016, '#111111', '#CFC493', '#FFFFFF', { m: '300 b5 c4 b14', h: '368 b5 c4 b16', col: 'b' }]],
+    SJS: [[1992, 2007, '#00788A', '#A2AAAD', '#111111', { m: '328 c10', h: '398 b8', col: 'b', e: 'b' }]],
+    STL: [[1968, 1978, '#0046AD', '#FCB514', '#FFFFFF', { m: '300 b8 c3 b3', h: '364 b8 c3 b3', col: 'b' }],
+      [1979, 1984, '#0046AD', '#FCB514', '#FFFFFF', { m: '300 b8 c3', h: '364 b8 c3 b3', col: 'b', e: 'b' }],
+      [1985, 1998, '#1B2A7A', '#FCB514', '#C8102E', { m: '300 c2 b10 c2', h: '364 c2 b10 c2', col: 'b' }],
+      [1999, 2007, '#0046AD', '#041E42', '#FCB514', { m: '310 c2 b30', h: '364 c2 b14', col: 'b', e: 'b' }]],
+    TBL: [[1993, 2007, '#111111', '#FFFFFF', '#0057B8', { m: '300 b10 c3', h: '364 b10 c3', col: 'b' }],
+      [2008, 2011, '#111111', '#0057B8', '#FFFFFF', { m: '305 c3 b40', h: '', col: 'b' }]],
+    TOR: [[1971, 1991, '#00205B', '#FFFFFF', '#00205B', { m: '304 b8', h: '366 b10', col: 'b' }]],
+    VAN: [[1971, 1978, '#003E7E', '#00843D', '#FFFFFF', { m: '300 b4 c10 b4', h: '368 b4 c12 b4', col: 'b' }],
+      [1979, 1985, '#111111', '#F2A900', '#E03A3E', { m: '', h: '', v: '1.1 318 c5 b12', col: 'b' }],
+      [1986, 1997, '#111111', '#F2A900', '#C8102E', { m: '300 b10 c3 b4', h: '364 b8 c3 b8', col: 'b' }],
+      [1998, 2007, '#0A1D4D', '#A2AAAD', '#0A6CC4', { m: '322 b3 c3', h: '364 b5 c6 b5', col: 'b' }]],
+    WSH: [[1975, 1995, '#C8102E', '#FFFFFF', '#041E42', { m: '300 c4 b3', h: '364 c8 b6', col: 'b', e: 'b' }],
+      [1996, 2007, '#0B1F41', '#8B6F4E', '#111111', { m: '300 b10 c3', h: '368 b12 c3', col: 'b' }]],
+    WPG: [[1973, 1990, '#0B3D91', '#FFFFFF', '#C8102E', { m: '300 c3 b6 c3', h: '364 c3 b6 c3', col: 'b', e: 'b' }],
+      [1991, 1996, '#0B3D91', '#FFFFFF', '#C8102E', { m: '300 b4 c3 b4', h: '364 b10 c2', col: 'c' }]],
   };
   const ANNEE_ACTUELLE = 2026;
   // Saison du milieu de la carrière d'un joueur avec l'équipe (année de fin de saison).
@@ -2734,24 +2774,23 @@ body{ overflow-x:hidden; }
   function chandailEpoque(code, annee){
     const e = (EPOQUES[code] || []).find(x => annee >= x[0] && annee <= x[1]);
     const [corps, bandes, ligne] = e ? e.slice(2, 5) : CHANDAILS[code] || ['#1b1f24', '#FFFFFF', '#1b1f24'];
-    return { corps, bandes, ligne, motif: e ? e[5] : MOTIFS[code] || MOTIF_PHOTO, logo: logoEpoque(code, annee, luminance(corps) < 150) };
+    const motif = e ? e[5] : MOTIFS[code] || MOTIF_PHOTO, teinte = { a: corps, b: bandes, c: ligne };
+    return { corps, bandes, ligne, motif, logo: logoEpoque(code, annee, luminance(corps) < 150),
+      poitrine: motif.p ? [motif.p[0], motif.p[1], teinte[motif.p[2]], teinte[motif.p[3]]] : null };
   }
   // Époques au choix (chandail personnalisé) : une par logo officiel, puis aujourd'hui. [année, libellé]
   const epoquesDe = code => [...(LOGOS_LNH[code] || []).map(l => [l[1], (l[1] - 1) + '-' + (l[2] === l[1] ? String(l[2]).slice(2) : l[2])]), [ANNEE_ACTUELLE, 'Aujourd’hui']];
   // Maquette : le choix du DG est gardé sur cet appareil (la vraie version l'enregistrera dans le Sheet).
-  // { retire: n° dans RETIRES (-1 = personnalisé), joueur, numero, annee, couleurs: [corps, bandes, ligne] si le DG les a changées }
+  // { retire: n° dans RETIRES (-1 = personnalisé), joueur, numero, annee }. Les couleurs sont toujours celles du vrai
+  // chandail de l'époque (celles d'anciennes sauvegardes sont ignorées).
   const cleChandail = c => 'bureau_chandail_' + c;
   function chandailDe(code){
     let perso = {};
     try{ perso = JSON.parse(localStorage.getItem(cleChandail(code)) || '{}') || {}; }catch(e){}
-    if(perso.joueur != null && perso.retire == null) perso.retire = -1;   // ancien format : nom, numéro et couleurs libres
+    if(perso.joueur != null && perso.retire == null) perso.retire = -1;   // ancien format : nom et numéro libres
     const liste = RETIRES[code] || [], r = perso.retire >= 0 ? liste[perso.retire] : perso.retire == null ? liste[0] : null;
     const annee = r ? milieuCarriere(r) : Number(perso.annee) || ANNEE_ACTUELLE;
-    const ch = chandailEpoque(code, annee);
-    const couleurs = perso.couleurs || (perso.corps ? [perso.corps, perso.bandes, perso.ligne || perso.bande] : null);
-    if(couleurs) [ch.corps, ch.bandes, ch.ligne] = couleurs;
-    return Object.assign(ch, { retire: r ? liste.indexOf(r) : -1, joueur: r ? r[0] : perso.joueur || '', numero: r ? r[1] : perso.numero || '', annee,
-      poitrine: POITRINES[code] || null, perso: !!couleurs });
+    return Object.assign(chandailEpoque(code, annee), { retire: r ? liste.indexOf(r) : -1, joueur: r ? r[0] : perso.joueur || '', numero: r ? r[1] : perso.numero || '', annee });
   }
   const luminance = hex => { const [r, g, b] = canaux(hex); return r * 0.3 + g * 0.59 + b * 0.11; };
   // La tasse prend la couleur du chandail ; un chandail noir donne une tasse d'une couleur d'accent (pas le blanc).
@@ -2759,12 +2798,13 @@ body{ overflow-x:hidden; }
   const SURFACES = {
     'o-ecusson': { sorte: 'tissu', zone: [16, 198, 202, 216],
       // Contour du chandail (manches comprises), relevé sur la photo ; en haut, le cintre en bois est exclu par sa teinte chaude.
-      poly: [[84, 209], [146, 209], [160, 216], [173, 224], [184, 232], [190, 252], [196, 280], [204, 320], [208, 360], [209, 406], [170, 408], [169, 413],
-        [61, 413], [60, 408], [23, 406], [25, 360], [29, 320], [37, 280], [40, 252], [45, 233], [57, 225], [70, 216]],
+      // Les épaules suivent le cintre jusqu'à son bout (x 58 et 174), puis tombent vers le haut des manches.
+      poly: [[84, 210], [146, 210], [160, 218], [174, 227], [180, 240], [187, 255], [195, 280], [204, 320], [208, 360], [209, 406], [170, 408], [169, 413],
+        [61, 413], [60, 408], [23, 406], [25, 360], [29, 320], [38, 280], [42, 255], [51, 240], [58, 227], [70, 219]],
       // Poitrine : axe x 116,5, entre le bas du col (y 242) et la bande de taille (y 370).
       logo: { cx: 116.5, cy: 294, larg: 60, haut: 60 },
       // Numéros sur le haut des manches (vues de biais, donc écrasés).
-      manches: [{ cx: 52, cy: 282, ecrase: 0.58 }, { cx: 182, cy: 282, ecrase: 0.58 }] },
+      manches: [{ cx: 54, cy: 282, ecrase: 0.58 }, { cx: 181, cy: 282, ecrase: 0.58 }] },
     'o-tasse': { sorte: 'tasse', zone: [34, 676, 134, 90],
       // Corps x 73-164 (axe 118,7, rayon 45,7), y 683-760 ; l'anse, de profil à gauche, laisse voir le bois (exclu par sa clarté).
       // Haut et bas du corps : des ellipses vues d'en haut (y = base + creux · cos φ), plus basses au centre.
@@ -2858,8 +2898,8 @@ body{ overflow-x:hidden; }
     const ecart = (a, b) => Math.abs(luminance(a) - luminance(b));
     const remplissage = ecart(ch.bandes, ch.corps) > 60 ? ch.bandes : ecart('#FFFFFF', ch.corps) > 60 ? '#F8F9FA' : '#111111';
     const contour = ecart(ch.ligne, remplissage) > 40 ? ch.ligne : luminance(remplissage) > 128 ? '#111111' : '#FFFFFF';
-    // Avec une bande de poitrine, les numéros montent au-dessus d'elle.
-    const manches = tissu ? s.manches.map(m => ch.poitrine ? Object.assign({}, m, { cy: Math.min(m.cy, ch.poitrine[0] - 12) }) : m) : [];
+    // Avec une bande de poitrine à la hauteur des numéros, ils montent au-dessus d'elle.
+    const manches = tissu ? s.manches.map(m => ch.poitrine && ch.poitrine[0] > m.cy - 12 ? Object.assign({}, m, { cy: Math.min(m.cy, ch.poitrine[0] - 12) }) : m) : [];
     const [fond, plat, ...numeros] = await Promise.all([fondImg, logoAPlat(tissu ? ch.logo : logoSrc(code), s.logo, K, texteSur(tasse)),
       ...(tissu && ch.numero ? manches.map(() => numeroAPlat(String(ch.numero), 18, K, remplissage, contour)) : [])]);
     if(box.dataset.cle !== cle) return;
@@ -2886,7 +2926,9 @@ body{ overflow-x:hidden; }
       for(let py = 0; py < H; py++) for(let px = 0; px < W; px++) dedans[py * W + px] = dansPoly(s.poly, zx + px / K, zy + py / K) ? 1 : 0;
       masque = flou(dedans, W, H, Math.round(K * 0.7));
       const mo = ch.motif;
-      motif ={ m: bandesMotif(mo.m), h: bandesMotif(mo.h), col: mo.col || 'b', e: mo.e || '' };
+      const [pente, ...chevron] = String(mo.v || '').trim().split(/\s+/);
+      motif = { m: bandesMotif(mo.m), h: bandesMotif(mo.h), col: mo.col || 'b', e: mo.e || '',
+        v: mo.v ? { pente: Number(pente), b: bandesMotif(chevron.join(' ')) } : null };
     }
     // Couleur du motif au point (ix, iy) de l'image. Manches : à gauche de x 62 et à droite de x 169, sous l'épaule ;
     // leurs bandes descendent vers le corps (pente plus forte vers le poignet), mesurées au bord extérieur.
@@ -2899,6 +2941,10 @@ body{ overflow-x:hidden; }
         const v = gauche ? iy - k * (ix - 30) : iy - 3 - k * (205 - ix);
         const b = motif.m.find(([d, f]) => v >= d && v < f);
         return b ? palette[b[2]] : palette.a;
+      }
+      if(motif.v){
+        const t = iy + motif.v.pente * Math.abs(ix - 116), bv = motif.v.b.find(([d, f]) => t >= d && t < f);
+        if(bv) return palette[bv[2]];
       }
       if(poit && iy >= poit[0] && iy <= poit[1]) return iy < poit[0] + 2.2 || iy > poit[1] - 2.2 ? bordC : poitC;
       const b = motif.h.find(([d, f]) => iy >= d && iy < f);
@@ -2990,9 +3036,8 @@ body{ overflow-x:hidden; }
     const [zx, zy, zw, zh] = SURFACES['o-ecusson'].zone;
     const cartes = [];
     [...EQUIPES.keys()].sort().forEach(code => {
-      const base = { poitrine: POITRINES[code] || null };
-      const liste = sorte === 'tous' ? (RETIRES[code] || []).map(r => Object.assign(chandailEpoque(code, milieuCarriere(r)), base, { joueur: r[0], numero: r[1], annee: milieuCarriere(r) }))
-        : sorte === 'actuels' ? [Object.assign(chandailEpoque(code, ANNEE_ACTUELLE), base, { joueur: '', numero: '', annee: ANNEE_ACTUELLE })] : [chandailDe(code)];
+      const liste = sorte === 'tous' ? (RETIRES[code] || []).map(r => Object.assign(chandailEpoque(code, milieuCarriere(r)), { joueur: r[0], numero: r[1], annee: milieuCarriere(r) }))
+        : sorte === 'actuels' ? [Object.assign(chandailEpoque(code, ANNEE_ACTUELLE), { joueur: '', numero: '', annee: ANNEE_ACTUELLE })] : [chandailDe(code)];
       liste.forEach(ch => cartes.push([code, ch]));
     });
     for(const [code, ch] of cartes){
@@ -4330,7 +4375,7 @@ body{ overflow-x:hidden; }
     if(estDG()) liens.append(Object.assign(el('a', 'ce-bouton is-principal', 'Modifier ma fiche DG'), { href: 'https://dg.lnhq.ca/profil.html' }));
     return [titreZoom('Fiche', 'l’équipe et son DG'), tete, infos, carteChandail(), liens];
   }
-  // Chandail du cadre : le chandail retiré et les couleurs. Le DG les change ; les autres voient son choix.
+  // Chandail du cadre : le DG choisit le chandail retiré (couleurs de l'époque, non modifiables) ; les autres voient son choix.
   function carteChandail(){
     const ch = chandailDe(equipe), c = el('section', 'ce-carte fiche-chandail');
     c.append(el('h3', null, 'Chandail retiré'));
@@ -4355,22 +4400,12 @@ body{ overflow-x:hidden; }
     const epoque = el('select');
     epoquesDe(equipe).forEach(([a, lib]) => { const o = el('option', null, lib); o.value = a; epoque.append(o); });
     epoque.value = String(ch.retire >= 0 ? ANNEE_ACTUELLE : [...epoque.options].map(o => Number(o.value)).filter(a => a <= ch.annee).pop() || ANNEE_ACTUELLE);
-    const couleur = v => Object.assign(el('input'), { type: 'color', value: v.toLowerCase() });
-    const corps = couleur(ch.corps), bandes = couleur(ch.bandes), ligne = couleur(ch.ligne);
     const libres = [champ('Joueur', joueur, 'fc-libre'), champ('Numéro', numero, 'fc-libre'), champ('Époque du chandail', epoque, 'fc-libre')];
-    f.append(champ('Chandail retiré', choix, 'fc-choix'), ...libres, champ('Corps', corps), champ('Bandes', bandes), champ('Ligne', ligne));
-    // Les couleurs suivent l'époque choisie, tant que le DG ne les a pas changées lui-même.
-    let couleursTouchees = ch.perso;
-    [corps, bandes, ligne].forEach(i => i.addEventListener('input', () => { couleursTouchees = true; }));
-    const majChoix = () => {
-      const perso = choix.value === '-1';
-      libres.forEach(l => { l.hidden = !perso; });
-      if(couleursTouchees) return;
-      const ep = chandailEpoque(equipe, perso ? Number(epoque.value) : milieuCarriere(liste[choix.value]));
-      corps.value = ep.corps.toLowerCase(); bandes.value = ep.bandes.toLowerCase(); ligne.value = ep.ligne.toLowerCase();
-    };
-    choix.addEventListener('change', majChoix); epoque.addEventListener('change', majChoix);
-    libres.forEach(l => { l.hidden = choix.value !== '-1'; });
+    f.append(champ('Chandail retiré', choix, 'fc-choix'), ...libres);
+    // Les couleurs ne se choisissent pas : c'est toujours le vrai chandail de l'époque.
+    const majChoix = () => { libres.forEach(l => { l.hidden = choix.value !== '-1'; }); };
+    choix.addEventListener('change', majChoix);
+    majChoix();
     const enr = Object.assign(el('button', 'ce-bouton is-principal', 'Enregistrer'), { type: 'submit' });
     const defaut = Object.assign(el('button', 'ce-bouton', 'Par défaut'), { type: 'button' });
     const actions = el('div', 'fc-actions'); actions.append(enr, defaut, el('small', null, 'Maquette : gardé sur cet appareil.'));
@@ -4380,7 +4415,6 @@ body{ overflow-x:hidden; }
       ev.preventDefault();
       const retire = Number(choix.value), n = numero.value.replace(/\D/g, '').slice(0, 2);
       const v = retire >= 0 ? { retire } : { retire, joueur: joueur.value.trim(), numero: n, annee: Number(epoque.value) };
-      if(couleursTouchees) v.couleurs = [corps.value, bandes.value, ligne.value];
       try{ localStorage.setItem(cleChandail(equipe), JSON.stringify(v)); }catch(e){}
       toast('Chandail retiré enregistré.'); appliquer();
     });
