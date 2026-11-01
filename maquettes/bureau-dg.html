@@ -912,6 +912,16 @@ body{ overflow-x:hidden; }
 .dep-barre b:last-child{ text-align:left; }
 .dep-barre b.mieux{ color:#8ce99a; }
 .dep-barre i{ height:0.3cqw; border-radius:0.2cqw; background:linear-gradient(90deg, var(--ce-couleur) calc(var(--p, 50) * 1%), #495057 0); }
+.dep-forme{ display:inline-flex; gap:0.12cqw; margin-left:0.35cqw; vertical-align:middle; }
+.dep-forme i{ width:0.42cqw; height:0.42cqw; border-radius:0.08cqw; background:#c92a2a; }
+.dep-forme i.v{ background:#2b8a3e; } .dep-forme i.p{ background:#e8590c; }
+.dep-barre{ line-height:1.1; }
+.bu-tablette .dep-tete{ padding:0.15cqw 0.5cqw; }
+.bu-tablette .dep-adv{ grid-template-columns:1.7cqw 1fr; padding:0.2cqw 0.5cqw 0.05cqw; }
+.bu-tablette .dep-adv img{ width:1.7cqw; height:1.7cqw; }
+.dep-barres{ flex:1 1 auto; }
+.dep-pied{ flex:none; display:flex; justify-content:space-between; gap:0.3cqw; padding:0.12cqw 0.5cqw 0.3cqw; font:600 0.46cqw 'IBM Plex Sans', sans-serif; white-space:nowrap; overflow:hidden; }
+.dep-pied .force{ color:#8ce99a; } .dep-pied .faible{ color:#ff8787; }
 .pla-anneau{ flex:none; width:6.2cqw; height:6.2cqw; border-radius:50%; display:grid; place-items:center;
   background:radial-gradient(closest-side, #0b1018 74%, transparent 75% 100%), conic-gradient(var(--c, #ffb000) calc(var(--p, 0) * 1%), rgba(255,255,255,0.12) 0); }
 .pla-anneau span{ text-align:center; font:600 0.95cqw 'Oswald', sans-serif; line-height:1.05; }
@@ -1060,17 +1070,93 @@ body{ overflow-x:hidden; }
 .dep-duel b{ display:block; font:500 22px 'Oswald', sans-serif; text-transform:uppercase; }
 .dep-duel small{ color:#adb5bd; }
 .dep-duel > span{ font:600 14px 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#ffd43b; }
-.dep-comp{ display:grid; gap:10px; }
-.dep-ligne{ display:grid; grid-template-columns:64px 1fr 150px 1fr 64px; align-items:center; gap:10px; font-size:14px; }
-.dep-ligne > span{ text-align:center; font-size:12px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#adb5bd; }
-.dep-ligne > b{ font-family:'Orbitron', monospace; font-weight:500; }
-.dep-ligne > b:last-child{ text-align:right; }
-.dep-ligne > b.mieux{ color:#8ce99a; }
-.dep-ligne small{ display:block; font:400 11px 'IBM Plex Sans', sans-serif; color:#868e96; }
-.dep-ligne i{ height:8px; border-radius:4px; background:rgba(255,255,255,0.1); overflow:hidden; display:flex; }
-.dep-ligne i::before{ content:''; width:calc(var(--p, 0) * 1%); background:var(--c, #ffb000); }
-.dep-ligne i.gauche{ justify-content:flex-end; }
-@media (max-width:600px){ .dep-ligne{ grid-template-columns:48px 1fr 90px 1fr 48px; gap:6px; font-size:12px; } .dep-duel img{ width:56px; height:56px; } }
+/* Rapport de dépistage : compact, en tableau de bord (stats | forces, clés, tendance ; matchups | plan ; joueurs). */
+.is-depistage .dep-choix{ margin-bottom:10px; }
+.is-depistage .dep-duel{ grid-template-columns:auto 1fr auto 1fr auto; gap:12px; margin-bottom:12px; padding:8px 14px; border-radius:10px; background:rgba(255,255,255,0.05); text-align:left; }
+.is-depistage .dep-duel img{ width:44px; height:44px; }
+.is-depistage .dep-duel b{ font-size:18px; line-height:1.1; }
+.dep-duel-nom{ min-width:0; }
+.is-depistage .dep-duel-nom:last-of-type{ text-align:right; }
+.is-depistage .dep-duel > span{ text-align:center; font-size:12px; }
+.dz-grille{ display:grid; grid-template-columns:minmax(0, 1.15fr) minmax(0, 1fr); gap:12px; margin-bottom:12px; align-items:start; }
+.dz-grille-2{ grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); }
+.dz-grille-3{ grid-template-columns:minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); }
+.dz-cote{ display:grid; gap:12px; }
+.is-depistage .dz-carte{ padding:12px 14px; }
+.dz-carte h3{ display:flex; align-items:baseline; gap:8px; margin:0 0 8px; font-size:14px; }
+.dz-carte h3 small{ margin-left:auto; font:400 11px 'IBM Plex Sans', sans-serif; letter-spacing:0; text-transform:none; color:#868e96; }
+.dz-carte .ce-vide{ margin:0; font-size:13px; }
+.dz-carte .z-table{ font-size:12.5px; }
+.dz-carte .z-table th, .dz-carte .z-table td{ padding:4px 5px; }
+.dz-ligne{ display:grid; grid-template-columns:62px minmax(0, 1fr) 128px minmax(0, 1fr) 62px; align-items:center; gap:8px; padding:2.5px 0; font-size:12.5px; }
+.dz-ligne + .dz-ligne{ border-top:1px solid rgba(255,255,255,0.05); }
+.dz-ligne > span{ text-align:center; font-size:11px; font-weight:600; color:#ced4da; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dz-ligne > b{ font:500 12px 'Orbitron', monospace; white-space:nowrap; }
+.dz-ligne > b:last-child{ text-align:right; }
+.dz-ligne > b.mieux{ color:#8ce99a; }
+.dz-ligne > b small{ margin-left:4px; font:400 10px 'IBM Plex Sans', sans-serif; color:#868e96; }
+.dz-ligne > i{ height:6px; border-radius:3px; background:rgba(255,255,255,0.08); display:flex; overflow:hidden; }
+.dz-ligne > i::before{ content:''; width:calc(var(--p, 0) * 1%); background:#868e96; border-radius:3px; }
+.dz-ligne > i.gauche{ justify-content:flex-end; }
+.dz-ligne > i.gauche::before{ background:var(--ce-couleur); }
+.dz-entete{ padding-bottom:4px; }
+.dz-entete img{ width:22px; height:22px; object-fit:contain; }
+.dz-entete img:last-child{ justify-self:end; }
+.dz-entete > span{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:#868e96; }
+.dz-puces, .dz-cles, .dz-plan-liste{ list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.dz-puces{ grid-template-columns:1fr 1fr; gap:4px 10px; }
+.dz-puces li{ display:grid; grid-template-columns:minmax(0, 1fr) auto auto; gap:6px; align-items:baseline; padding:3px 8px; border-radius:6px; font-size:12.5px; }
+.dz-puces li span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dz-puces li b{ font:500 11px 'Orbitron', monospace; }
+.dz-puces li small{ font-size:11px; color:#adb5bd; }
+.dz-puces .force, .dz-cles .force{ background:rgba(64,192,87,0.13); }
+.dz-puces .force span::before{ content:'▲ '; color:#69db7c; }
+.dz-puces .faible, .dz-cles .faible{ background:rgba(250,82,82,0.13); }
+.dz-puces .faible span::before{ content:'▼ '; color:#ff8787; }
+.dz-cles li{ padding:5px 8px; border-radius:6px; font-size:12.5px; line-height:1.35; }
+.dz-forme{ display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:5px; margin-bottom:8px; }
+.dz-forme > div{ display:grid; justify-items:center; gap:2px; padding:5px 2px; border-radius:6px; background:rgba(255,255,255,0.05); border-top:3px solid #c92a2a; }
+.dz-forme > div.v{ border-top-color:#2b8a3e; }
+.dz-forme > div.p{ border-top-color:#e8590c; }
+.dz-forme b{ font:600 12px 'Oswald', sans-serif; }
+.dz-forme img{ width:22px; height:22px; object-fit:contain; }
+.dz-forme small{ font-size:10.5px; color:#ced4da; white-space:nowrap; }
+.dz-recent{ display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; font-size:12px; }
+.dz-recent > div{ display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:0 6px; }
+.dz-recent span{ color:#adb5bd; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dz-recent b{ font:500 11.5px 'Orbitron', monospace; text-align:right; }
+.dz-recent b.mieux{ color:#8ce99a; } .dz-recent b.pire{ color:#ff8787; }
+.dz-recent small{ grid-column:1 / -1; font-size:10.5px; color:#868e96; }
+.dz-note{ margin:8px 0 0; font-size:12px; color:#adb5bd; }
+.dz-mu{ display:grid; }
+.dz-mu-ligne{ display:grid; grid-template-columns:58px minmax(0, 1fr) 44px minmax(0, 1fr); gap:8px; align-items:center; padding:3px 0; }
+.dz-mu-ligne + .dz-mu-ligne{ border-top:1px solid rgba(255,255,255,0.05); }
+.dz-mu-ligne.sep{ border-top:1px solid rgba(255,255,255,0.18); margin-top:3px; padding-top:6px; }
+.dz-mu-ligne > span{ font-size:11px; font-weight:600; color:#adb5bd; }
+.dz-mu-ligne > div{ display:grid; grid-template-columns:auto minmax(0, 1fr); gap:6px; align-items:baseline; min-width:0; }
+.dz-mu-ligne > div:last-child{ grid-template-columns:minmax(0, 1fr) auto; text-align:right; }
+.dz-mu-ligne > div:last-child b{ order:2; }
+.dz-mu-ligne b{ font:500 12px 'Orbitron', monospace; }
+.dz-mu-ligne .mieux b{ color:#8ce99a; }
+.dz-mu-ligne small{ font-size:11px; color:#ced4da; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dz-mu-ligne > i{ font:600 11px 'Orbitron', monospace; font-style:normal; text-align:center; color:#868e96; }
+.dz-mu-ligne > i.mieux{ color:#8ce99a; } .dz-mu-ligne > i.pire{ color:#ff8787; }
+.dz-mu-ligne.dz-entete img:last-child{ justify-self:end; }
+.dz-plan-liste{ gap:6px; }
+.dz-plan-liste li{ display:grid; grid-template-columns:22px 1fr; gap:6px; align-items:start; padding:6px 8px; border-radius:6px; background:rgba(255,255,255,0.05); }
+.dz-plan-liste li span{ font-size:15px; line-height:1.2; }
+.dz-plan-liste p{ margin:0; font-size:12.5px; line-height:1.4; }
+@media (max-width:760px){
+  .dz-grille, .dz-grille-2, .dz-grille-3{ grid-template-columns:minmax(0, 1fr); }
+  .dz-ligne{ grid-template-columns:52px minmax(0, 1fr) 104px minmax(0, 1fr) 52px; gap:5px; }
+  .dz-ligne > b{ font-size:11px; }
+  .dz-ligne > b small{ display:block; margin:0; line-height:1.1; }
+  .dz-puces{ grid-template-columns:minmax(0, 1fr); }
+  .is-depistage .dep-duel{ grid-template-columns:auto minmax(0, 1fr) minmax(0, 1fr) auto; gap:4px 8px; padding:8px; }
+  .is-depistage .dep-duel > span{ grid-row:2; grid-column:1 / -1; }
+  .is-depistage .dep-duel img{ width:34px; height:34px; }
+  .is-depistage .dep-duel b{ font-size:15px; }
+}
 .z-table{ width:100%; border-collapse:collapse; font-size:14px; }
 .z-table th{ padding:6px 8px; font-size:11px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; opacity:0.6; text-align:right; }
 .z-table td{ padding:7px 8px; border-bottom:1px solid rgba(127,127,127,0.18); text-align:right; white-space:nowrap; }
@@ -2837,24 +2923,107 @@ body{ overflow-x:hidden; }
   const prochainsAdversaires = () => [...retards(), ...mesMatchs().filter(m => !m.joue && m.date >= AUJ).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num))];
   // Part (0-100) de la barre qui revient à « nous » : plus grande quand on est meilleur.
   const partNous = (nous, eux, sens) => { if(nous == null || eux == null || nous + eux === 0) return 50; return 100 * (sens > 0 ? nous : eux) / (nous + eux); };
+  /* ---------- Dépistage : analyse de l'adversaire ----------
+     Stats d'équipe des écrans de fin de match, plus des stats dérivées (% de tirs, % d'arrêts, PDO,
+     part des tirs, possession) ; chaque catégorie est classée dans la ligue. */
+  const signe = (v, n) => (v > 0 ? '+' : v < 0 ? '−' : '') + dec(Math.abs(v), n);
+  const pct = v => dec(v, 1) + '%';
+  const DEP_CATS = [
+    // [libellé, clé, sens (1 = plus haut est mieux), format, nom court pour les forces et faiblesses]
+    ['Différentiel / PJ', 'diffMoy', 1, v => signe(v, 2), 'Différentiel'],
+    ['Buts pour / PJ', 'bpMoy', 1, v => dec(v, 2), 'Attaque'],
+    ['Buts contre / PJ', 'bcMoy', -1, v => dec(v, 2), 'Défense'],
+    ['% de tirs', 'tirPct', 1, pct, 'Finition'],
+    ['% d’arrêts', 'arrPct', 1, pct, 'Gardiens'],
+    ['PDO (chance)', 'pdo', 1, v => dec(v, 1), ''],
+    ['Part des tirs', 'partTirs', 1, pct, 'Contrôle des tirs'],
+    ['Tirs / PJ', 'tirsMoy', 1, v => dec(v, 1), 'Volume de tirs'],
+    ['Tirs accordés / PJ', 'tirsContreMoy', -1, v => dec(v, 1), 'Tirs accordés'],
+    ['Possession', 'possession', 1, pct, 'Possession'],
+    ['Avantage numérique', 'anPct', 1, pct, 'Avantage num.'],
+    ['Désavantage', 'dnPct', 1, pct, 'Désavantage'],
+    ['Mises au jeu', 'mjPct', 1, pct, 'Mises au jeu'],
+    ['Passes réussies', 'passesMoy', 1, pct, 'Passes'],
+    ['Mises en échec / PJ', 'misesMoy', 1, v => dec(v, 1), 'Robustesse'],
+    ['Pénalités (min/PJ)', 'penalitesMoy', -1, v => dec(v, 1), 'Discipline'],
+  ];
+  function statsLigue(){
+    return R.statsEquipes(resultats, [...EQUIPES.keys()]).map(s => {
+      const tirPct = s.tirsMoy ? 100 * s.bpMoy / s.tirsMoy : null, arrPct = s.tirsContreMoy ? 100 * (1 - s.bcMoy / s.tirsContreMoy) : null;
+      return Object.assign(s, { diffMoy: s.pj ? s.bpMoy - s.bcMoy : null, tirPct, arrPct, pdo: tirPct != null && arrPct != null ? tirPct + arrPct : null,
+        partTirs: s.tirsMoy && s.tirsContreMoy ? 100 * s.tirsMoy / (s.tirsMoy + s.tirsContreMoy) : null,
+        possession: s.attaqueMoy && s.defenseMoy ? 100 * s.attaqueMoy / (s.attaqueMoy + s.defenseMoy) : null });
+    });
+  }
+  // Rang d'une équipe dans une catégorie : { rang, n, val, p } (p = 1 pour le 1er, 0 pour le dernier).
+  function rangCat(se, code, cle, sens){
+    const liste = classerCat(se, cle, sens), rang = rangDe(liste, code);
+    if(!rang) return null;
+    return { rang, n: liste.length, val: liste[rang - 1][cle], p: liste.length > 1 ? (liste.length - rang) / (liste.length - 1) : 0.5 };
+  }
+  // Forces = premier quart de la ligue, faiblesses = dernier quart (le PDO, surtout de la chance, est exclu).
+  function forcesFaiblesses(se, code){
+    const l = DEP_CATS.filter(c => c[4]).map(([, cle, sens, f, court]) => { const r = rangCat(se, code, cle, sens); return r && Object.assign(r, { court, texte: f(r.val) }); }).filter(Boolean);
+    const quart = x => Math.max(1, Math.ceil(x.n / 4));
+    return { forces: l.filter(x => x.n > 3 && x.rang <= quart(x)).sort((a, b) => a.rang - b.rang).slice(0, 4),
+      faiblesses: l.filter(x => x.n > 3 && x.rang > x.n - quart(x)).sort((a, b) => b.rang - a.rang).slice(0, 4) };
+  }
+  // Clés du match : notre point fort contre leur point faible, et l'inverse.
+  const DUELS_DEP = [
+    ['bpMoy', 1, 'Notre attaque', 'bcMoy', -1, 'leur défense'], ['bcMoy', -1, 'Notre défense', 'bpMoy', 1, 'leur attaque'],
+    ['anPct', 1, 'Notre avantage num.', 'dnPct', 1, 'leur désavantage'], ['dnPct', 1, 'Notre désavantage', 'anPct', 1, 'leur avantage num.'],
+    ['tirPct', 1, 'Notre finition', 'arrPct', 1, 'leurs gardiens'], ['arrPct', 1, 'Nos gardiens', 'tirPct', 1, 'leur finition'],
+    ['tirsMoy', 1, 'Notre volume de tirs', 'tirsContreMoy', -1, 'leurs tirs accordés'], ['mjPct', 1, 'Nos mises au jeu', 'mjPct', 1, 'les leurs'],
+    ['penalitesMoy', -1, 'Notre discipline', 'anPct', 1, 'leur avantage num.'],
+  ];
+  function clesDuMatch(se, adv){
+    return DUELS_DEP.map(([cN, sN, libN, cE, sE, libE]) => {
+      const a = rangCat(se, equipe, cN, sN), b = rangCat(se, adv, cE, sE);
+      return a && b && a.n > 3 ? { ecart: a.p - b.p, texte: libN + ' (' + ordinal(a.rang) + ') contre ' + libE + ' (' + ordinal(b.rang) + ')' } : null;
+    }).filter(Boolean).sort((x, y) => y.ecart - x.ecart);
+  }
+  // Matchs joués d'une équipe, du plus ancien au plus récent, de son point de vue.
+  function matchsDe(code){
+    return matchs.filter(x => x.joue && (x.v === code || x.d === code)).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num)).map(x => {
+      const i = x.v === code ? 0 : 1, pour = i ? x.bd : x.bv, contre = i ? x.bv : x.bd, st = (resultats[x.num] || {}).stats || {};
+      const tirs = parseFloat((st.tirs || [])[i]), tirsC = parseFloat((st.tirs || [])[1 - i]);
+      return { x, pour, contre, r: pour > contre ? 'v' : x.fin ? 'p' : 'd', adv: i ? x.v : x.d, dom: !!i, tirs: isNaN(tirs) ? null : tirs, tirsC: isNaN(tirsC) ? null : tirsC };
+    });
+  }
+  const moyenne = (l, f) => { const v = l.map(f).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  const fiche3 = l => l.filter(g => g.r === 'v').length + '-' + l.filter(g => g.r === 'd').length + '-' + l.filter(g => g.r === 'p').length;
+  function serieEnCours(l){
+    if(!l.length) return '';
+    const gagne = l[l.length - 1].r === 'v';
+    let n = 0; for(let k = l.length - 1; k >= 0 && (l[k].r === 'v') === gagne; k--) n++;
+    return gagne ? (n > 1 ? n + ' victoires de suite' : '1 victoire') : (n > 1 ? n + ' matchs sans victoire' : '1 défaite');
+  }
+
   async function apercuDepistage(box){
     const m = prochainsAdversaires()[0];
     const tete = el('div', 'dep-tete'); tete.append(el('span', null, 'Dépistage'), el('small', null, m ? (m.date < AUJ ? 'match en retard' : 'prochain adversaire') : ''));
     if(!m){ box.replaceChildren(tete, el('div', 'dep-adv', 'Plus de match à venir.')); return; }
     const adv = adversaireDe(m), t = classement.find(x => x.code === adv);
     const id = el('div', 'dep-adv'); const quand = m.date === AUJ ? 'ce soir' : fCourt.format(parse(m.date));
-    id.append(logo(adv), el('b', null, nom(adv)), el('small', null, fiche(t) + ' · ' + quand + (m.v === equipe ? ' (visiteur)' : ' (domicile)') + ' · ' + serieContre(adv)));
-    const se = R.statsEquipes(resultats, [...EQUIPES.keys()]);
+    // Leur forme : les 5 derniers matchs en pastilles.
+    const forme5 = el('span', 'dep-forme'); matchsDe(adv).slice(-5).forEach(g => forme5.append(el('i', g.r)));
+    const sous = el('small', null, fiche(t) + ' · ' + quand + (m.v === equipe ? ' @' : ' vs')); sous.append(forme5);
+    id.append(logo(adv), el('b', null, nom(adv)), sous);
+    const se = statsLigue();
     const nous = se.find(s => s.code === equipe) || {}, eux = se.find(s => s.code === adv) || {};
     const barres = el('div', 'dep-barres');
-    CATS_EQUIPE.slice(0, 4).forEach(([lib, cle, sens, f]) => {
+    [['Attaque', 'bpMoy', 1, v => dec(v, 2)], ['Défense', 'bcMoy', -1, v => dec(v, 2)], ['Part tirs', 'partTirs', 1, v => dec(v, 0) + '%'], ['Avantage', 'anPct', 1, v => dec(v, 1) + '%'], ['Désav.', 'dnPct', 1, v => dec(v, 1) + '%']].forEach(([lib, cle, sens, f]) => {
       const a = nous[cle], b = eux[cle];
       const r = el('div', 'dep-barre'), i = el('i'); i.style.setProperty('--p', partNous(a, b, sens).toFixed(0));
       const ecart = a != null && b != null ? sens * (a - b) : 0;
-      r.append(el('span', null, lib.replace(/ \(.*\)/, '').replace('Avantage num.', 'Avantage')), el('b', ecart > 0 ? 'mieux' : '', a != null ? f(a) : '–'), i, el('b', ecart < 0 ? 'mieux' : '', b != null ? f(b) : '–'));
+      r.append(el('span', null, lib), el('b', ecart > 0 ? 'mieux' : '', a != null ? f(a) : '–'), i, el('b', ecart < 0 ? 'mieux' : '', b != null ? f(b) : '–'));
       barres.append(r);
     });
-    box.replaceChildren(tete, id, barres);
+    // Leur meilleure force et leur pire faiblesse.
+    const ff = forcesFaiblesses(se, adv), pied = el('div', 'dep-pied');
+    if(ff.forces[0]) pied.append(el('span', 'force', '▲ ' + ff.forces[0].court + ' ' + ordinal(ff.forces[0].rang)));
+    if(ff.faiblesses[0]) pied.append(el('span', 'faible', '▼ ' + ff.faiblesses[0].court + ' ' + ordinal(ff.faiblesses[0].rang)));
+    box.replaceChildren(tete, id, barres, pied);
   }
 
   // Courriels du DG (exemples tirés des vraies données).
@@ -3170,52 +3339,160 @@ body{ overflow-x:hidden; }
       choix.append(b);
     });
     // Duel : fiches, rangs et série de la saison.
-    const cote = c => { const d = el('div'), t = classement.find(x => x.code === c); d.append(logo(c), el('b', null, nom(c)), el('small', null, fiche(t) + ' · ' + (t ? t.pts : 0) + ' pts · ' + ordinal(rangDe(classement, c) || classement.length) + ' ligue')); return d; };
+    const cote = c => { const d = el('div', 'dep-duel-nom'), t = classement.find(x => x.code === c); d.append(el('b', null, nom(c)), el('small', null, fiche(t) + ' · ' + (t ? t.pts : 0) + ' pts · ' + ordinal(rangDe(classement, c) || classement.length) + ' ligue')); return d; };
     const duel = el('div', 'dep-duel');
-    duel.append(cote(equipe), el('span', null, (m.v === equipe ? '@ ' : 'vs ') + (m.date === AUJ ? 'ce soir' : fCourt.format(parse(m.date))) + ' · ' + serieContre(adv)), cote(adv));
-    // Comparaison catégorie par catégorie (valeur, rang dans la ligue).
-    const se = R.statsEquipes(resultats, [...EQUIPES.keys()]);
-    const nous = se.find(s => s.code === equipe) || {}, eux = se.find(s => s.code === adv) || {};
-    const comp = el('section', 'ce-carte'); comp.append(el('h3', null, 'Stats avancées'));
-    const grille = el('div', 'dep-comp');
-    const tN = classement.find(x => x.code === equipe), tE = classement.find(x => x.code === adv);
-    const lignes = [['Points', 'pts', 1, v => String(v), tN, tE, classement], ...CATS_EQUIPE.map(c => [...c, nous, eux, null]),
-      ['Pénalités (min/PJ)', 'penalitesMoy', -1, v => dec(v, 1), nous, eux, null], ['Passes réussies', 'passesMoy', 1, v => dec(v, 1) + '%', nous, eux, null],
-      ['Temps d’attaque', 'attaqueMoy', 1, v => Math.floor(v / 60) + ':' + String(Math.round(v % 60)).padStart(2, '0'), nous, eux, null]];
-    lignes.forEach(([lib, cle, sens, f, a0, b0, liste]) => {
-      const a = a0 ? a0[cle] : null, b = b0 ? b0[cle] : null;
-      if(a == null && b == null) return;
-      const l = liste || classerCat(se, cle, sens);
-      const ecart = a != null && b != null ? sens * (a - b) : 0;
-      const max = Math.max(Math.abs(a || 0), Math.abs(b || 0)) || 1;
-      const barre = (v, gauche, coul) => { const i = el('i', gauche ? 'gauche' : ''); i.style.setProperty('--p', v != null ? (100 * Math.abs(v) / max).toFixed(0) : 0); i.style.setProperty('--c', coul); return i; };
-      const val = (v, code, mieux) => { const x = el('b', mieux ? 'mieux' : '', v != null ? f(v) : '–'); x.append(el('small', null, v != null ? ordinal(rangDe(l, code)) : '')); return x; };
-      const r = el('div', 'dep-ligne');
-      r.append(val(a, equipe, ecart > 0), barre(a, true, 'var(--ce-couleur)'), el('span', null, lib), barre(b, false, '#868e96'), val(b, adv, ecart < 0));
-      grille.append(r);
+    duel.append(logo(equipe), cote(equipe), el('span', null, (m.v === equipe ? '@ ' : 'vs ') + (m.date === AUJ ? 'ce soir' : fCourt.format(parse(m.date))) + ' · ' + serieContre(adv)), cote(adv), logo(adv));
+    const se = statsLigue();
+    const carte = (titre, cls, aide) => { const c = el('section', 'ce-carte dz-carte' + (cls ? ' ' + cls : '')), h = el('h3', null, titre); if(aide) h.append(el('small', null, aide)); c.append(h); return c; };
+
+    // Stats avancées : valeur et rang de chaque équipe ; la barre montre le rang dans la ligue (pleine = 1re).
+    const stats = carte('Stats avancées', 'dz-stats', 'barre = rang dans la ligue');
+    const entete = el('div', 'dz-ligne dz-entete'); entete.append(logo(equipe), el('span'), el('span', null, 'Catégorie'), el('span'), logo(adv)); stats.append(entete);
+    DEP_CATS.forEach(([lib, cle, sens, f]) => {
+      const a = rangCat(se, equipe, cle, sens), b = rangCat(se, adv, cle, sens);
+      if(!a && !b) return;
+      const barre = (r, gauche) => { const i = el('i', gauche ? 'gauche' : ''); i.style.setProperty('--p', r ? (8 + 92 * r.p).toFixed(0) : 0); return i; };
+      const val = (r, mieux) => { const x = el('b', mieux ? 'mieux' : '', r ? f(r.val) : '–'); if(r) x.append(el('small', null, ordinal(r.rang))); return x; };
+      const r = el('div', 'dz-ligne');
+      r.append(val(a, a && b && a.rang < b.rang), barre(a, true), el('span', null, lib), barre(b, false), val(b, a && b && b.rang < a.rang));
+      stats.append(r);
     });
-    comp.append(grille);
-    // Leurs joueurs à surveiller et leurs gardiens.
-    const cartes = el('div', 'ce-cartes2'); cartes.style.marginTop = '16px';
-    const joueurs = el('section', 'ce-carte'), gardiens = el('section', 'ce-carte');
-    joueurs.append(el('h3', null, 'À surveiller'), el('p', 'ce-vide', 'On visionne les vidéos…')); gardiens.append(el('h3', null, 'Leurs gardiens'));
-    cartes.append(joueurs, gardiens);
-    chargerStats().then(({ stats }) => {
-      const l = [...stats.values()].filter(j => j.equipe === adv);
-      joueurs.lastChild.remove();
-      joueurs.append(tableau(['Joueur', 'PJ', 'B', 'A', 'PTS', '+/-'], l.filter(j => !j.gardien).sort((a, b) => nombre(b.p) - nombre(a.p)).slice(0, 6)
-        .map(j => rangee([[prenomNom(j.nom)], [j.pj || '0'], [j.b || '0'], [j.a || '0'], [j.p || '0', 'fort'], [j.pm || '0']]))));
+
+    // Leurs forces et faiblesses, puis les clés du match (nos forces contre leurs faiblesses).
+    const ff = forcesFaiblesses(se, adv);
+    const forces = carte('Forces et faiblesses', 'dz-ff', nom(adv));
+    const puce = (x, cls) => { const p = el('li', cls); p.append(el('span', null, x.court), el('b', null, x.texte), el('small', null, ordinal(x.rang))); return p; };
+    const lf = el('ul', 'dz-puces'); ff.forces.forEach(x => lf.append(puce(x, 'force'))); ff.faiblesses.forEach(x => lf.append(puce(x, 'faible')));
+    forces.append(lf.children.length ? lf : el('p', 'ce-vide', 'Pas assez de matchs pour les classer.'));
+    const cles = clesDuMatch(se, adv), clesC = carte('Clés du match');
+    const lc = el('ul', 'dz-cles');
+    cles.filter(c => c.ecart >= 0.25).slice(0, 2).forEach(c => lc.append(el('li', 'force', '✅ ' + c.texte)));
+    cles.filter(c => c.ecart <= -0.25).slice(-2).reverse().forEach(c => lc.append(el('li', 'faible', '⚠ ' + c.texte)));
+    clesC.append(lc.children.length ? lc : el('p', 'ce-vide', 'Duel équilibré sur papier.'));
+
+    // Tendance : leurs 5 derniers matchs, récents contre saison, série et fiche au lieu du match.
+    const leurs = matchsDe(adv), cinq = leurs.slice(-5);
+    const tend = carte('Tendance', 'dz-tend', cinq.length ? cinq.length + ' derniers matchs' : '');
+    if(cinq.length){
+      const chips = el('div', 'dz-forme');
+      cinq.forEach(g => { const c = el('div', g.r); c.append(el('b', null, g.r === 'v' ? 'V' : g.r === 'p' ? 'DP' : 'D'), logo(g.adv), el('small', null, (g.dom ? 'vs ' : '@ ') + g.pour + '-' + g.contre)); chips.append(c); });
+      const comp = el('div', 'dz-recent');
+      [['Buts pour / PJ', g => g.pour, 1, 2], ['Buts contre / PJ', g => g.contre, -1, 2], ['Tirs / PJ', g => g.tirs, 1, 1], ['Tirs accordés', g => g.tirsC, -1, 1]].forEach(([lib, f, sens, n]) => {
+        const r = moyenne(cinq, f), s = moyenne(leurs, f);
+        if(r == null || s == null) return;
+        const mieux = sens * (r - s), fl = Math.abs(r - s) < (n === 2 ? 0.2 : 1) ? '→' : r > s ? '▲' : '▼';
+        const l = el('div'); l.append(el('span', null, lib), el('b', mieux > 0 && fl !== '→' ? 'mieux' : mieux < 0 && fl !== '→' ? 'pire' : '', fl + ' ' + dec(r, n)), el('small', null, 'saison ' + dec(s, n)));
+        comp.append(l);
+      });
+      const lieu = leurs.filter(g => g.dom === (m.d === adv));
+      tend.append(chips, comp, el('p', 'dz-note', serieEnCours(leurs) + ' · ' + (m.d === adv ? 'à domicile ' : 'sur la route ') + fiche3(lieu) + (leurs.length >= 10 ? ' · 10 derniers ' + fiche3(leurs.slice(-10)) : '')));
+    }else tend.append(el('p', 'ce-vide', 'Aucun match joué.'));
+    const cote2 = el('div', 'dz-cote'); cote2.append(forces, clesC, tend);
+    const haut = el('div', 'dz-grille'); haut.append(stats, cote2);
+
+    // Matchups (ratings des alignements) et plan de match : remplis quand les alignements arrivent.
+    const matchups = carte('Matchups', 'dz-matchups', 'overall moyen des alignements');
+    const plan = carte('Plan de match', 'dz-plan', 'suggestions');
+    matchups.append(el('p', 'ce-vide', 'On compare les alignements…'));
+    const milieu = el('div', 'dz-grille dz-grille-2'); milieu.append(matchups, plan);
+    Promise.all([alignementDe(equipe), alignementDe(adv)]).then(([cN, cE]) => {
+      const lignesN = lignesOv(cN), lignesE = lignesOv(cE);
+      const t = el('div', 'dz-mu');
+      const tete = el('div', 'dz-mu-ligne dz-entete'); tete.append(el('span'), logo(equipe), el('span'), logo(adv)); t.append(tete);
+      lignesN.forEach((n, k) => {
+        const e = lignesE[k], ecart = n.ov != null && e.ov != null ? n.ov - e.ov : 0;
+        const l = el('div', 'dz-mu-ligne' + (k === 4 || k === 7 ? ' sep' : ''));
+        const cell = (x, mieux) => { const c = el('div', mieux ? 'mieux' : ''); c.append(el('b', null, x.ov != null ? dec(x.ov, 1) : '–'), el('small', null, x.noms)); return c; };
+        l.append(el('span', null, n.lib), cell(n, ecart >= 1), el('i', ecart >= 1 ? 'mieux' : ecart <= -1 ? 'pire' : '', ecart ? signe(ecart, 1) : '='), cell(e, ecart <= -1));
+        t.append(l);
+      });
+      matchups.lastChild.replaceWith(t);
+      remplirPlan(plan, se, adv, m, lignesN, lignesE);
+    }).catch(() => { matchups.lastChild.replaceWith(el('p', 'ce-vide', 'Alignements indisponibles.')); remplirPlan(plan, se, adv, m, null, null); });
+
+    // Leurs joueurs à surveiller, leurs gardiens, et nos matchs contre eux.
+    const joueurs = carte('À surveiller'), gardiens = carte('Leurs gardiens'), h2h = carte('Face-à-face');
+    joueurs.append(el('p', 'ce-vide', 'On visionne les vidéos…'));
+    chargerStats().then(({ stats: st }) => {
+      const l = [...st.values()].filter(j => j.equipe === adv);
+      joueurs.lastChild.replaceWith(tableau(['Joueur', 'PJ', 'B', 'A', 'PTS', '+/-'], l.filter(j => !j.gardien).sort((a, b) => nombre(b.p) - nombre(a.p)).slice(0, 5)
+        .map(j => rangee([[nomCourt(j.nom)], [j.pj || '0'], [j.b || '0'], [j.a || '0'], [j.p || '0', 'fort'], [j.pm || '0']]))));
       gardiens.append(tableau(['Gardien', 'PJ', 'V', '%ARR', 'MOY'], l.filter(j => j.gardien).sort((a, b) => nombre(b.pj) - nombre(a.pj))
-        .map(j => rangee([[prenomNom(j.nom)], [j.pj || '0'], [j.v || '0'], [j.parr || '–', 'fort'], [j.moy || '–']]))));
+        .map(j => rangee([[nomCourt(j.nom)], [j.pj || '0'], [j.v || '0'], [j.parr || '–', 'fort'], [j.moy || '–']]))));
     }).catch(() => joueurs.lastChild.replaceWith(el('p', 'ce-vide', 'Stats indisponibles.')));
-    // Nos matchs contre eux cette saison.
     const entre = matchs.filter(x => x.joue && ((x.v === equipe && x.d === adv) || (x.d === equipe && x.v === adv))).sort((a, b) => a.date.localeCompare(b.date));
-    const h2h = el('section', 'ce-carte'); h2h.style.marginTop = '16px';
-    h2h.append(el('h3', null, 'Face-à-face cette saison'));
     h2h.append(entre.length ? tableau(['Date', 'Match', 'Score'], entre.map(x => rangee([[fCourt.format(parse(x.date))], [x.v + ' @ ' + x.d], [x.bv + ' – ' + x.bd + (x.fin ? ' ' + (R.FINS[x.fin] || '') : ''), 'fort']]))) : el('p', 'ce-vide', 'Premier duel de la saison.'));
+    const bas = el('div', 'dz-grille dz-grille-3'); bas.append(joueurs, gardiens, h2h);
     const eq = EQUIPES.get(adv) || {};
     const lien = Object.assign(el('a', 'z-lien', 'Page de ' + nom(adv) + ' →'), { href: 'equipe.html?team=' + (eq.slug || '') });
-    return [titreZoom('Dépistage', 'rapport sur l’adversaire'), choix, duel, comp, cartes, h2h, lien];
+    return [titreZoom('Dépistage', 'rapport sur l’adversaire'), choix, duel, haut, milieu, bas, lien];
+  }
+
+  // Alignement (auto ou enregistré) d'une équipe quelconque, gardé en mémoire.
+  const alignements = new Map();
+  function alignementDe(code){
+    if(!alignements.has(code)){
+      const A = window.LNHQ_ALIGNEMENT;
+      alignements.set(code, Promise.all([A.chargerJoueurs(code), A.chargerSauvegarde(code)]).then(([j, s]) => A.composer(j, s))
+        .catch(e => { alignements.delete(code); throw e; }));
+    }
+    return alignements.get(code);
+  }
+  // Trios, paires et gardien partant : overall moyen et noms de famille.
+  function lignesOv(compo){
+    const groupe = (lib, ids) => {
+      const j = ids.map(id => compo.places[id]).filter(Boolean);
+      return { lib, ov: j.length ? j.reduce((s, x) => s + x.ov, 0) / j.length : null, noms: j.map(x => x.famille).join(' · '), joueurs: j };
+    };
+    return [1, 2, 3, 4].map(n => groupe('Trio ' + n, ['A' + n + 'G', 'A' + n + 'C', 'A' + n + 'D']))
+      .concat([1, 2, 3].map(n => groupe('Paire ' + n, ['D' + n + 'G', 'D' + n + 'D'])), [groupe('Gardien', ['G1'])]);
+  }
+  // Plan de match : suggestions de matchups (ratings) et de tactique (stats), les plus marquantes d'abord.
+  function remplirPlan(box, se, adv, m, N, E){
+    const idees = [];   // [poids, icône, texte]
+    const r = (code, cle, sens) => rangCat(se, code, cle, sens);
+    const pjE = (se.find(s => s.code === adv) || {}).pj || 0, haut = x => x && x.n > 3 && x.rang <= Math.ceil(x.n / 4), bas = x => x && x.n > 3 && x.rang > x.n - Math.ceil(x.n / 4);
+    const domicile = m.d === equipe;
+    if(N && E){
+      const best = l => l.filter(x => x.ov != null).sort((a, b) => b.ov - a.ov)[0], pire = l => l.filter(x => x.ov != null).sort((a, b) => a.ov - b.ov)[0];
+      const triosE = E.slice(0, 4), pairesE = E.slice(4, 7), triosN = N.slice(0, 4), pairesN = N.slice(4, 7);
+      const tE = best(triosE), pN = best(pairesN), pE = pire(pairesE), tN = best(triosN);
+      if(tE && pN) idees.push([3, '🛡️', `Leur ${tE.lib.toLowerCase()} (${tE.noms}, ${dec(tE.ov, 1)}) est leur menace : opposez-lui votre ${pN.lib.toLowerCase()} (${pN.noms}, ${dec(pN.ov, 1)}).`]);
+      if(pE && tN) idees.push([3, '🎯', `Ciblez leur ${pE.lib.toLowerCase()} (${pE.noms}, ${dec(pE.ov, 1)}) avec votre ${tN.lib.toLowerCase()} (${dec(tN.ov, 1)})` + (domicile ? ' : à domicile, vous avez le dernier changement.' : ' : sur la route, sautez sur la glace après leurs changements.')]);
+      const prof = (l, a, b) => moyenne(l.slice(a, b), x => x.ov);
+      const fond = (prof(N, 2, 4) || 0) - (prof(E, 2, 4) || 0);
+      if(fond >= 1.5) idees.push([2, '🔄', `Votre profondeur est meilleure (trios 3-4 : ${signe(fond, 1)} d'overall) : roulez 4 trios et usez-les.`]);
+      else if(fond <= -1.5) idees.push([2, '⏱️', `Leur profondeur est meilleure (trios 3-4 : ${signe(-fond, 1)}) : raccourcissez le banc en fin de match.`]);
+      const gN = N[7], gE = E[7];
+      if(gN.ov != null && gE.ov != null && Math.abs(gN.ov - gE.ov) >= 2) idees.push([2, '🥅', gN.ov > gE.ov ? `Avantage devant le filet : ${gN.noms} (${gN.ov}) contre ${gE.noms} (${gE.ov}).` : `Leur gardien ${gE.noms} (${gE.ov}) est meilleur que le vôtre (${gN.ov}) : générez du trafic et des rebonds.`]);
+    }
+    const eux = k => r(adv, ...k), nous = k => r(equipe, ...k);
+    const AN = ['anPct', 1], DN = ['dnPct', 1], PEN = ['penalitesMoy', -1], MJ = ['mjPct', 1], ARR = ['arrPct', 1], TIR = ['tirPct', 1], PT = ['partTirs', 1], POS = ['possession', 1], MEE = ['misesMoy', 1], TC = ['tirsContreMoy', -1];
+    if(bas(eux(PEN))) idees.push([2.5, '🚨', `Ils sont indisciplinés (${dec(eux(PEN).val, 1)} min/PJ, ${ordinal(eux(PEN).rang)}) : jouez vite vers le filet pour provoquer des pénalités` + (haut(nous(AN)) ? ` ; votre avantage numérique (${ordinal(nous(AN).rang)}) en profitera.` : '.')]);
+    if(haut(eux(AN))) idees.push([2.5, '🧊', `Leur avantage numérique frappe (${pct(eux(AN).val)}, ${ordinal(eux(AN).rang)}) : discipline avant tout` + (bas(nous(PEN)) ? `, vous êtes ${ordinal(nous(PEN).rang)} en pénalités.` : '.')]);
+    if(bas(eux(DN))) idees.push([2, '⚡', `Leur désavantage est fragile (${pct(eux(DN).val)}, ${ordinal(eux(DN).rang)}) : chaque pénalité obtenue vaut cher.`]);
+    if(bas(eux(ARR))) idees.push([2, '🏒', `Leurs gardiens arrêtent ${pct(eux(ARR).val)} des tirs (${ordinal(eux(ARR).rang)}) : tirez de partout, le volume paiera.`]);
+    if(haut(eux(ARR))) idees.push([1.5, '🏒', `Leurs gardiens sont solides (${pct(eux(ARR).val)}, ${ordinal(eux(ARR).rang)}) : cherchez les tirs de l'enclave et les rebonds, pas la quantité.`]);
+    if(bas(eux(PT)) || bas(eux(POS))) idees.push([2, '🔥', `Ils subissent le jeu (part des tirs ${eux(PT) ? pct(eux(PT).val) : '–'}, possession ${eux(POS) ? pct(eux(POS).val) : '–'}) : échec avant agressif pour les garder dans leur zone.`]);
+    if(haut(eux(PT)) && haut(eux(POS))) idees.push([2, '🧱', `Ils contrôlent la rondelle (possession ${pct(eux(POS).val)}, ${ordinal(eux(POS).rang)}) : bloc défensif compact et contre-attaques rapides.`]);
+    if(haut(eux(TIR)) && !haut(eux(['tirsMoy', 1]))) idees.push([1.5, '🎯', `Opportunistes : peu de tirs mais ${pct(eux(TIR).val)} de réussite (${ordinal(eux(TIR).rang)}) : protégez l'enclave, bloquez les lancers.`]);
+    if(haut(eux(MJ))) idees.push([1.5, '⚪', `Forts aux mises au jeu (${pct(eux(MJ).val)}, ${ordinal(eux(MJ).rang)}) : vos meilleurs centres en zone défensive.`]);
+    else if(bas(eux(MJ)) && haut(nous(MJ))) idees.push([1.5, '⚪', `Mises au jeu : avantage net (vous ${ordinal(nous(MJ).rang)}, eux ${ordinal(eux(MJ).rang)}) : jeux préparés en zone offensive.`]);
+    if(haut(eux(MEE))) idees.push([1, '💥', `Équipe physique (${dec(eux(MEE).val, 1)} mises en échec/PJ) : sortez la rondelle vite, passes courtes.`]);
+    if(bas(eux(TC))) idees.push([1.5, '📈', `Ils accordent ${dec(eux(TC).val, 1)} tirs par match (${ordinal(eux(TC).rang)}) : soyez patients en zone, les occasions viendront.`]);
+    const pdo = eux(['pdo', 1]);
+    if(pdo && pdo.n > 3 && pdo.val >= 102) idees.push([1.5, '🍀', `PDO de ${dec(pdo.val, 1)} : leur fiche est gonflée par la chance (% de tirs + % d'arrêts) ; ne vous fiez pas au classement.`]);
+    if(pdo && pdo.n > 3 && pdo.val <= 98) idees.push([1.5, '🍀', `PDO de ${dec(pdo.val, 1)} : ils jouent mieux que leur fiche (malchance) ; méfiez-vous du réveil.`]);
+    const leurs = matchsDe(adv), recents = leurs.slice(-5);
+    if(recents.length >= 3 && leurs.length >= 6){
+      const dR = moyenne(recents, g => g.pour - g.contre), dS = moyenne(leurs, g => g.pour - g.contre);
+      if(dR - dS >= 1) idees.push([1.5, '📈', `En forme : différentiel de ${signe(dR, 1)} par match sur leurs ${recents.length} derniers (saison ${signe(dS, 1)}).`]);
+      if(dR - dS <= -1) idees.push([1.5, '📉', `En chute : différentiel de ${signe(dR, 1)} par match sur leurs ${recents.length} derniers (saison ${signe(dS, 1)}) ; frappez tôt.`]);
+    }
+    const l = el('ol', 'dz-plan-liste');
+    idees.sort((a, b) => b[0] - a[0]).slice(0, 7).forEach(([, ic, t]) => { const li = el('li'); li.append(el('span', null, ic), el('p', null, t)); l.append(li); });
+    box.append(l.children.length ? l : el('p', 'ce-vide', 'Pas assez de données pour un plan de match.'));
+    if(pjE < 10) box.append(el('p', 'dz-note', 'Début de saison (' + pjE + ' matchs) : les rangs bougeront encore.'));
   }
 
   // Cartable (zoom) : deux onglets, l'alignement et l'effectif (contrats, plafond).
