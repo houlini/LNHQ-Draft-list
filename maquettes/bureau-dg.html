@@ -691,7 +691,7 @@ body{ overflow-x:hidden; }
 }
 .bu-objet:hover .bu-etiquette, .bu-objet:focus-visible .bu-etiquette{ opacity:1; translate:-50% 0; }
 /* Zones du haut : l'étiquette passe dessous (le haut de la scène la couperait). */
-.bu-del .bu-etiquette, .bu-calendrier .bu-etiquette, .bu-chandail .bu-etiquette{ bottom:auto; top:calc(100% + 0.5cqw); }
+.bu-del .bu-etiquette, .bu-chandail .bu-etiquette{ bottom:auto; top:calc(100% + 0.5cqw); }
 .bu-ecran, .bu-contenu{ position:absolute; inset:0; overflow:hidden; }
 .bu-ecran{ border-radius:0.15cqw; color:#e9ecef; }
 
@@ -700,9 +700,8 @@ body{ overflow-x:hidden; }
 .bu-chandail{ left:0.6%; top:17.5%; width:12.7%; height:28.9%; }
 .bu-vertical{ left:15.55%; top:20%; width:10.35%; height:35.1%; }
 .bu-tele{ left:28.7%; top:20%; width:40.1%; height:33.2%; }
-.bu-tableau{ left:71.2%; top:22.6%; width:13.45%; height:35.6%; }
-.bu-calendrier{ left:86.75%; top:19.6%; width:12.1%; height:17.6%; }
-.bu-babillard{ left:86.85%; top:39.1%; width:12.4%; height:20.6%; }
+.bu-calendrier{ left:71.1%; top:19.3%; width:27.9%; height:40.6%; }
+.bu-cahier{ left:80.1%; top:75.6%; width:18.6%; height:16.3%; }
 .bu-console{ left:0.7%; top:59.3%; width:14.5%; height:4.5%; }
 .bu-tablette{ left:18.96%; top:59.62%; width:13.94%; height:14.35%; }
 .bu-moniteur{ left:37.85%; top:51.2%; width:24.2%; height:19.8%; }
@@ -827,50 +826,34 @@ body{ overflow-x:hidden; }
 .pla-txt em{ font-style:normal; font-weight:700; color:#8ce99a; }
 .pla-txt em.neg{ color:#ff8787; }
 
-/* ---------- Tableau magnétique : alignement au marqueur ---------- */
-.bu-tableau .bu-contenu{ display:flex; flex-direction:column; justify-content:space-between; padding:0.7cqw 0.7cqw 0.9cqw; color:#1a3570; font-family:var(--marqueur);
-  background:linear-gradient(160deg, #ffffff, #eef1f4 70%, #e3e8ec); }
-.tab-titre{ font-size:1.1cqw; line-height:1; color:#c92a2a; }
-.tab-groupe{ font:700 0.5cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.12em; text-transform:uppercase; color:#868e96; margin-top:0.2cqw; padding-left:0.75cqw; }
-/* Même grille pour toutes les lignes : nº de ligne puis une case par position (trios 3, paires 2, gardiens 2). */
-.tab-ligne{ display:grid; grid-template-columns:0.6cqw repeat(var(--n, 3), minmax(0, 1fr)); align-items:center; gap:0.25cqw; border-bottom:0.05cqw solid rgba(26,53,112,0.12); }
-.tab-ligne > i{ font:700 0.5cqw 'IBM Plex Sans', sans-serif; font-style:normal; color:#adb5bd; }
-.tab-aimant{ min-width:0; overflow:hidden; text-overflow:ellipsis; font-size:0.68cqw; line-height:1.3; white-space:nowrap; }
-.tab-aimant.d{ color:#a61e1e; }
-.tab-aimant.g{ color:#212529; }
-.tab-aimant.vide{ color:#c92a2a; opacity:0.6; }
-
-/* ---------- Calendrier : prochains matchs ---------- */
-.bu-calendrier .bu-contenu{ display:flex; flex-direction:column; background:#fbfaf6; color:#1a2533; }
-.cal-tete{ padding:0.3cqw 0.5cqw; background:var(--ce-couleur); color:var(--accent-ink); font:600 0.72cqw 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.06em; }
-.cal-dernier{ display:grid; grid-template-columns:1.9cqw 1fr 1.9cqw; align-items:center; gap:0.2cqw; padding:0.25cqw 0.4cqw; border-bottom:0.08cqw dashed #ced4da; }
-.cal-dernier img{ width:1.9cqw; height:1.9cqw; object-fit:contain; }
-.cal-dernier div{ text-align:center; line-height:1; }
-.cal-dernier b{ display:block; font:400 1.15cqw var(--marqueur); }
-.cal-dernier small{ font:700 0.48cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#868e96; }
-.cal-dernier .v{ color:#2b8a3e; } .cal-dernier .d{ color:#c92a2a; } .cal-dernier .p{ color:#e8590c; }
-.cal-liste{ list-style:none; margin:0; padding:0.15cqw 0.4cqw; flex:1; display:flex; flex-direction:column; justify-content:space-around; }
-.cal-liste li{ display:grid; grid-template-columns:2.6cqw 1cqw 1.4cqw 1fr; align-items:center; gap:0.2cqw; font-size:0.62cqw; }
-.cal-liste li i{ font-style:normal; color:#5c6b7a; white-space:nowrap; }
-.cal-liste li span{ color:#868e96; text-align:center; }
-.cal-liste li img{ width:1.35cqw; height:1.35cqw; object-fit:contain; }
-.cal-liste li b{ font:400 0.85cqw var(--marqueur); }
-.cal-liste li.auj{ background:rgba(255,212,59,0.45); border-radius:0.2cqw; }
-.cal-liste li.retard b{ color:#c92a2a; }
-
-/* ---------- Babillard ---------- */
-.bu-babillard .bu-contenu{ display:flex; flex-direction:column; gap:0.6cqw; padding:0.7cqw 0.6cqw; }
-.bab-papier{ position:relative; padding:0.5cqw 0.5cqw 0.4cqw; background:#fffef6; color:#1a2533; rotate:var(--r, 0deg); box-shadow:0 0.3cqw 0.5cqw rgba(0,0,0,0.45); }
-.bab-papier.post{ background:#fff3a0; }
-.bab-papier::before{ content:''; position:absolute; top:-0.3cqw; left:50%; width:0.6cqw; height:0.6cqw; margin-left:-0.3cqw; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fff 0 12%, var(--p, #e03131) 35%, #600 100%); box-shadow:0.1cqw 0.2cqw 0.2cqw rgba(0,0,0,0.5); }
-.bab-papier b{ display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; font:700 0.72cqw var(--ecrit); line-height:1.15; }
-.bab-papier small{ display:block; margin-top:0.15cqw; font-size:0.5cqw; color:#6b7178; }
-.bab-papier .tag{ display:inline-block; margin-bottom:0.15cqw; padding:0.04cqw 0.3cqw; border-radius:0.2cqw; background:#e03131; color:#fff; font:900 0.45cqw 'IBM Plex Sans'; text-transform:uppercase; letter-spacing:0.05em; }
-.bab-papier .tag.off{ background:#12181F; }
-.bab-papier .tag.vert{ background:#2b8a3e; }
-.bab-dates{ list-style:none; margin:0; padding:0; font:400 0.56cqw var(--ecrit); line-height:1.3; }
-.bab-dates li{ display:flex; justify-content:space-between; gap:0.3cqw; }
-.bab-dates li em{ font-style:normal; font-weight:700; color:#c92a2a; white-space:nowrap; }
+/* ---------- Grand calendrier mural : le mois de l'équipe (résultats et matchs à venir) ---------- */
+/* Couvre le mur de droite (tableau, petit calendrier et babillard de l'image). */
+.bu-calendrier .bu-contenu{ display:flex; flex-direction:column; padding-top:1.1cqw; background:#fbfaf6; color:#1a2533; border-radius:0.25cqw; box-shadow:0 0.6cqw 1.4cqw rgba(0,0,0,0.6); }
+/* Reliure à spirale */
+.bu-calendrier .bu-contenu::before{ content:''; position:absolute; left:0; right:0; top:0; height:1.1cqw; border-radius:0.25cqw 0.25cqw 0 0;
+  background:repeating-linear-gradient(90deg, transparent 0 0.55cqw, #c9ced4 0.55cqw 0.7cqw, #6c737b 0.7cqw 0.78cqw, transparent 0.78cqw 1.3cqw) 0 0 / 100% 0.9cqw no-repeat, #2a2e34; }
+.gm-tete{ display:flex; align-items:center; gap:0.5cqw; padding:0.35cqw 0.5cqw; background:var(--ce-couleur); color:var(--accent-ink); }
+.gm-tete img{ width:1.7cqw; height:1.7cqw; object-fit:contain; }
+.gm-tete b{ flex:1; font:600 1.25cqw 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.06em; line-height:1; }
+.gm-tete small{ font:500 0.62cqw 'IBM Plex Sans', sans-serif; opacity:0.85; }
+.gm-nav{ width:1.7cqw; height:1.7cqw; display:grid; place-items:center; padding:0; border:0.08cqw solid currentColor; border-radius:0.3cqw; background:rgba(0,0,0,0.15); color:inherit; font:700 0.95cqw/1 'IBM Plex Sans', sans-serif; cursor:pointer; }
+.gm-nav:hover, .gm-nav:focus-visible{ background:rgba(0,0,0,0.35); outline:none; }
+.gm-jours, .gm-grille{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); }
+.gm-jours{ padding:0.2cqw 0; font:700 0.52cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:#868e96; text-align:center; border-bottom:0.06cqw solid #ddd8cc; }
+.gm-grille{ flex:1; grid-auto-rows:1fr; }
+.gm-case{ position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.1cqw; border-right:0.05cqw solid #e6e1d6; border-bottom:0.05cqw solid #e6e1d6; }
+.gm-case > i{ position:absolute; top:0.15cqw; left:0.25cqw; font:600 0.55cqw 'IBM Plex Sans', sans-serif; font-style:normal; color:#868e96; }
+.gm-case img{ width:1.75cqw; height:1.75cqw; object-fit:contain; }
+.gm-case b{ font:400 0.82cqw/1 var(--marqueur); }
+.gm-case b.v{ color:#2b8a3e; } .gm-case b.d{ color:#c92a2a; } .gm-case b.p{ color:#e8590c; }
+.gm-case small{ font-size:0.5cqw; color:#5c6b7a; white-space:nowrap; }
+.gm-case.hors{ opacity:0.3; }
+.gm-case.auj{ background:rgba(255,212,59,0.35); }
+.gm-case.auj > i{ color:#c92a2a; font-weight:800; }
+.gm-case.retard{ background:rgba(224,49,49,0.13); }
+.gm-case.retard small{ color:#c92a2a; font-weight:700; }
+.gm-pied{ display:flex; justify-content:space-between; gap:0.6cqw; padding:0.3cqw 0.5cqw; border-top:0.06cqw solid #ddd8cc; font-size:0.62cqw; color:#495057; white-space:nowrap; }
+.gm-pied b{ color:#1a2533; }
 .z-dates{ list-style:none; margin:0; padding:0; }
 .z-dates li{ display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px dashed #ced4da; }
 .z-dates li em{ font-style:normal; font-weight:700; color:#c92a2a; white-space:nowrap; }
@@ -892,26 +875,35 @@ body{ overflow-x:hidden; }
 .verrou b{ font:500 2.2cqw 'Oswald', sans-serif; line-height:1; }
 .verrou small{ font-size:0.72cqw; opacity:0.85; }
 
-/* ---------- Cartable : effectif (page de droite) ---------- */
-.bu-cartable .bu-contenu{ left:57.5%; right:5%; top:9%; bottom:17%; display:flex; flex-direction:column; gap:0.12cqw; padding:0.2cqw 0.4cqw; font-family:var(--ecrit); color:#1a3570; background:#fdfdfb; }
-.eff-titre{ font:700 0.8cqw var(--ecrit); color:#c92a2a; line-height:1; }
-.eff-ligne{ display:flex; justify-content:space-between; gap:0.4cqw; font-size:0.66cqw; line-height:1.2; border-bottom:0.05cqw solid #d0e1f5; white-space:nowrap; }
-.eff-ligne span{ overflow:hidden; text-overflow:ellipsis; }
-.eff-ligne b{ font-weight:700; }
-.eff-ligne b.neg{ color:#c92a2a; }
-.eff-ligne b.pos{ color:#2b8a3e; }
+/* ---------- Cartable : l'alignement au marqueur sur les deux pages ---------- */
+/* Pages à plat sur le bureau : chacune est déformée en perspective par JS (voir PERSPECTIVES). */
+.bu-page{ position:absolute; left:0; top:0; height:7.5cqw; transform-origin:0 0; display:flex; flex-direction:column; padding:0.35cqw 0.5cqw 0.4cqw; font-family:var(--marqueur); color:#1a3570; }
+.bu-page.gauche{ width:13.6cqw; background:rgba(253,253,251,0.9); }
+.bu-page.droite{ width:12.7cqw; background:repeating-linear-gradient(180deg, #fdfdfb 0 1.22cqw, #c5d8ef 1.22cqw 1.3cqw); }
+.cart-titre{ display:flex; justify-content:space-between; align-items:baseline; font-size:1.05cqw; line-height:1.2; color:#c92a2a; }
+.cart-titre small{ font:700 0.5cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#868e96; }
+.cart-ligne{ flex:1; display:grid; grid-template-columns:0.5cqw repeat(var(--n, 3), minmax(0, 1fr)); align-items:center; gap:0.25cqw; }
+.cart-ligne > i{ font:700 0.55cqw 'IBM Plex Sans', sans-serif; font-style:normal; color:#adb5bd; }
+.cart-nom{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:700 0.9cqw/1.2 var(--ecrit); letter-spacing:-0.01em; }
+.cart-nom.d{ color:#a61e1e; }
+.cart-nom.g{ color:#212529; }
+.cart-nom.vide{ color:#c92a2a; opacity:0.6; }
+/* ---------- Cahier : règlements (étiquette de la couverture) ---------- */
+.bu-cahier .bu-contenu{ left:31.5%; top:23.5%; width:49%; height:19.5%; display:flex; flex-direction:column; justify-content:center; padding:0 0.4cqw; background:#fbfbf7; color:#1a2533; line-height:1.15; }
+.bu-cahier b{ font:400 0.8cqw var(--marqueur); color:#c92a2a; }
+.bu-cahier small{ font-size:0.5cqw; color:#495057; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ---------- Cellulaire (à plat, en perspective) ---------- */
 /* Éteint par défaut ; s'allume et pulse quand une alerte attend le DG. */
-.bu-cell .bu-ecran{ inset:6% 8% 8% 6%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:0.15cqw; padding:0 0.4cqw; transform:skewX(-8deg); border-radius:0.4cqw; background:#05070a; color:rgba(255,255,255,0.25); text-align:center; }
-.bu-cell .bu-ecran > small{ font-size:0.5cqw; }
+.bu-cell .bu-ecran{ inset:auto; left:0; top:0; width:4.6cqw; height:6.4cqw; transform-origin:0 0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:0.25cqw; padding:0 0.4cqw; border-radius:0.5cqw; background:#05070a; color:rgba(255,255,255,0.25); text-align:center; }
+.bu-cell .bu-ecran > small{ font-size:0.7cqw; }
 .bu-cell.allume .bu-ecran{ background:radial-gradient(120% 90% at 50% 20%, #ff6b6b, #c92a2a 55%, #5c0f0f); color:#fff; animation:pulse-cell 1.6s ease-in-out infinite; }
 .bu-cell.allume.calme .bu-ecran{ background:radial-gradient(120% 90% at 50% 20%, #ffd43b, #e8590c 60%, #5c2a0f); }
 @keyframes pulse-cell{
   0%, 100%{ box-shadow:0 0 0.3cqw 0.1cqw rgba(255,80,80,0.5); filter:brightness(1); }
   50%{ box-shadow:0 0 1.6cqw 0.6cqw rgba(255,80,80,0.75); filter:brightness(1.25); } }
-.cell-nb{ font:700 1.3cqw 'Oswald', sans-serif; line-height:1; }
-.cell-txt{ max-width:100%; font:600 0.5cqw 'IBM Plex Sans', sans-serif; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cell-nb{ font:700 2cqw 'Oswald', sans-serif; line-height:1; }
+.cell-txt{ max-width:100%; font:600 0.62cqw 'IBM Plex Sans', sans-serif; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 @media (prefers-reduced-motion: reduce){ .bu-cell.allume .bu-ecran{ animation:none; box-shadow:0 0 1cqw 0.4cqw rgba(255,80,80,0.6); } }
 .z-alertes{ display:grid; gap:10px; margin-bottom:20px; }
 .z-alerte{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; background:#fff; border-left:5px solid var(--a, #e03131); box-shadow:0 1px 3px rgba(0,0,0,0.12); color:#1a2533; }
@@ -930,8 +922,7 @@ body{ overflow-x:hidden; }
 .bu-zoom-objet.is-ordinateur{ background:#f1f3f5; color:#1a2533; border:14px solid #121417; border-bottom-width:28px; }
 .bu-zoom-objet.is-cellulaire{ width:min(430px, 96vw); background:linear-gradient(170deg, color-mix(in srgb, var(--ce-couleur) 45%, #0b0d12), #0b0d12 60%); color:#fff; border:12px solid #0b0c0e; border-radius:44px; }
 .bu-zoom-objet.is-cellulaire .bu-zoom-corps{ padding:26px 16px; }
-.bu-zoom-objet.is-cartable{ background:linear-gradient(160deg, #ffffff, #eef1f4 70%, #e3e8ec); border:14px solid #b8bfc6; border-radius:8px; color:#1a2533; }
-.bu-zoom-objet.is-effectif{ background:linear-gradient(90deg, #f4f1e8 0 49.6%, #c9c3b5 49.6% 50.4%, #f4f1e8 50.4%); border:14px solid #1d2b4f; color:#1a2533; }
+.bu-zoom-objet.is-cartable, .bu-zoom-objet.is-effectif{ background:linear-gradient(90deg, #f4f1e8 0 49.6%, #c9c3b5 49.6% 50.4%, #f4f1e8 50.4%); border:14px solid #1d2b4f; color:#1a2533; }
 .bu-zoom-objet.is-resultats, .bu-zoom-objet.is-meneurs, .bu-zoom-objet.is-depistage{ background:#060a10; color:#e9ecef; border:16px solid #0a0b0d; border-radius:12px; }
 .bu-zoom-objet.is-depistage{ border-width:22px; border-radius:30px; }
 .bu-zoom-objet.is-fiche{ width:min(640px, 96vw); background:var(--surface); color:var(--ink); }
@@ -979,8 +970,19 @@ body{ overflow-x:hidden; }
 .bu-zoom-objet.is-calendrier{ background:#fbfaf6; color:#1a2533; width:min(1000px, 96vw); }
 .bu-zoom-objet.is-tele{ background:#060a10; color:#e9ecef; border:16px solid #0a0b0d; border-radius:12px; }
 .bu-zoom-objet.is-postit{ width:min(560px, 96vw); background:linear-gradient(180deg, #fff6a8, #ffe873); color:#1a2533; border-radius:4px; }
-.bu-zoom-objet.is-babillard{ width:min(880px, 96vw); border:16px solid #6a4220; border-radius:8px;
-  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.2  0 0 0 0 0.08  0 0 0 0.9 -0.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 30% 20%, #d2a46b, #b9844b 60%, #a87240); }
+/* Cahier des règlements : couverture brune, pages lignées */
+.bu-zoom-objet.is-reglements{ width:min(900px, 96vw); border:16px solid #8a6a3f; border-radius:10px; color:#1a2533;
+  background:linear-gradient(90deg, transparent 56px, #f1a5a5 56px 58px, transparent 58px), repeating-linear-gradient(180deg, #fffef8 0 27px, #cfe0f3 27px 28px); }
+.bu-zoom-objet.is-reglements .bu-zoom-corps{ padding-left:76px; overflow-wrap:anywhere; }
+@media (max-width:600px){
+  .bu-zoom-objet.is-reglements{ background:linear-gradient(90deg, transparent 22px, #f1a5a5 22px 24px, transparent 24px), repeating-linear-gradient(180deg, #fffef8 0 27px, #cfe0f3 27px 28px); }
+  .bu-zoom-objet.is-reglements .bu-zoom-corps{ padding-left:34px; }
+}
+.bu-zoom-objet.is-reglements .ce-carte{ background:transparent; border:none; box-shadow:none; padding:0; margin-bottom:20px; }
+.bu-zoom-objet.is-reglements h3{ font:400 20px var(--marqueur); color:#c92a2a; }
+.bu-zoom-onglets{ display:flex; gap:8px; margin-bottom:16px; }
+.bu-zoom-onglets button{ padding:7px 14px; border-radius:999px; border:1px solid #1d2b4f; background:transparent; color:#1d2b4f; font:700 13px 'IBM Plex Sans', sans-serif; cursor:pointer; }
+.bu-zoom-onglets button.actif{ background:#1d2b4f; color:#fff; }
 .bu-zoom-objet.is-console{ background:radial-gradient(120% 100% at 50% 0%, #1b2a4a, #05070b 70%); color:#fff; border-radius:14px; }
 .bu-zoom-objet.is-cellulaire .ce-carte, .bu-zoom-objet.is-tele .ce-carte{ background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.12); color:inherit; }
 .bu-zoom-titre{ display:flex; align-items:center; gap:12px; margin:0 0 16px; padding-right:48px; font:500 26px 'Oswald', sans-serif; text-transform:uppercase; }
@@ -1085,13 +1087,13 @@ body{ overflow-x:hidden; }
       <button type="button" class="bu-objet bu-chandail" data-objet="fiche" aria-label="Chandail : fiche de l'équipe et du DG"><span class="bu-ecusson" id="o-ecusson"></span></button>
       <button type="button" class="bu-objet bu-vertical" data-objet="meneurs" aria-label="Écran vertical : stats de la ligue et de l'équipe"><div class="bu-ecran" id="o-meneurs"></div></button>
       <button type="button" class="bu-objet bu-tele" data-objet="tele" aria-label="Grand écran : LNHQ TV, directs et fil de la ligue"><div class="bu-ecran" id="o-tele"></div></button>
-      <button type="button" class="bu-objet bu-tableau" data-objet="cartable" aria-label="Tableau magnétique : alignement"><div class="bu-contenu" id="o-tableau"></div></button>
-      <button type="button" class="bu-objet bu-calendrier" data-objet="calendrier" aria-label="Calendrier mural"><div class="bu-contenu" id="o-calendrier"></div></button>
-      <button type="button" class="bu-objet bu-babillard" data-objet="babillard" aria-label="Babillard : dates importantes et règlements"><div class="bu-contenu" id="o-babillard"></div></button>
+      <!-- Calendrier : un div (et non un bouton) parce qu'il contient ses propres boutons de mois. -->
+      <div class="bu-objet bu-calendrier" data-objet="calendrier" role="group" tabindex="0" aria-label="Calendrier du mois (Entrée pour agrandir)"><div class="bu-contenu" id="o-calendrier"></div></div>
       <button type="button" class="bu-objet bu-console" data-objet="console" aria-label="Console : soumettre un résultat"></button>
       <button type="button" class="bu-objet bu-tablette" data-objet="depistage" aria-label="Tablette : dépistage du prochain adversaire"><div class="bu-ecran" id="o-depistage"></div></button>
       <button type="button" class="bu-objet bu-moniteur" data-objet="ordinateur" aria-label="Ordinateur : courriel et marché des transactions"><div class="bu-ecran" id="o-ordinateur"></div></button>
-      <button type="button" class="bu-objet bu-cartable" data-objet="effectif" aria-label="Cartable : effectif, contrats et plafond salarial"><div class="bu-contenu" id="o-effectif"></div></button>
+      <button type="button" class="bu-objet bu-cartable" data-objet="cartable" aria-label="Cartable : alignement, effectif et contrats"><div class="bu-page gauche" id="o-align-g"></div><div class="bu-page droite" id="o-align-d"></div></button>
+      <button type="button" class="bu-objet bu-cahier" data-objet="reglements" aria-label="Cahier : règlements et dates importantes"><div class="bu-contenu" id="o-reglements"></div></button>
       <button type="button" class="bu-objet bu-cell" data-objet="cellulaire" aria-label="Cellulaire : alertes et enchères"><div class="bu-ecran" id="o-cellulaire"></div></button>
       <button type="button" class="bu-objet bu-manette" data-objet="console" aria-label="Manette : soumettre un résultat"></button>
       <span class="bu-tasse" id="o-tasse"></span>
@@ -2031,8 +2033,8 @@ body{ overflow-x:hidden; }
   let moisZoom = '';                 // 'AAAA-MM' du grand calendrier
   const estPetit = () => matchMedia('(max-width: 899px)').matches;
   const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-  const ETIQUETTES = { calendrier: 'Calendrier · dernier résultat', tele: 'LNHQ TV · directs et fil de la ligue', console: 'Console · soumettre un résultat', babillard: 'Dates importantes · règlements',
-    cartable: 'Alignement', ordinateur: 'Courriel · transactions', postit: '2e gardien', cellulaire: 'Alertes · enchères', depistage: 'Dépistage · prochain adversaire',
+  const ETIQUETTES = { calendrier: 'Calendrier du mois · cliquer pour agrandir', tele: 'LNHQ TV · directs et fil de la ligue', console: 'Console · soumettre un résultat', reglements: 'Règlements · dates importantes',
+    cartable: 'Alignement · effectif et contrats', ordinateur: 'Courriel · transactions', postit: '2e gardien', cellulaire: 'Alertes · enchères', depistage: 'Dépistage · prochain adversaire',
     resultats: 'Résultats de la ligue', meneurs: 'Stats · ligue et équipe', effectif: 'Effectif · contrats · plafond', fiche: 'Fiche de l’équipe et du DG' };
   const chargerDirect = () => unefois('direct', () => fetch('https://api.lnhq.ca/twitch').then(r => r.json()).catch(() => ({ chaines: [] })));
   const chargerFils = () => unefois('fils', () => Promise.all(['ANNONCES', 'NOUVELLES'].map(async s => {
@@ -2073,34 +2075,41 @@ body{ overflow-x:hidden; }
     $('o-ecusson').replaceChildren(logo(equipe));
     sansErreur(apercuMeneurs($('o-meneurs')));
     sansErreur(apercuTele($('o-tele')));
-    sansErreur(apercuTableau($('o-tableau')));
+    sansErreur(apercuCartable($('o-align-g'), $('o-align-d')));
     apercuCalendrier($('o-calendrier'));
-    sansErreur(apercuBabillard($('o-babillard')));
+    sansErreur(apercuReglements($('o-reglements')));
     sansErreur(apercuDepistage($('o-depistage')));
     apercuOrdinateur($('o-ordinateur'));
-    sansErreur(apercuEffectif($('o-effectif')));
     sansErreur(apercuCellulaire($('o-cellulaire')));
     $('o-tasse').replaceChildren(logo(equipe));
-    ajusterTablette();
+    ajusterPerspectives();
   }
 
-  // Écran de la tablette : ses 4 coins dans l'image (px de l'image, relatifs à la zone .bu-tablette),
+  // Surfaces inclinées ou à plat dans l'image : leurs 4 coins (px de l'image, relatifs à leur zone),
   // dans l'ordre haut-gauche, haut-droite, bas-gauche, bas-droite.
-  const COINS_TABLETTE = [[2, 8], [201, 3], [20, 131], [229, 116]];
-  function ajusterTablette(){
-    const ecran = $('o-depistage'), scene = $('scene');
-    if(!ecran || scene.hidden) return;
-    const k = scene.clientWidth / 1672, w = ecran.offsetWidth, h = ecran.offsetHeight;
-    if(!w || !h) return;
-    const [[x0, y0], [x1, y1], [x3, y3], [x2, y2]] = COINS_TABLETTE.map(([x, y]) => [x * k, y * k]);
-    // Homographie du carré unité vers le quadrilatère (0,0)→p0, (1,0)→p1, (1,1)→p2, (0,1)→p3.
-    const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
-    const den = dx1 * dy2 - dx2 * dy1;
-    const g = (dx3 * dy2 - dx2 * dy3) / den, hh = (dx1 * dy3 - dx3 * dy1) / den;
-    const a = x1 - x0 + g * x1, b = x3 - x0 + hh * x3, d = y1 - y0 + g * y1, e = y3 - y0 + hh * y3;
-    ecran.style.transform = `matrix3d(${a / w},${d / w},0,${g / w},${b / h},${e / h},0,${hh / h},0,0,1,0,${x0},${y0},0,1)`;
+  const PERSPECTIVES = {
+    'o-depistage': [[2, 8], [201, 3], [20, 131], [229, 116]],     // tablette sur son support
+    'o-cellulaire': [[0, 4], [76, 3], [23, 66], [107, 66]],       // téléphone à plat
+    'o-align-g': [[163, 7], [346, 4], [42, 114], [315, 114]],     // cartable, page de gauche
+    'o-align-d': [[367, 4], [559, 0], [330, 115], [563, 105]],    // cartable, page de droite
+  };
+  function ajusterPerspectives(){
+    const scene = $('scene');
+    if(scene.hidden) return;
+    const k = scene.clientWidth / 1672;
+    Object.entries(PERSPECTIVES).forEach(([id, coins]) => {
+      const n = $(id), w = n && n.offsetWidth, h = n && n.offsetHeight;
+      if(!w || !h) return;
+      const [[x0, y0], [x1, y1], [x3, y3], [x2, y2]] = coins.map(([x, y]) => [x * k, y * k]);
+      // Homographie du carré unité vers le quadrilatère (0,0)→p0, (1,0)→p1, (1,1)→p2, (0,1)→p3.
+      const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+      const den = dx1 * dy2 - dx2 * dy1;
+      const g = (dx3 * dy2 - dx2 * dy3) / den, hh = (dx1 * dy3 - dx3 * dy1) / den;
+      const a = x1 - x0 + g * x1, b = x3 - x0 + hh * x3, d = y1 - y0 + g * y1, e = y3 - y0 + hh * y3;
+      n.style.transform = `matrix3d(${a / w},${d / w},0,${g / w},${b / h},${e / h},0,${hh / h},0,0,1,0,${x0},${y0},0,1)`;
+    });
   }
-  new ResizeObserver(() => ajusterTablette()).observe($('scene'));
+  new ResizeObserver(() => ajusterPerspectives()).observe($('scene'));
 
   // Données de l'équipe : stats de la saison, joueurs sous contrat, espace sous le plafond.
   const chargerStats = () => unefois('stats', () => window.LNHQ_STATS_JOUEUR.charger());
@@ -2383,37 +2392,50 @@ body{ overflow-x:hidden; }
     }
     return alignement;
   }
-  async function apercuTableau(box){
-    box.replaceChildren(el('div', 'tab-titre', 'Alignement'));
+  // Cartable : l'alignement au marqueur, les trios à gauche, la défense et les gardiens à droite.
+  async function apercuCartable(gauche, droite){
     const { compo } = await chargerAlignement();
-    const aimant = (id, cls) => { const j = compo.places[id]; return el('span', 'tab-aimant' + (cls ? ' ' + cls : '') + (j ? '' : ' vide'), j ? j.famille : '—'); };
-    const ligne = (n, ids, cls) => { const l = el('div', 'tab-ligne'); l.style.setProperty('--n', ids.length); l.append(el('i', null, n), ...ids.map(id => aimant(id, cls))); return l; };
-    box.append(el('div', 'tab-groupe', 'Attaquants'), ...[1, 2, 3, 4].map(n => ligne(String(n), ['A' + n + 'G', 'A' + n + 'C', 'A' + n + 'D'])),
-      el('div', 'tab-groupe', 'Défenseurs'), ...[1, 2, 3].map(n => ligne(String(n), ['D' + n + 'G', 'D' + n + 'D'], 'd')),
-      el('div', 'tab-groupe', 'Gardiens'), ligne('', ['G1', 'G2'], 'g'));
+    const nomPlace = (id, cls) => { const j = compo.places[id]; return el('span', 'cart-nom' + (cls ? ' ' + cls : '') + (j ? '' : ' vide'), j ? j.famille : '—'); };
+    const ligne = (n, ids, cls) => { const l = el('div', 'cart-ligne'); l.style.setProperty('--n', ids.length); l.append(el('i', null, n), ...ids.map(id => nomPlace(id, cls))); return l; };
+    const titre = (t, s) => { const d = el('div', 'cart-titre'); d.append(el('span', null, t), el('small', null, s)); return d; };
+    gauche.replaceChildren(titre('Attaquants', 'G · C · D'), ...[1, 2, 3, 4].map(n => ligne(String(n), ['A' + n + 'G', 'A' + n + 'C', 'A' + n + 'D'])));
+    droite.replaceChildren(titre('Défense', 'G · D'), ...[1, 2, 3].map(n => ligne(String(n), ['D' + n + 'G', 'D' + n + 'D'], 'd')),
+      titre('Gardiens', 'Partant · Auxiliaire'), ligne('', ['G1', 'G2'], 'g'));
+    // Un nom trop long pour sa case est écrit plus petit plutôt que coupé.
+    document.fonts.ready.then(() => [gauche, droite].forEach(p => p.querySelectorAll('.cart-nom').forEach(n => {
+      let t = 0.9;
+      while(n.clientWidth && n.scrollWidth > n.clientWidth && t > 0.45){ t *= 0.92; n.style.fontSize = t.toFixed(3) + 'cqw'; }
+      if(t < 0.9) n.style.fontSize = (t * 0.95).toFixed(3) + 'cqw';   // marge : la scène peut être redimensionnée
+    })));
   }
 
-  // Calendrier : le dernier résultat en grand, puis les prochains matchs (les retards en premier).
+  // Grand calendrier mural : le mois de l'équipe (scores, matchs à venir, retards) ; ‹ › change de mois en un clic.
+  // Il partage son mois avec le calendrier en plein écran.
   function apercuCalendrier(box){
-    const tete = el('div', 'cal-tete', NOM_MOIS_CAP(parse(AUJ).getMonth()) + ' ' + parse(AUJ).getFullYear());
-    const blocs = [tete];
-    const dernier = mesMatchs().filter(m => m.joue).sort((a, b) => b.date.localeCompare(a.date) || Number(b.num) - Number(a.num))[0];
-    if(dernier){
-      const r = resultatPour(dernier), pour = dernier.v === equipe ? dernier.bv : dernier.bd, contre = dernier.v === equipe ? dernier.bd : dernier.bv;
-      const d = el('div', 'cal-dernier'), mil = el('div');
-      mil.append(el('b', r, pour + ' – ' + contre), el('small', null, (r === 'v' ? 'Victoire' : r === 'p' ? 'Déf. ' + (R.FINS[dernier.fin] || 'prol.') : 'Défaite') + ' · ' + fMois.format(parse(dernier.date))));
-      d.append(logo(equipe), mil, logo(dernier.v === equipe ? dernier.d : dernier.v));
-      blocs.push(d);
-    }
-    const liste = el('ol', 'cal-liste');
-    [...retards(), ...mesMatchs().filter(m => !m.joue && m.date >= AUJ).sort((a, b) => a.date.localeCompare(b.date) || Number(a.num) - Number(b.num))].slice(0, dernier ? 3 : 5).forEach(m => {
-      const adv = m.v === equipe ? m.d : m.v;
-      const li = el('li', m.date === AUJ ? 'auj' : m.date < AUJ ? 'retard' : '');
-      li.append(el('i', null, m.date === AUJ ? 'Ce soir' : fMois.format(parse(m.date))), el('span', null, m.v === equipe ? '@' : 'vs'), logo(adv), el('b', null, m.date < AUJ ? adv + ' !' : adv));
-      liste.append(li);
-    });
-    if(!liste.children.length) liste.append(el('li', null, 'Plus de match.'));
-    box.replaceChildren(...blocs, liste);
+    if(!moisZoom) moisZoom = AUJ.slice(0, 7);
+    const [a, m] = moisZoom.split('-').map(Number);
+    const tete = el('div', 'gm-tete');
+    const nav = (txt, sens, etiquette) => {
+      const b = el('button', 'gm-nav', txt); b.type = 'button'; b.setAttribute('aria-label', etiquette);
+      b.addEventListener('click', ev => { ev.stopPropagation(); const d = new Date(a, m - 1 + sens, 1); moisZoom = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); apercuCalendrier(box); });
+      return b;
+    };
+    const duMois = mesMatchs().filter(x => x.date.startsWith(moisZoom));
+    const joues = duMois.filter(x => x.joue);
+    const v = joues.filter(x => resultatPour(x) === 'v').length, p = joues.filter(x => resultatPour(x) === 'p').length;
+    const titre = el('b', null, NOM_MOIS_CAP(m - 1) + ' ' + a);
+    tete.append(nav('‹', -1, 'Mois précédent'), logo(equipe), titre, el('small', null, joues.length ? `${v}-${joues.length - v - p}-${p} ce mois` : duMois.length + ' matchs'), nav('›', 1, 'Mois suivant'));
+    const jours = el('div', 'gm-jours'); ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach(j => jours.append(el('span', null, j)));
+    const grille = el('div', 'gm-grille');
+    grilleMois(a, m - 1, true).forEach(c => { c.classList.add('gm-case'); if(c.classList.contains('retard')) c.append(el('small', null, 'en retard')); grille.append(c); });
+    // Pied : dernier résultat et prochain match, quel que soit le mois affiché.
+    const pied = el('div', 'gm-pied');
+    const dernier = mesMatchs().filter(x => x.joue).sort((x, y) => y.date.localeCompare(x.date) || Number(y.num) - Number(x.num))[0];
+    const proch = prochainMatch();
+    const morceau = (lib, txt) => { const s = el('span', null, lib + ' '); s.append(el('b', null, txt)); return s; };
+    if(dernier){ const pour = dernier.v === equipe ? dernier.bv : dernier.bd, contre = dernier.v === equipe ? dernier.bd : dernier.bv; pied.append(morceau('Dernier :', (resultatPour(dernier) === 'v' ? 'V ' : 'D ') + pour + '-' + contre + ' ' + (dernier.v === equipe ? '@ ' : 'vs ') + adversaireDe(dernier))); }
+    if(proch) pied.append(morceau('Prochain :', (proch.date === AUJ ? 'ce soir' : fMois.format(parse(proch.date))) + ' ' + (proch.v === equipe ? '@ ' : 'vs ') + adversaireDe(proch)));
+    box.replaceChildren(tete, jours, grille, pied);
   }
   const NOM_MOIS_CAP = m => NOMS_MOIS[m].charAt(0).toUpperCase() + NOMS_MOIS[m].slice(1);
 
@@ -2444,27 +2466,14 @@ body{ overflow-x:hidden; }
     return cases;
   }
 
-  // Babillard : ce qui n'est affiché nulle part ailleurs — dates importantes et règlements
-  // (les annonces et nouvelles passent à la télé).
+  // Cahier des règlements : étiquette de la couverture (règlement du jour). Les annonces et
+  // nouvelles passent à la télé, les décomptes au bandeau.
   const reglementDuJour = articles => articles.length ? articles[Math.floor(parse(AUJ).getTime() / 864e5) % articles.length] : null;
-  async function apercuBabillard(box){
-    const [dates, { articles }] = await Promise.all([datesImportantes(), chargerReglements()]);
-    const papiers = [];
-    const prochaines = dates.filter(x => x.jours != null && x.jours >= 0).sort((a, b) => a.jours - b.jours).slice(0, 3);
-    if(prochaines.length){
-      const p = el('div', 'bab-papier post'); p.style.setProperty('--r', '2deg'); p.style.setProperty('--p', '#1c7ed6');
-      const ul = el('ul', 'bab-dates');
-      prochaines.forEach(x => { const li = el('li'); li.append(el('span', null, x.libelle.replace(/^Date limite des /i, 'Limite ')), el('em', null, dansJours(x.jours))); ul.append(li); });
-      p.append(el('span', 'tag', 'Dates'), ul);
-      papiers.push(p);
-    }
+  async function apercuReglements(box){
+    box.replaceChildren(el('b', null, 'Règlements'));
+    const { articles } = await chargerReglements();
     const r = reglementDuJour(articles);
-    if(r){
-      const p = el('div', 'bab-papier'); p.style.setProperty('--r', '-2deg'); p.style.setProperty('--p', '#e03131');
-      p.append(el('span', 'tag off', 'Règlement du jour'), el('b', null, r.titre.replace(/^\d+(\.\d+)*\s*/, '')), el('small', null, 'Art. ' + (/^\d+(\.\d+)*/.exec(r.titre) || [''])[0]));
-      papiers.push(p);
-    }
-    box.replaceChildren(...papiers);
+    if(r) box.append(el('small', null, 'Du jour : ' + r.titre.charAt(0) + r.titre.slice(1).toLowerCase()));
   }
 
   // Dépistage : le prochain adversaire (ou celui d'un match en retard) comparé à nous.
@@ -2531,34 +2540,20 @@ body{ overflow-x:hidden; }
     return { min: entier(val(/^Minimum de joueurs/i)), max: entier(val(/^Maximum de joueurs/i)), espoirs: entier(val(/^Espoirs/i)), plancher: entier(val(/^Plancher/i)) };
   }
 
-  // Cartable : effectif et plafond (joueurs, GÉN moyen, masse, espace, espoirs).
-  async function apercuEffectif(box){
-    box.replaceChildren(el('div', 'eff-titre', 'Effectif'));
-    const [{ miens, masse, espace }, lim] = await Promise.all([contratsEquipe(), limitesLigue()]);
-    const pros = miens.filter(j => !j.espoir).sort((a, b) => b.ov - a.ov), espoirs = miens.filter(j => j.espoir);
-    const moy = pros.length ? Math.round(pros.reduce((s, j) => s + j.ov, 0) / pros.length) : 0;
-    const ligne = (g, d, cls) => { const l = el('div', 'eff-ligne'); l.append(el('span', null, g), el('b', cls || '', d)); return l; };
-    const horsLimite = (lim.min && pros.length < lim.min) || (lim.max && pros.length > lim.max);
-    box.append(ligne(pros.length + (lim.max ? ' / ' + lim.max : '') + ' joueurs', 'GÉN ' + moy, horsLimite ? 'neg' : ''),
-      ligne('Masse', millions(masse)),
-      ligne('Espace', espace != null ? millions(espace) : '?', espace != null ? (espace < 0 ? 'neg' : 'pos') : ''),
-      ligne('Espoirs', espoirs.length + (lim.espoirs ? ' / ' + lim.espoirs : ''), lim.espoirs && espoirs.length > lim.espoirs ? 'neg' : ''));
-  }
-
   // Alertes du DG : offre reçue, match en retard, 2e gardien pas déclaré, enchère dépassée.
   // urgent = rouge ; les autres allument le cellulaire en orange.
   async function alertesDG(){
     if(!estDG()) return [];
     const l = [];
-    courriels().filter(c => c.type === 'offre' && c.nonlu).forEach(c => l.push({ icone: '🔁', titre: 'Offre de transaction', texte: nom(c.de) + ' · ' + c.apercu, objet: 'ordinateur', bouton: 'Voir l’offre', urgent: true }));
-    retards().forEach(m => l.push({ icone: '⏰', titre: 'Match en retard', texte: fCourt.format(parse(m.date)) + ' · ' + (m.v === equipe ? '@ ' : 'vs ') + nom(m.v === equipe ? m.d : m.v), objet: 'console', bouton: 'Soumettre', urgent: true }));
+    courriels().filter(c => c.type === 'offre' && c.nonlu).forEach(c => l.push({ icone: '🔁', titre: 'Offre de transaction', court: 'Offre', texte: nom(c.de) + ' · ' + c.apercu, objet: 'ordinateur', bouton: 'Voir l’offre', urgent: true }));
+    retards().forEach(m => l.push({ icone: '⏰', titre: 'Match en retard', court: 'Retard', texte: fCourt.format(parse(m.date)) + ' · ' + (m.v === equipe ? '@ ' : 'vs ') + nom(m.v === equipe ? m.d : m.v), objet: 'console', bouton: 'Soumettre', urgent: true }));
     const per = periodeCourante();
-    if(per && !declaration(equipe, per.num)) l.push({ icone: '🥅', titre: '2e gardien pas déclaré', texte: 'Période ' + per.num + ' · fin le ' + fMois.format(parse(per.fin)), objet: 'postit', bouton: 'Déclarer', urgent: false });
+    if(per && !declaration(equipe, per.num)) l.push({ icone: '🥅', titre: '2e gardien pas déclaré', court: '2e gardien', texte: 'Période ' + per.num + ' · fin le ' + fMois.format(parse(per.fin)), objet: 'postit', bouton: 'Déclarer', urgent: false });
     try{
       const [d] = await chargerEncheres();
       const misees = new Set(d.mises.filter(m => m.equipe === equipe).map(m => m.id));
       d.encheres.filter(e => e.statut === 'En cours' && misees.has(e.id) && e.equipe !== equipe && !e.egalite.includes(equipe))
-        .forEach(e => l.push({ icone: '💰', titre: 'Enchère dépassée', texte: prenomNom(e.joueur) + ' · ' + e.mise + ' par ' + e.equipe, objet: 'agents', bouton: 'Relancer', urgent: false }));
+        .forEach(e => l.push({ icone: '💰', titre: 'Enchère dépassée', court: 'Enchère', texte: prenomNom(e.joueur) + ' · ' + e.mise + ' par ' + e.equipe, objet: 'agents', bouton: 'Relancer', urgent: false }));
     }catch(e){ console.warn(e); }
     return l;
   }
@@ -2570,7 +2565,7 @@ body{ overflow-x:hidden; }
     cell.classList.toggle('allume', alertes.length > 0);
     cell.classList.toggle('calme', alertes.length > 0 && !alertes.some(a => a.urgent));
     if(!alertes.length){ box.replaceChildren(el('small', null, estDG() ? heure() : '🔒')); return; }
-    box.replaceChildren(el('span', 'cell-nb', String(alertes.length)), el('span', 'cell-txt', alertes[0].icone + ' ' + alertes[0].titre));
+    box.replaceChildren(el('span', 'cell-nb', String(alertes.length)), el('span', 'cell-txt', alertes[0].icone + ' ' + alertes[0].court));
   }
 
   /* ---------- Téléphone : la pile d'objets ---------- */
@@ -2589,7 +2584,7 @@ body{ overflow-x:hidden; }
       ['ordinateur', '🖥️', estDG() ? 'Courriel' : 'Transactions', estDG() ? courriels().filter(x => x.nonlu).length + ' non lus' : 'Marché et historique'],
       ['cellulaire', '📱', 'Alertes', estDG() ? 'Offres, retards, 2e gardien, enchères' : 'Enchères des agents libres'],
       ['postit', '🥅', '2e gardien', dcl ? 'Déclaré ✔' : 'À déclarer'],
-      ['babillard', '📌', 'Babillard', 'Dates importantes et règlements'],
+      ['reglements', '📒', 'Règlements', 'Dates importantes et paramètres'],
       ['fiche', '👕', 'Fiche', 'L’équipe et son DG'],
     ];
     $('pile').replaceChildren(...tuiles.map(([type, icone, titre, sous]) => {
@@ -2768,10 +2763,23 @@ body{ overflow-x:hidden; }
     return [titreZoom('Dépistage', 'rapport sur l’adversaire'), choix, duel, comp, cartes, h2h, lien];
   }
 
-  // Babillard (zoom) : dates importantes, règlement du jour, paramètres de la ligue, lien vers les règlements.
-  function zoomBabillard(){
-    const papier = (titre, rot, ...enfants) => { const p = el('section', 'ce-carte'); p.style.cssText = `background:#fffef6;color:#1a2533;rotate:${rot}deg;box-shadow:0 6px 14px rgba(0,0,0,.35);border:none`; p.append(el('h3', null, titre), ...enfants); return p; };
-    const grille = el('div', 'ce-cartes2'); grille.append(el('p', 'ce-vide', 'On punaise les feuilles…'));
+  // Cartable (zoom) : deux onglets, l'alignement et l'effectif (contrats, plafond).
+  let ongletCartable = 'alignement';
+  function zoomCartable(){
+    const onglets = el('div', 'bu-zoom-onglets');
+    [['alignement', '🏒 Alignement'], ['effectif', '🗂️ Effectif et contrats']].forEach(([o, txt]) => {
+      const b = el('button', o === ongletCartable ? 'actif' : '', txt); b.type = 'button';
+      b.addEventListener('click', () => { ongletCartable = o; remplirZoom('cartable'); });
+      onglets.append(b);
+    });
+    if(ongletCartable === 'effectif'){ const [titre, ...reste] = zoomEffectif(); return [titre, onglets, ...reste]; }
+    return [titreZoom('Cartable', nom(equipe)), onglets, panneau('p-alignement', rendreAlignement)];
+  }
+
+  // Cahier des règlements (zoom) : dates importantes, règlement du jour, paramètres de la ligue, lien vers les règlements.
+  function zoomReglements(){
+    const papier = (titre, rot, ...enfants) => { const p = el('section', 'ce-carte'); p.append(el('h3', null, titre), ...enfants); return p; };
+    const grille = el('div', 'ce-cartes2'); grille.append(el('p', 'ce-vide', 'On ouvre le cahier…'));
     Promise.all([datesImportantes(), chargerReglements()]).then(([dates, { articles, parametres }]) => {
       const ul = el('ul', 'z-dates');
       dates.sort((a, b) => (a.date ? a.date.getTime() : Infinity) - (b.date ? b.date.getTime() : Infinity)).forEach(x => {
@@ -2787,8 +2795,8 @@ body{ overflow-x:hidden; }
       const lien = Object.assign(el('a', 'z-lien', 'Tous les règlements →'), { href: 'reglements.html' });
       grille.replaceChildren(papier('📅 Dates importantes', -1, ul), papier('📖 Règlement du jour', 1.2, ...regl, lien), papier('⚙️ Paramètres de la ligue', 0.6, params));
       grille.lastChild.style.gridColumn = '1 / -1';
-    }).catch(() => grille.replaceChildren(el('p', 'ce-vide', 'Babillard indisponible pour le moment.')));
-    return [titreZoom('Babillard', 'dates importantes et règlements'), grille];
+    }).catch(() => grille.replaceChildren(el('p', 'ce-vide', 'Règlements indisponibles pour le moment.')));
+    return [titreZoom('Règlements', 'dates importantes et paramètres de la ligue'), grille];
   }
 
   function zoomFiche(){
@@ -2856,8 +2864,8 @@ body{ overflow-x:hidden; }
     const contenu = ({
       calendrier: zoomCalendrier,
       tele: zoomTele,
-      babillard: zoomBabillard,
-      cartable: () => [panneau('p-alignement', rendreAlignement)],
+      reglements: zoomReglements,
+      cartable: zoomCartable,
       ordinateur: zoomOrdinateur,
       postit: zoomPostit,
       cellulaire: zoomCellulaire,
@@ -2875,7 +2883,7 @@ body{ overflow-x:hidden; }
     if(!moisZoom) moisZoom = AUJ.slice(0, 7);
     const [a, m] = moisZoom.split('-').map(Number);
     const nav = el('div', 'gcal-nav');
-    const bouton = (txt, sens) => { const b = el('button', null, txt); b.type = 'button'; b.addEventListener('click', () => { const d = new Date(a, m - 1 + sens, 1); moisZoom = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); remplirZoom('calendrier'); }); return b; };
+    const bouton = (txt, sens) => { const b = el('button', null, txt); b.type = 'button'; b.addEventListener('click', () => { const d = new Date(a, m - 1 + sens, 1); moisZoom = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); remplirZoom('calendrier'); if(!$('scene').hidden) apercuCalendrier($('o-calendrier')); }); return b; };
     nav.append(bouton('‹', -1), el('b', null, NOM_MOIS_CAP(m - 1) + ' ' + a), bouton('›', 1));
     const g = el('div', 'gcal');
     ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach(j => g.append(el('div', 'js', j)));
@@ -3039,7 +3047,11 @@ body{ overflow-x:hidden; }
   });
   $('zoomFermer').addEventListener('click', fermerZoom);
   $('zoomFond').addEventListener('click', fermerZoom);
-  document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && zoomActuel) fermerZoom(); });
+  document.addEventListener('keydown', ev => {
+    if(ev.key === 'Escape' && zoomActuel) fermerZoom();
+    // Le calendrier mural est un div (il contient ses boutons de mois) : Entrée l'ouvre comme les autres objets.
+    if(ev.key === 'Enter' && ev.target.matches('div[data-objet]')) ouvrirZoom(ev.target.dataset.objet, ev.target);
+  });
 
   // Fichier ouvert directement (aperçu, double-clic) : les scripts du site ne peuvent pas se charger.
   if(!/^https?:$/.test(location.protocol) || !window.LNHQ_TEAMS){
