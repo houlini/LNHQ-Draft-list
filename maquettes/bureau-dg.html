@@ -705,7 +705,7 @@ body{ overflow-x:hidden; }
   /* Fenêtre plus étroite que 16:9 (rare sur ordinateur) : les côtés portent le chandail et le calendrier,
      on garde donc toute la largeur ; les marges du haut et du bas montrent le bureau flouté. */
   .ce:has(> .bu-scene:not([hidden])){ position:relative; isolation:isolate; }
-  .ce:has(> .bu-scene:not([hidden]))::before{ content:''; position:absolute; inset:-40px; z-index:-1; background:url("maquettes/bureau-dg-fond.webp?v=3") center / cover;   /* relatif à <base href="/"> */ filter:blur(28px) brightness(0.45); }
+  .ce:has(> .bu-scene:not([hidden]))::before{ content:''; position:absolute; inset:-40px; z-index:-1; background:url("maquettes/bureau-dg-fond.webp?v=4") center / cover;   /* relatif à <base href="/"> */ filter:blur(28px) brightness(0.45); }
 }
 @media (min-width:900px) and (max-aspect-ratio:1672/941){
   .bu-scene{ width:100vw; }
@@ -720,7 +720,7 @@ body{ overflow-x:hidden; }
   transition:filter .25s;
 }
 .bu-objet::before{ content:''; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .25s;
-  background:url("maquettes/bureau-dg-fond.webp?v=3") calc(var(--x) * -1cqw) calc(var(--y) * -0.5628cqw) / 100cqw 56.28cqw no-repeat;
+  background:url("maquettes/bureau-dg-fond.webp?v=4") calc(var(--x) * -1cqw) calc(var(--y) * -0.5628cqw) / 100cqw 56.28cqw no-repeat;
   filter:brightness(1.45) saturate(1.15);
   -webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%); mask-image:radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%); }
 .bu-objet:hover, .bu-objet:focus-visible{ outline:none; z-index:25; filter:brightness(1.15); }
@@ -1568,7 +1568,7 @@ body{ overflow-x:hidden; }
     <!-- La scène : le bureau du DG (mur + bureau). Chaque objet s'ouvre en plein écran. -->
     <!-- Image de fond (1672 × 941) ; chaque zone est placée en % de l'image et affiche les vraies données. -->
     <div class="bu-scene" id="scene" hidden>
-      <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=3" alt="" width="1672" height="941">
+      <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=4" alt="" width="1672" height="941">
       <span class="bu-cube" aria-hidden="true"><span class="bu-contenu" id="o-cube"></span></span>
       <button type="button" class="bu-objet bu-del" data-objet="resultats" aria-label="Bandeau : résultats de la ligue"><div class="bu-ecran" id="o-del"></div></button>
       <button type="button" class="bu-objet bu-chandail" data-objet="fiche" aria-label="Chandail : fiche de l'équipe et du DG"><span class="bu-ecusson" id="o-ecusson"></span><span class="bu-plaque" id="o-plaque" hidden></span></button>
@@ -2597,7 +2597,7 @@ body{ overflow-x:hidden; }
     CAR: ['#CC0000', '#111111', '#FFFFFF'], CHI: ['#CF0A2C', '#FFFFFF', '#111111'], COL: ['#6F263D', '#FFFFFF', '#236192'], CBJ: ['#002654', '#FFFFFF', '#CE1126'],
     DAL: ['#006847', '#FFFFFF', '#111111'], DET: ['#CE1126', '#FFFFFF', '#FFFFFF'], EDM: ['#041E42', '#FF4C00', '#FFFFFF'], FLA: ['#C8102E', '#FFFFFF', '#B9975B'],
     LAK: ['#111111', '#FFFFFF', '#A2AAAD'], MIN: ['#154734', '#DDCBA4', '#A6192E'], MTL: ['#AF1E2D', '#FFFFFF', '#192168'], NSH: ['#FFB81C', '#041E42', '#FFFFFF'],
-    NJD: ['#CE1126', '#111111', '#FFFFFF'], NYI: ['#00539B', '#F47D30', '#FFFFFF'], NYR: ['#0038A8', '#FFFFFF', '#CE1126'], OTT: ['#111111', '#C52032', '#FFFFFF'],
+    NJD: ['#CE1126', '#111111', '#FFFFFF'], NYI: ['#003087', '#FC4C02', '#FFFFFF'], NYR: ['#0038A8', '#FFFFFF', '#CE1126'], OTT: ['#111111', '#C52032', '#FFFFFF'],
     PHI: ['#F74902', '#FFFFFF', '#111111'], PIT: ['#111111', '#FCB514', '#FFFFFF'], SJS: ['#006D75', '#FFFFFF', '#111111'], SEA: ['#001628', '#99D9D9', '#E9072B'],
     STL: ['#002F87', '#FCB514', '#041E42'], TBL: ['#0057B8', '#FFFFFF', '#FFFFFF'], TOR: ['#00205B', '#FFFFFF', '#00205B'], UTA: ['#111111', '#69B3E7', '#FFFFFF'],
     VAN: ['#00205B', '#FFFFFF', '#00843D'], VGK: ['#B4975A', '#FFFFFF', '#333F48'], WSH: ['#C8102E', '#FFFFFF', '#041E42'], WPG: ['#041E42', '#FFFFFF', '#004C97'],
@@ -2613,10 +2613,14 @@ body{ overflow-x:hidden; }
      y + pente·|x − axe| : pente positive = V qui descend des épaules, négative = pointe vers le haut) ;
      p = bande de poitrine [haut, bas, couleur, bordure] (à la hauteur des aisselles, l'écusson par-dessus).
      Sans motif : celui de la photo (deux bandes). */
-  // Ouverture du col sur la photo (px de l'image) : le dos du chandail et la barre du cintre, au-dessus du col arrière.
-  // Bornée en haut par le dessous du cintre (pointe sous le crochet), sur les côtés par le bord intérieur du col.
-  const ENCOLURE = [[94, 214], [100, 212.5], [108, 209], [117, 206.5], [126, 209], [134, 212.5], [140, 214], [137, 220], [134, 224.5],
-    [116, 225], [100, 224.5], [96.5, 220]];
+  /* Les deux vues du chandail (px de l'image) : la photo source (dx, dy = décalage de son coin dans l'image), le col et,
+     de face, l'ouverture du V (on y voit le col arrière, puis l'intérieur du dos). Le dos couvre toute la zone (opaque). */
+  const VUES_CHANDAIL = {
+    face: { src: 'maquettes/bureau-dg-fond.webp?v=4', dx: 0, dy: 0, opaque: false,
+      col: [[86, 206], [146, 206], [116, 248.5]], ouverture: [[95, 209], [138, 209], [116, 239.5]] },
+    dos: { src: 'maquettes/bureau-dg-chandail-dos.webp?v=1', dx: 0, dy: 150, opaque: true,
+      col: [[88, 205], [145, 205], [141, 211], [116, 214.5], [92, 211]], ouverture: null },
+  };
   const MOTIF_PHOTO = { m: '300 b12 c5 b28', h: '366 b10 c5 b22', col: 'b' };
   const MOTIFS = {
     ANA: { m: '300 c2 b12 c2 b4', h: '366 c2 b12 c2 b4', col: 'b' }, BOS: { m: '300 b8 c3 _4 c3 b8', h: '364 b8 c3 _4 c3 b8', col: 'b' },
@@ -2820,7 +2824,7 @@ body{ overflow-x:hidden; }
   // Époques au choix (chandail personnalisé) : une par logo officiel, puis aujourd'hui. [année, libellé]
   const epoquesDe = code => [...(LOGOS_LNH[code] || []).map(l => [l[1], (l[1] - 1) + '-' + (l[2] === l[1] ? String(l[2]).slice(2) : l[2])]), [ANNEE_ACTUELLE, 'Aujourd’hui']];
   // Maquette : le choix du DG est gardé sur cet appareil (la vraie version l'enregistrera dans le Sheet).
-  // { retire: n° dans RETIRES (-1 = personnalisé), joueur, numero, annee }. Les couleurs sont toujours celles du vrai
+  // { retire: n° dans RETIRES (-1 = personnalisé), joueur, numero, annee, vue: 'face' | 'dos' }. Les couleurs sont toujours celles du vrai
   // chandail de l'époque (celles d'anciennes sauvegardes sont ignorées).
   const cleChandail = c => 'bureau_chandail_' + c;
   function chandailDe(code){
@@ -2829,20 +2833,26 @@ body{ overflow-x:hidden; }
     if(perso.joueur != null && perso.retire == null) perso.retire = -1;   // ancien format : nom et numéro libres
     const liste = RETIRES[code] || [], r = perso.retire >= 0 ? liste[perso.retire] : perso.retire == null ? liste[0] : null;
     const annee = r ? milieuCarriere(r) : Number(perso.annee) || ANNEE_ACTUELLE;
-    return Object.assign(chandailEpoque(code, annee), { retire: r ? liste.indexOf(r) : -1, joueur: r ? r[0] : perso.joueur || '', numero: r ? r[1] : perso.numero || '', annee });
+    // Vue : de dos (nom et numéro) par défaut pour un joueur retiré, de face (logo) sinon.
+    const vue = VUES_CHANDAIL[perso.vue] ? perso.vue : r ? 'dos' : 'face';
+    return Object.assign(chandailEpoque(code, annee), { retire: r ? liste.indexOf(r) : -1, joueur: r ? r[0] : perso.joueur || '', numero: r ? r[1] : perso.numero || '', annee, vue });
   }
   const luminance = hex => { const [r, g, b] = canaux(hex); return r * 0.3 + g * 0.59 + b * 0.11; };
   // La tasse prend la couleur du chandail ; un chandail noir donne une tasse d'une couleur d'accent (pas le blanc).
   const couleurTasse = ch => luminance(ch.corps) >= 40 ? ch.corps : [ch.bandes, ch.ligne].find(c => luminance(c) >= 40 && luminance(c) < 225) || ch.corps;
   const SURFACES = {
-    'o-ecusson': { sorte: 'tissu', zone: [16, 198, 202, 216],
+    // Zone = l'intérieur du cadre (où la photo du dos remplace celle du fond).
+    'o-ecusson': { sorte: 'tissu', zone: [12, 158, 208, 254],
       // Contour du chandail (manches comprises), relevé sur la photo ; en haut, le cintre en bois est exclu par sa teinte chaude.
-      // Les épaules suivent le dessus du cintre (son rebord est recouvert de tissu) jusqu'à son bout (x 58 et 174),
-      // puis tombent vers le haut des manches.
-      poly: [[84, 209], [146, 209], [160, 217], [175, 225.5], [180, 240], [187, 255], [195, 280], [204, 320], [208, 360], [209, 406], [170, 408], [169, 413],
-        [61, 413], [60, 408], [23, 406], [25, 360], [29, 320], [38, 280], [42, 255], [51, 240], [57, 225.5], [70, 217.5]],
-      // Poitrine : axe x 116,5, entre le bas du col (y 242) et la bande de taille (y 370).
+      // Le chandail gris uni de la photo (face dans le fond, dos dans sa propre image) : son contour est détecté sur la
+      // photo (tissu clair sur le casier sombre), dans cette enveloppe large qui écarte le crochet et les reflets du cadre.
+      enveloppe: [[84, 203], [148, 203], [180, 222], [193, 248], [202, 300], [210, 350], [216, 396], [206, 404], [174, 414], [58, 414], [26, 404], [16, 396],
+        [22, 350], [30, 300], [39, 248], [52, 222]],
+      // Poitrine : axe x 116,5, sous la pointe du col en V (y 248), au-dessus de la bande de taille (y 366).
       logo: { cx: 116.5, cy: 294, larg: 60, haut: 60 },
+      // Dos, aux proportions d'un chandail de la LNH (≈ 84 cm du col au bas = 203 px) : lettres du nom de 7,5 cm (≈ 17 px)
+      // en arc, à 6 cm sous le col ; chiffres de 30 cm (≈ 66 px) juste dessous, presque toute la largeur du dos.
+      dos: { nom: { cx: 116.5, cy: 232, larg: 100, haut: 31 }, numero: { cx: 116.5, cy: 297, haut: 87 } },
       // Numéros sur le haut des manches (vues de biais, donc écrasés).
       manches: [{ cx: 54, cy: 282, ecrase: 0.58 }, { cx: 181, cy: 282, ecrase: 0.58 }] },
     'o-tasse': { sorte: 'tasse', zone: [34, 676, 134, 90],
@@ -2854,15 +2864,16 @@ body{ overflow-x:hidden; }
   };
   const dansPoly = (p, x, y) => { let d = false; for(let i = 0, j = p.length - 1; i < p.length; j = i++){ if((p[i][1] > y) !== (p[j][1] > y) && x < (p[j][0] - p[i][0]) * (y - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0]) d = !d; } return d; };
   const lisse = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-  const FOND = 'maquettes/bureau-dg-fond.webp?v=3';
+  const FOND = 'maquettes/bureau-dg-fond.webp?v=4';
   const chargerImage = src => new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = src; });
+  const images = {};
+  const imageDe = src => images[src] ||= chargerImage(src);
   const pixels = (img, x, y, w, h, W, H) => {
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H }), g = c.getContext('2d', { willReadFrequently: true });
     g.imageSmoothingQuality = 'high';
     g.drawImage(img, x, y, w, h, 0, 0, W, H);
     return g.getImageData(0, 0, W, H);
   };
-  let fondImg;
   // Échantillon bilinéaire (couleurs prémultipliées par l'alpha, pour éviter les franges sur les bords du logo).
   function echantillon(d, x, y){
     const { width: w, height: h, data } = d;
@@ -2923,6 +2934,31 @@ body{ overflow-x:hidden; }
     g.fillStyle = fond; g.fillText(numero, c.width / 2, H / 2 + taille * 0.04);
     return g.getImageData(0, 0, c.width, c.height);
   }
+  // Nom du dos à plat : capitales en arc (bombé vers le haut), rapetissées pour tenir dans larg × haut, avec contour.
+  async function nomAPlat(nom, l, K, fond, contour){
+    await document.fonts.load('700 20px Oswald').catch(() => {});
+    const W = Math.round(l.larg * K), H = Math.round(l.haut * K);
+    const c = Object.assign(document.createElement('canvas'), { width: W, height: H }), g = c.getContext('2d', { willReadFrequently: true });
+    let taille = H * 0.66;
+    const police = () => { g.font = `700 ${taille}px Oswald, sans-serif`; };
+    const largeurs = () => [...nom].map(x => g.measureText(x).width + taille * 0.08);
+    police();
+    while(largeurs().reduce((s, x) => s + x, 0) > W * 0.94 && taille > H * 0.3){ taille *= 0.94; police(); }
+    const lg = largeurs(), total = lg.reduce((s, x) => s + x, 0), R = W * 1.5, cy = H * 0.86 + R;
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.lineJoin = 'round'; g.lineWidth = taille * 0.16;
+    // Deux passes : tous les contours, puis tous les pleins (une lettre ne mord pas sur la précédente).
+    ['stroke', 'fill'].forEach(passe => {
+      let a = -total / 2 / R;
+      [...nom].forEach((x, k) => {
+        const ang = a + lg[k] / 2 / R;
+        g.save(); g.translate(W / 2 + R * Math.sin(ang), cy - R * Math.cos(ang)); g.rotate(ang);
+        if(passe === 'stroke'){ g.strokeStyle = contour; g.strokeText(x, 0, 0); } else { g.fillStyle = fond; g.fillText(x, 0, 0); }
+        g.restore();
+        a += lg[k] / R;
+      });
+    });
+    return g.getImageData(0, 0, W, H);
+  }
   // cible : un autre élément où peindre (aperçu des 32 chandails), sans le placer dans la scène.
   async function peindreSurface(id, code, cible, chImpose){
     const box = cible || $(id), s = SURFACES[id], ch = chImpose || chandailDe(code);
@@ -2932,42 +2968,59 @@ body{ overflow-x:hidden; }
     const [zx, zy, zw, zh] = s.zone, K = 3, W = zw * K, H = zh * K;
     // Placé en cqw (1 px de l'image = 1/16,72 cqw), relatif à la zone parente quand elle a --x / --y.
     if(!cible) box.style.cssText = `left:calc(${zx / 16.72}cqw - var(--x, 0) * 1cqw); top:calc(${zy / 16.72}cqw - var(--y, 0) * 0.5628cqw); width:${zw / 16.72}cqw; height:${zh / 16.72}cqw;`;
-    fondImg ||= chargerImage(FOND);
     const tissu = s.sorte === 'tissu', tasse = couleurTasse(ch);
+    const vue = tissu ? VUES_CHANDAIL[ch.vue] || VUES_CHANDAIL.face : null, dos = tissu && vue === VUES_CHANDAIL.dos;
+    const source = vue || { src: FOND, dx: 0, dy: 0 };
     // Numéros des manches : couleur des bandes (sinon blanc ou noir, pour trancher sur le corps), contour de la ligne.
     const ecart = (a, b) => Math.abs(luminance(a) - luminance(b));
     const remplissage = ecart(ch.bandes, ch.corps) > 60 ? ch.bandes : ecart('#FFFFFF', ch.corps) > 60 ? '#F8F9FA' : '#111111';
     const contour = ecart(ch.ligne, remplissage) > 40 ? ch.ligne : luminance(remplissage) > 128 ? '#111111' : '#FFFFFF';
     // Avec une bande de poitrine à la hauteur des numéros, ils montent au-dessus d'elle.
     const manches = tissu ? s.manches.map(m => ch.poitrine && ch.poitrine[0] > m.cy - 12 ? Object.assign({}, m, { cy: Math.min(m.cy, ch.poitrine[0] - 12) }) : m) : [];
-    const [fond, plat, ...numeros] = await Promise.all([fondImg, logoAPlat(tissu ? ch.logo : logoSrc(code), s.logo, K, texteSur(tasse)),
-      ...(tissu && ch.numero ? manches.map(() => numeroAPlat(String(ch.numero), 18, K, remplissage, contour)) : [])]);
+    // Dos : le nom (de famille) en arc et le grand numéro, à la place du logo.
+    const nomDos = dos && ch.joueur ? (ch.joueur.split(' ').slice(1).join(' ') || ch.joueur).toLocaleUpperCase('fr-CA') : '';
+    const [fond, plat, imgNom, imgNumero, ...numeros] = await Promise.all([imageDe(source.src), logoAPlat(tissu ? ch.logo : logoSrc(code), s.logo, K, texteSur(tasse)),
+      nomDos ? nomAPlat(nomDos, s.dos.nom, K, remplissage, contour) : null,
+      dos && ch.numero ? numeroAPlat(String(ch.numero), s.dos.numero.haut, K, remplissage, contour) : null,
+      ...(tissu && ch.numero ? manches.map(() => numeroAPlat(String(ch.numero), 24, K, remplissage, contour)) : [])]);
     if(box.dataset.cle !== cle) return;
-    // La photo : luminance brute (texture), fine (plis, reflets) et large (éclairage) ; teinte neutre ou chaude.
-    const photo = pixels(fond, zx, zy, zw, zh, W, H), d = photo.data, L = new Float32Array(W * H), rap = new Float32Array(W * H);
-    for(let i = 0; i < W * H; i++){ L[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11; rap[i] = (d[i * 4 + 2] + 1) / (d[i * 4] + 1); }
-    const fin = flou(L, W, H, K), large = flou(L, W, H, 10 * K), neutre = flou(rap, W, H, 2 * K);
+    // La photo : luminance brute (texture), fine (plis, reflets) et large (éclairage).
+    const photo = pixels(fond, zx - source.dx, zy - source.dy, zw, zh, W, H), d = photo.data, L = new Float32Array(W * H);
+    for(let i = 0; i < W * H; i++) L[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11;
+    const fin = flou(L, W, H, K), large = flou(L, W, H, 10 * K);
     const out = new ImageData(W, H), o = out.data;
-    const corpsC = canaux(ch.corps), bandesC = canaux(ch.bandes), ligneC = canaux(ch.ligne), tasseC = canaux(tasse), chaud = [1, 0.93, 0.84];
+    const corpsC = canaux(ch.corps), bandesC = canaux(ch.bandes), ligneC = canaux(ch.ligne), tasseC = canaux(tasse);
+    // Teinte de la lumière : chaude sur la tasse (lampe du bureau) ; presque neutre sur le chandail, dont la photo grise porte
+    // déjà l'éclairage (une teinte forte virerait les bleus au sarcelle et pousserait les orangés).
+    const chaud = tissu ? [1, 0.98, 0.95] : [1, 0.93, 0.84];
+    // Tissu dans un cadre éclairé à la lampe : couleurs un peu adoucies (10 % vers leur gris).
+    const terne = c => { const y = 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]; return c.map(v => v * 0.9 + y * 0.1); };
     const poit = ch.poitrine, poitC = poit && canaux(poit[2]), bordC = poit && canaux(poit[3]);
-    // Tissu : le motif de l'équipe remplace les bandes de la photo. L'éclairage vient de la photo, ramené à sa propre
-    // couleur : chaque pixel est comparé à la moyenne de sa famille (tissu noir ≈ 18, bandes blanches ≈ 175), lissée
-    // sur un pixel pour que les bords des bandes de la photo ne laissent pas de trace.
-    let base = null, palette = null, motif = null, masque = null, encolure = null;
+    // Tissu : le chandail gris uni de la photo est repeint au motif de l'équipe ; ses plis et son éclairage viennent du
+    // rapport entre chaque pixel et le gris moyen du tissu.
+    let palette = null, motif = null, masque = null, encolure = null, gris = 1;
     if(tissu){
-      const pale = new Float32Array(W * H);
-      for(let i = 0; i < W * H; i++) pale[i] = L[i] > 70 ? 1 : 0;
-      const p = flou(pale, W, H, Math.round(K * 0.8));
-      base = new Float32Array(W * H);
-      for(let i = 0; i < W * H; i++) base[i] = 18 + 157 * p[i];
-      palette = { a: corpsC, b: bandesC, c: ligneC };
-      // Masque du contour, adouci sur un pixel de l'image (les bords du chandail restent nets mais sans escalier).
-      const dedans = new Float32Array(W * H);
-      for(let py = 0; py < H; py++) for(let px = 0; px < W; px++) dedans[py * W + px] = dansPoly(s.poly, zx + px / K, zy + py / K) ? 1 : 0;
-      masque = flou(dedans, W, H, Math.round(K * 0.7));
-      const ouvert = new Float32Array(W * H);
-      for(let py = 0; py < H; py++) for(let px = 0; px < W; px++) ouvert[py * W + px] = dansPoly(ENCOLURE, zx + px / K, zy + py / K) ? 1 : 0;
-      encolure = flou(ouvert, W, H, Math.round(K * 0.6));
+      palette = { a: terne(corpsC), b: terne(bandesC), c: terne(ligneC) };
+      // Contour : le tissu clair sur le casier sombre, dans l'enveloppe. Ouverture : une érosion (flou puis seuil haut)
+      // efface les traits minces (fil du cintre, reflets), une dilatation (flou puis seuil bas) rend le bord un peu au-delà
+      // du tissu gris (aucun liseré gris ne reste visible), puis le bord est adouci.
+      const brut = new Float32Array(W * H);
+      for(let py = 0; py < H; py++) for(let px = 0; px < W; px++){
+        const i = py * W + px; brut[i] = dansPoly(s.enveloppe, zx + px / K, zy + py / K) ? lisse(45, 90, L[i]) : 0;
+      }
+      const erode = flou(brut, W, H, Math.round(K * 1.2));
+      for(let i = 0; i < W * H; i++) erode[i] = lisse(0.6, 0.9, erode[i]);
+      const dilate = flou(erode, W, H, Math.round(K * 1.6));
+      for(let i = 0; i < W * H; i++) dilate[i] = lisse(0.08, 0.35, dilate[i]);
+      masque = flou(dilate, W, H, Math.round(K * 0.4));
+      let somme = 0, n = 0;
+      for(let i = 0; i < W * H; i++) if(masque[i] > 0.95){ somme += L[i]; n++; }
+      gris = somme / (n || 1);
+      if(vue.ouverture){
+        const ouvert = new Float32Array(W * H);
+        for(let py = 0; py < H; py++) for(let px = 0; px < W; px++) ouvert[py * W + px] = dansPoly(vue.ouverture, zx + px / K, zy + py / K) ? 1 : 0;
+        encolure = flou(ouvert, W, H, Math.round(K * 0.5));
+      }
       const mo = ch.motif;
       const [pente, ...chevron] = String(mo.v || '').trim().split(/\s+/);
       motif = { m: bandesMotif(mo.m), h: bandesMotif(mo.h), col: mo.col || 'b', e: mo.e || '', ey: mo.ey || 250, ek: mo.ek || 0, ec: mo.ec ?? 0.005, eb: mo.eb || '',
@@ -2975,9 +3028,8 @@ body{ overflow-x:hidden; }
     }
     // Couleur du motif au point (ix, iy) de l'image. Manches : à gauche de x 62 et à droite de x 169, sous l'épaule ;
     // leurs bandes descendent vers le corps (pente plus forte vers le poignet), mesurées au bord extérieur.
-    const couleurMotif = (ix, iy, paleIci) => {
-      if(paleIci && iy > 233 && iy < 250 && Math.abs(ix - 117) < 9) paleIci = false;        // étiquette au fond du V : du tissu
-      if(iy < 252 && paleIci && Math.abs(ix - 116) < 36) return palette[motif.col];          // col en V (pâle sur la photo)
+    const couleurMotif = (ix, iy) => {
+      if(dansPoly(vue.col, ix, iy)) return palette[motif.col];                                 // col (en V de face, rond de dos)
       if(motif.e){                                                                             // empiècement : descend sur les épaules
         const dx = Math.abs(ix - 116), lim = motif.ey + motif.ek * dx + motif.ec * dx * dx;
         if(iy < lim) return palette[motif.e];
@@ -3003,25 +3055,21 @@ body{ overflow-x:hidden; }
       const i = py * W + px, ix = zx + px / K, iy = zy + py / K;
       let w, rgb;
       if(tissu){
-        // Cintre en bois (clair et chaud ; le tissu noir, même éclairé en orangé par la lampe, n'en est pas). Il ne reste
-        // visible qu'au-dessus du col (crochet) ; son rebord sur les épaules et sa barre dans l'encolure sont recouverts.
-        const cintre = iy < 240 ? (1 - lisse(0.42, 0.62, neutre[i])) * lisse(45, 80, L[i]) : 0;
-        const ouvert = encolure[i], crochet = (1 - ouvert) * lisse(83, 88, ix) * (1 - lisse(147, 152, ix));
-        w = Math.max(masque[i] * (1 - crochet * cintre), ouvert);
+        // Dos : sa photo couvre toute la zone (fondue sur 3 px aux bords, dans le noir du cadre) ; de face, le fond suffit.
+        const m = masque[i], bordZone = vue.opaque ? lisse(0, 3, Math.min(ix - zx, zx + zw - ix, iy - zy, zy + zh - iy)) : 0;
+        w = Math.max(m, bordZone);
         if(w < 0.02) continue;
-        // Encolure : l'intérieur du dos, dans l'ombre (plus sombre en haut), d'un ton uni : la barre du cintre n'y paraît plus.
-        const dos = palette.a.map((c, k) => c * (0.26 + 0.18 * lisse(207, 225, iy)) * chaud[k]);
-        if(ouvert > 0.98) rgb = dos;
-        else{
-          // Plis et reflets : écart à la moyenne de la famille (adouci sur le tissu noir, où le grain de la photo est fort).
-          // Sur les bords des bandes de la photo (pa entre 0 et 1), le rapport n'est pas fiable : on y garde l'éclairage moyen.
-          // Le rebord du cintre et l'étiquette au fond du V n'ajoutent pas de reflet.
-          const etiquette = ix > 108 && ix < 126 && iy > 233 && iy < 250;
-          const pa = (base[i] - 18) / 157, bord = Math.min(1, 4 * pa * (1 - pa) * 1.6);
-          const r = etiquette ? 1 : Math.min(1.9 - 0.85 * cintre, Math.max(0.6, L[i] / base[i]));
-          const ombre = 0.86 * (Math.pow(r, 0.55 + 0.35 * pa) * (1 - bord) + bord);
-          rgb = couleurMotif(ix, iy, pa > 0.5 && cintre < 0.5).map((c, k) => Math.min(255, c * ombre * chaud[k]) * (1 - ouvert) + dos[k] * ouvert);
+        // Plis et reflets : rapport au gris moyen du tissu ; un léger lustre sur les reflets (visible sur les tissus foncés).
+        const r = Math.min(1.45, Math.max(0.3, L[i] / gris)), lustre = Math.max(0, r - 1.05) * 55;
+        const ombre = 0.8 * Math.pow(r, 0.85);
+        let tissuRgb = couleurMotif(ix, iy).map((c, k) => Math.min(255, c * ombre * chaud[k] + lustre));
+        // Ouverture du V : le col arrière en haut, puis l'intérieur du dos, dans l'ombre.
+        const ouvert = encolure ? encolure[i] : 0;
+        if(ouvert > 0){
+          const dedans = (iy < 213.5 ? palette[motif.col] : palette.a).map((c, k) => c * (iy < 213.5 ? 0.75 : 0.5 + 0.15 * lisse(214, 236, iy)) * ombre * chaud[k] + lustre * 0.5);
+          tissuRgb = tissuRgb.map((c, k) => c * (1 - ouvert) + dedans[k] * ouvert);
         }
+        rgb = m >= w ? tissuRgb : tissuRgb.map((c, k) => (c * m + d[i * 4 + k] * (w - m)) / w);
       }else{
         const sin = Math.max(-1, Math.min(1, (ix - s.logo.cx) / s.logo.rayon)), phi = Math.asin(sin), cosA = Math.cos(phi);
         const yH = s.haut[0] + s.haut[1] * cosA, yB = s.bas[0] + s.bas[1] * cosA;
@@ -3044,21 +3092,21 @@ body{ overflow-x:hidden; }
     };
     const l = s.logo, x0 = Math.max(0, Math.floor((l.cx - l.larg / 2 - zx - 4) * K)), x1 = Math.min(W, Math.ceil((l.cx + l.larg / 2 - zx + 4) * K));
     const y0 = Math.max(0, Math.floor((l.cy - l.haut / 2 - zy - 6) * K)), y1 = Math.min(H, Math.ceil((l.cy + l.haut / 2 - zy + 6) * K));
-    let moy = 0, nMoy = 0; for(let py = y0; py < y1; py++) for(let px = x0; px < x1; px++){ moy += large[py * W + px]; nMoy++; } moy /= nMoy || 1;
     // Tissu : brodé (bord éclairé en haut, ombré en bas), ombre douce sur le tissu, trame ; les plis le décalent.
     const broder = (i, px, py, img, u, v, cx) => {
       const pli = Math.min(1.35, Math.max(0.7, fin[i] / (large[i] || 1)));
       const gx = px > 0 && px < W - 1 ? (fin[i + 1] - fin[i - 1]) / (large[i] || 1) : 0, gy = py > 0 && py < H - 1 ? (fin[i + W] - fin[i - W]) / (large[i] || 1) : 0;
       u += gx * 2.5 * K * cx; v += gy * 2.5 * K;
       const p = echantillon(img, u, v);
-      let lum = 0.74 * Math.pow(large[i] / moy, 0.7) * Math.pow(pli, 1.7);
+      // Même éclairage que le tissu (rapport au gris moyen) : les plis et les ombres passent sur l'écusson.
+      let lum = 0.84 * Math.pow(Math.min(1.45, Math.max(0.3, L[i] / gris)), 0.85) * Math.pow(pli, 0.6);
       lum *= (1 - 0.35 * (echantillon(img, u, v - 0.8 * K)[3] - echantillon(img, u, v + 0.8 * K)[3])) * (1 + 0.05 * Math.sin((px + py) * 2.1));
-      const ombre = echantillon(img, u - 0.4 * K, v - 1.2 * K)[3] * 0.45;
+      const ombre = echantillon(img, u - 0.4 * K, v - 1.2 * K)[3] * 0.25;
       if(p[3] < ombre) poser(i, [0, 0, 0], ombre - p[3]);
-      if(p[3] > 0) poser(i, p.slice(0, 3).map((c, k) => Math.min(255, c * lum * [1, 0.9, 0.76][k])), p[3]);
+      if(p[3] > 0) poser(i, terne(p.slice(0, 3)).map((c, k) => Math.min(255, c * lum * chaud[k])), p[3]);
     };
-    // 2. Le logo (et « LNHQ » sur la tasse).
-    for(let py = y0; py < y1; py++) for(let px = x0; px < x1; px++){
+    // 2. Le logo (et « LNHQ » sur la tasse) ; pas de logo au dos.
+    if(!dos) for(let py = y0; py < y1; py++) for(let px = x0; px < x1; px++){
       const i = py * W + px, ix = zx + px / K, iy = zy + py / K;
       if(tissu){ broder(i, px, py, plat, (ix - l.cx + l.larg / 2) * K, (iy - l.cy + l.haut / 2) * K, 1); continue; }
       // Cylindre vu un peu de haut : x = axe + r·sin φ ; les lignes du logo s'arrondissent (b = 12 % du rayon).
@@ -3071,30 +3119,34 @@ body{ overflow-x:hidden; }
       const lum = (0.24 + 0.56 * Math.max(0, Math.cos(phi - 0.45))) * Math.pow(cos, 0.6), spec = Math.min(1, Math.max(0, fin[i] - 10) / 90);
       poser(i, p.slice(0, 3).map((c, k) => { const b = Math.min(255, c * lum * [1, 0.9, 0.76][k]); return b + (255 - b) * spec; }), p[3]);
     }
-    // 3. Le numéro du chandail retiré sur les manches.
-    numeros.forEach((img, n) => {
-      const m = manches[n], wN = img.width / K, hN = img.height / K;
+    // 3. Le numéro du chandail retiré sur les manches ; au dos, le nom et le grand numéro.
+    const coudre = (img, m) => {
+      const wN = img.width / K, hN = img.height / K;
       for(let py = Math.floor((m.cy - hN / 2 - zy - 2) * K); py < Math.ceil((m.cy + hN / 2 - zy + 2) * K); py++)
         for(let px = Math.floor((m.cx - wN * m.ecrase / 2 - zx - 2) * K); px < Math.ceil((m.cx + wN * m.ecrase / 2 - zx + 2) * K); px++){
           if(px < 0 || py < 0 || px >= W || py >= H) continue;
           const ix = zx + px / K, iy = zy + py / K;
           broder(py * W + px, px, py, img, ((ix - m.cx) / m.ecrase + wN / 2) * K, (iy - m.cy + hN / 2) * K, 1 / m.ecrase);
         }
-    });
+    };
+    numeros.forEach((img, n) => coudre(img, manches[n]));
+    if(imgNom) coudre(imgNom, Object.assign({ ecrase: 1 }, s.dos.nom));
+    if(imgNumero) coudre(imgNumero, Object.assign({ ecrase: 1 }, s.dos.numero));
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
     c.getContext('2d').putImageData(out, 0, 0);
     box.replaceChildren(c);
     if(tissu && !cible) plaqueRetire(ch);
   }
   // Aperçu des chandails pour valider couleurs, motifs et logos d'un coup d'œil : ?chandails=1 (le chandail affiché de chaque
-  // équipe), ?chandails=actuels (les chandails d'aujourd'hui), ?chandails=tous (chaque joueur retiré, dans son chandail d'époque).
+  // équipe), ?chandails=actuels (les chandails d'aujourd'hui), ?chandails=tous (chaque joueur retiré, dans son chandail d'époque),
+  // ?chandails=dos (les mêmes, de dos).
   async function apercuDesChandails(sorte){
     const fond = el('div', 'ch-apercu'), grille = el('div', 'ch-grille');
-    fond.append(el('h2', null, sorte === 'tous' ? 'Tous les chandails retirés' : sorte === 'actuels' ? 'Chandails actuels des 32 équipes' : 'Chandail du cadre de chaque équipe'), grille);
+    fond.append(el('h2', null, sorte === 'tous' ? 'Tous les chandails retirés' : sorte === 'dos' ? 'Tous les chandails retirés, de dos' : sorte === 'actuels' ? 'Chandails actuels des 32 équipes' : 'Chandail du cadre de chaque équipe'), grille);
     const [zx, zy, zw, zh] = SURFACES['o-ecusson'].zone;
     const cartes = [];
     [...EQUIPES.keys()].sort().forEach(code => {
-      const liste = sorte === 'tous' ? (RETIRES[code] || []).map(r => Object.assign(chandailEpoque(code, milieuCarriere(r)), { joueur: r[0], numero: r[1], annee: milieuCarriere(r) }))
+      const liste = sorte === 'tous' || sorte === 'dos' ? (RETIRES[code] || []).map(r => Object.assign(chandailEpoque(code, milieuCarriere(r)), { joueur: r[0], numero: r[1], annee: milieuCarriere(r), vue: sorte === 'dos' ? 'dos' : 'face' }))
         : sorte === 'actuels' ? [Object.assign(chandailEpoque(code, ANNEE_ACTUELLE), { joueur: '', numero: '', annee: ANNEE_ACTUELLE })] : [chandailDe(code)];
       liste.forEach(ch => cartes.push([code, ch]));
     });
@@ -4473,7 +4525,11 @@ body{ overflow-x:hidden; }
     epoquesDe(equipe).forEach(([a, lib]) => { const o = el('option', null, lib); o.value = a; epoque.append(o); });
     epoque.value = String(ch.retire >= 0 ? ANNEE_ACTUELLE : [...epoque.options].map(o => Number(o.value)).filter(a => a <= ch.annee).pop() || ANNEE_ACTUELLE);
     const libres = [champ('Joueur', joueur, 'fc-libre'), champ('Numéro', numero, 'fc-libre'), champ('Époque du chandail', epoque, 'fc-libre')];
-    f.append(champ('Chandail retiré', choix, 'fc-choix'), ...libres);
+    // Vue dans le cadre : de face (logo de l'époque) ou de dos (nom et numéro).
+    const vue = el('select');
+    [['dos', 'De dos : nom et numéro'], ['face', 'De face : logo']].forEach(([v, lib]) => { const o = el('option', null, lib); o.value = v; vue.append(o); });
+    vue.value = ch.vue;
+    f.append(champ('Chandail retiré', choix, 'fc-choix'), ...libres, champ('Vue dans le cadre', vue, 'fc-choix'));
     // Les couleurs ne se choisissent pas : c'est toujours le vrai chandail de l'époque.
     const majChoix = () => { libres.forEach(l => { l.hidden = choix.value !== '-1'; }); };
     choix.addEventListener('change', majChoix);
@@ -4487,6 +4543,7 @@ body{ overflow-x:hidden; }
       ev.preventDefault();
       const retire = Number(choix.value), n = numero.value.replace(/\D/g, '').slice(0, 2);
       const v = retire >= 0 ? { retire } : { retire, joueur: joueur.value.trim(), numero: n, annee: Number(epoque.value) };
+      v.vue = vue.value;
       try{ localStorage.setItem(cleChandail(equipe), JSON.stringify(v)); }catch(e){}
       toast('Chandail retiré enregistré.'); appliquer();
     });
