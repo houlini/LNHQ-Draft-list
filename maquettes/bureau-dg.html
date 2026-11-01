@@ -684,18 +684,30 @@ body{ overflow-x:hidden; }
 @media (min-width:900px){
   .app:has(.bu-scene:not([hidden])) > .ce-maquette,
   .app:has(.bu-scene:not([hidden])) > site-header{ display:none; }
+  /* Barre compacte, au-dessus du bandeau lumineux (dans la vitre de l'aréna). */
   .app:has(.bu-scene:not([hidden])) > .ce-bande{
-    position:fixed; top:10px; left:10px; z-index:300; width:auto; margin:0; padding:6px; gap:6px; flex-wrap:nowrap;
+    position:fixed; top:4px; left:10px; z-index:300; width:auto; margin:0; padding:4px; gap:6px; flex-wrap:nowrap;
     border-radius:12px; background:rgba(12,14,18,0.78); backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,0.45);
     opacity:0.3; transition:opacity .2s; }
   .app:has(.bu-scene:not([hidden])) > .ce-bande:hover, .app:has(.bu-scene:not([hidden])) > .ce-bande:focus-within{ opacity:1; }
-  .app:has(.bu-scene:not([hidden])) .ce-equipe-btn{ min-height:34px; font-size:14px; padding:0 12px 0 8px; }
-  .app:has(.bu-scene:not([hidden])) .ce-equipe-btn img{ width:24px; height:24px; }
-  .app:has(.bu-scene:not([hidden])) .ce-seg button{ min-height:30px; padding:0 10px; color:#fff; }
-  .app:has(.bu-scene:not([hidden])) .ce-retour{ display:inline-flex; align-items:center; padding:0 10px; min-height:34px; border-radius:9px; color:#fff; font-weight:700; font-size:13px; text-decoration:none; background:rgba(255,255,255,0.1); }
+  .app:has(.bu-scene:not([hidden])) .ce-equipe-btn{ min-height:28px; font-size:14px; padding:0 12px 0 8px; }
+  .app:has(.bu-scene:not([hidden])) .ce-equipe-btn img{ width:22px; height:22px; }
+  .app:has(.bu-scene:not([hidden])) .ce-seg{ padding:2px; }
+  .app:has(.bu-scene:not([hidden])) .ce-seg button{ min-height:24px; padding:0 10px; color:#fff; }
+  .app:has(.bu-scene:not([hidden])) .ce-retour{ display:inline-flex; align-items:center; padding:0 10px; min-height:28px; border-radius:9px; color:#fff; font-weight:700; font-size:13px; text-decoration:none; background:rgba(255,255,255,0.1); }
   .app:has(.bu-scene:not([hidden])) .ce-tag-maquette{ display:inline-flex; align-items:center; padding:0 8px; border-radius:6px; background:#FFD43B; color:#12181F; font-size:10.5px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; }
-  .ce:has(> .bu-scene:not([hidden])){ padding:0; max-width:none; gap:0; justify-content:center; align-items:center; background:#050505; overflow:hidden; }
-  .bu-scene{ width:min(100vw, 100vh * 1.7769); width:min(100vw, 100dvh * 1.7769); border-radius:0; box-shadow:none; }
+  .app:has(.bu-scene:not([hidden])) > main{ padding:0; overflow:hidden; }
+  .ce:has(> .bu-scene:not([hidden])){ height:100%; padding:0; max-width:none; gap:0; justify-content:center; align-items:center; background:#050505; overflow:hidden; }
+  /* Couvre toute la fenêtre, sans bandes noires : l'image dépasse en haut et en bas (vitre de l'aréna,
+     rebord du bureau) et rien de cliquable n'est coupé. */
+  .bu-scene{ flex:none; margin:0; width:max(100vw, 100vh * 1.7769); width:max(100vw, 100dvh * 1.7769); border-radius:0; box-shadow:none; }
+  /* Fenêtre plus étroite que 16:9 (rare sur ordinateur) : les côtés portent le chandail et le calendrier,
+     on garde donc toute la largeur ; les marges du haut et du bas montrent le bureau flouté. */
+  .ce:has(> .bu-scene:not([hidden])){ position:relative; isolation:isolate; }
+  .ce:has(> .bu-scene:not([hidden]))::before{ content:''; position:absolute; inset:-40px; z-index:-1; background:url("maquettes/bureau-dg-fond.webp?v=2") center / cover;   /* relatif à <base href="/"> */ filter:blur(28px) brightness(0.45); }
+}
+@media (min-width:900px) and (max-aspect-ratio:1672/941){
+  .bu-scene{ width:100vw; }
 }
 
 /* ---------- Zones : survol = halo doré + étiquette ---------- */
@@ -745,7 +757,7 @@ body{ overflow-x:hidden; }
 @keyframes defile{ to{ transform:translateX(-50%); } }
 
 /* ---------- Chandail : écusson de l'équipe ---------- */
-.bu-ecusson{ position:absolute; left:50%; top:33%; width:4cqw; height:4cqw; translate:-50% -50%; display:flex; }
+.bu-ecusson{ position:absolute; left:49.5%; top:41%; width:3.6cqw; height:3.6cqw; translate:-50% -50%; display:flex; }   /* centre de la poitrine */
 .bu-ecusson img{ width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 0.1cqw 0.15cqw rgba(0,0,0,0.6)); }
 
 /* ---------- Écrans (fond commun) ---------- */
@@ -896,17 +908,20 @@ body{ overflow-x:hidden; }
 
 /* ---------- Cartable : l'alignement au marqueur sur les deux pages ---------- */
 /* Pages à plat sur le bureau : chacune est déformée en perspective par JS (voir PERSPECTIVES). */
-.bu-page{ position:absolute; left:0; top:0; height:7.5cqw; transform-origin:0 0; display:flex; flex-direction:column; padding:0.35cqw 0.5cqw 0.4cqw; font-family:var(--marqueur); color:#1a3570; }
-.bu-page.gauche{ width:13.6cqw; background:rgba(253,253,251,0.9); }
-.bu-page.droite{ width:12.7cqw; background:repeating-linear-gradient(180deg, #fdfdfb 0 1.22cqw, #c5d8ef 1.22cqw 1.3cqw); }
-.cart-titre{ display:flex; justify-content:space-between; align-items:baseline; font-size:1.05cqw; line-height:1.2; color:#c92a2a; }
-.cart-titre small{ font:700 0.5cqw 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:#868e96; }
+/* Écrit directement sur les pages de la photo (patinoire à gauche, feuille lignée à droite) : pas de fond,
+   l'encre se mêle au papier (multiply) et chaque nom penche un peu, comme écrit à la main. */
+.bu-page{ position:absolute; left:0; top:0; height:7.5cqw; transform-origin:0 0; display:flex; flex-direction:column; padding:0.35cqw 0.5cqw 0.4cqw; font-family:var(--marqueur); color:#1b2f6b; mix-blend-mode:multiply; }
+.bu-page.gauche{ width:13.6cqw; }
+.bu-page.droite{ width:12.7cqw; padding-left:1.4cqw; }   /* à droite de la marge rouge de la feuille */
+.cart-titre{ display:flex; justify-content:space-between; align-items:baseline; font-size:1.05cqw; line-height:1.2; color:#b02525; rotate:-1.2deg; }
+.cart-titre small{ font:400 0.62cqw var(--ecrit); color:#495057; }
+.cart-nom:nth-child(3n){ rotate:-1.6deg; } .cart-nom:nth-child(3n+1){ rotate:1.1deg; translate:0 0.05cqw; } .cart-nom:nth-child(3n+2){ rotate:-0.4deg; translate:0 -0.06cqw; }
 .cart-ligne{ flex:1; display:grid; grid-template-columns:0.5cqw repeat(var(--n, 3), minmax(0, 1fr)); align-items:center; gap:0.25cqw; }
-.cart-ligne > i{ font:700 0.55cqw 'IBM Plex Sans', sans-serif; font-style:normal; color:#adb5bd; }
 .cart-nom{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:700 0.9cqw/1.2 var(--ecrit); letter-spacing:-0.01em; }
-.cart-nom.d{ color:#a61e1e; }
-.cart-nom.g{ color:#212529; }
-.cart-nom.vide{ color:#c92a2a; opacity:0.6; }
+.cart-nom.d{ color:#8f1d1d; }
+.cart-nom.g{ color:#1a1a1a; }
+.cart-nom.vide{ color:#b02525; opacity:0.6; }
+.cart-ligne > i{ font:400 0.65cqw var(--ecrit); font-style:normal; color:#6c757d; }
 /* ---------- Cahier : règlements (étiquette de la couverture) ---------- */
 /* Écrit à la main directement sur l'étiquette de l'image (déformée en perspective, encre mêlée au papier). */
 .bu-cahier .bu-contenu{ inset:auto; left:0; top:0; width:7.7cqw; height:2.1cqw; transform-origin:0 0; display:flex; flex-direction:column; justify-content:center; align-items:center; overflow:visible; mix-blend-mode:multiply; line-height:1.05; }
