@@ -1070,6 +1070,8 @@ body{ overflow-x:hidden; }
 .dep-choix button{ display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:inherit; font:600 13px 'IBM Plex Sans', sans-serif; cursor:pointer; }
 .dep-choix button img{ width:22px; height:22px; object-fit:contain; }
 .dep-choix button.actif{ background:#ffb000; border-color:#ffb000; color:#111; }
+.dep-autre{ padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,0.2); background:#0d1117; color:inherit; font:600 13px 'IBM Plex Sans', sans-serif; cursor:pointer; max-width:220px; }
+.dep-autre.actif{ background:#ffb000; border-color:#ffb000; color:#111; }
 .dep-duel{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; margin-bottom:18px; text-align:center; }
 .dep-duel img{ width:84px; height:84px; object-fit:contain; }
 .dep-duel b{ display:block; font:500 22px 'Oswald', sans-serif; text-transform:uppercase; }
@@ -3504,15 +3506,17 @@ body{ overflow-x:hidden; }
     return blocs;
   }
 
-  // Tablette (zoom) : rapport de dépistage complet sur un des prochains adversaires.
+  // Tablette (zoom) : rapport de dépistage complet sur n'importe quelle équipe. Les 5 prochains adversaires
+  // sont en raccourcis ; la liste donne toutes les autres. Sans match à venir contre elle, le rapport reste
+  // valable (sans domicile ni date).
   let advDepistage = '';
   function zoomDepistage(){
-    const avenir = [];
-    prochainsAdversaires().forEach(m => { if(avenir.length < 5 && !avenir.some(x => adversaireDe(x) === adversaireDe(m))) avenir.push(m); });
-    if(!avenir.length) return [titreZoom('Dépistage', ''), el('p', 'ce-vide', 'Plus de match à venir.')];
-    const m = avenir.find(x => adversaireDe(x) === advDepistage) || avenir[0];
-    const adv = adversaireDe(m);
+    const prochains = prochainsAdversaires(), avenir = [];
+    prochains.forEach(m => { if(avenir.length < 5 && !avenir.some(x => adversaireDe(x) === adversaireDe(m))) avenir.push(m); });
+    const adv = EQUIPES.has(advDepistage) && advDepistage !== equipe ? advDepistage : avenir[0] ? adversaireDe(avenir[0]) : [...EQUIPES.keys()].find(c => c !== equipe);
     advDepistage = adv;
+    // Le prochain match contre elle, sinon un match fictif sans date (ni domicile).
+    const m = prochains.find(x => adversaireDe(x) === adv) || { v: equipe, d: adv, date: '' };
     const choix = el('div', 'dep-choix');
     avenir.forEach(x => {
       const a = adversaireDe(x), b = el('button', a === adv ? 'actif' : ''); b.type = 'button';
@@ -3520,10 +3524,19 @@ body{ overflow-x:hidden; }
       b.addEventListener('click', () => { advDepistage = a; remplirZoom('depistage'); });
       choix.append(b);
     });
+    const liste = el('select', 'dep-autre' + (avenir.some(x => adversaireDe(x) === adv) ? '' : ' actif')); liste.setAttribute('aria-label', 'Dépister une autre équipe');
+    liste.append(Object.assign(el('option', null, 'Autre équipe…'), { value: '' }));
+    [...EQUIPES.keys()].filter(c => c !== equipe).sort((a, b) => nom(a).localeCompare(nom(b), 'fr')).forEach(c => {
+      const p = prochains.find(x => adversaireDe(x) === c);
+      liste.append(Object.assign(el('option', null, nom(c) + (p ? ' · ' + fMois.format(parse(p.date)) : ' · aucun match à venir')), { value: c, selected: c === adv && !avenir.some(x => adversaireDe(x) === adv) }));
+    });
+    liste.addEventListener('change', () => { if(liste.value){ advDepistage = liste.value; remplirZoom('depistage'); } });
+    choix.append(liste);
     // Duel : fiches, rangs et série de la saison.
     const cote = c => { const d = el('div', 'dep-duel-nom'), t = classement.find(x => x.code === c); d.append(el('b', null, nom(c)), el('small', null, fiche(t) + ' · ' + (t ? t.pts : 0) + ' pts · ' + ordinal(rangDe(classement, c) || classement.length) + ' ligue')); return d; };
     const duel = el('div', 'dep-duel');
-    duel.append(logo(equipe), cote(equipe), el('span', null, (m.v === equipe ? '@ ' : 'vs ') + (m.date === AUJ ? 'ce soir' : fCourt.format(parse(m.date))) + ' · ' + serieContre(adv)), cote(adv), logo(adv));
+    const quand = !m.date ? 'aucun match à venir' : (m.v === equipe ? '@ ' : 'vs ') + (m.date === AUJ ? 'ce soir' : fCourt.format(parse(m.date)));
+    duel.append(logo(equipe), cote(equipe), el('span', null, quand + ' · ' + serieContre(adv)), cote(adv), logo(adv));
     const se = statsLigue();
     const carte = (titre, cls, aide) => { const c = el('section', 'ce-carte dz-carte' + (cls ? ' ' + cls : '')), h = el('h3', null, titre); if(aide) h.append(el('small', null, aide)); c.append(h); return c; };
 
@@ -3566,8 +3579,8 @@ body{ overflow-x:hidden; }
         const l = el('div'); l.append(el('span', null, lib), el('b', mieux > 0 && fl !== '→' ? 'mieux' : mieux < 0 && fl !== '→' ? 'pire' : '', fl + ' ' + dec(r, n)), el('small', null, 'saison ' + dec(s, n)));
         comp.append(l);
       });
-      const lieu = leurs.filter(g => g.dom === (m.d === adv));
-      tend.append(chips, comp, el('p', 'dz-note', serieEnCours(leurs) + ' · ' + (m.d === adv ? 'à domicile ' : 'sur la route ') + fiche3(lieu) + (leurs.length >= 10 ? ' · 10 derniers ' + fiche3(leurs.slice(-10)) : '')));
+      const fLieu = dom => (dom ? 'à domicile ' : 'sur la route ') + fiche3(leurs.filter(g => g.dom === dom));
+      tend.append(chips, comp, el('p', 'dz-note', serieEnCours(leurs) + ' · ' + (m.date ? fLieu(m.d === adv) : fLieu(true) + ' · ' + fLieu(false)) + (leurs.length >= 10 ? ' · 10 derniers ' + fiche3(leurs.slice(-10)) : '')));
     }else tend.append(el('p', 'ce-vide', 'Aucun match joué.'));
     const cote2 = el('div', 'dz-cote'); cote2.append(forces, clesC, tend);
     const haut = el('div', 'dz-grille'); haut.append(stats, cote2);
@@ -3640,7 +3653,7 @@ body{ overflow-x:hidden; }
       const triosE = E.slice(0, 4), pairesE = E.slice(4, 7), triosN = N.slice(0, 4), pairesN = N.slice(4, 7);
       const tE = best(triosE), pN = best(pairesN), pE = pire(pairesE), tN = best(triosN);
       if(tE && pN) idees.push([3, '🛡️', `Leur ${tE.lib.toLowerCase()} (${tE.noms}, ${dec(tE.ov, 1)}) est leur menace : opposez-lui votre ${pN.lib.toLowerCase()} (${pN.noms}, ${dec(pN.ov, 1)}).`]);
-      if(pE && tN) idees.push([3, '🎯', `Ciblez leur ${pE.lib.toLowerCase()} (${pE.noms}, ${dec(pE.ov, 1)}) avec votre ${tN.lib.toLowerCase()} (${dec(tN.ov, 1)})` + (domicile ? ' : à domicile, vous avez le dernier changement.' : ' : sur la route, sautez sur la glace après leurs changements.')]);
+      if(pE && tN) idees.push([3, '🎯', `Ciblez leur ${pE.lib.toLowerCase()} (${pE.noms}, ${dec(pE.ov, 1)}) avec votre ${tN.lib.toLowerCase()} (${dec(tN.ov, 1)})` + (!m.date ? '.' : domicile ? ' : à domicile, vous avez le dernier changement.' : ' : sur la route, sautez sur la glace après leurs changements.')]);
       const prof = (l, a, b) => moyenne(l.slice(a, b), x => x.ov);
       const fond = (prof(N, 2, 4) || 0) - (prof(E, 2, 4) || 0);
       if(fond >= 1.5) idees.push([2, '🔄', `Votre profondeur est meilleure (trios 3-4 : ${signe(fond, 1)} d'overall) : roulez 4 trios et usez-les.`]);
@@ -4075,7 +4088,10 @@ body{ overflow-x:hidden; }
     const caseMatch = ev.target.closest('.bu-calendrier [data-num], .gcal [data-num]');
     if(caseMatch){ ouvrirMatch(caseMatch.dataset.num, caseMatch); return; }
     const o = ev.target.closest('[data-objet]');
-    if(o && o.dataset.objet !== 'fenetre' && !ev.target.closest('#zoom')) ouvrirZoom(o.dataset.objet, o, pageObjet(o.dataset.objet, ev.target));
+    if(o && o.dataset.objet !== 'fenetre' && !ev.target.closest('#zoom')){
+      if(o.dataset.objet === 'depistage') advDepistage = '';   // la tablette ouvre toujours sur le prochain adversaire
+      ouvrirZoom(o.dataset.objet, o, pageObjet(o.dataset.objet, ev.target));
+    }
   });
   $('zoomFermer').addEventListener('click', fermerZoom);
   $('zoomFond').addEventListener('click', fermerZoom);
