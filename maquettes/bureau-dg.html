@@ -1289,8 +1289,8 @@ body{ overflow-x:hidden; }
    (ce qui attend une action) ; des widgets pour ce qu'on regarde le plus ; puis des icônes d'apps groupées,
    avec pastilles ; un dock fixe en bas avec les 4 raccourcis les plus utiles. */
 .bu-pile{ --fond-ecran:#0b0e13; position:relative; display:flex; flex-direction:column; gap:14px; width:100%; max-width:520px; margin:0 auto; padding-bottom:110px; color:#f1f3f5; }
-/* Collé tout en haut (sans marge au-dessus : rien ne défile visible derrière). */
-.mb-soumettre{ position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:12px; width:100%; min-height:62px; padding:10px 18px; border:none; border-radius:20px;
+/* En tête de l'écran d'accueil (il défile avec le reste ; le dock le garde à portée). */
+.mb-soumettre{ position:relative; display:flex; align-items:center; gap:12px; width:100%; min-height:62px; padding:10px 18px; border:none; border-radius:20px;
   background:linear-gradient(135deg, #f76707, #e8590c 55%, #d9480f); color:#fff; font:inherit; text-align:left; cursor:pointer; box-shadow:0 8px 22px rgba(232,89,12,0.35); }
 .mb-soumettre.urgent{ background:linear-gradient(135deg, #f03e3e, #c92a2a); box-shadow:0 8px 22px rgba(201,42,42,0.4); }
 .mb-soumettre > i{ display:grid; place-items:center; width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,0.2); font-style:normal; font-size:22px; }
@@ -1346,11 +1346,15 @@ body{ overflow-x:hidden; }
 .mb-cal b{ font:600 28px/1.15 'Oswald', sans-serif; }
 .mb-pastille{ position:absolute; top:-6px; right:-6px; min-width:22px; height:22px; padding:0 6px; border-radius:11px; background:#fa5252; color:#fff; font:700 12.5px/22px 'IBM Plex Sans', sans-serif; font-style:normal; box-shadow:0 0 0 2px var(--fond-ecran); }
 /* Dock : fixe en bas, verre dépoli. */
-.mb-dock{ position:fixed; z-index:60; left:50%; bottom:calc(10px + env(safe-area-inset-bottom, 0px)); translate:-50% 0; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;
+.mb-dock{ position:fixed; z-index:60; left:50%; bottom:calc(10px + env(safe-area-inset-bottom, 0px)); translate:-50% 0; display:grid; grid-template-columns:repeat(5, 1fr); gap:4px;
   width:min(500px, calc(100vw - 20px)); padding:10px 8px 8px; border-radius:28px; background:rgba(24,28,36,0.92); backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4);
   box-shadow:0 10px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08); }
 .mb-dock .mb-app > i{ width:52px; height:52px; border-radius:15px; font-size:25px; }
 .mb-dock .mb-app{ font-size:10.5px; color:rgba(241,243,245,0.85); }
+/* Au centre du dock : Soumettre un résultat, plus gros et surélevé (rouge s'il y a un match en retard). */
+.mb-dock .mb-app.resultat > i{ width:60px; height:60px; margin-top:-18px; border-radius:50%; font-size:27px; background:linear-gradient(135deg, #f76707, #d9480f); box-shadow:0 6px 16px rgba(232,89,12,0.5), 0 0 0 4px rgba(24,28,36,0.92); }
+.mb-dock .mb-app.resultat.urgent > i{ background:linear-gradient(135deg, #f03e3e, #c92a2a); box-shadow:0 6px 16px rgba(201,42,42,0.55), 0 0 0 4px rgba(24,28,36,0.92); }
+.mb-dock .mb-app.resultat{ color:#fff; font-weight:700; }
 @media (max-width:600px){ .bu-zoom-objet.is-effectif{ background:#f4f1e8; } .bu-zoom{ padding:0; } .bu-zoom-objet{ width:100vw !important; max-height:100vh; height:100vh; max-height:100dvh; height:100dvh; border-radius:0 !important; } .bmail{ grid-template-columns:1fr; } .bu-zoom-corps{ padding:16px; } }
 /* Mobile : toute la page défile (l'en-tête du site et la bande de l'équipe partent vers le haut au lieu de
    rester figés), la bande tient sur une ligne, et le panneau ouvert bloque le défilement de la page derrière. */
@@ -3357,7 +3361,7 @@ body{ overflow-x:hidden; }
     const depister = (b, adv) => { advDepistage = adv || ''; ouvrirZoom('depistage', b); };
     const versAlignement = b => estDG() ? page(b, 'Alignement', DG + 'alignement.html') : page(b, 'Alignement', 'equipe.html?team=' + slug + '&vue=alignement');
 
-    // 1. Soumettre un résultat (collé en haut) : rouge s'il y a un match en retard.
+    // 1. Soumettre un résultat (en tête, et au centre du dock) : rouge s'il y a un match en retard.
     const ret = retards(), prochain = prochainMatch();
     const sb = el('button', 'mb-soumettre' + (ret.length ? ' urgent' : '')); sb.type = 'button';
     const st = el('span'); st.append(el('b', null, 'Soumettre un résultat'),
@@ -3432,10 +3436,12 @@ body{ overflow-x:hidden; }
     ].forEach(([icone, nomApp, couleur, url]) => ligue.append(app(icone, nomApp, couleur, b => page(b, nomApp, url))));
     blocs.push(titre('La ligue'), ligue);
 
-    // 5. Dock : les 4 raccourcis les plus utiles, toujours à portée du pouce.
+    // 5. Dock : Soumettre un résultat au centre, entouré des 4 raccourcis les plus utiles, toujours à portée du pouce.
     const dock = el('nav', 'mb-dock'); dock.setAttribute('aria-label', 'Raccourcis');
+    const res = app('📷', 'Résultat', '', b => page(b, 'Soumettre un résultat', DG + 'resultat.html'));
+    res.classList.add('resultat'); if(ret.length){ res.classList.add('urgent'); res.pastille(ret.length); }
     dock.append(app(iconeCalendrier(), 'Calendrier', '', b => page(b, 'Calendrier', 'calendrier.html')), app('🔎', 'Dépistage', '#f59f00', b => depister(b)),
-      app('📋', 'Alignement', '#1c7ed6', versAlignement), app('🏆', 'Classement', '#f59f00', b => page(b, 'Classement', 'classement.html')));
+      res, app('📋', 'Alignement', '#1c7ed6', versAlignement), app('🏆', 'Classement', '#f59f00', b => page(b, 'Classement', 'classement.html')));
     blocs.push(dock);
 
     // Les alertes : notifications et pastilles des apps.
