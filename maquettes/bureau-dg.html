@@ -847,6 +847,28 @@ body{ overflow-x:hidden; }
 .tv-col .tv-echange{ flex-direction:column; gap:0.45cqw; }
 .tv-col .tv-echange > div{ grid-template-columns:1.9cqw 1fr; }
 .tv-col .tv-echange img{ width:1.9cqw; height:1.9cqw; }
+/* Images : photo de l'article en plein cadre (texte en bas, sur un dégradé, lent zoom de reportage) ;
+   photos des joueurs échangés en médaillons, et les deux logos en filigrane derrière la transaction. */
+.tv-nouv.a-photo{ justify-content:flex-end; overflow:hidden; }
+.tv-photo{ position:absolute; inset:0; z-index:-1; overflow:hidden; background:#000; }
+.tv-photo img{ width:100%; height:100%; object-fit:cover; opacity:0.85; }
+.tv-photo::after{ content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 25%, rgba(10,12,16,0.7) 52%, rgba(10,12,16,0.96) 100%); }
+.diapo.actif .tv-photo img{ animation:reportage 9s ease-out both; }
+@keyframes reportage{ from{ scale:1.12; translate:1.5% 1%; } to{ scale:1; translate:0 0; } }
+.tv-nouv.a-photo .tv-cat{ position:absolute; top:0.4cqw; left:0.8cqw; }
+.tv-col .tv-nouv.a-photo p{ -webkit-line-clamp:2; }
+.tv-nouv{ isolation:isolate; }
+.tv-filigrane{ position:absolute; inset:0; z-index:-1; display:flex; justify-content:space-between; align-items:center; overflow:hidden; pointer-events:none; }
+.tv-col .tv-filigrane img{ width:9cqw; height:9cqw; object-fit:contain; opacity:0.09; filter:grayscale(0.3); }
+.tv-filigrane img:first-child{ translate:-25% 8%; rotate:-8deg; }
+.tv-filigrane img:last-child{ translate:25% 8%; rotate:8deg; }
+.tv-col .tv-echange > div{ grid-template-columns:1.5cqw auto minmax(0, 1fr); align-items:center; }
+.tv-col .tv-echange > div > img{ grid-row:1 / span 6; width:1.5cqw; height:1.5cqw; }
+.tv-tetes{ grid-row:1 / span 6; display:flex; }
+.tv-col .tv-tetes img{ width:2.7cqw; height:2.7cqw; border-radius:50%; object-fit:cover; object-position:50% 15%; background:radial-gradient(circle at 50% 35%, #495057, #1a1d21); border:0.1cqw solid rgba(255,255,255,0.75); box-shadow:0 0.15cqw 0.4cqw rgba(0,0,0,0.6); }
+.tv-tetes img + img{ margin-left:-0.8cqw; }
+.tv-echange > div > small, .tv-echange > div > span{ grid-column:3; }
+@media (prefers-reduced-motion: reduce){ .diapo.actif .tv-photo img{ animation:none; } }
 .tv-bandeau{ display:flex; align-items:center; gap:0.6cqw; padding:0.45cqw 0.8cqw; background:rgba(0,0,0,0.55); font:600 0.85cqw 'Oswald', sans-serif; letter-spacing:0.08em; text-transform:uppercase; }
 .tv-bandeau img{ width:1.3cqw; height:1.3cqw; object-fit:contain; }
 .tv-direct{ display:inline-flex; align-items:center; gap:0.3cqw; padding:0.1cqw 0.45cqw; border-radius:0.3cqw; background:#e03131; color:#fff; font-size:0.65cqw; animation:clignote 1.4s steps(2) infinite; }
@@ -1500,6 +1522,7 @@ body{ overflow-x:hidden; }
     const [ann, nouv] = await unefois('fils', () => Promise.all(['ANNONCES', 'NOUVELLES'].map(async s => {
       const t = await gvizTable('sheet=' + s);
       return t.rows.map(r => r.c || []).map(c => ({ date: dateGviz(c[0] && c[0].v), titre: c[3] ? String(c[3].v) : '', texte: c[4] ? String(c[4].v) : '',
+        photos: c[5] && c[5].v ? String(c[5].v).split(',').map(s => s.trim()).filter(id => /^[A-Za-z0-9_-]{20,}$/.test(id)) : [],
         visible: c[6] ? c[6].v === true : false, id: c[9] ? String(c[9].v) : '', equipe: c[1] ? String(c[1].v) : '', type: c[2] ? String(c[2].v) : '' }))
         .filter(x => x.visible && x.titre).sort((a, b) => (b.date || 0) - (a.date || 0));
     })));
@@ -2210,6 +2233,7 @@ body{ overflow-x:hidden; }
   const chargerFils = () => unefois('fils', () => Promise.all(['ANNONCES', 'NOUVELLES'].map(async s => {
     const t = await gvizTable('sheet=' + s);
     return t.rows.map(r => r.c || []).map(c => ({ date: dateGviz(c[0] && c[0].v), titre: c[3] ? String(c[3].v) : '', texte: c[4] ? String(c[4].v) : '',
+      photos: c[5] && c[5].v ? String(c[5].v).split(',').map(s => s.trim()).filter(id => /^[A-Za-z0-9_-]{20,}$/.test(id)) : [],
       visible: c[6] ? c[6].v === true : false, id: c[9] ? String(c[9].v) : '', equipe: c[1] ? String(c[1].v) : '', type: c[2] ? String(c[2].v) : '' }))
       .filter(x => x.visible && x.titre).sort((a, b) => (b.date || 0) - (a.date || 0));
   })));
@@ -2595,6 +2619,20 @@ body{ overflow-x:hidden; }
       .sort((a, b) => (b.date || 0) - (a.date || 0));
   }
   const CATS_FIL = { annonce: ['Annonce', '#e03131'], nouvelle: ['Nouvelle', '#1c7ed6'], transaction: ['Transaction', '#2b8a3e'] };
+  // Numéros LNH (onglet IDS_LNH, « Nom, Prénom » → numéro) des joueurs demandés seulement, gardés en mémoire.
+  const numerosLnh = new Map();
+  async function idsLnh(noms){
+    const manquants = [...new Set(noms)].filter(n => !numerosLnh.has(n) && !n.includes('"'));
+    if(manquants.length){
+      try{
+        const t = await gvizTable('sheet=IDS_LNH&tq=' + encodeURIComponent('select A, B where ' + manquants.map(n => `A = "${n}"`).join(' or ')));
+        cellules(t).forEach(l => { if(/^\d{6,8}$/.test(l[1])) numerosLnh.set(l[0], l[1]); });
+      }catch(e){}
+      manquants.forEach(n => { if(!numerosLnh.has(n)) numerosLnh.set(n, ''); });
+    }
+    return numerosLnh;
+  }
+  const photoJoueur = id => 'https://assets.nhle.com/mugs/nhl/latest/' + id + '.png';
   // Ce que chaque équipe reçoit dans une transaction.
   function recus(details){
     const parEquipe = new Map();
@@ -2633,6 +2671,8 @@ body{ overflow-x:hidden; }
       return;
     }
     const fil = await filLigue();
+    const txAffichees = fil.filter(x => x.type === 'transaction').slice(0, 8);
+    const ids = await idsLnh(txAffichees.flatMap(x => x.details.map(m => m.joueur).filter(Boolean)));
     const diapoFil = x => {
       const [lib, coul] = CATS_FIL[x.type];
       const d = el('div', 'diapo tv-nouv');
@@ -2640,16 +2680,28 @@ body{ overflow-x:hidden; }
       if(x.date) cat.append(el('small', null, fMois.format(x.date)));
       d.append(cat, el('h4', null, x.titre.replace(/^Transaction\s*:\s*/i, '')));
       if(x.type === 'transaction'){
-        const ech = el('div', 'tv-echange');
-        recus(x.details).slice(0, 2).forEach(([code, l]) => {
-          const c = el('div'); c.append(logo(code), el('small', null, code + ' reçoit'), ...l.slice(0, 2).map(m => el('span', null, m.joueur ? prenomNom(m.joueur) + (m.po ? ' · ' + m.po : '') : (m.type || 'Choix'))));
+        const ech = el('div', 'tv-echange'), equipes = recus(x.details).slice(0, 2);
+        equipes.forEach(([code, l]) => {
+          const c = el('div'), tetes = el('div', 'tv-tetes');
+          l.filter(m => ids.get(m.joueur)).slice(0, 2).forEach(m => {
+            const i = el('img'); i.src = photoJoueur(ids.get(m.joueur)); i.alt = ''; i.onerror = () => i.remove(); tetes.append(i);
+          });
+          c.append(logo(code), tetes, el('small', null, code + ' reçoit'), ...l.slice(0, 2).map(m => el('span', null, m.joueur ? prenomNom(m.joueur) + (m.po ? ' · ' + m.po : '') : (m.type || 'Choix'))));
           if(l.length > 2) c.append(el('span', null, '+ ' + (l.length - 2) + ' autre' + (l.length > 3 ? 's' : '')));
           ech.append(c);
         });
-        d.append(ech);
+        const fili = el('div', 'tv-filigrane'); fili.append(...equipes.map(([code]) => logo(code)));
+        d.append(ech, fili);
       }else{
         const t = sansBalises(x.texte);
         if(t) d.append(el('p', null, t.slice(0, 320)));
+        if(x.photos && x.photos[0]){
+          // Photo de l'article (Google Drive) en plein cadre ; introuvable, la diapo redevient texte seul.
+          const ph = el('div', 'tv-photo'), i = el('img'); i.alt = '';
+          i.onerror = () => { ph.remove(); d.classList.remove('a-photo'); };
+          i.src = 'https://lh3.googleusercontent.com/d/' + x.photos[0] + '=w640';
+          ph.append(i); d.prepend(ph); d.classList.add('a-photo');
+        }
       }
       return d;
     };
@@ -2668,7 +2720,7 @@ body{ overflow-x:hidden; }
       return col;
     };
     const cols = el('div', 'tv-colonnes');
-    cols.append(colonne('tv-tx', '🔁 Transactions', fil.filter(x => x.type === 'transaction').slice(0, 8), 'Aucune transaction'),
+    cols.append(colonne('tv-tx', '🔁 Transactions', txAffichees, 'Aucune transaction'),
       // Toujours les annonces d'abord (les plus récentes), puis les nouvelles.
       colonne('tv-ann', '📢 Annonces · nouvelles', [...fil.filter(x => x.type === 'annonce').slice(0, 4), ...fil.filter(x => x.type === 'nouvelle').slice(0, 5)], 'Rien de neuf'));
     clearInterval(minuteries[box.id]);
