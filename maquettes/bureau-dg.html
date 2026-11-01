@@ -886,8 +886,9 @@ body{ overflow-x:hidden; }
 .dep-adv b{ font:600 0.82cqw 'Oswald', sans-serif; text-transform:uppercase; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dep-adv small{ font-size:0.5cqw; color:#ced4da; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dep-barres{ flex:1; display:flex; flex-direction:column; justify-content:space-evenly; padding:0 0.5cqw 0.2cqw; }
-.dep-barre{ display:grid; grid-template-columns:2.6cqw 1.5cqw 1fr 1.5cqw; align-items:center; gap:0.25cqw; font-size:0.48cqw; color:#adb5bd; }
-.dep-barre b{ font:500 0.55cqw 'Orbitron', monospace; color:#e9ecef; text-align:right; }
+/* Libellé | notre valeur | barre | leur valeur : colonnes assez larges pour « 82,1% », espacées de la barre. */
+.dep-barre{ display:grid; grid-template-columns:2.5cqw 2.05cqw minmax(0, 1fr) 2.05cqw; align-items:center; column-gap:0.4cqw; font-size:0.48cqw; color:#adb5bd; }
+.dep-barre b{ font:500 0.5cqw 'Orbitron', monospace; color:#e9ecef; text-align:right; white-space:nowrap; }
 .dep-barre b:last-child{ text-align:left; }
 .dep-barre b.mieux{ color:#8ce99a; }
 .dep-barre i{ height:0.3cqw; border-radius:0.2cqw; background:linear-gradient(90deg, var(--ce-couleur) calc(var(--p, 50) * 1%), #495057 0); }
@@ -1209,7 +1210,7 @@ body{ overflow-x:hidden; }
       <div class="bu-objet bu-calendrier" data-objet="calendrier" role="group" tabindex="0" aria-label="Calendrier du mois (Entrée pour agrandir)"><div class="bu-contenu" id="o-calendrier"></div></div>
       <button type="button" class="bu-objet bu-console" data-objet="console" aria-label="Console : soumettre un résultat"></button>
       <button type="button" class="bu-objet bu-tablette" data-objet="depistage" aria-label="Tablette : dépistage du prochain adversaire"><div class="bu-ecran" id="o-depistage"></div></button>
-      <button type="button" class="bu-objet bu-moniteur" data-objet="ordinateur" aria-label="Ordinateur : courriel et marché des transactions"><div class="bu-ecran" id="o-ordinateur"></div></button>
+      <button type="button" class="bu-objet bu-moniteur" data-objet="ordinateur" aria-label="Ordinateur : Espace DG"><div class="bu-ecran" id="o-ordinateur"></div></button>
       <button type="button" class="bu-objet bu-cartable" data-objet="cartable" aria-label="Cartable : alignement, effectif et contrats"><div class="bu-page gauche" id="o-align-g"></div><div class="bu-page droite" id="o-align-d"></div></button>
       <button type="button" class="bu-objet bu-cahier" data-objet="reglements" aria-label="Cahier : règlements et dates importantes"><div class="bu-contenu" id="o-reglements"></div></button>
       <button type="button" class="bu-objet bu-cell" data-objet="cellulaire" aria-label="Cellulaire : alertes et enchères"><div class="bu-ecran" id="o-cellulaire"></div></button>
@@ -2152,7 +2153,7 @@ body{ overflow-x:hidden; }
   const estPetit = () => matchMedia('(max-width: 899px)').matches;
   const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   const ETIQUETTES = { calendrier: 'Calendrier du mois · cliquer pour agrandir', tele: 'LNHQ TV · directs et fil de la ligue', console: 'Console · soumettre un résultat', reglements: 'Règlements · dates importantes',
-    cartable: 'Alignement · effectif et contrats', ordinateur: 'Courriel · transactions', postit: '2e gardien', cellulaire: 'Alertes · enchères', depistage: 'Dépistage · prochain adversaire',
+    cartable: 'Alignement · effectif et contrats', ordinateur: 'Espace DG', postit: '2e gardien', cellulaire: 'Alertes · enchères', depistage: 'Dépistage · prochain adversaire',
     resultats: 'Résultats de la ligue', meneurs: 'Stats · ligue et équipe', effectif: 'Effectif · contrats · plafond', fiche: 'Fiche de l’équipe et du DG' };
   const chargerDirect = () => unefois('direct', () => fetch('https://api.lnhq.ca/twitch').then(r => r.json()).catch(() => ({ chaines: [] })));
   const chargerFils = () => unefois('fils', () => Promise.all(['ANNONCES', 'NOUVELLES'].map(async s => {
@@ -2731,7 +2732,7 @@ body{ overflow-x:hidden; }
       ['cartable', '🧲', 'Alignement', 'Trios, paires et gardiens'],
       ['effectif', '🗂️', 'Effectif', 'Joueurs, contrats et plafond'],
       ['depistage', '🔎', 'Dépistage', prochainsAdversaires()[0] ? 'Prochain : ' + nom(adversaireDe(prochainsAdversaires()[0])) : 'Prochain adversaire'],
-      ['ordinateur', '🖥️', estDG() ? 'Courriel' : 'Transactions', estDG() ? courriels().filter(x => x.nonlu).length + ' non lus' : 'Marché et historique'],
+      ['ordinateur', '🖥️', 'Espace DG', estDG() ? courriels().filter(x => x.nonlu).length + ' non lus · dg.lnhq.ca' : 'Connexion des DG'],
       ['cellulaire', '📱', 'Alertes', estDG() ? 'Offres, retards, 2e gardien, enchères' : 'Enchères des agents libres'],
       ['postit', '🥅', '2e gardien', dcl ? 'Déclaré ✔' : 'À déclarer'],
       ['reglements', '📒', 'Règlements', 'Dates importantes et paramètres'],
@@ -2990,7 +2991,7 @@ body{ overflow-x:hidden; }
       cartable: estDG() ? ['Alignement', DG + 'alignement.html'] : ['Équipe', 'equipe.html?team=' + slug(equipe)],
       effectif: ['Masse salariale', 'masse.html'],
       reglements: ['Règlements', 'reglements.html'],
-      ordinateur: estDG() ? ['Espace DG', DG] : ['Transactions', './?fil=transactions'],
+      ordinateur: ['Espace DG', DG],
       cellulaire: ['Enchères', 'encheres.html'],
       console: ['Soumettre un résultat', DG + 'resultat.html'],
       postit: ['2e gardien', DG + 'gardien.html'],
@@ -3044,6 +3045,9 @@ body{ overflow-x:hidden; }
     $('zoomCorps').replaceChildren(barre, cadre);
   }
   function ouvrirZoom(type, depuis, page){
+    // Pages DG (dg.lnhq.ca) : ouvertes dans l'onglet, pas dans le panneau — la connexion Discord
+    // refuse de s'afficher dans un cadre. Le bouton Retour du navigateur ramène au bureau.
+    if(page && page[1].startsWith(DG)){ location.href = page[1]; return; }
     generationZoom++;
     zoomActuel = type;
     pageOuverte = !!page;
