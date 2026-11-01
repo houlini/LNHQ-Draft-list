@@ -1184,17 +1184,17 @@ body{ overflow-x:hidden; }
 .fiche-chandail{ margin-bottom:18px; }
 .fiche-chandail h3{ margin:0 0 12px; }
 .fc-apercu{ display:grid; grid-template-columns:auto 1fr; align-items:center; gap:14px; }
-.fc-apercu b{ display:grid; place-items:center; width:64px; height:72px; border-radius:12px 12px 8px 8px; font:700 30px 'Oswald', sans-serif; color:#fff; -webkit-text-stroke:1px var(--bande);
-  background:linear-gradient(180deg, var(--corps) 0 62%, #f1ece0 62% 70%, var(--bande) 70% 76%, #f1ece0 76% 88%, var(--corps) 88%); box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+.fc-apercu b{ display:grid; place-items:start center; padding-top:6px; width:64px; height:72px; border-radius:12px 12px 8px 8px; font:700 26px/1 'Oswald', sans-serif; color:var(--bandes); -webkit-text-stroke:1px var(--ligne);
+  background:linear-gradient(180deg, var(--corps) 0 58%, var(--bandes) 58% 67%, var(--ligne) 67% 73%, var(--bandes) 73% 86%, var(--corps) 86%); box-shadow:0 2px 8px rgba(0,0,0,0.3); }
 .fc-apercu span{ font:600 18px 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.04em; }
-.fc-form{ display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; margin-top:14px; }
+.fc-form{ display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; gap:10px; margin-top:14px; }
 .fc-form label{ display:grid; gap:4px; min-width:0; }
 .fc-form label span{ font-size:12px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-muted); }
 .fc-form input[type=text]{ min-width:0; padding:8px 10px; border:1px solid var(--line, #ced4da); border-radius:8px; font:inherit; background:var(--surface, #fff); color:inherit; }
 .fc-form input[type=color]{ width:100%; height:38px; padding:2px; border:1px solid var(--line, #ced4da); border-radius:8px; background:none; cursor:pointer; }
 .fc-actions{ grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
 .fc-actions small{ color:var(--ink-muted); }
-@media (max-width:600px){ .fc-form{ grid-template-columns:1fr 1fr; } .fc-form label:first-child{ grid-column:1 / -1; } }
+@media (max-width:600px){ .fc-form{ grid-template-columns:1fr 1fr 1fr; } .fc-form label:first-child{ grid-column:1 / 3; } }
 .bu-zoom-objet.is-calendrier{ background:#fbfaf6; color:#1a2533; width:min(1000px, 96vw); }
 .bu-zoom-objet.is-tele{ background:#060a10; color:#e9ecef; border:16px solid #0a0b0d; border-radius:12px; }
 .bu-zoom-objet.is-postit{ width:min(560px, 96vw); background:linear-gradient(180deg, #fff6a8, #ffe873); color:#1a2533; border-radius:4px; }
@@ -2411,17 +2411,20 @@ body{ overflow-x:hidden; }
      la luminance de la photo garde les plis, les ombres et les reflets. Le logo, les numéros des manches
      et « LNHQ » épousent la surface (cylindre de la tasse, plis du tissu) et prennent l'éclairage de la photo.
      zone = rectangle du canevas en px de l'image. */
-  // Chandail local de chaque équipe : [corps, ligne entre les bandes blanches].
+  // Chandail local de chaque équipe : [corps, bandes (les bandes blanches de la photo), ligne entre les bandes].
+  // Le col prend la couleur des bandes. Montréal ajoute sa bande de poitrine (bleue bordée de blanc).
   const CHANDAILS = {
-    ANA: ['#111111', '#F47A38'], BOS: ['#111111', '#FFB81C'], BUF: ['#003087', '#FFB81C'], CGY: ['#C8102E', '#F1BE48'],
-    CAR: ['#CC0000', '#111111'], CHI: ['#CF0A2C', '#111111'], COL: ['#6F263D', '#236192'], CBJ: ['#002654', '#CE1126'],
-    DAL: ['#006847', '#111111'], DET: ['#CE1126', '#CE1126'], EDM: ['#041E42', '#FF4C00'], FLA: ['#C8102E', '#041E42'],
-    LAK: ['#111111', '#A2AAAD'], MIN: ['#154734', '#A6192E'], MTL: ['#AF1E2D', '#192168'], NSH: ['#FFB81C', '#041E42'],
-    NJD: ['#CE1126', '#111111'], NYI: ['#00539B', '#F47D30'], NYR: ['#0038A8', '#CE1126'], OTT: ['#111111', '#C52032'],
-    PHI: ['#F74902', '#111111'], PIT: ['#111111', '#FCB514'], SJS: ['#006D75', '#111111'], SEA: ['#001628', '#99D9D9'],
-    STL: ['#002F87', '#FCB514'], TBL: ['#0057B8', '#0057B8'], TOR: ['#00205B', '#00205B'], UTA: ['#111111', '#69B3E7'],
-    VAN: ['#00205B', '#00843D'], VGK: ['#333F48', '#B4975A'], WSH: ['#C8102E', '#041E42'], WPG: ['#041E42', '#004C97'],
+    ANA: ['#FC4C02', '#FFFFFF', '#111111'], BOS: ['#111111', '#FFB81C', '#FFFFFF'], BUF: ['#003087', '#FFFFFF', '#FFB81C'], CGY: ['#C8102E', '#111111', '#F1BE48'],
+    CAR: ['#CC0000', '#111111', '#FFFFFF'], CHI: ['#CF0A2C', '#FFFFFF', '#111111'], COL: ['#6F263D', '#FFFFFF', '#236192'], CBJ: ['#002654', '#FFFFFF', '#CE1126'],
+    DAL: ['#006847', '#FFFFFF', '#111111'], DET: ['#CE1126', '#FFFFFF', '#FFFFFF'], EDM: ['#041E42', '#FF4C00', '#FFFFFF'], FLA: ['#C8102E', '#041E42', '#B9975B'],
+    LAK: ['#111111', '#FFFFFF', '#A2AAAD'], MIN: ['#154734', '#DDCBA4', '#A6192E'], MTL: ['#AF1E2D', '#FFFFFF', '#192168'], NSH: ['#FFB81C', '#041E42', '#FFFFFF'],
+    NJD: ['#CE1126', '#111111', '#FFFFFF'], NYI: ['#00539B', '#F47D30', '#FFFFFF'], NYR: ['#0038A8', '#FFFFFF', '#CE1126'], OTT: ['#111111', '#C52032', '#FFFFFF'],
+    PHI: ['#F74902', '#FFFFFF', '#111111'], PIT: ['#111111', '#FCB514', '#111111'], SJS: ['#006D75', '#FFFFFF', '#111111'], SEA: ['#001628', '#99D9D9', '#E9072B'],
+    STL: ['#002F87', '#FCB514', '#041E42'], TBL: ['#0057B8', '#FFFFFF', '#FFFFFF'], TOR: ['#00205B', '#FFFFFF', '#00205B'], UTA: ['#111111', '#69B3E7', '#FFFFFF'],
+    VAN: ['#00205B', '#FFFFFF', '#00843D'], VGK: ['#333F48', '#B4975A', '#C8102E'], WSH: ['#C8102E', '#FFFFFF', '#041E42'], WPG: ['#041E42', '#FFFFFF', '#004C97'],
   };
+  // Bande de poitrine (y en px de l'image, à la hauteur des aisselles, sous l'écusson) : [haut, bas, couleur, bordure].
+  const POITRINES = { MTL: [283, 305, '#192168', '#FFFFFF'] };
   // Chandail retiré par défaut : une légende de la concession (le DG le change dans la fiche).
   const RETIRES = {
     ANA: ['Paul Kariya', '9'], BOS: ['Bobby Orr', '4'], BUF: ['Gilbert Perreault', '11'], CGY: ['Jarome Iginla', '12'],
@@ -2437,13 +2440,15 @@ body{ overflow-x:hidden; }
   function chandailDe(code){
     let perso = {};
     try{ perso = JSON.parse(localStorage.getItem(cleChandail(code)) || '{}') || {}; }catch(e){}
-    const [corps, bande] = CHANDAILS[code] || COULEURS[code] || ['#1b1f24', '#1b1f24'];
+    const [corps, bandes, ligne] = CHANDAILS[code] || ['#1b1f24', '#FFFFFF', '#1b1f24'];
     const [joueur, numero] = RETIRES[code] || ['', ''];
-    return Object.assign({ corps, bande, joueur, numero }, perso);
+    if(perso.bande && !perso.ligne){ perso.ligne = perso.bande; }   // ancien format : une seule couleur de ligne
+    delete perso.bande;
+    return Object.assign({ corps, bandes, ligne, joueur, numero, poitrine: POITRINES[code] || null }, perso);
   }
   const luminance = hex => { const [r, g, b] = canaux(hex); return r * 0.3 + g * 0.59 + b * 0.11; };
-  // La tasse prend la couleur du chandail ; un chandail noir donne une tasse de la couleur des bandes.
-  const couleurTasse = ch => luminance(ch.corps) < 40 && luminance(ch.bande) >= 40 ? ch.bande : ch.corps;
+  // La tasse prend la couleur du chandail ; un chandail noir donne une tasse d'une couleur d'accent (pas le blanc).
+  const couleurTasse = ch => luminance(ch.corps) >= 40 ? ch.corps : [ch.bandes, ch.ligne].find(c => luminance(c) >= 40 && luminance(c) < 225) || ch.corps;
   const SURFACES = {
     'o-ecusson': { sorte: 'tissu', zone: [16, 198, 202, 216],
       // Contour généreux du chandail : seul le tissu neutre est repeint, pas le fond brun du cadre ni le cintre.
@@ -2530,16 +2535,22 @@ body{ overflow-x:hidden; }
     box.style.cssText = `left:calc(${zx / 16.72}cqw - var(--x, 0) * 1cqw); top:calc(${zy / 16.72}cqw - var(--y, 0) * 0.5628cqw); width:${zw / 16.72}cqw; height:${zh / 16.72}cqw;`;
     fondImg ||= chargerImage(FOND);
     const tissu = s.sorte === 'tissu', tasse = couleurTasse(ch);
-    const contour = luminance(ch.corps) > 150 ? ch.bande : luminance(ch.bande) > 150 || ch.bande === ch.corps ? '#111111' : ch.bande;
+    // Numéros des manches : couleur des bandes (sinon blanc ou noir, pour trancher sur le corps), contour de la ligne.
+    const ecart = (a, b) => Math.abs(luminance(a) - luminance(b));
+    const remplissage = ecart(ch.bandes, ch.corps) > 60 ? ch.bandes : ecart('#FFFFFF', ch.corps) > 60 ? '#F8F9FA' : '#111111';
+    const contour = ecart(ch.ligne, remplissage) > 40 ? ch.ligne : luminance(remplissage) > 128 ? '#111111' : '#FFFFFF';
+    // Avec une bande de poitrine, les numéros montent au-dessus d'elle.
+    const manches = tissu ? s.manches.map(m => ch.poitrine ? Object.assign({}, m, { cy: Math.min(m.cy, ch.poitrine[0] - 12) }) : m) : [];
     const [fond, plat, ...numeros] = await Promise.all([fondImg, logoAPlat(code, s.logo, K, texteSur(tasse)),
-      ...(tissu && ch.numero ? s.manches.map(() => numeroAPlat(String(ch.numero), 18, K, luminance(ch.corps) > 150 ? ch.bande : '#F8F9FA', contour)) : [])]);
+      ...(tissu && ch.numero ? manches.map(() => numeroAPlat(String(ch.numero), 18, K, remplissage, contour)) : [])]);
     if(box.dataset.cle !== cle) return;
     // La photo : luminance brute (texture), fine (plis, reflets) et large (éclairage) ; teinte neutre ou chaude.
     const photo = pixels(fond, zx, zy, zw, zh, W, H), d = photo.data, L = new Float32Array(W * H), rap = new Float32Array(W * H);
     for(let i = 0; i < W * H; i++){ L[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11; rap[i] = (d[i * 4 + 2] + 1) / (d[i * 4] + 1); }
     const fin = flou(L, W, H, K), large = flou(L, W, H, 10 * K), neutre = flou(rap, W, H, 2 * K);
     const out = new ImageData(W, H), o = out.data;
-    const corpsC = canaux(ch.corps), bandeC = canaux(ch.bande), tasseC = canaux(tasse), chaud = [1, 0.93, 0.84];
+    const corpsC = canaux(ch.corps), bandesC = canaux(ch.bandes), ligneC = canaux(ch.ligne), tasseC = canaux(tasse), chaud = [1, 0.93, 0.84];
+    const poit = ch.poitrine, poitC = poit && canaux(poit[2]), bordC = poit && canaux(poit[3]);
     // Tissu : une partie sombre prise entre deux bandes blanches (au-dessus et au-dessous, à 9 px près) est la ligne des bandes.
     let ligne = null;
     if(tissu){
@@ -2558,10 +2569,15 @@ body{ overflow-x:hidden; }
       let w, rgb;
       if(tissu){
         if(!dansPoly(s.poly, ix, iy)) continue;
-        w = lisse(0.42, 0.62, neutre[i]) * (1 - lisse(50, 95, L[i]));
+        w = lisse(0.42, 0.62, neutre[i]);
         if(w < 0.02) continue;
-        const coul = ligne[i] ? bandeC : corpsC, f = 0.8 * Math.pow(Math.min(2.4, Math.max(0.15, L[i] / 18)), 0.85);
-        rgb = coul.map((c, k) => c * f * chaud[k]);
+        // Deux familles de la photo, chacune éclairée par sa propre luminance : le tissu sombre (corps, ou
+        // ligne entre deux bandes) et le tissu pâle (bandes, et le col au-dessus de y 250).
+        let sombre = ligne[i] ? ligneC : corpsC;
+        if(poit && !ligne[i] && iy >= poit[0] && iy <= poit[1]) sombre = iy < poit[0] + 2.2 || iy > poit[1] - 2.2 ? bordC : poitC;
+        const pale = bandesC, t = lisse(40, 110, L[i]);
+        const fS = 0.8 * Math.pow(Math.min(2.4, Math.max(0.15, L[i] / 18)), 0.85), fP = 0.92 * Math.pow(Math.min(1.25, Math.max(0.2, L[i] / 175)), 0.9);
+        rgb = [0, 1, 2].map(k => (sombre[k] * fS * (1 - t) + pale[k] * fP * t) * chaud[k]);
       }else{
         const sin = Math.max(-1, Math.min(1, (ix - s.logo.cx) / s.logo.rayon)), phi = Math.asin(sin), cosA = Math.cos(phi);
         const yH = s.haut[0] + s.haut[1] * cosA, yB = s.bas[0] + s.bas[1] * cosA;
@@ -2613,7 +2629,7 @@ body{ overflow-x:hidden; }
     }
     // 3. Le numéro du chandail retiré sur les manches.
     numeros.forEach((img, n) => {
-      const m = s.manches[n], wN = img.width / K, hN = img.height / K;
+      const m = manches[n], wN = img.width / K, hN = img.height / K;
       for(let py = Math.floor((m.cy - hN / 2 - zy - 2) * K); py < Math.ceil((m.cy + hN / 2 - zy + 2) * K); py++)
         for(let px = Math.floor((m.cx - wN * m.ecrase / 2 - zx - 2) * K); px < Math.ceil((m.cx + wN * m.ecrase / 2 - zx + 2) * K); px++){
           if(px < 0 || py < 0 || px >= W || py >= H) continue;
@@ -3719,7 +3735,7 @@ body{ overflow-x:hidden; }
     const ch = chandailDe(equipe), c = el('section', 'ce-carte fiche-chandail');
     c.append(el('h3', null, 'Chandail retiré'));
     const apercu = el('div', 'fc-apercu');
-    apercu.style.setProperty('--corps', ch.corps); apercu.style.setProperty('--bande', ch.bande);
+    apercu.style.setProperty('--corps', ch.corps); apercu.style.setProperty('--bandes', ch.bandes); apercu.style.setProperty('--ligne', ch.ligne);
     apercu.append(el('b', null, ch.numero || '–'), el('span', null, ch.joueur || 'Aucun chandail retiré'));
     c.append(apercu);
     if(!estDG()) return c;
@@ -3727,8 +3743,9 @@ body{ overflow-x:hidden; }
     const champ = (lib, input) => { const l = el('label'); l.append(el('span', null, lib), input); return l; };
     const joueur = Object.assign(el('input'), { type: 'text', value: ch.joueur, maxLength: 28, placeholder: 'Nom du joueur' });
     const numero = Object.assign(el('input'), { type: 'text', value: ch.numero, maxLength: 2, inputMode: 'numeric', pattern: '[0-9]{0,2}', placeholder: '9' });
-    const corps = Object.assign(el('input'), { type: 'color', value: ch.corps }), bande = Object.assign(el('input'), { type: 'color', value: ch.bande });
-    f.append(champ('Joueur', joueur), champ('Numéro', numero), champ('Chandail', corps), champ('Bandes', bande));
+    const couleur = v => Object.assign(el('input'), { type: 'color', value: v.toLowerCase() });
+    const corps = couleur(ch.corps), bandes = couleur(ch.bandes), ligne = couleur(ch.ligne);
+    f.append(champ('Joueur', joueur), champ('Numéro', numero), champ('Corps', corps), champ('Bandes', bandes), champ('Ligne', ligne));
     const enr = Object.assign(el('button', 'ce-bouton is-principal', 'Enregistrer'), { type: 'submit' });
     const defaut = Object.assign(el('button', 'ce-bouton', 'Par défaut'), { type: 'button' });
     const actions = el('div', 'fc-actions'); actions.append(enr, defaut, el('small', null, 'Maquette : gardé sur cet appareil.'));
@@ -3737,7 +3754,7 @@ body{ overflow-x:hidden; }
     f.addEventListener('submit', ev => {
       ev.preventDefault();
       const n = numero.value.replace(/\D/g, '').slice(0, 2);
-      try{ localStorage.setItem(cleChandail(equipe), JSON.stringify({ joueur: joueur.value.trim(), numero: n, corps: corps.value, bande: bande.value })); }catch(e){}
+      try{ localStorage.setItem(cleChandail(equipe), JSON.stringify({ joueur: joueur.value.trim(), numero: n, corps: corps.value, bandes: bandes.value, ligne: ligne.value })); }catch(e){}
       toast('Chandail retiré enregistré.'); appliquer();
     });
     defaut.addEventListener('click', () => { try{ localStorage.removeItem(cleChandail(equipe)); }catch(e){} appliquer(); });
