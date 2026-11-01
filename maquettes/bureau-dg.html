@@ -1284,50 +1284,73 @@ body{ overflow-x:hidden; }
 .bmail-onglets button{ padding:8px 14px; border-radius:8px 8px 0 0; border:1px solid #dee2e6; border-bottom:none; background:#e9ecef; cursor:pointer; font:inherit; font-weight:700; }
 .bmail-onglets button.actif{ background:#fff; }
 
-/* Téléphone : la scène devient une pile d'objets. */
-/* ---------- Téléphone : l'Espace DG en web app ----------
-   Une colonne de cartes, du plus utilisé au moins utilisé ; « Soumettre un résultat » reste collé en haut. */
-.bu-pile{ display:flex; flex-direction:column; gap:14px; width:100%; max-width:560px; margin:0 auto; padding-bottom:28px; }
-/* La 2e ombre, de la couleur du fond, cache le contenu qui défile dans la marge au-dessus du bouton. */
-.mb-soumettre{ position:sticky; top:4px; z-index:30; display:flex; align-items:center; gap:12px; width:100%; min-height:62px; padding:10px 16px; border:none; border-radius:14px;
-  background:#E8590C; color:#fff; font:inherit; text-align:left; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.25), 0 -34px 0 6px var(--bg); }
-.mb-soumettre.urgent{ background:#c92a2a; }
-.mb-soumettre > i{ font-style:normal; font-size:26px; }
+/* ---------- Téléphone : l'Espace DG comme l'écran d'accueil d'un téléphone ----------
+   Fond d'écran sombre aux couleurs de l'équipe ; « Soumettre un résultat » collé en haut ; les notifications
+   (ce qui attend une action) ; des widgets pour ce qu'on regarde le plus ; puis des icônes d'apps groupées,
+   avec pastilles ; un dock fixe en bas avec les 4 raccourcis les plus utiles. */
+.bu-pile{ --fond-ecran:#0b0e13; position:relative; display:flex; flex-direction:column; gap:14px; width:100%; max-width:520px; margin:0 auto; padding-bottom:110px; color:#f1f3f5; }
+/* Collé tout en haut (sans marge au-dessus : rien ne défile visible derrière). */
+.mb-soumettre{ position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:12px; width:100%; min-height:62px; padding:10px 18px; border:none; border-radius:20px;
+  background:linear-gradient(135deg, #f76707, #e8590c 55%, #d9480f); color:#fff; font:inherit; text-align:left; cursor:pointer; box-shadow:0 8px 22px rgba(232,89,12,0.35); }
+.mb-soumettre.urgent{ background:linear-gradient(135deg, #f03e3e, #c92a2a); box-shadow:0 8px 22px rgba(201,42,42,0.4); }
+.mb-soumettre > i{ display:grid; place-items:center; width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,0.2); font-style:normal; font-size:22px; }
 .mb-soumettre b{ display:block; font:600 19px/1.1 'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.04em; }
 .mb-soumettre small{ font-size:13px; opacity:0.92; }
-.mb-soumettre .mb-fleche{ margin-left:auto; font-size:24px; font-style:normal; }
-.mb-carte{ padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:var(--surface); color:var(--ink); }
-.mb-carte > h2{ display:flex; justify-content:space-between; align-items:baseline; margin:0 0 8px; font:700 12.5px 'IBM Plex Sans', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-muted); }
-.mb-carte > h2 small{ font-weight:600; letter-spacing:0; text-transform:none; }
-.mb-equipe{ display:flex; align-items:center; gap:12px; }
-.mb-equipe img{ width:54px; height:54px; object-fit:contain; }
-.mb-equipe b{ display:block; font:500 22px/1.1 'Oswald', sans-serif; text-transform:uppercase; }
-.mb-equipe small{ color:var(--ink-muted); }
-.mb-equipe .forme{ justify-content:flex-start; margin-top:6px; }
-.mb-equipe .forme i{ width:22px; height:22px; border-radius:5px; font-size:10px; color:#fff; }
-.mb-ligne{ display:flex; align-items:center; gap:12px; width:100%; min-height:54px; padding:8px 0; border:none; border-top:1px solid var(--line); background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
-.mb-carte > h2 + .mb-ligne{ border-top:none; }
-.mb-ligne > i{ flex:none; width:30px; font-style:normal; font-size:21px; text-align:center; }
-.mb-ligne > img{ flex:none; width:30px; height:30px; object-fit:contain; }
-.mb-ligne > span{ flex:1; min-width:0; }
-.mb-ligne b{ display:block; font-weight:700; }
-.mb-ligne small{ display:block; color:var(--ink-muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.mb-ligne::after{ content:'›'; flex:none; font-size:22px; color:var(--ink-muted); }
-.mb-ligne.urgent b{ color:#c92a2a; }
-.mb-duel{ display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; gap:8px; text-align:center; }
-.mb-duel img{ width:56px; height:56px; object-fit:contain; }
-.mb-duel b{ display:block; font:500 15px 'Oswald', sans-serif; text-transform:uppercase; }
-.mb-duel small{ color:var(--ink-muted); font-size:12px; }
-.mb-duel > span{ font:700 13px 'IBM Plex Sans', sans-serif; color:var(--accent); }
-.mb-duel .score{ font:400 30px/1 var(--marqueur); }
-.mb-boutons{ display:flex; gap:8px; margin-top:12px; }
-.mb-boutons button{ flex:1; min-height:46px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:700 14px 'IBM Plex Sans', sans-serif; cursor:pointer; }
-.mb-apps{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
-.mb-app{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; min-height:86px; padding:10px 6px; border-radius:12px; border:1px solid var(--line);
-  background:var(--bg); color:var(--ink); font:600 13px/1.2 'IBM Plex Sans', sans-serif; text-align:center; cursor:pointer; }
-.mb-app > i{ font-style:normal; font-size:26px; }
-.mb-pastille{ position:absolute; top:6px; right:8px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:#e03131; color:#fff; font:700 12px/20px 'IBM Plex Sans', sans-serif; font-style:normal; }
-.mb-ok{ margin:4px 0 0; color:#2b8a3e; font-weight:700; }
+.mb-soumettre .mb-fleche{ width:auto; height:auto; margin-left:auto; background:none; font-size:26px; }
+.mb-titre{ margin:6px 4px -4px; font:700 12px 'IBM Plex Sans', sans-serif; letter-spacing:0.1em; text-transform:uppercase; color:rgba(241,243,245,0.55); }
+/* Notifications : comme celles d'un téléphone (icône d'app, titre, texte, heure). */
+.mb-notifs{ display:grid; gap:8px; }
+.mb-notif{ display:grid; grid-template-columns:38px minmax(0, 1fr) auto; gap:2px 10px; align-items:center; width:100%; padding:10px 12px; border:none; border-radius:18px;
+  background:rgba(255,255,255,0.09); backdrop-filter:blur(10px); color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.mb-notif > i{ grid-row:1 / span 2; display:grid; place-items:center; width:38px; height:38px; border-radius:10px; background:var(--c, #495057); font-style:normal; font-size:19px; }
+.mb-notif b{ font-size:14.5px; }
+.mb-notif small{ grid-column:2; font-size:13px; color:rgba(241,243,245,0.72); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mb-notif time{ grid-row:1; grid-column:3; font-size:11.5px; color:rgba(241,243,245,0.5); }
+.mb-notif.urgent b{ color:#ff8787; }
+.mb-ok{ margin:0; padding:12px 14px; border-radius:18px; background:rgba(64,192,87,0.14); color:#8ce99a; font-weight:700; font-size:14px; }
+/* Widgets */
+.mb-widgets{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.mb-widget{ position:relative; overflow:hidden; display:flex; flex-direction:column; min-height:150px; padding:14px; border:none; border-radius:22px; background:rgba(255,255,255,0.09);
+  color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.mb-widget.large{ grid-column:1 / -1; }
+.mb-widget > small:first-child{ font:700 11px 'IBM Plex Sans', sans-serif; letter-spacing:0.08em; text-transform:uppercase; color:rgba(241,243,245,0.62); }
+.mb-match{ background:linear-gradient(135deg, color-mix(in srgb, var(--ce-couleur) 70%, #000), color-mix(in srgb, var(--adv, #495057) 55%, #000)); }
+.mb-match-duel{ flex:1; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; margin:6px 0; text-align:center; }
+.mb-match-duel img{ width:58px; height:58px; object-fit:contain; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45)); }
+.mb-match-duel b{ display:block; font:600 14px 'Oswald', sans-serif; text-transform:uppercase; }
+.mb-match-duel span{ font:600 22px 'Oswald', sans-serif; opacity:0.85; }
+.mb-match-quand{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px; }
+.mb-match-quand b{ font:600 17px 'Oswald', sans-serif; text-transform:uppercase; }
+.mb-match-quand em{ font-style:normal; padding:5px 11px; border-radius:999px; background:rgba(255,255,255,0.2); font-weight:700; font-size:12.5px; }
+.mb-grand{ margin-top:auto; font:600 34px/1 'Oswald', sans-serif; }
+.mb-grand.v{ color:#8ce99a; } .mb-grand.d{ color:#ff8787; } .mb-grand.p{ color:#ffc078; }
+.mb-widget .forme{ justify-content:flex-start; margin-top:8px; }
+.mb-widget .forme i{ width:20px; height:20px; border-radius:6px; font-size:9.5px; color:#fff; }
+.mb-widget-sous{ font-size:12.5px; color:rgba(241,243,245,0.72); margin-top:4px; }
+.mb-widget-logo{ position:absolute; right:-14px; top:-10px; width:86px; height:86px; object-fit:contain; opacity:0.18; }
+.mb-une{ min-height:170px; justify-content:flex-end; background:#1a1f27 center / cover no-repeat; }
+.mb-une::before{ content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.85)); }
+.mb-une > *{ position:relative; }
+.mb-une > small:first-child{ position:absolute; top:14px; left:14px; padding:3px 9px; border-radius:999px; background:#e03131; color:#fff; letter-spacing:0.06em; }
+.mb-une b{ font:600 19px/1.15 'Oswald', sans-serif; text-transform:uppercase; }
+/* Icônes d'apps : 4 par rangée, coins arrondis, nom dessous, pastille rouge. */
+.mb-apps{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:18px 8px; padding:16px 10px; border-radius:24px; background:rgba(255,255,255,0.05); }
+.mb-app{ position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; padding:0; border:none; background:none; color:inherit; font:500 11.5px/1.2 'IBM Plex Sans', sans-serif; text-align:center; cursor:pointer; }
+.mb-app > i{ position:relative; display:grid; place-items:center; width:60px; height:60px; border-radius:16px; font-style:normal; font-size:29px;
+  background:var(--c, #495057); box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(0,0,0,0.35); }
+.mb-app > span{ max-width:100%; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.mb-app:active > i{ transform:scale(0.92); }
+/* L'icône Calendrier montre le jour, comme sur un téléphone. */
+.mb-app .mb-cal{ display:flex; flex-direction:column; justify-content:flex-start; background:#fff; color:#12181F; overflow:hidden; }
+.mb-cal small{ width:100%; padding:3px 0 1px; background:#e03131; color:#fff; font:700 9.5px 'IBM Plex Sans', sans-serif; text-transform:uppercase; }
+.mb-cal b{ font:600 28px/1.15 'Oswald', sans-serif; }
+.mb-pastille{ position:absolute; top:-6px; right:-6px; min-width:22px; height:22px; padding:0 6px; border-radius:11px; background:#fa5252; color:#fff; font:700 12.5px/22px 'IBM Plex Sans', sans-serif; font-style:normal; box-shadow:0 0 0 2px var(--fond-ecran); }
+/* Dock : fixe en bas, verre dépoli. */
+.mb-dock{ position:fixed; z-index:60; left:50%; bottom:calc(10px + env(safe-area-inset-bottom, 0px)); translate:-50% 0; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;
+  width:min(500px, calc(100vw - 20px)); padding:10px 8px 8px; border-radius:28px; background:rgba(24,28,36,0.92); backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4);
+  box-shadow:0 10px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08); }
+.mb-dock .mb-app > i{ width:52px; height:52px; border-radius:15px; font-size:25px; }
+.mb-dock .mb-app{ font-size:10.5px; color:rgba(241,243,245,0.85); }
 @media (max-width:600px){ .bu-zoom-objet.is-effectif{ background:#f4f1e8; } .bu-zoom{ padding:0; } .bu-zoom-objet{ width:100vw !important; max-height:100vh; height:100vh; max-height:100dvh; height:100dvh; border-radius:0 !important; } .bmail{ grid-template-columns:1fr; } .bu-zoom-corps{ padding:16px; } }
 /* Mobile : toute la page défile (l'en-tête du site et la bande de l'équipe partent vers le haut au lieu de
    rester figés), la bande tient sur une ligne, et le panneau ouvert bloque le défilement de la page derrière. */
@@ -1337,6 +1360,17 @@ body{ overflow-x:hidden; }
   .app:has(#scene[hidden]) > main{ flex:none; overflow:visible; }
   html:has(#zoom:not([hidden])), html:has(#zoom:not([hidden])) body{ overflow:hidden; }
   .bu-zoom-corps{ overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+  /* Écran d'accueil : pas d'en-tête du site (le « ← » de la barre y ramène), fond d'écran sombre aux
+     couleurs de l'équipe, barre d'état discrète au lieu de la bande de couleur. */
+  .app:has(#scene[hidden]) > site-header{ display:none; }
+  html:has(#scene[hidden]) body{ background:#0b0e13; }
+  .app:has(#scene[hidden]){ background:radial-gradient(120% 60% at 15% 0%, color-mix(in srgb, var(--ce-couleur) 38%, transparent), transparent 70%), #0b0e13; }
+  .app:has(#scene[hidden]) > main{ background:none; }
+  .app:has(#scene[hidden]) > .ce-bande{ background:transparent; color:#f1f3f5; }
+  .app:has(#scene[hidden]) > .ce-bande .ce-retour{ display:inline-flex; align-items:center; flex:none; min-height:38px; padding:0 10px; border-radius:12px; background:rgba(255,255,255,0.1); color:#fff; font-weight:700; font-size:14px; text-decoration:none; }
+  .app:has(#scene[hidden]) > .ce-bande .ce-equipe-btn{ background:rgba(255,255,255,0.1); color:#fff; border-color:transparent; }
+  .app:has(#scene[hidden]) > .ce-bande .ce-seg{ background:rgba(255,255,255,0.1); }
+  .app:has(#scene[hidden]) > .ce-bande .ce-seg button{ color:#fff; }
   .app > .ce-bande{ flex-wrap:nowrap; padding:6px 12px; gap:8px; }
   .app > .ce-bande .ce-equipe-btn{ flex:1 1 auto; min-width:0; min-height:38px; font-size:15px; }
   .app > .ce-bande .ce-equipe-btn span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -3293,23 +3327,35 @@ body{ overflow-x:hidden; }
     box.replaceChildren(el('span', 'cell-nb', String(alertes.length)), el('span', 'cell-txt', alertes[0].icone + ' ' + alertes[0].court));
   }
 
-  /* ---------- Téléphone : la pile d'objets ---------- */
-  // Ordre (en attendant les vraies stats de visites) : ce qu'un DG fait le plus souvent d'abord —
-  // soumettre un résultat (toujours collé en haut), ce qui attend une action, le prochain match,
-  // le dernier résultat, les outils de l'Espace DG, puis le reste de la ligue.
+  /* ---------- Téléphone : l'écran d'accueil ---------- */
+  // Comme un téléphone : « Soumettre un résultat » toujours en haut, les notifications (ce qui attend une
+  // action), des widgets pour le prochain match, l'équipe, le dernier match et l'annonce à la une, puis les
+  // apps (outils du DG, pages de la ligue) et un dock fixe avec les 4 raccourcis les plus utiles.
+  // [page, icône, nom court, couleur de l'icône]
+  const APPS_MOBILE_DG = [
+    ['alignement.html', '📋', 'Alignement', '#1c7ed6'], ['gardien.html', '🥅', '2e gardien', '#0ca678'], ['encheres.html', '💰', 'Enchères', '#2f9e44'],
+    ['transactions.html', '🔁', 'Transactions', '#7048e8'], ['ratings.html', '📊', 'Ratings', '#4263eb'], ['profil.html', '🪪', 'Ma fiche', '#495057'], ['publier.html', '✏️', 'Publier', '#f08c00'],
+  ];
+  const ALERTE_VERS = { console: ['resultat.html', '#e8590c'], postit: ['gardien.html', '#0ca678'], ordinateur: ['transactions.html', '#7048e8'], agents: ['encheres.html', '#2f9e44'] };
   function rendrePile(){
     const pile = $('pile');
-    const t = classement.find(x => x.code === equipe);
-    const mv = (lib, url) => [lib, url];
-    const ouvrir = (b, page) => b.addEventListener('click', () => ouvrirZoom('page', b, page));
-    const ligne = (icone, titre, sous, action, cls) => {
-      const b = el('button', 'mb-ligne' + (cls ? ' ' + cls : '')); b.type = 'button';
-      const s = el('span'); s.append(el('b', null, titre)); if(sous) s.append(el('small', null, sous));
-      b.append(icone instanceof Node ? icone : el('i', null, icone), s); b.addEventListener('click', () => action(b));
+    const t = classement.find(x => x.code === equipe), slug = (EQUIPES.get(equipe) || {}).slug || '';
+    const page = (b, titre, url) => ouvrirZoom(url.startsWith(DG) ? 'ordinateur' : 'page', b, [titre, url]);
+    const titre = texte => el('h2', 'mb-titre', texte);
+    const blocs = [];
+    // Une icône d'app (bouton) : icône colorée, nom dessous, pastille cachée tant qu'elle est vide.
+    const app = (icone, nomApp, couleur, action) => {
+      const b = el('button', 'mb-app'); b.type = 'button';
+      const i = icone instanceof Node ? icone : el('i', null, icone);
+      if(couleur) i.style.setProperty('--c', couleur);
+      const p = el('i', 'mb-pastille'); p.hidden = true; i.append(p);
+      b.append(i, el('span', null, nomApp)); b.addEventListener('click', () => action(b));
+      b.pastille = n => { p.hidden = !n; p.textContent = n ? String(n) : ''; };
       return b;
     };
-    const carte = (titre, droite, ...enfants) => { const c = el('section', 'mb-carte'); const h = el('h2', null, titre); if(droite) h.append(el('small', null, droite)); c.append(h, ...enfants); return c; };
-    const blocs = [];
+    const iconeCalendrier = () => { const i = el('i', 'mb-cal'), d = new Date(); i.append(el('small', null, d.toLocaleDateString('fr-CA', { weekday: 'short' }).replace('.', '')), el('b', null, String(d.getDate()))); return i; };
+    const depister = (b, adv) => { advDepistage = adv || ''; ouvrirZoom('depistage', b); };
+    const versAlignement = b => estDG() ? page(b, 'Alignement', DG + 'alignement.html') : page(b, 'Alignement', 'equipe.html?team=' + slug + '&vue=alignement');
 
     // 1. Soumettre un résultat (collé en haut) : rouge s'il y a un match en retard.
     const ret = retards(), prochain = prochainMatch();
@@ -3318,86 +3364,103 @@ body{ overflow-x:hidden; }
       el('small', null, ret.length ? ret.length + ' match' + (ret.length > 1 ? 's' : '') + ' en retard · ' + (ret[0].v === equipe ? '@ ' : 'vs ') + adversaireDe(ret[0]) + ' (' + fMois.format(parse(ret[0].date)) + ')'
         : prochain ? (prochain.date === AUJ ? 'Ce soir' : fCourt.format(parse(prochain.date))) + ' · ' + (prochain.v === equipe ? '@ ' : 'vs ') + nom(adversaireDe(prochain)) : 'Photo de l’écran de fin de match'));
     sb.append(el('i', null, '📷'), st, el('i', 'mb-fleche', '›'));
-    sb.addEventListener('click', () => ouvrirZoom('console', sb, mv('Soumettre un résultat', DG + 'resultat.html')));
+    sb.addEventListener('click', () => page(sb, 'Soumettre un résultat', DG + 'resultat.html'));
     blocs.push(sb);
 
-    // 2. Mon équipe : fiche, rang, 5 derniers matchs.
-    const div = divisionDe(equipe), rangDiv = div ? rangDe(R.classement(resultats, div.equipes), equipe) : 0;
-    const eqb = el('div', 'mb-equipe'), txt = el('div');
-    txt.append(el('b', null, nom(equipe)), el('small', null, fiche(t) + ' · ' + (t ? t.pts : 0) + ' pts' + (rangDiv ? ' · ' + ordinal(rangDiv) + ' ' + div.nom : '')), forme());
-    eqb.append(logo(equipe), txt);
-    blocs.push(carte('Mon équipe', '', eqb));
+    // 2. Notifications : ce qui attend le DG (remplies quand les alertes arrivent) ; en public, la connexion.
+    const notifs = el('div', 'mb-notifs');
+    const notif = (icone, couleur, titreN, texte, quand, action, urgent) => {
+      const b = el('button', 'mb-notif' + (urgent ? ' urgent' : '')); b.type = 'button';
+      const i = el('i', null, icone); i.style.setProperty('--c', couleur);
+      b.append(i, el('b', null, titreN), el('time', null, quand), el('small', null, texte)); b.addEventListener('click', () => action(b));
+      return b;
+    };
+    if(estDG()){ blocs.push(titre('Notifications'), notifs); notifs.append(el('p', 'mb-ok', 'On vérifie…')); }
+    else{ notifs.append(notif('🔒', '#495057', 'Connexion des DG', 'Alignement, transactions, enchères, 2e gardien…', '', () => { location.href = DG; })); blocs.push(notifs); }
 
-    // 3. À faire (DG) : rempli quand les alertes arrivent.
-    const afaire = carte('À faire', ''), nbAfaire = el('small');
-    afaire.firstChild.append(nbAfaire);
-    if(estDG()){ afaire.append(el('p', 'ce-vide', 'On vérifie…')); blocs.push(afaire); }
-
-    // 4. Prochain match → dépistage complet ; 5. Dernier résultat → fiche du match.
+    // 3. Widgets.
+    const widgets = el('div', 'mb-widgets');
     const pm = prochainsAdversaires()[0];
     if(pm){
-      const adv = adversaireDe(pm), ta = classement.find(x => x.code === adv);
-      const cote = (code, x) => { const d = el('div'); d.append(logo(code), el('b', null, code), el('small', null, fiche(x))); return d; };
-      const duel = el('div', 'mb-duel'); duel.append(cote(equipe, t), el('span', null, pm.v === equipe ? '@' : 'vs'), cote(adv, ta));
-      const bts = el('div', 'mb-boutons'), b1 = el('button', null, '🔎 Dépistage'), b2 = el('button', null, '📅 Calendrier');
-      b1.type = b2.type = 'button';
-      b1.addEventListener('click', () => { advDepistage = adv; ouvrirZoom('depistage', b1); });
-      ouvrir(b2, mv('Calendrier', 'calendrier.html'));
-      bts.append(b1, b2);
-      blocs.push(carte(pm.date < AUJ ? 'Match en retard' : 'Prochain match', (pm.date === AUJ ? 'ce soir' : fCourt.format(parse(pm.date))) + ' · ' + serieContre(adv), duel, bts));
+      const adv = adversaireDe(pm), w = el('button', 'mb-widget large mb-match'); w.type = 'button';
+      w.style.setProperty('--adv', (COULEURS[adv] || ['#495057'])[0]);
+      const duel = el('div', 'mb-match-duel'), cote = c => { const d = el('div'); d.append(logo(c), el('b', null, c)); return d; };
+      duel.append(cote(equipe), el('span', null, pm.v === equipe ? '@' : 'vs'), cote(adv));
+      const quand = el('div', 'mb-match-quand'), q = el('span');
+      q.append(el('b', null, pm.date === AUJ ? 'Ce soir' : fCourt.format(parse(pm.date))), document.createTextNode(' · ' + serieContre(adv)));
+      quand.append(q, el('em', null, '🔎 Dépistage'));
+      w.append(el('small', null, pm.date < AUJ ? '⚠ Match en retard' : 'Prochain match'), duel, quand);
+      w.addEventListener('click', () => depister(w, adv));
+      widgets.append(w);
     }
+    // Mon équipe : fiche, rang de division, forme.
+    const div = divisionDe(equipe), rangDiv = div ? rangDe(R.classement(resultats, div.equipes), equipe) : 0;
+    const we = el('button', 'mb-widget'); we.type = 'button';
+    we.append(el('small', null, 'Mon équipe'), logo(equipe, 'mb-widget-logo'), el('span', 'mb-grand', fiche(t)),
+      el('span', 'mb-widget-sous', (t ? t.pts : 0) + ' pts' + (rangDiv ? ' · ' + ordinal(rangDiv) + ' ' + div.nom.replace('Division ', '') : '')), forme());
+    we.addEventListener('click', () => page(we, nom(equipe), 'equipe.html?team=' + slug));
+    widgets.append(we);
+    // Dernier match : résultat en gros, l'adversaire en filigrane.
     const dernier = mesMatchs().filter(x => x.joue).sort((a, b) => b.date.localeCompare(a.date) || Number(b.num) - Number(a.num))[0];
     if(dernier){
-      const r = resultatPour(dernier), pour = dernier.v === equipe ? dernier.bv : dernier.bd, contre = dernier.v === equipe ? dernier.bd : dernier.bv;
-      const adv = adversaireDe(dernier);
-      blocs.push(carte('Dernier résultat', fCourt.format(parse(dernier.date)),
-        ligne(logo(adv), (r === 'v' ? 'Victoire ' : r === 'p' ? 'Défaite (' + (R.FINS[dernier.fin] || 'prol.') + ') ' : 'Défaite ') + pour + '-' + contre + (dernier.v === equipe ? ' @ ' : ' vs ') + nom(adv), 'Stats et photo du match', b => ouvrirMatch(dernier.num, b))));
+      const r = resultatPour(dernier), pour = dernier.v === equipe ? dernier.bv : dernier.bd, contre = dernier.v === equipe ? dernier.bd : dernier.bv, adv = adversaireDe(dernier);
+      const wd = el('button', 'mb-widget'); wd.type = 'button';
+      wd.append(el('small', null, 'Dernier match'), logo(adv, 'mb-widget-logo'), el('span', 'mb-grand ' + r, (r === 'v' ? 'V ' : r === 'p' ? 'DP ' : 'D ') + pour + '-' + contre),
+        el('span', 'mb-widget-sous', (dernier.v === equipe ? '@ ' : 'vs ') + nom(adv) + ' · ' + fMois.format(parse(dernier.date))), el('span', 'mb-widget-sous', 'Stats et photo ›'));
+      wd.addEventListener('click', () => ouvrirMatch(dernier.num, wd));
+      widgets.append(wd);
     }
+    // À la une : la dernière annonce, avec sa photo (remplie quand le fil arrive).
+    const une = el('button', 'mb-widget large mb-une'); une.type = 'button'; une.hidden = true;
+    une.addEventListener('click', () => page(une, 'Annonces', './?fil=annonces'));
+    widgets.append(une);
+    blocs.push(titre('En bref'), widgets);
 
-    // 6. Espace DG : les outils (sauf Soumettre, déjà en haut) ; en public, la connexion.
+    // 4. Les apps : outils du DG, puis la ligue.
+    const pastilles = {};
     if(estDG()){
-      const apps = el('div', 'mb-apps'), pastilles = {};
-      APPS_DG.slice(1).forEach(([page, icone, titre]) => {
-        const b = el('button', 'mb-app'); b.type = 'button';
-        const p = el('i', 'mb-pastille'); p.hidden = true; pastilles[page] = p;
-        b.append(el('i', null, icone), document.createTextNode(titre), p);
-        b.addEventListener('click', () => ouvrirZoom('ordinateur', b, mv(titre, DG + page)));
-        apps.append(b);
-      });
-      blocs.push(carte('Espace DG', '', apps));
-      // Alertes : la carte « À faire » et les pastilles des outils.
-      alertesDG().then(l => {
-        const versPage = { console: ['Soumettre un résultat', 'resultat.html'], postit: ['2e gardien', 'gardien.html'], ordinateur: ['Transactions', 'transactions.html'], agents: ['Enchères', 'encheres.html'] };
-        afaire.replaceChildren(afaire.firstChild);
-        nbAfaire.textContent = l.length ? String(l.length) : '';
-        if(!l.length) afaire.append(el('p', 'mb-ok', '✔ Tout est à jour'));
-        l.forEach(a => {
-          const [titre, page] = versPage[a.objet] || [a.titre, ''];
-          afaire.append(ligne(a.icone, a.titre, a.texte, b => ouvrirZoom('ordinateur', b, mv(titre, DG + page)), a.urgent ? 'urgent' : ''));
-          const p = pastilles[page]; if(p){ p.hidden = false; p.textContent = String((Number(p.textContent) || 0) + 1); }
-        });
-      });
-    }else blocs.push(carte('Espace DG', '', ligne('🔒', 'Connexion des DG', 'Alignement, transactions, enchères, 2e gardien…', () => { location.href = DG; })));
+      const g = el('div', 'mb-apps');
+      APPS_MOBILE_DG.forEach(([p, icone, nomApp, couleur]) => { const b = app(icone, nomApp, couleur, bt => page(bt, nomApp, DG + p)); pastilles[p] = b; g.append(b); });
+      g.append(app('🔎', 'Dépistage', '#f59f00', b => depister(b)));
+      blocs.push(titre('Mes outils'), g);
+    }
+    const ligue = el('div', 'mb-apps');
+    [[iconeCalendrier(), 'Calendrier', '', 'calendrier.html'], ['🏆', 'Classement', '#f59f00', 'classement.html'], ['📈', 'Stats', '#12b886', 'stats.html'],
+      ['🚨', 'Résultats', '#e03131', 'resultats.html?equipe=' + equipe], ['📢', 'Annonces', '#fa5252', './?fil=annonces'], ['📰', 'Nouvelles', '#339af0', './?fil=nouvelles'],
+      ['🔄', 'Échanges', '#845ef7', './?fil=transactions'], ['👕', 'Mon équipe', 'var(--ce-couleur)', 'equipe.html?team=' + slug + '&vue=alignement'],
+      ...(estDG() ? [] : [['💰', 'Enchères', '#2f9e44', 'encheres.html']]), ['💵', 'Masse', '#37b24d', 'masse.html'], ['📒', 'Règlements', '#a0522d', 'reglements.html'], ['📺', 'LNHQ TV', '#343a40', 'tv.html'],
+    ].forEach(([icone, nomApp, couleur, url]) => ligue.append(app(icone, nomApp, couleur, b => page(b, nomApp, url))));
+    blocs.push(titre('La ligue'), ligue);
 
-    // 7. La ligue : les pages du site (aperçu de la dernière annonce, nouvelle et transaction).
-    const slug = (EQUIPES.get(equipe) || {}).slug || '';
-    const lig = carte('La ligue', '');
-    const liensLigue = [
-      ['📢', 'Annonces', './?fil=annonces', 'annonce'], ['📰', 'Nouvelles', './?fil=nouvelles', 'nouvelle'], ['🔁', 'Transactions', './?fil=transactions', 'transaction'],
-      ['🏆', 'Classement', 'classement.html', t ? ordinal(rangDe(classement, equipe)) + ' de la ligue' : ''], ['📈', 'Stats des joueurs', 'stats.html', ''],
-      ['📅', 'Calendrier', 'calendrier.html', ''], ['🚨', 'Résultats', 'resultats.html?equipe=' + equipe, ''],
-      ['👕', 'Page de l’équipe', 'equipe.html?team=' + slug + '&vue=alignement', 'Alignement et salaires'], ['💰', 'Enchères', 'encheres.html', 'Agents libres'],
-      ['💵', 'Masse salariale', 'masse.html', ''], ['📒', 'Règlements', 'reglements.html', ''],
-    ];
-    const apercus = {};
-    liensLigue.forEach(([icone, titre, url, sous]) => {
-      const estType = ['annonce', 'nouvelle', 'transaction'].includes(sous);
-      const b = ligne(icone, titre, estType ? '' : sous, bt => ouvrirZoom('page', bt, mv(titre, url)));
-      if(estType){ const s = el('small'); b.querySelector('span').append(s); apercus[sous] = s; }
-      lig.append(b);
+    // 5. Dock : les 4 raccourcis les plus utiles, toujours à portée du pouce.
+    const dock = el('nav', 'mb-dock'); dock.setAttribute('aria-label', 'Raccourcis');
+    dock.append(app(iconeCalendrier(), 'Calendrier', '', b => page(b, 'Calendrier', 'calendrier.html')), app('🔎', 'Dépistage', '#f59f00', b => depister(b)),
+      app('📋', 'Alignement', '#1c7ed6', versAlignement), app('🏆', 'Classement', '#f59f00', b => page(b, 'Classement', 'classement.html')));
+    blocs.push(dock);
+
+    // Les alertes : notifications et pastilles des apps.
+    if(estDG()) alertesDG().then(l => {
+      notifs.replaceChildren();
+      if(!l.length) notifs.append(el('p', 'mb-ok', '✔ Tout est à jour'));
+      const compte = {};
+      l.forEach(a => {
+        const [p, couleur] = ALERTE_VERS[a.objet] || ['', '#495057'];
+        notifs.append(notif(a.icone, couleur, a.titre, a.texte, a.urgent ? 'urgent' : 'maintenant', b => p ? page(b, a.titre, DG + p) : null, a.urgent));
+        compte[p] = (compte[p] || 0) + 1;
+      });
+      Object.entries(compte).forEach(([p, n]) => pastilles[p] && pastilles[p].pastille(n));
     });
-    blocs.push(lig);
-    filLigue().then(fil => Object.entries(apercus).forEach(([type, s]) => { const x = fil.find(y => y.type === type); s.textContent = x ? x.titre : ''; })).catch(() => {});
+    filLigue().then(fil => {
+      const x = fil.find(y => y.type === 'annonce') || fil.find(y => y.type === 'nouvelle');
+      if(!x) return;
+      une.replaceChildren(el('small', null, x.type === 'annonce' ? 'Annonce' : 'Nouvelle'), el('b', null, x.titre), el('span', 'mb-widget-sous', x.date ? fMois.format(x.date) : ''));
+      if(x.photos && x.photos[0]){
+        const i = new Image();
+        i.onload = () => { une.style.backgroundImage = `url("${i.src}")`; };
+        i.src = 'https://lh3.googleusercontent.com/d/' + x.photos[0] + '=w800';
+      }
+      une.hidden = false;
+    }).catch(() => {});
 
     pile.replaceChildren(...blocs);
   }
