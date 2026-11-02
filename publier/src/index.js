@@ -228,18 +228,21 @@ async function lirePhotoResultat(env, photo, ctx) {
       },
     },
   };
-  // Modèle gratuit souvent surchargé le soir : surcharge (503) ou réponse trop lente →
-  // on passe tout de suite au modèle de secours, plus léger, plutôt que d'attendre.
+  // Le Lite d'abord : sur 75 lectures (23 oct.-2 nov. 2026), le Flash complet n'a jamais
+  // répondu (surchargé ou plus de 15 s) et le Lite a tout lu, en 2 s (médiane). Le Lite refuse
+  // la haute définition et le réglage de réflexion (simple) : on ne les lui envoie pas.
+  // Surcharge (503) ou réponse trop lente → modèle suivant, plutôt que d'attendre.
   const modeles = [
-    { nom: env.GEMINI_MODEL || 'gemini-flash-latest', delai: 15000 },
-    { nom: env.GEMINI_MODEL_SECOURS || 'gemini-flash-lite-latest', delai: 25000 },
+    { nom: env.GEMINI_MODEL || 'gemini-flash-lite-latest', delai: 20000, simple: true },
+    { nom: env.GEMINI_MODEL_SECOURS || 'gemini-flash-latest', delai: 15000 },
   ];
   const debut = Date.now();
   const essais = [];   // historique : [modèle, durée, statut] de chaque appel
   const fin = (reponse, extra) => { noterLecture(env, ctx, { t: new Date(debut).toISOString(), match: String(photo.match || ''), ko: Math.round(photo.data.length * 0.75 / 1024), ms: Date.now() - debut, essais, ...extra }); return json(reponse); };
   let derniere = 'lecture';
-  for (const { nom: modele, delai } of modeles) {
+  for (const { nom: modele, delai, simple } of modeles) {
     const config = JSON.parse(JSON.stringify(corps.generationConfig));
+    if (simple) { delete config.mediaResolution; delete config.thinkingConfig; }
     for (let essai = 0; essai < 3; essai++) {
       const t0 = Date.now();
       try {

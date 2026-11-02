@@ -38,8 +38,9 @@ id = "a9ea6260be4c4228a9afdd935f8cd6c6"
 # Valeurs affichées dans Zero Trust → Access → Applications → (l'application) → Vue d'ensemble.
 ACCESS_TEAM_DOMAIN = "https://lnhq.cloudflareaccess.com"
 ACCESS_AUD = "ba5688f1486b883058a48ba547af4531e1e6e957f61f481f162a161fdaff1766"
-# Modèle qui lit les photos de fin de match (alias : toujours le Flash le plus récent).
-GEMINI_MODEL = "gemini-flash-latest"
+# Modèle qui lit les photos de fin de match (alias : toujours le Flash Lite le plus récent ;
+# le Flash complet, toujours surchargé, sert de secours — voir lirePhotoResultat).
+GEMINI_MODEL = "gemini-flash-lite-latest"
 
 # Secrets (jamais dans ce fichier) : npx wrangler secret put SCRIPT_URL
 #                                    npx wrangler secret put SCRIPT_SECRET
