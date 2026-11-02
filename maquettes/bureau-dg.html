@@ -2617,7 +2617,7 @@ body{ overflow-x:hidden; }
      de face, l'ouverture du V (on y voit le col arrière, puis l'intérieur du dos). Le dos couvre toute la zone (opaque). */
   /* Photos des vrais chandails retirés, de dos (images générées d'après des photos réelles, cadrées comme le chandail gris :
      240 × 300 px, coin à x 0, y 150 de l'image). Quand il y en a une, elle remplace le chandail peint. Clé : « CODE|Joueur ».
-     Les 170 joueurs de RETIRES en ont une ; un « autre joueur » saisi à la main garde le chandail peint. */
+     Les 170 premiers joueurs de RETIRES en ont une ; les ajouts sans photo et un « autre joueur » saisi à la main gardent le chandail peint. */
   const PHOTOS_CHANDAILS = Object.fromEntries(Object.entries({
     ANA: { 'Paul Kariya': 'kariya', 'Teemu Selänne': 'selanne', 'Scott Niedermayer': 'niedermayer', 'Ryan Getzlaf': 'getzlaf' },
     BOS: { 'Bobby Orr': 'orr', 'Ray Bourque': 'bourque', 'Phil Esposito': 'esposito', 'Cam Neely': 'neely', 'Johnny Bucyk': 'bucyk',
@@ -2708,22 +2708,23 @@ body{ overflow-x:hidden; }
     ANA: [['Paul Kariya', '9', 1994, 2003], ['Teemu Selänne', '8', 1996, 2014], ['Scott Niedermayer', '27', 2005, 2010], ['Ryan Getzlaf', '15', 2005, 2022]],
     BOS: [['Bobby Orr', '4', 1966, 1976], ['Ray Bourque', '77', 1979, 2000], ['Phil Esposito', '7', 1967, 1975], ['Cam Neely', '8', 1986, 1996], ['Johnny Bucyk', '9', 1957, 1978],
       ['Eddie Shore', '2', 1926, 1940], ['Dit Clapper', '5', 1927, 1947], ['Milt Schmidt', '15', 1936, 1955], ['Rick Middleton', '16', 1976, 1988], ['Willie O’Ree', '22', 1957, 1961],
-      ['Terry O’Reilly', '24', 1971, 1985], ['Zdeno Chara', '33', 2006, 2020]],
+      ['Terry O’Reilly', '24', 1971, 1985], ['Zdeno Chara', '33', 2006, 2020], ['Lionel Hitchman', '3', 1924, 1934], ['Patrice Bergeron', '37', 2003, 2023]],
     BUF: [['Gilbert Perreault', '11', 1970, 1987], ['Dominik Hašek', '39', 1992, 2001], ['Rick Martin', '7', 1971, 1981], ['René Robert', '14', 1971, 1979], ['Pat LaFontaine', '16', 1991, 1997],
       ['Danny Gare', '18', 1974, 1981], ['Tim Horton', '2', 1972, 1974], ['Ryan Miller', '30', 2002, 2014]],
     CGY: [['Jarome Iginla', '12', 1996, 2013], ['Lanny McDonald', '9', 1981, 1989], ['Mike Vernon', '30', 1982, 1994], ['Miikka Kiprusoff', '34', 2003, 2013]],
-    CAR: [['Ron Francis', '10', 1981, 2004], ['Rod Brind’Amour', '17', 2000, 2010], ['Glen Wesley', '2', 1994, 2008]],
+    CAR: [['Ron Francis', '10', 1981, 2004], ['Rod Brind’Amour', '17', 2000, 2010], ['Glen Wesley', '2', 1994, 2008], ['Eric Staal', '12', 2003, 2016]],
     CHI: [['Stan Mikita', '21', 1958, 1980], ['Bobby Hull', '9', 1957, 1972], ['Tony Esposito', '35', 1969, 1984], ['Denis Savard', '18', 1980, 1997], ['Glenn Hall', '1', 1957, 1967],
-      ['Pierre Pilote', '3', 1955, 1968], ['Keith Magnuson', '3', 1969, 1980], ['Marián Hossa', '81', 2009, 2017]],
+      ['Pierre Pilote', '3', 1955, 1968], ['Keith Magnuson', '3', 1969, 1980], ['Marián Hossa', '81', 2009, 2017], ['Chris Chelios', '7', 1990, 1999]],
     COL: [['Joe Sakic', '19', 1995, 2009], ['Patrick Roy', '33', 1995, 2003], ['Peter Forsberg', '21', 1995, 2008], ['Ray Bourque', '77', 2000, 2001], ['Adam Foote', '52', 1995, 2011], ['Milan Hejduk', '23', 1998, 2013]],
     CBJ: [['Rick Nash', '61', 2002, 2012]],
-    DAL: [['Mike Modano', '9', 1989, 2010], ['Neal Broten', '7', 1980, 1997], ['Bill Goldsworthy', '8', 1967, 1977], ['Jere Lehtinen', '26', 1995, 2010], ['Sergei Zubov', '56', 1996, 2009]],
+    DAL: [['Mike Modano', '9', 1989, 2010], ['Neal Broten', '7', 1980, 1997], ['Bill Goldsworthy', '8', 1967, 1977], ['Jere Lehtinen', '26', 1995, 2010], ['Sergei Zubov', '56', 1996, 2009], ['Bill Masterton', '19', 1967, 1968]],
     DET: [['Gordie Howe', '9', 1946, 1971], ['Steve Yzerman', '19', 1983, 2006], ['Ted Lindsay', '7', 1944, 1957], ['Alex Delvecchio', '10', 1950, 1973], ['Sid Abel', '12', 1938, 1952],
-      ['Terry Sawchuk', '1', 1949, 1964], ['Nicklas Lidström', '5', 1991, 2012], ['Red Kelly', '4', 1947, 1960]],
+      ['Terry Sawchuk', '1', 1949, 1964], ['Nicklas Lidström', '5', 1991, 2012], ['Red Kelly', '4', 1947, 1960], ['Sergei Fedorov', '91', 1990, 2003]],
     EDM: [['Wayne Gretzky', '99', 1979, 1988], ['Mark Messier', '11', 1979, 1991], ['Jari Kurri', '17', 1980, 1990], ['Paul Coffey', '7', 1980, 1987], ['Grant Fuhr', '31', 1981, 1991],
-      ['Kevin Lowe', '4', 1979, 1992], ['Al Hamilton', '3', 1979, 1980]],
+      ['Kevin Lowe', '4', 1979, 1992], ['Al Hamilton', '3', 1979, 1980], ['Glenn Anderson', '9', 1980, 1991]],
     FLA: [['Roberto Luongo', '1', 2000, 2019]],
-    LAK: [['Marcel Dionne', '16', 1975, 1987], ['Luc Robitaille', '20', 1986, 2006], ['Dave Taylor', '18', 1977, 1994], ['Rogie Vachon', '30', 1971, 1978], ['Rob Blake', '4', 1989, 2006], ['Dustin Brown', '23', 2003, 2022]],
+    LAK: [['Marcel Dionne', '16', 1975, 1987], ['Luc Robitaille', '20', 1986, 2006], ['Dave Taylor', '18', 1977, 1994], ['Rogie Vachon', '30', 1971, 1978], ['Rob Blake', '4', 1989, 2006], ['Dustin Brown', '23', 2003, 2022],
+      ['Wayne Gretzky', '99', 1988, 1996], ['Anže Kopitar', '11', 2006, 2026]],
     MIN: [['Mikko Koivu', '9', 2005, 2020]],
     MTL: [['Maurice Richard', '9', 1942, 1960], ['Jean Béliveau', '4', 1950, 1971], ['Guy Lafleur', '10', 1971, 1985], ['Jacques Plante', '1', 1952, 1963], ['Doug Harvey', '2', 1947, 1961],
       ['Émile Bouchard', '3', 1941, 1956], ['Bernard Geoffrion', '5', 1950, 1964], ['Guy Lapointe', '5', 1968, 1982], ['Howie Morenz', '7', 1923, 1937], ['Yvan Cournoyer', '12', 1963, 1979],
@@ -2735,7 +2736,7 @@ body{ overflow-x:hidden; }
       ['Bob Nystrom', '23', 1972, 1986], ['John Tonelli', '27', 1978, 1986], ['Butch Goring', '91', 1980, 1985]],
     NYR: [['Mark Messier', '11', 1991, 2004], ['Rod Gilbert', '7', 1960, 1978], ['Eddie Giacomin', '1', 1965, 1975], ['Brian Leetch', '2', 1987, 2004], ['Mike Richter', '35', 1989, 2003],
       ['Adam Graves', '9', 1991, 2001], ['Andy Bathgate', '9', 1952, 1964], ['Harry Howell', '3', 1952, 1969], ['Jean Ratelle', '19', 1960, 1975], ['Vic Hadfield', '11', 1961, 1974], ['Henrik Lundqvist', '30', 2005, 2020]],
-    OTT: [['Daniel Alfredsson', '11', 1995, 2013], ['Chris Phillips', '4', 1997, 2015], ['Frank Finnigan', '8', 1924, 1934]],
+    OTT: [['Daniel Alfredsson', '11', 1995, 2013], ['Chris Phillips', '4', 1997, 2015], ['Frank Finnigan', '8', 1924, 1934], ['Chris Neil', '25', 2001, 2017]],
     PHI: [['Bobby Clarke', '16', 1969, 1984], ['Bernie Parent', '1', 1967, 1979], ['Bill Barber', '7', 1972, 1984], ['Mark Howe', '2', 1982, 1992], ['Barry Ashbee', '4', 1970, 1974], ['Eric Lindros', '88', 1992, 2000]],
     PIT: [['Mario Lemieux', '66', 1984, 2006], ['Jaromír Jágr', '68', 1990, 2001], ['Michel Brière', '21', 1969, 1970]],
     SJS: [['Patrick Marleau', '12', 1997, 2021], ['Joe Thornton', '19', 2005, 2020], ['Owen Nolan', '11', 1995, 2003]],
@@ -2744,11 +2745,15 @@ body{ overflow-x:hidden; }
     TBL: [['Martin St-Louis', '26', 2000, 2014], ['Vincent Lecavalier', '4', 1998, 2013]],
     TOR: [['Mats Sundin', '13', 1994, 2008], ['Dave Keon', '14', 1960, 1975], ['Darryl Sittler', '27', 1970, 1982], ['Doug Gilmour', '93', 1992, 1997], ['Börje Salming', '21', 1973, 1989],
       ['Wendel Clark', '17', 1985, 1998], ['Syl Apps', '10', 1936, 1948], ['Ted Kennedy', '9', 1943, 1957], ['Tim Horton', '7', 1949, 1970], ['Johnny Bower', '1', 1958, 1970],
-      ['Bill Barilko', '5', 1946, 1951], ['Frank Mahovlich', '27', 1956, 1968], ['George Armstrong', '10', 1949, 1971]],
+      ['Bill Barilko', '5', 1946, 1951], ['Frank Mahovlich', '27', 1956, 1968], ['George Armstrong', '10', 1949, 1971],
+      ['Turk Broda', '1', 1936, 1952], ['Hap Day', '4', 1924, 1937], ['Red Kelly', '4', 1959, 1967], ['Ace Bailey', '6', 1926, 1934], ['King Clancy', '7', 1930, 1937],
+      ['Charlie Conacher', '9', 1929, 1938]],
     VAN: [['Henrik Sedin', '33', 2000, 2018], ['Daniel Sedin', '22', 2000, 2018], ['Markus Näslund', '19', 1996, 2008], ['Trevor Linden', '16', 1988, 2008], ['Stan Smyl', '12', 1978, 1991],
       ['Pavel Bure', '10', 1991, 1999], ['Roberto Luongo', '1', 2006, 2014]],
     WSH: [['Rod Langway', '5', 1982, 1993], ['Mike Gartner', '11', 1979, 1989], ['Dale Hunter', '32', 1987, 1999], ['Yvon Labre', '7', 1974, 1981]],
-    WPG: [['Dale Hawerchuk', '10', 1981, 1990], ['Bobby Hull', '9', 1972, 1980], ['Teemu Selänne', '13', 1992, 1996], ['Thomas Steen', '25', 1981, 1995]],
+    WPG: [['Dale Hawerchuk', '10', 1981, 1990], ['Bobby Hull', '9', 1972, 1980], ['Teemu Selänne', '13', 1992, 1996], ['Thomas Steen', '25', 1981, 1995],
+      ['Teppo Numminen', '27', 1988, 1996], ['Lars-Erik Sjöberg', '4', 1974, 1980], ['Randy Carlyle', '8', 1983, 1993], ['Ab McDonald', '14', 1972, 1974],
+      ['Ulf Nilsson', '14', 1974, 1978], ['Anders Hedberg', '15', 1974, 1978]],
   };
   // Logos officiels de la LNH par époque (assets.nhle.com, copiés dans Logos/lnh/) : [fichier, 1re, dernière saison]
   // (année de la fin de saison). Au-delà de ces années : le logo actuel. Les concessions déménagées gardent ceux de leur
