@@ -186,11 +186,15 @@ async function rappelsGardiens(env) {
 /* ---------- Résultats : lecture de la photo de fin de match (Gemini) ---------- */
 // Le DG vérifie toujours les valeurs avant d'envoyer : la lecture ne fait que
 // préremplir le formulaire. Secret GEMINI_KEY (clé de Google AI Studio).
+// Étiquettes des lignes de l'écran, jeu en anglais et en français : [anglais, français].
 const STATS_RESULTAT = {
-  tirs: 'TOTAL SHOTS', mises: 'HITS', attaque: 'TIME ON ATTACK', passes: 'PASSING',
-  engagements: 'FACEOFFS WON', penalites: 'PENALTY MINUTES', avantages: 'POWERPLAYS',
-  minAvantage: 'POWERPLAY MINUTES', inferiorite: 'SHORTHANDED GOALS',
+  tirs: ['TOTAL SHOTS', 'TIRS'], mises: ['HITS', 'MISES EN ÉCHEC'], attaque: ['TIME ON ATTACK', 'TEMPS EN ATTAQUE'],
+  passes: ['PASSING', 'PASSES'], engagements: ['FACEOFFS WON', 'MISES AU JEU GAGNÉES'],
+  penalites: ['PENALTY MINUTES', 'MINUTES DE PÉNALITÉ'], avantages: ['POWERPLAYS', 'SUPÉRIORITÉS NUMÉRIQUES'],
+  minAvantage: ['POWERPLAY MINUTES', 'MINUTES DE SUPÉRIORITÉ NUMÉRIQUE'],
+  inferiorite: ['SHORTHANDED GOALS', 'BUTS EN INFÉRIORITÉ NUMÉRIQUE'],
 };
+const etiquette = ([en, fr]) => `"${en}" (French: "${fr}")`;
 
 async function lirePhotoResultat(env, photo, ctx) {
   if (!env.GEMINI_KEY) return json({ ok: false, erreur: 'lecture_indisponible' });
@@ -201,17 +205,17 @@ async function lirePhotoResultat(env, photo, ctx) {
       code: { type: 'STRING', description: `3-letter abbreviation of the ${quel} team on the scoreboard (e.g. NYR)` },
       buts: { type: 'INTEGER', description: `final score of the ${quel} team (big number on the scoreboard)` },
     }, Object.fromEntries(Object.entries(STATS_RESULTAT).map(([k, v]) =>
-      [k, { type: 'STRING', description: `${quel} column value of the row labelled "${v}"` }]))),
+      [k, { type: 'STRING', description: `${quel} column value of the row labelled ${etiquette(v)}` }]))),
     required: ['code', 'buts', ...Object.keys(STATS_RESULTAT)],
   });
-  const consigne = 'This image shows the end-of-game summary screen of EA Sports NHL. It may be a phone photo of a TV, '
+  const consigne = 'This image shows the end-of-game summary screen of EA Sports NHL, in English or in French. It may be a phone photo of a TV, '
     + 'or a screenshot of a stream or browser window with other things around it (chat, menus): only use the game screen. '
     + 'Read the team abbreviations and final score from the scoreboard (left team and right team). '
     + 'Below the scoreboard, each stat row has a small label in the middle, the left team value at the far left '
     + 'and the right team value at the far right. Copy each value exactly as displayed, digits and symbols only '
     + '(formats like "37", "10:59", "80.3%", "0 / 4"). Rows from top to bottom: '
-    + Object.entries(STATS_RESULTAT).map(([k, v]) => `${k} = "${v}"`).join(', ') + '. '
-    + 'For "fin", answer PROL if the screen shows the game ended in overtime (OT), TB if it ended in a shootout (SO), otherwise REG. '
+    + Object.entries(STATS_RESULTAT).map(([k, v]) => `${k} = ${etiquette(v)}`).join(', ') + '. '
+    + 'For "fin", answer PROL if the screen shows the game ended in overtime (OT, or PROL in French), TB if it ended in a shootout (SO, or TB in French), otherwise REG. '
     + 'Set "lisible" to false if this is not such a screen or it cannot be read; leave unreadable values empty.';
   const corps = {
     contents: [{ parts: [{ inline_data: { mime_type: photo.mime, data: photo.data } }, { text: consigne }] }],
