@@ -2615,8 +2615,9 @@ body{ overflow-x:hidden; }
      Sans motif : celui de la photo (deux bandes). */
   /* Les deux vues du chandail (px de l'image) : la photo source (dx, dy = décalage de son coin dans l'image), le col et,
      de face, l'ouverture du V (on y voit le col arrière, puis l'intérieur du dos). Le dos couvre toute la zone (opaque). */
-  /* Photos des vrais chandails retirés, de dos (images générées d'après des photos réelles, cadrées comme le chandail gris :
-     240 × 300 px, coin à x 0, y 150 de l'image). Quand il y en a une, elle remplace le chandail peint. Clé : « CODE|Joueur ».
+  /* Photos des vrais chandails retirés, de dos (CODE-nom.webp) et de face (CODE-nom-face.webp) : images générées d'après des
+     photos réelles, cadrées comme le chandail gris (240 × 300 px, coin à x 0, y 150 de l'image). Quand il y en a une, elle
+     remplace le chandail peint. Clé : « CODE|Joueur ».
      Les 170 premiers joueurs de RETIRES en ont une ; les ajouts sans photo et un « autre joueur » saisi à la main gardent le chandail peint. */
   const PHOTOS_CHANDAILS = Object.fromEntries(Object.entries({
     ANA: { 'Paul Kariya': 'kariya', 'Teemu Selänne': 'selanne', 'Scott Niedermayer': 'niedermayer', 'Ryan Getzlaf': 'getzlaf' },
@@ -2668,7 +2669,8 @@ body{ overflow-x:hidden; }
       'Pavel Bure': 'bure', 'Roberto Luongo': 'luongo' },
     WPG: { 'Dale Hawerchuk': 'hawerchuk', 'Bobby Hull': 'hull', 'Teemu Selänne': 'selanne', 'Thomas Steen': 'steen' },
     WSH: { 'Rod Langway': 'langway', 'Mike Gartner': 'gartner', 'Dale Hunter': 'hunter', 'Yvon Labre': 'labre' },
-  }).flatMap(([code, l]) => Object.entries(l).map(([joueur, f]) => [code + '|' + joueur, 'maquettes/chandails/' + code + '-' + f + '.webp?v=1'])));
+  }).flatMap(([code, l]) => Object.entries(l).map(([joueur, f]) => [code + '|' + joueur, 'maquettes/chandails/' + code + '-' + f])));
+  const photoChandail = (code, joueur, dos) => PHOTOS_CHANDAILS[code + '|' + joueur] && PHOTOS_CHANDAILS[code + '|' + joueur] + (dos ? '' : '-face') + '.webp?v=1';
   const VUES_CHANDAIL = {
     face: { src: 'maquettes/bureau-dg-fond.webp?v=5', dx: 0, dy: 0, opaque: false,
       col: [[86, 206], [146, 206], [116, 248.5]], ouverture: [[95, 209], [138, 209], [116, 239.5]] },
@@ -3053,8 +3055,8 @@ body{ overflow-x:hidden; }
     const tissu = s.sorte === 'tissu', tasse = couleurTasse(ch);
     const vue = tissu ? VUES_CHANDAIL[ch.vue] || VUES_CHANDAIL.face : null, dos = tissu && vue === VUES_CHANDAIL.dos;
     const source = vue || { src: FOND, dx: 0, dy: 0 };
-    // Vraie photo du chandail retiré (de dos) : posée telle quelle dans le cadre, fondue sur 3 px aux bords.
-    const photoVraie = dos && PHOTOS_CHANDAILS[code + '|' + ch.joueur];
+    // Vraie photo du chandail retiré (de dos ou de face) : posée telle quelle dans le cadre, fondue sur 3 px aux bords.
+    const photoVraie = tissu && photoChandail(code, ch.joueur, dos);
     if(photoVraie){
       const img = await imageDe(photoVraie);
       if(box.dataset.cle !== cle) return;
