@@ -2618,29 +2618,30 @@ body{ overflow-x:hidden; }
   /* Photos des vrais chandails retirés, de dos (CODE-nom.webp) et de face (CODE-nom-face.webp) : images générées d'après des
      photos réelles, cadrées comme le chandail gris (240 × 300 px, coin à x 0, y 150 de l'image). Quand il y en a une, elle
      remplace le chandail peint. Clé : « CODE|Joueur ».
-     Les 170 premiers joueurs de RETIRES en ont une ; les ajouts sans photo et un « autre joueur » saisi à la main gardent le chandail peint. */
+     Tous les joueurs de RETIRES en ont une ; un « autre joueur » saisi à la main garde le chandail peint. */
   const PHOTOS_CHANDAILS = Object.fromEntries(Object.entries({
     ANA: { 'Paul Kariya': 'kariya', 'Teemu Selänne': 'selanne', 'Scott Niedermayer': 'niedermayer', 'Ryan Getzlaf': 'getzlaf' },
     BOS: { 'Bobby Orr': 'orr', 'Ray Bourque': 'bourque', 'Phil Esposito': 'esposito', 'Cam Neely': 'neely', 'Johnny Bucyk': 'bucyk',
       'Eddie Shore': 'shore', 'Dit Clapper': 'clapper', 'Milt Schmidt': 'schmidt', 'Rick Middleton': 'middleton', 'Willie O’Ree': 'oree',
-      'Terry O’Reilly': 'oreilly', 'Zdeno Chara': 'chara' },
+      'Terry O’Reilly': 'oreilly', 'Zdeno Chara': 'chara', 'Lionel Hitchman': 'hitchman', 'Patrice Bergeron': 'bergeron' },
     BUF: { 'Gilbert Perreault': 'perreault', 'Dominik Hašek': 'hasek', 'Rick Martin': 'martin', 'René Robert': 'robert',
       'Pat LaFontaine': 'lafontaine', 'Danny Gare': 'gare', 'Tim Horton': 'horton', 'Ryan Miller': 'miller' },
-    CAR: { 'Ron Francis': 'francis', 'Rod Brind’Amour': 'brindamour', 'Glen Wesley': 'wesley' },
+    CAR: { 'Ron Francis': 'francis', 'Rod Brind’Amour': 'brindamour', 'Glen Wesley': 'wesley', 'Eric Staal': 'staal' },
     CBJ: { 'Rick Nash': 'nash' },
     CGY: { 'Jarome Iginla': 'iginla', 'Lanny McDonald': 'mcdonald', 'Mike Vernon': 'vernon', 'Miikka Kiprusoff': 'kiprusoff' },
     CHI: { 'Stan Mikita': 'mikita', 'Bobby Hull': 'hull', 'Tony Esposito': 'esposito', 'Denis Savard': 'savard', 'Glenn Hall': 'hall',
-      'Pierre Pilote': 'pilote', 'Keith Magnuson': 'magnuson', 'Marián Hossa': 'hossa' },
+      'Pierre Pilote': 'pilote', 'Keith Magnuson': 'magnuson', 'Marián Hossa': 'hossa', 'Chris Chelios': 'chelios' },
     COL: { 'Joe Sakic': 'sakic', 'Patrick Roy': 'roy', 'Peter Forsberg': 'forsberg', 'Ray Bourque': 'bourque', 'Adam Foote': 'foote',
       'Milan Hejduk': 'hejduk' },
-    DAL: { 'Mike Modano': 'modano', 'Neal Broten': 'broten', 'Bill Goldsworthy': 'goldsworthy', 'Jere Lehtinen': 'lehtinen', 'Sergei Zubov': 'zubov' },
+    DAL: { 'Mike Modano': 'modano', 'Neal Broten': 'broten', 'Bill Goldsworthy': 'goldsworthy', 'Jere Lehtinen': 'lehtinen', 'Sergei Zubov': 'zubov',
+      'Bill Masterton': 'masterton' },
     DET: { 'Gordie Howe': 'howe', 'Steve Yzerman': 'yzerman', 'Ted Lindsay': 'lindsay', 'Alex Delvecchio': 'delvecchio', 'Sid Abel': 'abel',
-      'Terry Sawchuk': 'sawchuk', 'Nicklas Lidström': 'lidstrom', 'Red Kelly': 'kelly' },
+      'Terry Sawchuk': 'sawchuk', 'Nicklas Lidström': 'lidstrom', 'Red Kelly': 'kelly', 'Sergei Fedorov': 'fedorov' },
     EDM: { 'Wayne Gretzky': 'gretzky', 'Mark Messier': 'messier', 'Jari Kurri': 'kurri', 'Paul Coffey': 'coffey', 'Grant Fuhr': 'fuhr',
-      'Kevin Lowe': 'lowe', 'Al Hamilton': 'hamilton' },
+      'Kevin Lowe': 'lowe', 'Al Hamilton': 'hamilton', 'Glenn Anderson': 'anderson' },
     FLA: { 'Roberto Luongo': 'luongo' },
     LAK: { 'Marcel Dionne': 'dionne', 'Luc Robitaille': 'robitaille', 'Dave Taylor': 'taylor', 'Rogie Vachon': 'vachon', 'Rob Blake': 'blake',
-      'Dustin Brown': 'brown' },
+      'Dustin Brown': 'brown', 'Wayne Gretzky': 'gretzky', 'Anže Kopitar': 'kopitar' },
     MIN: { 'Mikko Koivu': 'koivu' },
     MTL: { 'Maurice Richard': 'richard-maurice', 'Jean Béliveau': 'beliveau', 'Guy Lafleur': 'lafleur', 'Jacques Plante': 'plante',
       'Doug Harvey': 'harvey', 'Émile Bouchard': 'bouchard', 'Bernard Geoffrion': 'geoffrion', 'Guy Lapointe': 'lapointe', 'Howie Morenz': 'morenz',
@@ -2654,7 +2655,7 @@ body{ overflow-x:hidden; }
     NYR: { 'Mark Messier': 'messier', 'Rod Gilbert': 'gilbert', 'Eddie Giacomin': 'giacomin', 'Brian Leetch': 'leetch', 'Mike Richter': 'richter',
       'Adam Graves': 'graves', 'Andy Bathgate': 'bathgate', 'Harry Howell': 'howell', 'Jean Ratelle': 'ratelle', 'Vic Hadfield': 'hadfield',
       'Henrik Lundqvist': 'lundqvist' },
-    OTT: { 'Daniel Alfredsson': 'alfredsson', 'Chris Phillips': 'phillips', 'Frank Finnigan': 'finnigan' },
+    OTT: { 'Daniel Alfredsson': 'alfredsson', 'Chris Phillips': 'phillips', 'Frank Finnigan': 'finnigan', 'Chris Neil': 'neil' },
     PHI: { 'Bobby Clarke': 'clarke', 'Bernie Parent': 'parent', 'Bill Barber': 'barber', 'Mark Howe': 'howe', 'Barry Ashbee': 'ashbee',
       'Eric Lindros': 'lindros' },
     PIT: { 'Mario Lemieux': 'lemieux', 'Jaromír Jágr': 'jagr', 'Michel Brière': 'briere' },
@@ -2664,13 +2665,15 @@ body{ overflow-x:hidden; }
     TBL: { 'Martin St-Louis': 'st-louis', 'Vincent Lecavalier': 'lecavalier' },
     TOR: { 'Mats Sundin': 'sundin', 'Dave Keon': 'keon', 'Darryl Sittler': 'sittler', 'Doug Gilmour': 'gilmour', 'Börje Salming': 'salming',
       'Wendel Clark': 'clark', 'Syl Apps': 'apps', 'Ted Kennedy': 'kennedy', 'Tim Horton': 'horton', 'Johnny Bower': 'bower',
-      'Bill Barilko': 'barilko', 'Frank Mahovlich': 'mahovlich', 'George Armstrong': 'armstrong' },
+      'Bill Barilko': 'barilko', 'Frank Mahovlich': 'mahovlich', 'George Armstrong': 'armstrong', 'Turk Broda': 'broda', 'Hap Day': 'day',
+      'Red Kelly': 'kelly', 'Ace Bailey': 'bailey', 'King Clancy': 'clancy', 'Charlie Conacher': 'conacher' },
     VAN: { 'Henrik Sedin': 'sedin-henrik', 'Daniel Sedin': 'sedin-daniel', 'Markus Näslund': 'naslund', 'Trevor Linden': 'linden', 'Stan Smyl': 'smyl',
       'Pavel Bure': 'bure', 'Roberto Luongo': 'luongo' },
-    WPG: { 'Dale Hawerchuk': 'hawerchuk', 'Bobby Hull': 'hull', 'Teemu Selänne': 'selanne', 'Thomas Steen': 'steen' },
+    WPG: { 'Dale Hawerchuk': 'hawerchuk', 'Bobby Hull': 'hull', 'Teemu Selänne': 'selanne', 'Thomas Steen': 'steen', 'Teppo Numminen': 'numminen',
+      'Lars-Erik Sjöberg': 'sjoberg', 'Randy Carlyle': 'carlyle', 'Ab McDonald': 'mcdonald', 'Ulf Nilsson': 'nilsson', 'Anders Hedberg': 'hedberg' },
     WSH: { 'Rod Langway': 'langway', 'Mike Gartner': 'gartner', 'Dale Hunter': 'hunter', 'Yvon Labre': 'labre' },
   }).flatMap(([code, l]) => Object.entries(l).map(([joueur, f]) => [code + '|' + joueur, 'maquettes/chandails/' + code + '-' + f])));
-  const photoChandail = (code, joueur, dos) => PHOTOS_CHANDAILS[code + '|' + joueur] && PHOTOS_CHANDAILS[code + '|' + joueur] + (dos ? '' : '-face') + '.webp?v=1';
+  const photoChandail = (code, joueur, dos) => PHOTOS_CHANDAILS[code + '|' + joueur] && PHOTOS_CHANDAILS[code + '|' + joueur] + (dos ? '' : '-face') + '.webp?v=2';
   const VUES_CHANDAIL = {
     face: { src: 'maquettes/bureau-dg-fond.webp?v=5', dx: 0, dy: 0, opaque: false,
       col: [[86, 206], [146, 206], [116, 248.5]], ouverture: [[95, 209], [138, 209], [116, 239.5]] },
