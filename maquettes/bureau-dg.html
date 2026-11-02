@@ -2896,7 +2896,11 @@ body{ overflow-x:hidden; }
     let perso = {};
     try{ perso = JSON.parse(localStorage.getItem(cleChandail(code)) || '{}') || {}; }catch(e){}
     if(perso.joueur != null && perso.retire == null) perso.retire = -1;   // ancien format : nom et numéro libres
-    const liste = RETIRES[code] || [], r = perso.retire >= 0 ? liste[perso.retire] : perso.retire == null ? liste[0] : null;
+    const liste = RETIRES[code] || [];
+    // Un « autre joueur » saisi à la main qui est dans RETIRES (ajouté depuis) : rattaché à sa fiche, donc à sa vraie photo.
+    const sansAccent = t => String(t).normalize('NFD').replace(/[̀-ͯ’'.\-\s]/g, '').toLowerCase();
+    if(perso.retire === -1 && perso.joueur){ const i = liste.findIndex(x => sansAccent(x[0]) === sansAccent(perso.joueur)); if(i >= 0) perso.retire = i; }
+    const r = perso.retire >= 0 ? liste[perso.retire] : perso.retire == null ? liste[0] : null;
     const annee = r ? milieuCarriere(r) : Number(perso.annee) || ANNEE_ACTUELLE;
     // Vue : de dos (nom et numéro) par défaut pour un joueur retiré, de face (logo) sinon.
     const vue = VUES_CHANDAIL[perso.vue] ? perso.vue : r ? 'dos' : 'face';
