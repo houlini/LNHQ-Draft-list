@@ -705,7 +705,7 @@ body{ overflow-x:hidden; }
   /* Fenêtre plus étroite que 16:9 (rare sur ordinateur) : les côtés portent le chandail et le calendrier,
      on garde donc toute la largeur ; les marges du haut et du bas montrent le bureau flouté. */
   .ce:has(> .bu-scene:not([hidden])){ position:relative; isolation:isolate; }
-  .ce:has(> .bu-scene:not([hidden]))::before{ content:''; position:absolute; inset:-40px; z-index:-1; background:url("maquettes/bureau-dg-fond.webp?v=4") center / cover;   /* relatif à <base href="/"> */ filter:blur(28px) brightness(0.45); }
+  .ce:has(> .bu-scene:not([hidden]))::before{ content:''; position:absolute; inset:-40px; z-index:-1; background:url("maquettes/bureau-dg-fond.webp?v=5") center / cover;   /* relatif à <base href="/"> */ filter:blur(28px) brightness(0.45); }
 }
 @media (min-width:900px) and (max-aspect-ratio:1672/941){
   .bu-scene{ width:100vw; }
@@ -720,7 +720,7 @@ body{ overflow-x:hidden; }
   transition:filter .25s;
 }
 .bu-objet::before{ content:''; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .25s;
-  background:url("maquettes/bureau-dg-fond.webp?v=4") calc(var(--x) * -1cqw) calc(var(--y) * -0.5628cqw) / 100cqw 56.28cqw no-repeat;
+  background:url("maquettes/bureau-dg-fond.webp?v=5") calc(var(--x) * -1cqw) calc(var(--y) * -0.5628cqw) / 100cqw 56.28cqw no-repeat;
   filter:brightness(1.45) saturate(1.15);
   -webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%); mask-image:radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%); }
 .bu-objet:hover, .bu-objet:focus-visible{ outline:none; z-index:25; filter:brightness(1.15); }
@@ -1568,7 +1568,7 @@ body{ overflow-x:hidden; }
     <!-- La scène : le bureau du DG (mur + bureau). Chaque objet s'ouvre en plein écran. -->
     <!-- Image de fond (1672 × 941) ; chaque zone est placée en % de l'image et affiche les vraies données. -->
     <div class="bu-scene" id="scene" hidden>
-      <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=4" alt="" width="1672" height="941">
+      <img class="bu-fond" src="maquettes/bureau-dg-fond.webp?v=5" alt="" width="1672" height="941">
       <span class="bu-cube" aria-hidden="true"><span class="bu-contenu" id="o-cube"></span></span>
       <button type="button" class="bu-objet bu-del" data-objet="resultats" aria-label="Bandeau : résultats de la ligue"><div class="bu-ecran" id="o-del"></div></button>
       <button type="button" class="bu-objet bu-chandail" data-objet="fiche" aria-label="Chandail : fiche de l'équipe et du DG"><span class="bu-ecusson" id="o-ecusson"></span><span class="bu-plaque" id="o-plaque" hidden></span></button>
@@ -2616,12 +2616,61 @@ body{ overflow-x:hidden; }
   /* Les deux vues du chandail (px de l'image) : la photo source (dx, dy = décalage de son coin dans l'image), le col et,
      de face, l'ouverture du V (on y voit le col arrière, puis l'intérieur du dos). Le dos couvre toute la zone (opaque). */
   /* Photos des vrais chandails retirés, de dos (images générées d'après des photos réelles, cadrées comme le chandail gris :
-     240 × 300 px, coin à x 0, y 150 de l'image). Quand il y en a une, elle remplace le chandail peint. Clé : « CODE|Joueur ». */
-  const PHOTOS_CHANDAILS = {
-    'EDM|Wayne Gretzky': 'maquettes/chandails/EDM-gretzky.webp?v=1',
-  };
+     240 × 300 px, coin à x 0, y 150 de l'image). Quand il y en a une, elle remplace le chandail peint. Clé : « CODE|Joueur ».
+     Les 170 joueurs de RETIRES en ont une ; un « autre joueur » saisi à la main garde le chandail peint. */
+  const PHOTOS_CHANDAILS = Object.fromEntries(Object.entries({
+    ANA: { 'Paul Kariya': 'kariya', 'Teemu Selänne': 'selanne', 'Scott Niedermayer': 'niedermayer', 'Ryan Getzlaf': 'getzlaf' },
+    BOS: { 'Bobby Orr': 'orr', 'Ray Bourque': 'bourque', 'Phil Esposito': 'esposito', 'Cam Neely': 'neely', 'Johnny Bucyk': 'bucyk',
+      'Eddie Shore': 'shore', 'Dit Clapper': 'clapper', 'Milt Schmidt': 'schmidt', 'Rick Middleton': 'middleton', 'Willie O’Ree': 'oree',
+      'Terry O’Reilly': 'oreilly', 'Zdeno Chara': 'chara' },
+    BUF: { 'Gilbert Perreault': 'perreault', 'Dominik Hašek': 'hasek', 'Rick Martin': 'martin', 'René Robert': 'robert',
+      'Pat LaFontaine': 'lafontaine', 'Danny Gare': 'gare', 'Tim Horton': 'horton', 'Ryan Miller': 'miller' },
+    CAR: { 'Ron Francis': 'francis', 'Rod Brind’Amour': 'brindamour', 'Glen Wesley': 'wesley' },
+    CBJ: { 'Rick Nash': 'nash' },
+    CGY: { 'Jarome Iginla': 'iginla', 'Lanny McDonald': 'mcdonald', 'Mike Vernon': 'vernon', 'Miikka Kiprusoff': 'kiprusoff' },
+    CHI: { 'Stan Mikita': 'mikita', 'Bobby Hull': 'hull', 'Tony Esposito': 'esposito', 'Denis Savard': 'savard', 'Glenn Hall': 'hall',
+      'Pierre Pilote': 'pilote', 'Keith Magnuson': 'magnuson', 'Marián Hossa': 'hossa' },
+    COL: { 'Joe Sakic': 'sakic', 'Patrick Roy': 'roy', 'Peter Forsberg': 'forsberg', 'Ray Bourque': 'bourque', 'Adam Foote': 'foote',
+      'Milan Hejduk': 'hejduk' },
+    DAL: { 'Mike Modano': 'modano', 'Neal Broten': 'broten', 'Bill Goldsworthy': 'goldsworthy', 'Jere Lehtinen': 'lehtinen', 'Sergei Zubov': 'zubov' },
+    DET: { 'Gordie Howe': 'howe', 'Steve Yzerman': 'yzerman', 'Ted Lindsay': 'lindsay', 'Alex Delvecchio': 'delvecchio', 'Sid Abel': 'abel',
+      'Terry Sawchuk': 'sawchuk', 'Nicklas Lidström': 'lidstrom', 'Red Kelly': 'kelly' },
+    EDM: { 'Wayne Gretzky': 'gretzky', 'Mark Messier': 'messier', 'Jari Kurri': 'kurri', 'Paul Coffey': 'coffey', 'Grant Fuhr': 'fuhr',
+      'Kevin Lowe': 'lowe', 'Al Hamilton': 'hamilton' },
+    FLA: { 'Roberto Luongo': 'luongo' },
+    LAK: { 'Marcel Dionne': 'dionne', 'Luc Robitaille': 'robitaille', 'Dave Taylor': 'taylor', 'Rogie Vachon': 'vachon', 'Rob Blake': 'blake',
+      'Dustin Brown': 'brown' },
+    MIN: { 'Mikko Koivu': 'koivu' },
+    MTL: { 'Maurice Richard': 'richard-maurice', 'Jean Béliveau': 'beliveau', 'Guy Lafleur': 'lafleur', 'Jacques Plante': 'plante',
+      'Doug Harvey': 'harvey', 'Émile Bouchard': 'bouchard', 'Bernard Geoffrion': 'geoffrion', 'Guy Lapointe': 'lapointe', 'Howie Morenz': 'morenz',
+      'Yvan Cournoyer': 'cournoyer', 'Dickie Moore': 'moore', 'Henri Richard': 'richard-henri', 'Elmer Lach': 'lach', 'Serge Savard': 'savard',
+      'Larry Robinson': 'robinson', 'Bob Gainey': 'gainey', 'Ken Dryden': 'dryden', 'Patrick Roy': 'roy' },
+    NJD: { 'Martin Brodeur': 'brodeur', 'Scott Stevens': 'stevens', 'Scott Niedermayer': 'niedermayer', 'Ken Daneyko': 'daneyko',
+      'Patrik Eliáš': 'elias' },
+    NSH: { 'Pekka Rinne': 'rinne' },
+    NYI: { 'Mike Bossy': 'bossy', 'Bryan Trottier': 'trottier', 'Denis Potvin': 'potvin', 'Billy Smith': 'smith', 'Clark Gillies': 'gillies',
+      'Bob Nystrom': 'nystrom', 'John Tonelli': 'tonelli', 'Butch Goring': 'goring' },
+    NYR: { 'Mark Messier': 'messier', 'Rod Gilbert': 'gilbert', 'Eddie Giacomin': 'giacomin', 'Brian Leetch': 'leetch', 'Mike Richter': 'richter',
+      'Adam Graves': 'graves', 'Andy Bathgate': 'bathgate', 'Harry Howell': 'howell', 'Jean Ratelle': 'ratelle', 'Vic Hadfield': 'hadfield',
+      'Henrik Lundqvist': 'lundqvist' },
+    OTT: { 'Daniel Alfredsson': 'alfredsson', 'Chris Phillips': 'phillips', 'Frank Finnigan': 'finnigan' },
+    PHI: { 'Bobby Clarke': 'clarke', 'Bernie Parent': 'parent', 'Bill Barber': 'barber', 'Mark Howe': 'howe', 'Barry Ashbee': 'ashbee',
+      'Eric Lindros': 'lindros' },
+    PIT: { 'Mario Lemieux': 'lemieux', 'Jaromír Jágr': 'jagr', 'Michel Brière': 'briere' },
+    SJS: { 'Patrick Marleau': 'marleau', 'Joe Thornton': 'thornton', 'Owen Nolan': 'nolan' },
+    STL: { 'Brett Hull': 'hull', 'Bernie Federko': 'federko', 'Brian Sutter': 'sutter', 'Al MacInnis': 'macinnis', 'Chris Pronger': 'pronger',
+      'Bob Plager': 'plager-bob', 'Barclay Plager': 'plager-barclay', 'Bob Gassoff': 'gassoff' },
+    TBL: { 'Martin St-Louis': 'st-louis', 'Vincent Lecavalier': 'lecavalier' },
+    TOR: { 'Mats Sundin': 'sundin', 'Dave Keon': 'keon', 'Darryl Sittler': 'sittler', 'Doug Gilmour': 'gilmour', 'Börje Salming': 'salming',
+      'Wendel Clark': 'clark', 'Syl Apps': 'apps', 'Ted Kennedy': 'kennedy', 'Tim Horton': 'horton', 'Johnny Bower': 'bower',
+      'Bill Barilko': 'barilko', 'Frank Mahovlich': 'mahovlich', 'George Armstrong': 'armstrong' },
+    VAN: { 'Henrik Sedin': 'sedin-henrik', 'Daniel Sedin': 'sedin-daniel', 'Markus Näslund': 'naslund', 'Trevor Linden': 'linden', 'Stan Smyl': 'smyl',
+      'Pavel Bure': 'bure', 'Roberto Luongo': 'luongo' },
+    WPG: { 'Dale Hawerchuk': 'hawerchuk', 'Bobby Hull': 'hull', 'Teemu Selänne': 'selanne', 'Thomas Steen': 'steen' },
+    WSH: { 'Rod Langway': 'langway', 'Mike Gartner': 'gartner', 'Dale Hunter': 'hunter', 'Yvon Labre': 'labre' },
+  }).flatMap(([code, l]) => Object.entries(l).map(([joueur, f]) => [code + '|' + joueur, 'maquettes/chandails/' + code + '-' + f + '.webp?v=1'])));
   const VUES_CHANDAIL = {
-    face: { src: 'maquettes/bureau-dg-fond.webp?v=4', dx: 0, dy: 0, opaque: false,
+    face: { src: 'maquettes/bureau-dg-fond.webp?v=5', dx: 0, dy: 0, opaque: false,
       col: [[86, 206], [146, 206], [116, 248.5]], ouverture: [[95, 209], [138, 209], [116, 239.5]] },
     dos: { src: 'maquettes/bureau-dg-chandail-dos.webp?v=1', dx: 0, dy: 150, opaque: true,
       col: [[88, 205], [145, 205], [141, 211], [116, 214.5], [92, 211]], ouverture: null },
@@ -2862,16 +2911,16 @@ body{ overflow-x:hidden; }
       dos: { nom: { cx: 116.5, haut: 225, cap: 15, larg: 96 }, numero: { cx: 116.5, cap: 50 }, ecart: 6 },
       // Numéros sur le haut des manches (vues de biais, donc écrasés).
       manches: [{ cx: 54, cy: 282, ecrase: 0.58 }, { cx: 181, cy: 282, ecrase: 0.58 }] },
-    'o-tasse': { sorte: 'tasse', zone: [34, 676, 134, 90],
-      // Corps x 73-164 (axe 118,7, rayon 45,7), y 683-760 ; l'anse, de profil à gauche, laisse voir le bois (exclu par sa clarté).
+    'o-tasse': { sorte: 'tasse', zone: [34, 672, 136, 96],
+      // Corps x 73-166 (axe 119,5, rayon 46,5), y 680-764 ; l'anse, de profil à gauche, laisse voir le bois (exclu par sa clarté).
       // Haut et bas du corps : des ellipses vues d'en haut (y = base + creux · cos φ), plus basses au centre.
-      haut: [674, 9], bas: [753, 9],
-      anse: [[75, 690], [56, 688], [42, 698], [35, 718], [38, 742], [52, 754], [75, 754]],
-      logo: { cx: 118.7, cy: 719, rayon: 45.7, larg: 60, haut: 46, texte: 'LNHQ' } },
+      haut: [676, 4], bas: [751, 13],
+      anse: [[76, 683], [58, 686], [45, 696], [39, 712], [40, 733], [48, 747], [62, 753], [78, 753]],
+      logo: { cx: 119.5, cy: 721, rayon: 46.5, larg: 60, haut: 46, texte: 'LNHQ' } },
   };
   const dansPoly = (p, x, y) => { let d = false; for(let i = 0, j = p.length - 1; i < p.length; j = i++){ if((p[i][1] > y) !== (p[j][1] > y) && x < (p[j][0] - p[i][0]) * (y - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0]) d = !d; } return d; };
   const lisse = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-  const FOND = 'maquettes/bureau-dg-fond.webp?v=4';
+  const FOND = 'maquettes/bureau-dg-fond.webp?v=5';
   const chargerImage = src => new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = src; });
   const images = {};
   const imageDe = src => images[src] ||= chargerImage(src);
