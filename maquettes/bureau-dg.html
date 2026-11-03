@@ -2618,7 +2618,8 @@ body{ overflow-x:hidden; }
   /* Photos des vrais chandails retirés, de dos (CODE-nom.webp) et de face (CODE-nom-face.webp) : images générées d'après des
      photos réelles, cadrées comme le chandail gris (240 × 300 px, coin à x 0, y 150 de l'image). Quand il y en a une, elle
      remplace le chandail peint. Clé : « CODE|Joueur ».
-     Tous les joueurs de RETIRES en ont une ; un « autre joueur » saisi à la main garde le chandail peint. */
+     Tous les joueurs de RETIRES en ont une ; un « autre joueur » saisi à la main garde le chandail peint. Les équipes sans
+     numéro retiré ont leur chandail d'aujourd'hui sans nom ni numéro (joueur '', CODE-equipe.webp). */
   const PHOTOS_CHANDAILS = Object.fromEntries(Object.entries({
     ANA: { 'Paul Kariya': 'kariya', 'Teemu Selänne': 'selanne', 'Scott Niedermayer': 'niedermayer', 'Ryan Getzlaf': 'getzlaf' },
     BOS: { 'Bobby Orr': 'orr', 'Ray Bourque': 'bourque', 'Phil Esposito': 'esposito', 'Cam Neely': 'neely', 'Johnny Bucyk': 'bucyk',
@@ -2662,13 +2663,16 @@ body{ overflow-x:hidden; }
     SJS: { 'Patrick Marleau': 'marleau', 'Joe Thornton': 'thornton', 'Owen Nolan': 'nolan' },
     STL: { 'Brett Hull': 'hull', 'Bernie Federko': 'federko', 'Brian Sutter': 'sutter', 'Al MacInnis': 'macinnis', 'Chris Pronger': 'pronger',
       'Bob Plager': 'plager-bob', 'Barclay Plager': 'plager-barclay', 'Bob Gassoff': 'gassoff' },
+    SEA: { '': 'equipe' },
     TBL: { 'Martin St-Louis': 'st-louis', 'Vincent Lecavalier': 'lecavalier' },
     TOR: { 'Mats Sundin': 'sundin', 'Dave Keon': 'keon', 'Darryl Sittler': 'sittler', 'Doug Gilmour': 'gilmour', 'Börje Salming': 'salming',
       'Wendel Clark': 'clark', 'Syl Apps': 'apps', 'Ted Kennedy': 'kennedy', 'Tim Horton': 'horton', 'Johnny Bower': 'bower',
       'Bill Barilko': 'barilko', 'Frank Mahovlich': 'mahovlich', 'George Armstrong': 'armstrong', 'Turk Broda': 'broda', 'Hap Day': 'day',
       'Red Kelly': 'kelly', 'Ace Bailey': 'bailey', 'King Clancy': 'clancy', 'Charlie Conacher': 'conacher' },
+    UTA: { '': 'equipe' },
     VAN: { 'Henrik Sedin': 'sedin-henrik', 'Daniel Sedin': 'sedin-daniel', 'Markus Näslund': 'naslund', 'Trevor Linden': 'linden', 'Stan Smyl': 'smyl',
       'Pavel Bure': 'bure', 'Roberto Luongo': 'luongo' },
+    VGK: { '': 'equipe' },
     WPG: { 'Dale Hawerchuk': 'hawerchuk', 'Bobby Hull': 'hull', 'Teemu Selänne': 'selanne', 'Thomas Steen': 'steen', 'Teppo Numminen': 'numminen',
       'Lars-Erik Sjöberg': 'sjoberg', 'Randy Carlyle': 'carlyle', 'Ab McDonald': 'mcdonald', 'Ulf Nilsson': 'nilsson', 'Anders Hedberg': 'hedberg' },
     WSH: { 'Rod Langway': 'langway', 'Mike Gartner': 'gartner', 'Dale Hunter': 'hunter', 'Yvon Labre': 'labre' },
@@ -3063,7 +3067,9 @@ body{ overflow-x:hidden; }
     const vue = tissu ? VUES_CHANDAIL[ch.vue] || VUES_CHANDAIL.face : null, dos = tissu && vue === VUES_CHANDAIL.dos;
     const source = vue || { src: FOND, dx: 0, dy: 0 };
     // Vraie photo du chandail retiré (de dos ou de face) : posée telle quelle dans le cadre, fondue sur 3 px aux bords.
-    const photoVraie = tissu && photoChandail(code, ch.joueur, dos);
+    // Sans joueur : celle du chandail d'aujourd'hui, seulement sans numéro et à l'époque du logo actuel.
+    const sansJoueur = !ch.joueur && !ch.numero && ch.logo === chandailEpoque(code, ANNEE_ACTUELLE).logo;
+    const photoVraie = tissu && (ch.joueur || sansJoueur) && photoChandail(code, ch.joueur, dos);
     if(photoVraie){
       const img = await imageDe(photoVraie);
       if(box.dataset.cle !== cle) return;
