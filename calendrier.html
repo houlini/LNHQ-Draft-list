@@ -791,6 +791,11 @@ function buildFilters(){
   if(filtersBuilt) return;
   filtersBuilt = true;
   buildTeamModal();
+  // ?equipe=MTL (lien « Mon calendrier » de l'espace DG) : équipe choisie d'avance.
+  const demandee = (new URLSearchParams(location.search).get('equipe') || '').toUpperCase();
+  const fullName = demandee && Array.from(new Set(state.games.flatMap(g => [g.away, g.home])))
+    .find(n => n && SLUG_TO_CODE[TEAM_NAME_TO_SLUG[n.trim().toLowerCase()]] === demandee);
+  if(fullName) selectTeam(fullName, fullName, demandee);
   els.filterWeek.addEventListener('change', () => { state.semaine = els.filterWeek.value; render(); });
   els.semPrec.addEventListener('click', () => deplacer(-1));
   els.semSuiv.addEventListener('click', () => deplacer(1));

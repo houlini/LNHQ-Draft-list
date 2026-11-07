@@ -105,7 +105,7 @@ function traiter(p, corps) {
   if (p.action === 'statutDemande') return statutDemande(p.courriel);
   const membre = trouverMembre(p.courriel);
   if (!membre) return { ok: false, erreur: 'inconnu' };
-  if (p.action === 'moi') return { ok: true, equipe: membre.equipe, annonces: membre.annonces, discord: !!membre.discord, nomDiscord: membre.nomDiscord };
+  if (p.action === 'moi') return { ok: true, equipe: membre.equipe, code: codeDuMembre(membre), annonces: membre.annonces, discord: !!membre.discord, nomDiscord: membre.nomDiscord };
   if (p.action === 'lierDiscord') return lierDiscord(JSON.parse(corps || '{}'), membre);
   if (p.action === 'migrationDiscord') return migrationDiscord(membre);
   if (p.action === 'deciderAcces') return deciderAcces(JSON.parse(corps || '{}'), membre);

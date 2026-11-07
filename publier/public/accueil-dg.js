@@ -36,6 +36,11 @@
     }
     $('qui').textContent = moi.nomDiscord ? `${moi.equipe} · ${moi.nomDiscord}` : moi.equipe;
     $('titreEquipe').textContent = moi.equipe === 'Ligue' ? 'Espace DG' : `Espace DG · ${moi.equipe}`;
+    // Résultats et calendrier du site public, filtrés sur l'équipe du DG.
+    if(moi.code){
+      $('lienResultats').href += '?equipe=' + moi.code;
+      $('lienCalendrier').href += '?equipe=' + moi.code;
+    }
     $('zoneAdmin').hidden = !moi.annonces;
     $('espace').hidden = false;
     // Encore sur l'ancienne adresse : proposer le lien Discord s'il n'est pas fait.
