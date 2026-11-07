@@ -5,6 +5,13 @@
 .gar-message.is-ok{ background:var(--accent-soft); color:var(--ink); }
 .gar-message.is-erreur{ background:var(--danger-soft); color:var(--danger); }
 #periodes{ display:flex; flex-direction:column; gap:10px; }
+.gar-admin{ display:flex; flex-direction:column; gap:10px; padding:10px 12px; border-radius:8px; border:1px dashed var(--accent); }
+.gar-case{ display:flex; align-items:flex-start; gap:10px; font-size:14px; line-height:1.4; cursor:pointer; }
+.gar-case input{ width:18px; height:18px; margin:1px 0 0; flex-shrink:0; accent-color:var(--accent); }
+.gar-admin select{
+  box-sizing:border-box; width:100%; min-height:42px; padding:0 10px; border-radius:8px; border:1px solid var(--line);
+  background:var(--bg); color:var(--ink); font:inherit; font-size:15px;
+}
 
 .gar-periode{ background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:var(--radius); scroll-margin-top:12px; }
 .gar-periode.is-fait{ border-left-color:#2F9E44; }

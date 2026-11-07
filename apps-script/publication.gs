@@ -789,7 +789,8 @@ const OUVERTURE_ENCHERES = new Date('2026-10-06T23:00:00Z');
    il peut changer ou retirer son choix jusqu'à la fin de la période, ensuite
    elle est verrouillée. Exception : période terminée sans déclaration, avec des
    matchs en retard pas encore joués → il peut encore choisir un match de la
-   période (oubli), choix définitif. Onglet public GARDIENS : une ligne par équipe et période.
+   période (oubli), choix définitif. Un admin (d.code) corrige n'importe quelle équipe,
+   même une période verrouillée. Onglet public GARDIENS : une ligne par équipe et période.
    Rappel Discord 3 jours avant la fin d'une période, et liste des équipes
    illégales le lendemain de la fin (WEBHOOK_GARDIENS du Worker).
    ========================================================================= */
@@ -861,15 +862,24 @@ function finSemaineLigue() {
   return d.toISOString().slice(0, 10);
 }
 
+// Équipe visée : la sienne, ou celle choisie par un admin (correction).
+function equipeGardien(d, membre) {
+  const admin = peutModifier(membre);
+  const choisie = String(d.code || '').trim().toUpperCase();
+  if (admin && choisie) return { code: Object.keys(CODES_EQUIPES).some(n => CODES_EQUIPES[n] === choisie) ? choisie : '', admin: true };
+  return { code: codeDuMembre(membre), admin: false };
+}
+
 function declarerGardien(d, membre) {
-  const code = codeDuMembre(membre);
+  const { code, admin } = equipeGardien(d, membre);
   if (!code) return { ok: false, erreur: 'equipe' };
   const matchs = lireCalendrierGardiens();
   const m = matchs.find(x => x.num === String(d.match || '').trim());
   if (!m || (m.visiteur !== code && m.domicile !== code)) return { ok: false, erreur: 'match' };
   // Période terminée (oubli) : encore possible si rien n'a été déclaré et que l'équipe a
-  // des matchs en retard pas joués dans cette période. Une déclaration faite reste verrouillée.
-  const terminee = finsDePeriode(matchs)[m.periode] < aujourdhuiLigue();
+  // des matchs en retard pas joués dans cette période. Une déclaration faite reste verrouillée
+  // (sauf correction par un admin).
+  const terminee = !admin && finsDePeriode(matchs)[m.periode] < aujourdhuiLigue();
   if (terminee && !matchs.some(x => x.periode === m.periode && !x.joue && (x.visiteur === code || x.domicile === code)))
     return { ok: false, erreur: 'periode_terminee' };
   const verrou = LockService.getScriptLock();
@@ -889,10 +899,10 @@ function declarerGardien(d, membre) {
 }
 
 function retirerGardien(d, membre) {
-  const code = codeDuMembre(membre);
+  const { code, admin } = equipeGardien(d, membre);
   if (!code) return { ok: false, erreur: 'equipe' };
   const periode = Number(d.periode);
-  if (finsDePeriode(lireCalendrierGardiens())[periode] < aujourdhuiLigue()) return { ok: false, erreur: 'periode_terminee' };
+  if (!admin && finsDePeriode(lireCalendrierGardiens())[periode] < aujourdhuiLigue()) return { ok: false, erreur: 'periode_terminee' };
   const verrou = LockService.getScriptLock();
   verrou.waitLock(30000);
   try {

@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="resultat.css?v=3">
 <script src="https://lnhq.ca/gardiens-donnees.js" defer></script>
 <script src="https://lnhq.ca/resultats-donnees.js?v=6" defer></script>
-<script src="resultat.js?v=5" defer></script>
+<script src="resultat.js?v=6" defer></script>
 </head>
 <body>
 
@@ -44,6 +44,11 @@
       <label class="res-admin" id="blocAdmin" hidden>
         <input type="checkbox" id="modeAdmin">
         <span><b>Mode admin</b> : soumettre ou corriger le résultat d'un match des autres équipes</span>
+      </label>
+
+      <label class="res-champ" id="blocEquipe" hidden>
+        <span>Équipe</span>
+        <select id="filtreEquipe"></select>
       </label>
 
       <label class="res-champ">

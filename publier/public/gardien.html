@@ -6,9 +6,9 @@
 <title>2e gardien — LNHQ</title>
 <link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
 <link rel="stylesheet" href="https://lnhq.ca/site.css?v=8">
-<link rel="stylesheet" href="gardien.css">
+<link rel="stylesheet" href="gardien.css?v=2">
 <script src="https://lnhq.ca/gardiens-donnees.js" defer></script>
-<script src="gardien.js" defer></script>
+<script src="gardien.js?v=2" defer></script>
 </head>
 <body>
 
@@ -41,6 +41,13 @@
       de déclarer et qu'il te reste des matchs en retard dans une période terminée, tu peux encore
       choisir un match de cette période (choix définitif).
     </p>
+    <div class="gar-admin" id="blocAdmin" hidden>
+      <label class="gar-case">
+        <input type="checkbox" id="modeAdmin">
+        <span><b>Mode admin</b> : corriger le 2e gardien de n'importe quelle équipe, même une période verrouillée</span>
+      </label>
+      <select id="equipe" aria-label="Équipe à corriger" hidden></select>
+    </div>
     <p id="message" class="gar-message" role="status" hidden></p>
     <div id="periodes"></div>
   </main>

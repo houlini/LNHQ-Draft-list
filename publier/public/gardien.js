@@ -1,5 +1,7 @@
 /* LNHQ — déclaration du 2e gardien (publier.lnhq.ca, derrière Cloudflare Access).
-   L'équipe vient de la liste d'accès ; le script revérifie le match et le verrou. */
+   L'équipe vient de la liste d'accès ; le script revérifie le match et le verrou.
+   Mode admin (case à cocher, cochée d'office par ?admin=1 de la page Admin) : choix de
+   l'équipe et correction de toutes les périodes, même verrouillées. */
 (function(){
   const $ = id => document.getElementById(id);
   const G = window.LNHQ_GARDIENS;
@@ -23,7 +25,8 @@
   const jourCourt = new Intl.DateTimeFormat('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' });
   const date = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 
-  let code = '';
+  let code = '';           // équipe affichée
+  let moi = null;          // { equipe, code, admin }
   let matchs = [];
   let decl = {};
   let ouvertes = null;   // périodes ouvertes par le lecteur (gardé aux mises à jour)
@@ -47,8 +50,11 @@
       return await rep.json();
     }catch(e){ return { ok: false, erreur: 'session' }; }
   }
+  const correction = () => moi.admin && $('modeAdmin').checked;
+  const nomDe = c => Object.keys(CODES).find(n => CODES[n] === c) || c;
 
   function render(){
+    if(!code){ $('periodes').replaceChildren(); return; }
     const auj = G.aujourdhui();
     const mesMatchs = matchs.filter(m => m.codeVisiteur === code || m.codeDomicile === code);
     const periodes = G.periodes(matchs);
@@ -86,11 +92,16 @@
         img.alt = '';
         advEl.append(img, el('span', null, (domicile ? 'vs ' : '@ ') + (domicile ? m.visiteur : m.domicile)));
         li.append(el('span', 'gar-quand', jourCourt.format(date(m.date))), advEl);
-        if(!terminee){
+        if(!terminee || correction()){
           const b = el('button', 'gar-bouton' + (choisi ? ' is-choisi' : ''), choisi ? '✓ 2e gardien' : 'Choisir');
           b.type = 'button';
-          b.title = choisi ? 'Retirer ce choix' : 'Mon 2e gardien joue ce match';
-          b.addEventListener('click', () => choisi ? retirer(p.num, b) : declarer(m, b));
+          b.title = choisi ? 'Retirer ce choix' : 'Le 2e gardien joue ce match';
+          b.addEventListener('click', () => {
+            if(choisi) return retirer(p.num, b);
+            // Correction d'une période verrouillée : on confirme.
+            if(terminee && !confirm(`Période ${p.num} terminée : corriger le 2e gardien de ${nomDe(code)} ?`)) return;
+            declarer(m, b);
+          });
           li.append(b);
         }else if(choisi){
           li.append(el('span', 'gar-bouton is-choisi', '✓ 2e gardien'));
@@ -119,7 +130,7 @@
     if(envoi) return;
     envoi = true;
     bouton.disabled = true;
-    const r = await api('/api/gardien/declarer', { match: m.num });
+    const r = await api('/api/gardien/declarer', { match: m.num, code: correction() ? code : undefined });
     envoi = false;
     if(r.ok){
       afficher(`Période ${r.periode} : c'est noté, 2e gardien le ${court.format(date(m.date))}`, false);
@@ -134,10 +145,10 @@
   }
 
   async function retirer(periode, bouton){
-    if(envoi || !confirm(`Retirer ton choix pour la période ${periode} ?`)) return;
+    if(envoi || !confirm(correction() ? `Retirer le choix de ${nomDe(code)} pour la période ${periode} ?` : `Retirer ton choix pour la période ${periode} ?`)) return;
     envoi = true;
     bouton.disabled = true;
-    const r = await api('/api/gardien/retirer', { periode });
+    const r = await api('/api/gardien/retirer', { periode, code: correction() ? code : undefined });
     envoi = false;
     if(r.ok){
       afficher(`Choix retiré pour la période ${periode}.`, false);
@@ -149,16 +160,29 @@
     }
   }
 
+  // Équipe affichée : la sienne, ou celle choisie dans la liste en mode admin.
+  function changerEquipe(){
+    const admin = correction();
+    $('equipe').hidden = !admin;
+    code = admin ? $('equipe').value : moi.code;
+    ouvertes = null;
+    $('message').hidden = true;
+    $('qui').textContent = admin ? 'Correction du 2e gardien' + (code ? ' · ' + nomDe(code) : '') : '2e gardien de ' + moi.equipe;
+    render();
+    const courante = document.querySelector('.gar-periode.is-courante');
+    if(courante) courante.scrollIntoView({ block: 'start' });
+  }
+
   async function demarrer(){
-    const moi = await api('/api/moi');
-    if(!moi.ok || !CODES[moi.equipe]){
+    const r = await api('/api/moi');
+    const sienne = r.ok ? (CODES[r.equipe] || '') : '';
+    if(!r.ok || (!sienne && !r.annonces)){
       $('qui').textContent = '';
-      $('refusTexte').textContent = !moi.ok ? (ERREURS[moi.erreur] || 'Accès impossible pour le moment.') : ERREURS.equipe;
+      $('refusTexte').textContent = !r.ok ? (ERREURS[r.erreur] || 'Accès impossible pour le moment.') : ERREURS.equipe;
       $('refus').hidden = false;
       return;
     }
-    code = CODES[moi.equipe];
-    $('qui').textContent = '2e gardien de ' + moi.equipe;
+    moi = { equipe: r.equipe, code: sienne, admin: r.annonces === true };
     $('intro').hidden = false;
     try{
       [matchs, decl] = await Promise.all([G.chargerCalendrier(), G.chargerDeclarations()]);
@@ -166,9 +190,25 @@
       afficher('Impossible de lire le calendrier pour le moment.', true);
       return;
     }
-    render();
-    const courante = document.querySelector('.gar-periode.is-courante');
-    if(courante) courante.scrollIntoView({ block: 'start' });
+    if(moi.admin){
+      // Admin sans équipe (compte « Ligue ») : mode admin seulement. Lien de la page Admin (?admin=1) : coché d'office.
+      const params = new URLSearchParams(location.search);
+      const tete = el('option', null, 'Choisis l’équipe…');
+      tete.value = '';
+      $('equipe').replaceChildren(tete, ...Object.keys(CODES).sort((a, b) => a.localeCompare(b, 'fr')).map(n => {
+        const o = el('option', null, n);
+        o.value = CODES[n];
+        return o;
+      }));
+      const demandee = (params.get('equipe') || '').toUpperCase();
+      $('equipe').value = Object.values(CODES).includes(demandee) ? demandee : sienne;
+      $('modeAdmin').checked = !sienne || params.has('admin');
+      $('modeAdmin').disabled = !sienne;
+      $('blocAdmin').hidden = false;
+      $('modeAdmin').addEventListener('change', changerEquipe);
+      $('equipe').addEventListener('change', changerEquipe);
+    }
+    changerEquipe();
   }
 
   demarrer();
