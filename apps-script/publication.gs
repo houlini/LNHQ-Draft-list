@@ -109,6 +109,7 @@ function traiter(p, corps) {
   if (p.action === 'lierDiscord') return lierDiscord(JSON.parse(corps || '{}'), membre);
   if (p.action === 'migrationDiscord') return migrationDiscord(membre);
   if (p.action === 'deciderAcces') return deciderAcces(JSON.parse(corps || '{}'), membre);
+  if (p.action === 'supprimerAcces') return supprimerAcces(JSON.parse(corps || '{}'), membre);
   if (p.action === 'resumeAdmin') return resumeAdmin(membre);
   if (p.action === 'monProfil') return monProfil(JSON.parse(corps || '{}'), membre);
   if (p.action === 'modifierProfil') return modifierProfil(JSON.parse(corps || '{}'), membre);
@@ -273,6 +274,35 @@ function deciderAcces(d, membre) {
   }
 }
 
+// Ligne de l'onglet ACCES qui est celle du membre connecté (courriel ou ID Discord).
+function estMoi(l, membre) {
+  const discord = String(l[5] || '').trim();
+  return (discord && discord === membre.discord) || String(l[0]).trim().toLowerCase() === membre.courriel;
+}
+
+// Mettre un DG dehors (admins seulement) : sa ligne de l'onglet ACCES est supprimée et il
+// perd l'accès dès sa prochaine action. Même désignation que deciderAcces (numéro + clé) ;
+// un admin ne peut pas supprimer son propre compte.
+function supprimerAcces(d, membre) {
+  if (!membre.annonces) return { ok: false, erreur: 'annonces' };
+  const rangee = Number(d.rangee);
+  if (!Number.isInteger(rangee) || rangee < 2) return { ok: false, erreur: 'ligne' };
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(30000);
+  try {
+    const o = ongletAcces();
+    if (rangee > o.getLastRow()) return { ok: false, erreur: 'ligne' };
+    const l = o.getRange(rangee, 1, 1, 8).getValues()[0];
+    if (cleCompte(l) !== String(d.cle || '')) return { ok: false, erreur: 'ligne' };
+    if (estMoi(l, membre)) return { ok: false, erreur: 'soi' };
+    o.deleteRow(rangee);
+    console.log('Accès supprimé (' + (l[1] || 'Ligue') + ', ' + (l[6] || masquerCourriel(String(l[0]).trim())) + ') par ' + membre.courriel);
+    return { ok: true };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
 /* =========================================================================
    FICHE DU DG (onglet public « DGs », page lnhq.ca/dgs.html)
    Le DG modifie son nom (E), son gamertag (G) et sa chaîne Twitch (I) sur
@@ -384,6 +414,7 @@ function migrationDiscord(membre) {
       equipe: String(l[1] || '').trim() || 'Ligue',
       code: CODES_EQUIPES[String(l[1] || '').trim()] || '',
       admin: l[2] === true,
+      moi: estMoi(l, membre),
       statut: statutDe(l),
       compte: masquerCourriel(String(l[0]).trim()),
       lie: !!String(l[5] || '').trim(),

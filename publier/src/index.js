@@ -90,6 +90,9 @@ export default {
     if (url.pathname === '/api/admin/acces' && request.method === 'POST') {
       return appelerScript(env, 'deciderAcces', courriel, await request.text());
     }
+    if (url.pathname === '/api/admin/acces/supprimer' && request.method === 'POST') {
+      return appelerScript(env, 'supprimerAcces', courriel, await request.text());
+    }
     if (url.pathname === '/api/article' && request.method === 'GET') {
       return appelerScript(env, 'lire', courriel, JSON.stringify({ id: url.searchParams.get('id') || '' }));
     }

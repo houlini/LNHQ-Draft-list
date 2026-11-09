@@ -55,13 +55,21 @@
       const tdDiscord = el('td', 'is-texte');
       tdDiscord.append(el('span', 'adm-pastille ' + (c.lie ? 'is-ok' : 'is-non'), c.lie ? '✓' : '—'));
       tdDiscord.append(' ', c.lie ? (c.nomDiscord || 'Lié') : 'Pas encore lié');
-      tr.append(tdEq, el('td', 'is-texte adm-compte', c.compte || '—'), tdDiscord, el('td', 'adm-date', c.lieLe || ''));
+      const tdSuppr = el('td');
+      if(!c.moi){
+        const b = el('button', 'adm-suppr', '🗑');
+        b.type = 'button';
+        b.title = b.ariaLabel = `Supprimer l'accès de ${qui(c)}`;
+        b.addEventListener('click', () => supprimer(c, b));
+        tdSuppr.append(b);
+      }
+      tr.append(tdEq, el('td', 'is-texte adm-compte', c.compte || '—'), tdDiscord, el('td', 'adm-date', c.lieLe || ''), tdSuppr);
       tbody.append(tr);
     }
     if(!liste.length){
       const tr = el('tr');
       const td = el('td', 'adm-vide', 'Tous les comptes sont liés à Discord.');
-      td.colSpan = 4;
+      td.colSpan = 5;
       tr.append(td);
       tbody.append(tr);
     }
@@ -114,6 +122,32 @@
     }
     m.className = 'adm-etat is-ok';
     m.textContent = `${c.equipe} : demande ${decision === 'approuver' ? 'approuvée' : 'refusée'}.`;
+    await charger();
+  }
+
+  const qui = c => `${c.nomDiscord || c.compte || 'ce compte'} (${c.equipe})`;
+
+  // Mettre un DG dehors : la ligne de l'onglet ACCES est supprimée (pas d'annulation).
+  async function supprimer(c, bouton){
+    if(!confirm(`Supprimer l'accès de ${qui(c)} ?\n\nSa ligne de l'onglet ACCES sera effacée et il ne pourra plus utiliser l'espace DG. Pour le reprendre, il devra refaire une demande d'accès.`)) return;
+    bouton.disabled = true;
+    let r;
+    try{
+      r = await (await fetch('/api/admin/acces/supprimer', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rangee: c.rangee, cle: c.cle }) })).json();
+    }catch(e){ r = { ok: false }; }
+    const m = $('msgComptes');
+    m.hidden = false;
+    if(!r.ok){
+      bouton.disabled = false;
+      m.className = 'adm-etat is-erreur';
+      m.textContent = r.erreur === 'ligne' ? "Ce compte a changé dans l'onglet ACCES. Recharge la page."
+        : r.erreur === 'soi' ? 'Tu ne peux pas supprimer ton propre compte.'
+        : 'La suppression n’a pas pu être enregistrée. Réessaie.';
+      return;
+    }
+    m.className = 'adm-etat is-ok';
+    m.textContent = `Accès de ${qui(c)} supprimé.`;
     await charger();
   }
 

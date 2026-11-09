@@ -7,8 +7,8 @@
 <title>Administration — LNHQ</title>
 <link rel="icon" type="image/png" href="https://lnhq.ca/logo-lnhq.png">
 <link rel="stylesheet" href="https://lnhq.ca/site.css?v=9">
-<link rel="stylesheet" href="admin.css?v=6">
-<script src="admin.js?v=4" defer></script>
+<link rel="stylesheet" href="admin.css?v=7">
+<script src="admin.js?v=5" defer></script>
 </head>
 <body>
 
@@ -85,7 +85,7 @@
 
     <section id="migration" class="adm-carte" hidden>
       <div class="adm-tete">
-        <h2 class="adm-titre">Migration vers Discord</h2>
+        <h2 class="adm-titre">Comptes des DG</h2>
         <label class="adm-filtre"><input type="checkbox" id="nonLies"> Non liés seulement</label>
       </div>
       <div class="adm-progres">
@@ -94,9 +94,11 @@
         <p class="adm-note" id="txtEquipes"></p>
       </div>
       <p class="adm-note">Lien à donner aux DG : <strong>publier.lnhq.ca/lier-discord.html</strong> (connexion par courriel une dernière fois, puis un clic).</p>
+      <p class="adm-note">🗑 retire un DG de la ligue : sa ligne de l'onglet ACCES est supprimée et il perd l'accès tout de suite.</p>
+      <p class="adm-etat" id="msgComptes" hidden></p>
       <div class="adm-table-wrap">
         <table class="adm-table">
-          <thead><tr><th class="is-texte">Équipe</th><th class="is-texte">Compte</th><th class="is-texte">Discord</th><th>Lié le</th></tr></thead>
+          <thead><tr><th class="is-texte">Équipe</th><th class="is-texte">Compte</th><th class="is-texte">Discord</th><th>Lié le</th><th><span class="adm-cache">Supprimer</span></th></tr></thead>
           <tbody id="lignes"></tbody>
         </table>
       </div>
